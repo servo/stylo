@@ -20,13 +20,13 @@ use crate::selector_parser::Snapshot;
 use crate::stylesheets::origin::OriginSet;
 use crate::{Atom, WeakAtom};
 use crate::values::AtomIdent;
-use dom::ElementState;
 use selectors::attr::CaseSensitivity;
 use selectors::kleene_value::KleeneValue;
 use selectors::matching::{
     matches_selector_kleene, MatchingContext, MatchingForInvalidation, MatchingMode, NeedsSelectorFlags, SelectorCaches, VisitedHandlingMode
 };
 use smallvec::SmallVec;
+use style_traits::dom::ElementState;
 
 /// The collector implementation.
 struct Collector<'a, 'b: 'a, 'selectors: 'a, E>

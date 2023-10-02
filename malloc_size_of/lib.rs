@@ -843,8 +843,6 @@ malloc_size_of_is_0!(app_units::Au);
 
 malloc_size_of_is_0!(cssparser::TokenSerializationType);
 
-malloc_size_of_is_0!(dom::ElementState, dom::DocumentState);
-
 #[cfg(feature = "servo")]
 malloc_size_of_is_0!(csp::Destination);
 

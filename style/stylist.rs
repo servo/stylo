@@ -57,7 +57,6 @@ use crate::stylesheets::{StyleRule, StylesheetContents, StylesheetInDocument};
 use crate::values::{computed, AtomIdent};
 use crate::AllocErr;
 use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded, WeakAtom};
-use dom::{DocumentState, ElementState};
 use fxhash::FxHashMap;
 use malloc_size_of::{MallocSizeOf, MallocShallowSizeOf, MallocSizeOfOps};
 #[cfg(feature = "gecko")]
@@ -79,6 +78,7 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::sync::Mutex;
 use std::{mem, ops};
+use style_traits::dom::{DocumentState, ElementState};
 
 /// The type of the stylesheets that the stylist contains.
 #[cfg(feature = "servo")]

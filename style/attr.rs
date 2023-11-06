@@ -421,7 +421,7 @@ pub fn parse_legacy_color(mut input: &str) -> Result<RGBA, ()> {
     }
 
     // Step 5.
-    if let Ok(Color::RGBA(rgba)) = cssparser::parse_color_keyword(input) {
+    if let Ok(Color::Rgba(rgba)) = cssparser::parse_color_keyword(input) {
         return Ok(rgba);
     }
 

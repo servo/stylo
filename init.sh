@@ -65,7 +65,7 @@ if ! [ -e upstream ]; then
 fi
 
 step Updating upstream
-git -C upstream fetch
+git -C upstream fetch origin bookmarks/central:bookmarks/central
 
 step Filtering upstream
 # Cloning and filtering is much faster than git filter-repo --source --target.

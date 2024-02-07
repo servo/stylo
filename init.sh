@@ -68,7 +68,7 @@ step Updating upstream
 git -C upstream fetch
 
 step Filtering upstream
-# Cloning and filtering is much faster than git filter-repo --source --target,
-# but we can’t use git clone because refs/cinnabar/metadata will be lost.
-cp -a upstream filtered
+# Cloning and filtering is much faster than git filter-repo --source --target.
+# Using git clone here because we don’t care about refs/cinnabar/metadata.
+git clone --bare upstream filtered
 git -C filtered filter-repo --force --paths-from-file ../../style.paths

@@ -1,0 +1,23 @@
+name: Sync upstream with mozilla-central
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Sync
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - uses: actions/cache@v3
+        with:
+          path: _cache/upstream
+          key: upstream
+      - run: |
+          ./sync.sh _filtered
+          git fetch -f --progress ./_filtered master:upstream
+          git push -fu --progress origin upstream

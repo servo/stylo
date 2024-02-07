@@ -1,10 +1,13 @@
 #!/bin/sh
-# usage: init.sh <path/to/style>
+# usage: init.sh <path/to/filtered>
 set -eu
 
-style=$1
-mkdir -p cache
-cd cache
+root=$(pwd)
+mkdir -p "$1"
+cd -- "$1"
+filtered=$(pwd)
+mkdir -p "$root/cache"
+cd "$root/cache"
 export PATH="$PWD:$PATH"
 
 step() {
@@ -34,5 +37,5 @@ git -C upstream fetch origin $branch:$branch
 step Filtering upstream
 # Cloning and filtering is much faster than git filter-repo --source --target.
 # Using git clone here because we don’t care about refs/cinnabar/metadata.
-git clone --bare upstream filtered
-git -C filtered filter-repo --force --paths-from-file ../../style.paths
+git clone --bare upstream -- "$filtered"
+git -C "$filtered" filter-repo --force --paths-from-file "$root/style.paths"

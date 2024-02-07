@@ -11,9 +11,13 @@ cd "$root/cache"
 export PATH="$PWD:$PATH"
 
 step() {
-    tput setaf 12
+    if [ "${TERM-}" != '' ]; then
+        tput setaf 12
+    fi
     >&2 printf '* %s\n' "$*"
-    tput sgr0
+    if [ "${TERM-}" != '' ]; then
+        tput sgr0
+    fi
 }
 
 step Downloading git-filter-repo if needed

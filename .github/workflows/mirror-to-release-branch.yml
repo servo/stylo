@@ -1,0 +1,26 @@
+name: 🪞 Mirror `main`
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  mirror:
+    name: Mirror
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Get branch name
+      id: branch-name
+      run: |
+        first_commit=$(git log --pretty=\%H --grep='Servo initial downstream commit')
+        upstream_base="$first_commit~"
+        echo BRANCH_NAME=$(git log -n1 --pretty='%as' $upstream_base) >> $GITHUB_OUTPUT
+    - uses: google/mirror-branch-action@v1.0
+      name: Mirror to ${{ steps.branch-name.outputs.BRANCH_NAME }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        source: main
+        dest: ${{ steps.branch-name.outputs.BRANCH_NAME }}

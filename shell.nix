@@ -3,16 +3,4 @@ with import (builtins.fetchTarball {
 }) {};
 stdenv.mkDerivation rec {
   name = "style-sync-shell";
-
-  nativeBuildInputs = [
-    autoPatchelfHook
-  ];
-
-  buildInputs = [
-    zlib
-    curl
-    gcc-unwrapped
-  ];
-
-  dontAutoPatchelf = true;
 }

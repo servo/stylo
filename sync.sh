@@ -1,5 +1,5 @@
 #!/bin/sh
-# usage: init.sh <path/to/filtered>
+# Usage: sync.sh <path/to/filtered>
 set -eu
 
 root=$(pwd)

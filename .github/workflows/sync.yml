@@ -18,6 +18,6 @@ jobs:
           path: cache/upstream
           key: upstream
       - run: |
-          ./init.sh filtered
+          ./sync.sh filtered
           git fetch --progress ./filtered master:master
           git push -fu --progress origin master

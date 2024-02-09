@@ -22,7 +22,6 @@ step() {
 
 step Downloading git-filter-repo if needed
 if ! git filter-repo --version 2> /dev/null; then
-    # https://github.com/glandium/git-cinnabar/blob/6cab9b3368f6a7a551940796beddfb8384ee7551/README.md#prebuilt-binaries
     curl -O https://raw.githubusercontent.com/newren/git-filter-repo/v2.38.0/git-filter-repo
     chmod +x git-filter-repo
 
@@ -40,6 +39,5 @@ git -C upstream fetch origin $branch:$branch
 
 step Filtering upstream
 # Cloning and filtering is much faster than git filter-repo --source --target.
-# Using git clone here because we don’t care about refs/cinnabar/metadata.
 git clone --bare upstream -- "$filtered"
 git -C "$filtered" filter-repo --force --paths-from-file "$root/style.paths"

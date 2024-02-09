@@ -6,8 +6,8 @@ root=$(pwd)
 mkdir -p "$1"
 cd -- "$1"
 filtered=$(pwd)
-mkdir -p "$root/cache"
-cd "$root/cache"
+mkdir -p "$root/_cache"
+cd "$root/_cache"
 export PATH="$PWD:$PATH"
 
 step() {

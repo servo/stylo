@@ -15,9 +15,9 @@ jobs:
           fetch-depth: 1
       - uses: actions/cache@v3
         with:
-          path: cache/upstream
+          path: _cache/upstream
           key: upstream
       - run: |
-          ./sync.sh filtered
-          git fetch -f --progress ./filtered master:upstream
+          ./sync.sh _filtered
+          git fetch -f --progress ./_filtered master:upstream
           git push -fu --progress origin upstream

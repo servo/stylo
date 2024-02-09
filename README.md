@@ -31,6 +31,12 @@ $ git push -fu --progress origin upstream
 
 ## Rebasing `main` onto `upstream`
 
+Start by fetching `upstream` into your local repo:
+
+```sh
+$ git fetch -f origin upstream:upstream
+```
+
 In general, the filtering process is deterministic, yielding the same commit hashes each time, so we can rebase normally:
 
 ```sh

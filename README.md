@@ -1,4 +1,4 @@
-style
+Stylo
 =====
 
 This repo contains Servo’s downstream fork of [Stylo](https://searchfox.org/mozilla-central/source/servo).

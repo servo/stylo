@@ -16,6 +16,12 @@ Start by generating a filtered copy of mozilla-central. This will cache the raw 
 $ ./sync.sh _filtered
 ```
 
+If `_filtered` already exists, you will need to delete it and try again:
+
+```sh
+$ rm -Rf _filtered
+```
+
 Now overwrite our `upstream` with those commits and push:
 
 ```sh

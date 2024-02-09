@@ -8,7 +8,7 @@ The branches are as follows:
 - [`upstream`](https://github.com/servo/style/tree/upstream) has upstream mozilla-central filtered to the paths we care about ([style.paths](style.paths)), but is otherwise unmodified
 - [`main`](https://github.com/servo/style/tree/ci) has our downstream patches, plus the scripts and workflows for syncing with [mozilla-central](https://searchfox.org/mozilla-central/source/servo), to be rebased onto `upstream`
 
-## Syncing `upstream`
+## Syncing `upstream` with mozilla-central
 
 Start by generating a filtered copy of mozilla-central. This will cache the raw mozilla-central in `_cache/upstream`, storing the result in `_filtered`:
 

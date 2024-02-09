@@ -56,8 +56,8 @@ Successfully rebased and updated refs/heads/main.
 `start-rebase.sh` takes care of this automatically, but you should still use `git rebase` for subsequent steps like `--continue` and `--abort`:
 
 ```sh
-$ ./rebase.sh
-$ ./rebase.sh -i            # interactive
+$ ./start-rebase.sh
+$ ./start-rebase.sh -i      # interactive
 $ git rebase --continue     # not ./start-rebase.sh --continue
 $ git rebase --abort        # not ./start-rebase.sh --abort
 ```

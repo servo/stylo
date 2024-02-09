@@ -1,12 +1,12 @@
 style
 =====
 
-This repo contains Servo’s downstream fork of Stylo.
+This repo contains Servo’s downstream fork of [Stylo](https://searchfox.org/mozilla-central/source/servo).
 
 The branches are as follows:
 
 - [`upstream`](https://github.com/servo/style/tree/upstream) has upstream mozilla-central filtered to the paths we care about ([style.paths](style.paths)), but is otherwise unmodified
-- [`main`](https://github.com/servo/style/tree/ci) has our downstream patches, plus the scripts and workflows for syncing with [mozilla-central](https://searchfox.org/mozilla-central/source/servo), to be rebased onto `upstream`
+- [`main`](https://github.com/servo/style/tree/ci) has our downstream patches, plus the scripts and workflows for syncing with mozilla-central, to be rebased onto `upstream`
 
 ## Syncing `upstream` with mozilla-central
 

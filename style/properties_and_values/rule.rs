@@ -175,7 +175,6 @@ macro_rules! property_descriptors {
     }
 }
 
-#[cfg(feature = "gecko")]
 property_descriptors! {
     /// <https://drafts.css-houdini.org/css-properties-values-api-1/#the-syntax-descriptor>
     "syntax" syntax: ParsedDescriptor,

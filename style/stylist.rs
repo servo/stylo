@@ -41,7 +41,7 @@ use crate::stylesheets::{
     CounterStyleRule, FontFaceRule, FontFeatureValuesRule, FontPaletteValuesRule,
 };
 use crate::stylesheets::{
-    CssRule, EffectiveRulesIterator, Origin, OriginSet, PerOrigin, PerOriginIter,
+    CssRule, EffectiveRulesIterator, Origin, OriginSet, PageRule, PerOrigin, PerOriginIter,
     PagePseudoClassFlags, PageRule,
 };
 use crate::stylesheets::{StyleRule, StylesheetContents, StylesheetInDocument};
@@ -528,6 +528,7 @@ pub struct Stylist {
     stylesheets: StylistStylesheetSet,
 
     /// A cache of CascadeDatas for AuthorStylesheetSets (i.e., shadow DOM).
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "XXX: how to handle this?")]
     author_data_cache: CascadeDataCache<CascadeData>,
 
     /// If true, the quirks-mode stylesheet is applied.

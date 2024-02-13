@@ -9,7 +9,6 @@ use crate::color::AbsoluteColor;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::custom_properties::CustomPropertiesBuilder;
 use crate::dom::TElement;
-use crate::font_metrics::FontMetricsOrientation;
 use crate::logical_geometry::WritingMode;
 use crate::properties::declaration_block::{DeclarationImportanceIterator, Importance};
 use crate::properties::generated::{

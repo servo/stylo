@@ -14,6 +14,7 @@ use crate::parser::{
     NonTSPseudoClass, RelativeSelector, Selector, SelectorImpl, SelectorIter, SelectorList,
 };
 use crate::tree::Element;
+use bitflags::bitflags;
 use smallvec::SmallVec;
 use std::borrow::Borrow;
 use std::iter;

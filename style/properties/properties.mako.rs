@@ -945,6 +945,12 @@ impl LonghandIdSet {
     }
 
     #[inline]
+    fn transitionable() -> &'static Self {
+        ${static_longhand_id_set("TRANSITIONABLE", lambda p: p.transitionable)}
+        &TRANSITIONABLE
+    }
+
+    #[inline]
     fn logical() -> &'static Self {
         ${static_longhand_id_set("LOGICAL", lambda p: p.logical)}
         &LOGICAL
@@ -1314,6 +1320,12 @@ impl LonghandId {
     #[inline]
     pub fn is_discrete_animatable(self) -> bool {
         LonghandIdSet::discrete_animatable().contains(self)
+    }
+
+    /// Returns whether this property is transitionable.
+    #[inline]
+    pub fn is_transitionable(self) -> bool {
+        LonghandIdSet::transitionable().contains(self)
     }
 
     /// Converts from a LonghandId to an adequate nsCSSPropertyID.
@@ -2572,7 +2584,7 @@ pub struct SourcePropertyDeclaration {
 
 // This is huge, but we allocate it on the stack and then never move it,
 // we only pass `&mut SourcePropertyDeclaration` references around.
-size_of_test!(SourcePropertyDeclaration, 632);
+size_of_test!(SourcePropertyDeclaration, 568);
 
 impl SourcePropertyDeclaration {
     /// Create one with a single PropertyDeclaration.
@@ -3249,14 +3261,27 @@ impl ComputedValues {
     /// Get the initial computed values.
     pub fn initial_values() -> &'static Self { &*INITIAL_SERVO_VALUES }
 
+    /// Converts the computed values to an Arc<> from a reference.
+    pub fn to_arc(&self) -> Arc<Self> {
+        // SAFETY: We're guaranteed to be allocated as an Arc<> since the
+        // functions above are the only ones that create ComputedValues
+        // instances in Servo (and that must be the case since ComputedValues'
+        // member is private).
+        unsafe { Arc::from_raw_addrefed(self) }
+    }
+
     /// Serializes the computed value of this property as a string.
     pub fn computed_value_to_string(&self, property: PropertyDeclarationId) -> String {
         match property {
             PropertyDeclarationId::Longhand(id) => {
+                let context = resolved::Context {
+                    style: self,
+                };
                 let mut s = String::new();
-                self.get_longhand_property_value(
+                self.computed_or_resolved_value(
                     id,
-                    &mut CssWriter::new(&mut s)
+                    Some(&context),
+                    &mut s
                 ).unwrap();
                 s
             }
@@ -4046,7 +4071,7 @@ mod lazy_static_module {
 
     lazy_static! {
         /// The initial values for all style structs as defined by the specification.
-        pub static ref INITIAL_SERVO_VALUES: ComputedValues = ComputedValues {
+        pub static ref INITIAL_SERVO_VALUES : Arc<ComputedValues> = Arc::new(ComputedValues {
             inner: ComputedValuesInner {
                 % for style_struct in data.active_style_structs():
                     ${style_struct.ident}: Arc::new(style_structs::${style_struct.name} {
@@ -4074,7 +4099,7 @@ mod lazy_static_module {
                 flags: ComputedValueFlags::empty(),
             },
             pseudo: None,
-        };
+        });
     }
 }
 
@@ -4182,6 +4207,9 @@ macro_rules! css_properties_accessors {
 /// ```
 /// { snake_case_ident }
 /// ```
+///
+/// … where the boolean indicates whether the property value type
+/// is wrapped in a `Box<_>` in the corresponding `PropertyDeclaration` variant.
 #[macro_export]
 macro_rules! longhand_properties_idents {
     ($macro_name: ident) => {
@@ -4194,7 +4222,7 @@ macro_rules! longhand_properties_idents {
 }
 
 // Large pages generate tens of thousands of ComputedValues.
-size_of_test!(ComputedValues, 232);
+size_of_test!(ComputedValues, 192);
 // FFI relies on this.
 size_of_test!(Option<Arc<ComputedValues>>, 8);
 
@@ -4224,6 +4252,9 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 % for effect_name in ["repaint", "reflow_out_of_flow", "reflow", "rebuild_and_reflow_inline", "rebuild_and_reflow"]:
     macro_rules! restyle_damage_${effect_name} {
         ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ]) => ({
+            restyle_damage_${effect_name}!($old, $new, $damage, [$($effect),*], false)
+        });
+        ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ], $extra:expr) => ({
             if
                 % for style_struct in data.active_style_structs():
                     % for longhand in style_struct.longhands:
@@ -4234,13 +4265,13 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
                     % endfor
                 % endfor
 
-                false {
+                $extra || false {
                     $damage.insert($($effect)|*);
                     true
             } else {
                 false
             }
-        })
+        });
     }
 % endfor
 % endif

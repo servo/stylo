@@ -10,7 +10,6 @@ use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::QuirksMode;
 use crate::custom_properties::CustomPropertiesBuilder;
 use crate::dom::TElement;
-use crate::font_metrics::FontMetricsOrientation;
 use crate::logical_geometry::WritingMode;
 use crate::media_queries::Device;
 use crate::properties::declaration_block::{DeclarationImportanceIterator, Importance};

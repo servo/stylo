@@ -88,6 +88,7 @@
                 has_value = true;
             }
 
+            % if engine == "gecko":
             if !is_auto_thickness {
                 if has_value {
                     dest.write_char(' ')?;
@@ -96,7 +97,6 @@
                 has_value = true;
             }
 
-            % if engine == "gecko":
             if !is_solid_style {
                 if has_value {
                     dest.write_char(' ')?;

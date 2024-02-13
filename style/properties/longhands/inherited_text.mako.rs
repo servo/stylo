@@ -10,7 +10,7 @@ ${helpers.predefined_type(
     "color",
     "ColorPropertyValue",
     "crate::color::AbsoluteColor::BLACK",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     animation_value_type="AbsoluteColor",
     ignored_when_colors_disabled="True",
     spec="https://drafts.csswg.org/css-color/#color",
@@ -21,7 +21,7 @@ ${helpers.predefined_type(
     "line-height",
     "LineHeight",
     "computed::LineHeight::normal()",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     animation_value_type="LineHeight",
     spec="https://drafts.csswg.org/css2/visudet.html#propdef-line-height",
     servo_restyle_damage="reflow",
@@ -34,7 +34,8 @@ ${helpers.predefined_type(
     "text-transform",
     "TextTransform",
     "computed::TextTransform::none()",
-    engines="gecko servo-2013",
+    engines="gecko servo",
+    servo_pref="layout.legacy_layout",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-text-transform",
     servo_restyle_damage="rebuild_and_reflow",
@@ -69,8 +70,7 @@ ${helpers.predefined_type(
     "text-indent",
     "LengthPercentage",
     "computed::LengthPercentage::zero()",
-    engines="gecko servo-2013 servo-2020",
-    servo_2020_pref="layout.2020.unimplemented",
+    engines="gecko servo",
     animation_value_type="ComputedValue",
     spec="https://drafts.csswg.org/css-text/#propdef-text-indent",
     allow_quirks="Yes",
@@ -84,8 +84,8 @@ ${helpers.predefined_type(
     "overflow-wrap",
     "OverflowWrap",
     "computed::OverflowWrap::Normal",
-    engines="gecko servo-2013 servo-2020",
-    servo_2020_pref="layout.2020.unimplemented",
+    engines="gecko servo",
+    servo_pref="layout.legacy_layout",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-overflow-wrap",
     aliases="word-wrap",
@@ -97,8 +97,8 @@ ${helpers.predefined_type(
     "word-break",
     "WordBreak",
     "computed::WordBreak::Normal",
-    engines="gecko servo-2013 servo-2020",
-    servo_2020_pref="layout.2020.unimplemented",
+    engines="gecko servo",
+    servo_pref="layout.legacy_layout",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-word-break",
     servo_restyle_damage="rebuild_and_reflow",
@@ -109,8 +109,7 @@ ${helpers.predefined_type(
     "text-justify",
     "TextJustify",
     "computed::TextJustify::Auto",
-    engines="gecko servo-2013 servo-2020",
-    servo_2020_pref="layout.2020.unimplemented",
+    engines="gecko servo",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-text-justify",
     servo_restyle_damage="rebuild_and_reflow",
@@ -121,7 +120,7 @@ ${helpers.predefined_type(
     "text-align-last",
     "TextAlignLast",
     "computed::text::TextAlignLast::Auto",
-    engines="gecko",
+    engines="gecko servo",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-text-align-last",
     affects="layout",
@@ -132,7 +131,7 @@ ${helpers.predefined_type(
     "text-align",
     "TextAlign",
     "computed::TextAlign::Start",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-text-align",
     servo_restyle_damage = "reflow",
@@ -143,7 +142,7 @@ ${helpers.predefined_type(
     "letter-spacing",
     "LetterSpacing",
     "computed::LetterSpacing::normal()",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     animation_value_type="ComputedValue",
     spec="https://drafts.csswg.org/css-text/#propdef-letter-spacing",
     servo_restyle_damage="rebuild_and_reflow",
@@ -154,7 +153,7 @@ ${helpers.predefined_type(
     "word-spacing",
     "WordSpacing",
     "computed::WordSpacing::zero()",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     animation_value_type="ComputedValue",
     spec="https://drafts.csswg.org/css-text/#propdef-word-spacing",
     servo_restyle_damage="rebuild_and_reflow",
@@ -164,7 +163,7 @@ ${helpers.predefined_type(
 <%helpers:single_keyword
     name="white-space"
     values="normal pre nowrap pre-wrap pre-line"
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     extra_gecko_values="break-spaces -moz-pre-space"
     gecko_enum_prefix="StyleWhiteSpace"
     needs_conversion="True"
@@ -173,7 +172,7 @@ ${helpers.predefined_type(
     servo_restyle_damage="rebuild_and_reflow"
     affects="layout"
 >
-    % if engine in ["servo-2013", "servo-2020"]:
+    % if engine == "servo":
     impl SpecifiedValue {
         pub fn allow_wrap(&self) -> bool {
             match *self {
@@ -212,7 +211,8 @@ ${helpers.predefined_type(
     "text-shadow",
     "SimpleShadow",
     None,
-    engines="gecko servo-2013",
+    engines="gecko servo",
+    servo_pref="layout.legacy_layout",
     vector=True,
     vector_animation_type="with_zero",
     animation_value_type="AnimatedTextShadowList",
@@ -352,7 +352,7 @@ ${helpers.single_keyword(
 ${helpers.single_keyword(
     "text-rendering",
     "auto optimizespeed optimizelegibility geometricprecision",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     gecko_enum_prefix="StyleTextRendering",
     animation_value_type="discrete",
     spec="https://www.w3.org/TR/SVG11/painting.html#TextRenderingProperty",

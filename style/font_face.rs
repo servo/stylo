@@ -80,6 +80,7 @@ impl Parse for SourceList {
 /// Keywords for the font-face src descriptor's format() function.
 /// ('None' and 'Unknown' are for internal use in gfx, not exposed to CSS.)
 #[derive(Clone, Copy, Debug, Eq, Parse, PartialEq, ToCss, ToShmem)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum FontFaceSourceFormatKeyword {
@@ -99,6 +100,7 @@ pub enum FontFaceSourceFormatKeyword {
 /// Flags for the @font-face tech() function, indicating font technologies
 /// required by the resource.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ToShmem)]
+    #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct FontFaceSourceTechFlags(u16);
 bitflags! {
@@ -226,6 +228,7 @@ pub enum FontFaceSourceListComponent {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum FontFaceSourceFormat {
@@ -492,7 +495,7 @@ pub struct FontFace<'a>(&'a FontFaceRuleData);
 #[cfg(feature = "servo")]
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-pub struct EffectiveSources(SourceList);
+pub struct EffectiveSources(Vec<Source>);
 
 #[cfg(feature = "servo")]
 impl<'a> FontFace<'a> {
@@ -502,6 +505,7 @@ impl<'a> FontFace<'a> {
     pub fn effective_sources(&self) -> EffectiveSources {
         EffectiveSources(
             self.sources()
+                .0
                 .iter()
                 .rev()
                 .filter(|source| {
@@ -509,9 +513,20 @@ impl<'a> FontFace<'a> {
                         // We support only opentype fonts and truetype is an alias for
                         // that format. Sources without format hints need to be
                         // downloaded in case we support them.
-                        url_source.format_hint.as_ref().map_or(true, |hint| {
-                            hint == "truetype" || hint == "opentype" || hint == "woff"
-                        })
+                        url_source
+                            .format_hint
+                            .as_ref()
+                            .map_or(true, |hint| match hint {
+                                FontFaceSourceFormat::Keyword(
+                                    FontFaceSourceFormatKeyword::Truetype
+                                    | FontFaceSourceFormatKeyword::Opentype
+                                    | FontFaceSourceFormatKeyword::Woff,
+                                ) => true,
+                                FontFaceSourceFormat::String(s) => {
+                                    s == "truetype" || s == "opentype" || s == "woff"
+                                }
+                                _ => false,
+                            })
                     } else {
                         true
                     }

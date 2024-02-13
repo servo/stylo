@@ -22,7 +22,6 @@ ${helpers.predefined_type(
     "TextTransform",
     "computed::TextTransform::none()",
     engines="gecko servo",
-    servo_pref="layout.legacy_layout",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-text-transform",
     servo_restyle_damage="rebuild_and_reflow",

@@ -62,12 +62,14 @@ pub use crate::values::specified::Number as SpecifiedNumber;
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Eq,
     Hash,
     MallocSizeOf,
     PartialEq,
     PartialOrd,
     ToResolvedValue,
 )]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct FixedPoint<T, const FRACTION_BITS: u16> {
     /// The actual representation.
     pub value: T,
@@ -336,7 +338,10 @@ macro_rules! static_font_family {
         lazy_static! {
             static ref $ident: FontFamily = FontFamily {
                 families: FontFamilyList {
+                    #[cfg(feature = "gecko")]
                     list: crate::ArcSlice::from_iter_leaked(std::iter::once($family)),
+                    #[cfg(feature = "servo")]
+                    list: Box::new([$family]),
                 },
                 is_system_font: false,
                 is_initial: false,
@@ -449,7 +454,12 @@ impl ToCss for FontFamily {
         let mut iter = self.families.iter();
         match iter.next() {
             Some(f) => f.to_css(dest)?,
-            None => return Ok(()),
+            None => {
+                #[cfg(feature = "gecko")]
+                return return Ok(());
+                #[cfg(feature = "servo")]
+                unreachable!();
+            },
         }
         for family in iter {
             dest.write_str(", ")?;
@@ -680,6 +690,7 @@ impl SingleFontFamily {
             atom!("cursive") => return SingleFontFamily::Generic(GenericFontFamily::Cursive),
             atom!("fantasy") => return SingleFontFamily::Generic(GenericFontFamily::Fantasy),
             atom!("monospace") => return SingleFontFamily::Generic(GenericFontFamily::Monospace),
+            atom!("system-ui") => return SingleFontFamily::Generic(GenericFontFamily::SystemUi),
             _ => {},
         }
 
@@ -689,6 +700,7 @@ impl SingleFontFamily {
             "cursive" => return SingleFontFamily::Generic(GenericFontFamily::Cursive),
             "fantasy" => return SingleFontFamily::Generic(GenericFontFamily::Fantasy),
             "monospace" => return SingleFontFamily::Generic(GenericFontFamily::Monospace),
+            "system-ui" => return SingleFontFamily::Generic(GenericFontFamily::SystemUi),
             _ => {}
         }
 
@@ -702,11 +714,32 @@ impl SingleFontFamily {
 }
 
 /// A list of font families.
+#[cfg(feature = "gecko")]
 #[derive(Clone, Debug, ToComputedValue, ToResolvedValue, ToShmem, PartialEq, Eq)]
 #[repr(C)]
 pub struct FontFamilyList {
     /// The actual list of font families specified.
     pub list: crate::ArcSlice<SingleFontFamily>,
+}
+
+/// A list of font families.
+#[cfg(feature = "servo")]
+#[derive(
+    Clone,
+    Debug,
+    Deserialize,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+)]
+pub struct FontFamilyList {
+    /// The actual list of font families specified.
+    pub list: Box<[SingleFontFamily]>,
 }
 
 impl FontFamilyList {
@@ -1079,12 +1112,14 @@ pub type FontStyleFixedPoint = FixedPoint<i16, FONT_STYLE_FRACTION_BITS>;
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Eq,
     Hash,
     MallocSizeOf,
     PartialEq,
     PartialOrd,
     ToResolvedValue,
 )]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct FontStyle(FontStyleFixedPoint);
 
@@ -1208,6 +1243,7 @@ pub type FontStretchFixedPoint = FixedPoint<u16, FONT_STRETCH_FRACTION_BITS>;
 #[derive(
     Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue,
 )]
+#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[repr(C)]
 pub struct FontStretch(pub FontStretchFixedPoint);
 
@@ -1353,20 +1389,28 @@ impl ToResolvedValue for LineHeight {
 
     fn to_resolved_value(self, context: &ResolvedContext) -> Self::ResolvedValue {
         // Resolve <number> to an absolute <length> based on font size.
-        if matches!(self, Self::Normal | Self::MozBlockHeight) {
-            return self;
+        #[cfg(feature = "gecko")] {
+            if matches!(self, Self::Normal | Self::MozBlockHeight) {
+                return self;
+            }
+            let wm = context.style.writing_mode;
+            Self::Length(
+                context
+                    .device
+                    .calc_line_height(
+                        context.style.get_font(),
+                        wm,
+                        Some(context.element_info.element),
+                    )
+                    .to_resolved_value(context),
+            )
         }
-        let wm = context.style.writing_mode;
-        Self::Length(
-            context
-                .device
-                .calc_line_height(
-                    context.style.get_font(),
-                    wm,
-                    Some(context.element_info.element),
-                )
-                .to_resolved_value(context),
-        )
+        if let LineHeight::Number(num) = &self {
+            let size = context.style.get_font().clone_font_size().computed_size();
+            LineHeight::Length(NonNegativeLength::new(size.px() * num.0))
+        } else {
+            self
+        }
     }
 
     #[inline]

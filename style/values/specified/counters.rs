@@ -249,7 +249,9 @@ impl Parse for Content {
                         "-moz-alt-content" if context.in_ua_sheet() => {
                             generics::ContentItem::MozAltContent
                         },
+                        #[cfg(feature = "gecko")]
                         "-moz-label-content" if context.chrome_rules_enabled() => {
+                            has_alt_content = true;
                             generics::ContentItem::MozLabelContent
                         },
                         _ =>{

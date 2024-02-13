@@ -524,7 +524,16 @@ pub mod specified {
     /// Whether to allow negative lengths or not.
     #[repr(u8)]
     #[derive(
-        Clone, Copy, Debug, Deserialize, Eq, MallocSizeOf, PartialEq, PartialOrd, Serialize, ToShmem,
+        Clone,
+        Copy,
+        Debug,
+        Deserialize,
+        Eq,
+        MallocSizeOf,
+        PartialEq,
+        PartialOrd,
+        Serialize,
+        to_shmem_derive::ToShmem,
     )]
     pub enum AllowedNumericType {
         /// Allow all kind of numeric values.

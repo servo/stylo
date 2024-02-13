@@ -4,6 +4,8 @@
 
 //! Types used to access the DOM from style calculation.
 
+use malloc_size_of::malloc_size_of_is_0;
+
 /// An opaque handle to a node, which, unlike UnsafeNode, cannot be transformed
 /// back into a non-opaque representation. The only safe operation that can be
 /// performed on this node is to compare it to another opaque handle or to another

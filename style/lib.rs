@@ -50,9 +50,6 @@ extern crate log;
 extern crate malloc_size_of;
 #[macro_use]
 extern crate malloc_size_of_derive;
-#[allow(unused_extern_crates)]
-#[macro_use]
-extern crate matches;
 #[cfg(feature = "gecko")]
 pub use nsstring;
 #[cfg(feature = "gecko")]
@@ -170,6 +167,7 @@ pub use style_traits::owned_str::OwnedStr;
 
 use std::hash::{BuildHasher, Hash};
 
+#[macro_use]
 pub mod properties;
 
 #[cfg(feature = "gecko")]

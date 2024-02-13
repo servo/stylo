@@ -298,6 +298,16 @@ impl<Set: string_cache::StaticAtomSet> cssparser::ToCss for GenericAtomIdent<Set
 }
 
 #[cfg(feature = "servo")]
+impl<Set: string_cache::StaticAtomSet> style_traits::ToCss for GenericAtomIdent<Set> {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        serialize_atom_identifier(&self.0, dest)
+    }
+}
+
+#[cfg(feature = "servo")]
 impl<Set: string_cache::StaticAtomSet> PrecomputedHash for GenericAtomIdent<Set> {
     #[inline]
     fn precomputed_hash(&self) -> u32 {
@@ -701,13 +711,17 @@ impl TimelineOrKeyframesName {
             return dest.write_str("none");
         }
 
-        self.0.with_str(|s| {
+        let mut serialize = |s: &_| {
             if CustomIdent::is_valid(s, invalid) {
                 serialize_identifier(s, dest)
             } else {
                 s.to_css(dest)
             }
-        })
+        };
+        #[cfg(feature = "gecko")]
+        return self.0.with_str(|s| serialize(s));
+        #[cfg(feature = "servo")]
+        return serialize(self.0.as_ref());
     }
 }
 
@@ -786,6 +800,11 @@ impl KeyframesName {
     #[cfg(feature = "gecko")]
     pub fn from_atom(atom: Atom) -> Self {
         Self(TimelineOrKeyframesName::from_atom(atom))
+    }
+
+    /// <https://drafts.csswg.org/css-animations/#dom-csskeyframesrule-name>
+    pub fn from_ident(value: &str) -> Self {
+        Self(TimelineOrKeyframesName::from_ident(value))
     }
 
     /// Returns the `none` value.

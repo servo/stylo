@@ -13,7 +13,7 @@ ${helpers.predefined_type(
     "display",
     "Display",
     "computed::Display::inline()",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     initial_specified_value="specified::Display::inline()",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-display/#propdef-display",
@@ -36,7 +36,7 @@ ${helpers.single_keyword(
 ${helpers.single_keyword(
     "-servo-top-layer",
     "none top",
-    engines="servo-2013 servo-2020",
+    engines="servo",
     animation_value_type="none",
     enabled_in="ua",
     spec="Internal (not web-exposed)",
@@ -44,8 +44,8 @@ ${helpers.single_keyword(
 
 <%helpers:single_keyword
     name="position"
-    values="static absolute relative fixed ${'sticky' if engine in ['gecko', 'servo-2013'] else ''}"
-    engines="gecko servo-2013 servo-2020"
+    values="static absolute relative fixed sticky"
+    engines="gecko servo"
     animation_value_type="discrete"
     gecko_enum_prefix="StylePositionProperty"
     spec="https://drafts.csswg.org/css-position/#position-property"
@@ -65,8 +65,7 @@ ${helpers.predefined_type(
     "float",
     "Float",
     "computed::Float::None",
-    engines="gecko servo-2013 servo-2020",
-    servo_2020_pref="layout.2020.unimplemented",
+    engines="gecko servo",
     initial_specified_value="specified::Float::None",
     spec="https://drafts.csswg.org/css-box/#propdef-float",
     animation_value_type="discrete",
@@ -78,7 +77,7 @@ ${helpers.predefined_type(
     "clear",
     "Clear",
     "computed::Clear::None",
-    engines="gecko servo-2013",
+    engines="gecko servo",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css2/#propdef-clear",
     servo_restyle_damage="rebuild_and_reflow",
@@ -88,7 +87,7 @@ ${helpers.predefined_type(
     "vertical-align",
     "VerticalAlign",
     "computed::VerticalAlign::baseline()",
-    engines="gecko servo-2013",
+    engines="gecko servo",
     animation_value_type="ComputedValue",
     spec="https://www.w3.org/TR/CSS2/visudet.html#propdef-vertical-align",
     servo_restyle_damage = "reflow",
@@ -109,12 +108,14 @@ ${helpers.predefined_type(
 ${helpers.single_keyword(
     "-servo-overflow-clip-box",
     "padding-box content-box",
-    engines="servo-2013",
+    engines="servo",
+    servo_pref="layout.legacy_layout",
     animation_value_type="none",
     enabled_in="ua",
     spec="Internal, not web-exposed, \
           may be standardized in the future (https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-clip-box)",
 )}
+
 
 % for direction in ["inline", "block"]:
     ${helpers.predefined_type(
@@ -136,7 +137,7 @@ ${helpers.single_keyword(
         full_name,
         "Overflow",
         "computed::Overflow::Visible",
-        engines="gecko servo-2013 servo-2020",
+        engines="gecko servo",
         logical_group="overflow",
         logical=logical,
         animation_value_type="discrete",
@@ -163,7 +164,7 @@ ${helpers.predefined_type(
     "transform",
     "Transform",
     "generics::transform::Transform::none()",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     extra_prefixes=transform_extra_prefixes,
     animation_value_type="ComputedValue",
     flags="CAN_ANIMATE_ON_COMPOSITOR",
@@ -175,7 +176,7 @@ ${helpers.predefined_type(
     "rotate",
     "Rotate",
     "generics::transform::Rotate::None",
-    engines="gecko servo-2013",
+    engines="gecko servo",
     animation_value_type="ComputedValue",
     boxed=True,
     flags="CAN_ANIMATE_ON_COMPOSITOR",
@@ -188,7 +189,7 @@ ${helpers.predefined_type(
     "scale",
     "Scale",
     "generics::transform::Scale::None",
-    engines="gecko servo-2013",
+    engines="gecko servo",
     animation_value_type="ComputedValue",
     boxed=True,
     flags="CAN_ANIMATE_ON_COMPOSITOR",
@@ -201,7 +202,7 @@ ${helpers.predefined_type(
     "translate",
     "Translate",
     "generics::transform::Translate::None",
-    engines="gecko servo-2013",
+    engines="gecko servo",
     animation_value_type="ComputedValue",
     boxed=True,
     flags="CAN_ANIMATE_ON_COMPOSITOR",
@@ -383,7 +384,7 @@ ${helpers.predefined_type(
     "perspective",
     "Perspective",
     "computed::Perspective::none()",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     gecko_ffi_name="mChildPerspective",
     spec="https://drafts.csswg.org/css-transforms/#perspective",
     extra_prefixes=transform_extra_prefixes,
@@ -395,7 +396,7 @@ ${helpers.predefined_type(
     "perspective-origin",
     "Position",
     "computed::position::Position::center()",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     boxed=True,
     extra_prefixes=transform_extra_prefixes,
     spec="https://drafts.csswg.org/css-transforms-2/#perspective-origin-property",
@@ -406,7 +407,7 @@ ${helpers.predefined_type(
 ${helpers.single_keyword(
     "backface-visibility",
     "visible hidden",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     gecko_enum_prefix="StyleBackfaceVisibility",
     spec="https://drafts.csswg.org/css-transforms/#backface-visibility-property",
     extra_prefixes=transform_extra_prefixes,
@@ -427,7 +428,7 @@ ${helpers.predefined_type(
     "transform-style",
     "TransformStyle",
     "computed::TransformStyle::Flat",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     spec="https://drafts.csswg.org/css-transforms-2/#transform-style-property",
     extra_prefixes=transform_extra_prefixes,
     animation_value_type="discrete",
@@ -438,7 +439,7 @@ ${helpers.predefined_type(
     "transform-origin",
     "TransformOrigin",
     "computed::TransformOrigin::initial_value()",
-    engines="gecko servo-2013 servo-2020",
+    engines="gecko servo",
     animation_value_type="ComputedValue",
     extra_prefixes=transform_extra_prefixes,
     gecko_ffi_name="mTransformOrigin",
@@ -470,10 +471,11 @@ ${helpers.predefined_type(
     "container-type",
     "ContainerType",
     "computed::ContainerType::Normal",
-    engines="gecko",
+    engines="gecko servo",
     animation_value_type="none",
     enabled_in="ua",
     gecko_pref="layout.css.container-queries.enabled",
+    servo_pref="layout.container-queries.enabled",
     spec="https://drafts.csswg.org/css-contain-3/#container-type",
 )}
 
@@ -481,10 +483,11 @@ ${helpers.predefined_type(
     "container-name",
     "ContainerName",
     "computed::ContainerName::none()",
-    engines="gecko",
+    engines="gecko servo",
     animation_value_type="none",
     enabled_in="ua",
     gecko_pref="layout.css.container-queries.enabled",
+    servo_pref="layout.container-queries.enabled",
     spec="https://drafts.csswg.org/css-contain-3/#container-name",
 )}
 

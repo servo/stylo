@@ -43,7 +43,7 @@ fn gradient_color_interpolation_method_enabled() -> bool {
 pub type Image = generic::Image<Gradient, SpecifiedImageUrl, Color, Percentage, Resolution>;
 
 // Images should remain small, see https://github.com/servo/servo/pull/18430
-size_of_test!(Image, 16);
+size_of_test!(Image, 40);
 
 /// Specified values for a CSS gradient.
 /// <https://drafts.csswg.org/css-images/#gradients>
@@ -120,6 +120,16 @@ fn cross_fade_enabled() -> bool {
     false
 }
 
+#[cfg(feature = "gecko")]
+fn image_set_enabled() -> bool {
+    true
+}
+
+#[cfg(feature = "servo")]
+fn image_set_enabled() -> bool {
+    false
+}
+
 impl SpecifiedValueInfo for Gradient {
     const SUPPORTED_TYPES: u8 = CssType::GRADIENT;
 
@@ -161,7 +171,9 @@ impl<Image, Resolution> SpecifiedValueInfo for generic::ImageSet<Image, Resoluti
     const SUPPORTED_TYPES: u8 = 0;
 
     fn collect_completion_keywords(f: KeywordsCollectFn) {
-        f(&["image-set"]);
+        if image_set_enabled() {
+            f(&["image-set"]);
+        }
     }
 }
 
@@ -220,7 +232,7 @@ impl Image {
             return Ok(generic::Image::Url(url));
         }
 
-        if !flags.contains(ParseImageFlags::FORBID_IMAGE_SET) {
+        if !flags.contains(ParseImageFlags::FORBID_IMAGE_SET) && image_set_enabled() {
             if let Ok(is) =
                 input.try_parse(|input| ImageSet::parse(context, input, cors_mode, flags))
             {
@@ -965,7 +977,7 @@ impl Gradient {
             AngleOrPercentage::parse_with_unitless,
         )?;
 
-        if items.len() < 2 {
+        if cfg!(feature = "servo") || items.len() < 2 {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
 

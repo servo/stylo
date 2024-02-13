@@ -1966,10 +1966,6 @@ macro_rules! parse_size_non_length {
 fn is_fit_content_function_enabled() -> bool {
     static_prefs::pref!("layout.css.fit-content-function.enabled")
 }
-#[cfg(feature = "servo")]
-fn is_fit_content_function_enabled() -> bool {
-    false
-}
 
 #[cfg(feature = "gecko")]
 macro_rules! parse_fit_content_function {

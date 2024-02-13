@@ -286,8 +286,8 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
 
         #[cfg(feature = "gecko")]
         if box_style
-            .clone_effective_containment()
-            .contains(Contain::STYLE)
+            .clone_contain()
+            .contains(SpecifiedValue::STYLE)
         {
             self.style
                 .add_flags(ComputedValueFlags::SELF_OR_ANCESTOR_HAS_CONTAIN_STYLE);

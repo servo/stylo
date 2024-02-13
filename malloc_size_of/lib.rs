@@ -58,8 +58,6 @@ extern crate euclid;
 #[cfg(feature = "servo")]
 extern crate http;
 #[cfg(feature = "servo")]
-extern crate hyper_serde;
-#[cfg(feature = "servo")]
 extern crate keyboard_types;
 extern crate selectors;
 #[cfg(feature = "servo")]
@@ -854,6 +852,7 @@ malloc_size_of_is_0!(bool, char, str);
 malloc_size_of_is_0!(u8, u16, u32, u64, u128, usize);
 malloc_size_of_is_0!(i8, i16, i32, i64, i128, isize);
 malloc_size_of_is_0!(f32, f64);
+malloc_size_of_is_0!(std::num::NonZeroU64);
 
 malloc_size_of_is_0!(std::sync::atomic::AtomicBool);
 malloc_size_of_is_0!(std::sync::atomic::AtomicIsize);
@@ -950,11 +949,24 @@ impl MallocSizeOf for xml5ever::QualName {
 malloc_size_of_is_0!(time::Duration);
 #[cfg(feature = "servo")]
 malloc_size_of_is_0!(time::Tm);
+#[cfg(feature = "servo")]
+malloc_size_of_is_0!(std::time::Duration);
+#[cfg(feature = "servo")]
+malloc_size_of_is_0!(std::time::SystemTime);
+#[cfg(feature = "servo")]
+malloc_size_of_is_0!(std::time::Instant);
 
 // Placeholder for unique case where internals of Sender cannot be measured.
 // malloc size of is 0 macro complains about type supplied!
 #[cfg(feature = "servo")]
 impl<T> MallocSizeOf for crossbeam_channel::Sender<T> {
+    fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
+        0
+    }
+}
+
+#[cfg(feature = "servo")]
+impl<T> MallocSizeOf for tokio::sync::mpsc::UnboundedSender<T> {
     fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
         0
     }

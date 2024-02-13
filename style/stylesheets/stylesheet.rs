@@ -122,13 +122,12 @@ impl StylesheetContents {
     /// An empty namespace map should be fine, as it is only used for parsing,
     /// not serialization of existing selectors.  Since UA sheets are read only,
     /// we should never need the namespace map.
-    pub fn from_shared_data(
+    pub fn from_data(
         rules: Arc<Locked<CssRules>>,
         origin: Origin,
         url_data: UrlExtraData,
         quirks_mode: QuirksMode,
     ) -> Arc<Self> {
-        debug_assert!(rules.is_static());
         Arc::new(Self {
             rules,
             origin,
@@ -139,6 +138,17 @@ impl StylesheetContents {
             source_url: RwLock::new(None),
             _forbid_construction: (),
         })
+    }
+
+    /// Same as above, but ensuring that the rules are static.
+    pub fn from_shared_data(
+        rules: Arc<Locked<CssRules>>,
+        origin: Origin,
+        url_data: UrlExtraData,
+        quirks_mode: QuirksMode,
+    ) -> Arc<Self> {
+        debug_assert!(rules.is_static());
+        Self::from_data(rules, origin, url_data, quirks_mode)
     }
 
     /// Returns a reference to the list of rules.
@@ -198,6 +208,26 @@ pub struct Stylesheet {
     pub disabled: AtomicBool,
 }
 
+macro_rules! rule_filter {
+    ($( $method: ident($variant:ident => $rule_type: ident), )+) => {
+        $(
+            #[allow(missing_docs)]
+            fn $method<F>(&self, device: &Device, guard: &SharedRwLockReadGuard, mut f: F)
+                where F: FnMut(&crate::stylesheets::$rule_type),
+            {
+                use crate::stylesheets::CssRule;
+
+                for rule in self.effective_rules(device, guard) {
+                    if let CssRule::$variant(ref lock) = *rule {
+                        let rule = lock.read_with(guard);
+                        f(&rule)
+                    }
+                }
+            }
+        )+
+    }
+}
+
 /// A trait to represent a given stylesheet in a document.
 pub trait StylesheetInDocument: ::std::fmt::Debug {
     /// Get whether this stylesheet is enabled.
@@ -250,6 +280,10 @@ pub trait StylesheetInDocument: ::std::fmt::Debug {
         guard: &'a SharedRwLockReadGuard<'b>,
     ) -> EffectiveRulesIterator<'a, 'b> {
         self.iter_rules::<EffectiveRules>(device, guard)
+    }
+
+    rule_filter! {
+        effective_font_face_rules(FontFace => FontFaceRule),
     }
 
     /// Return the implicit scope root for this stylesheet, if one exists.

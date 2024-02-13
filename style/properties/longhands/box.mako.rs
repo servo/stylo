@@ -121,6 +121,7 @@ ${helpers.single_keyword(
     affects="layout",
 )}
 
+
 % for direction in ["inline", "block"]:
     ${helpers.predefined_type(
         "overflow-clip-box-" + direction,

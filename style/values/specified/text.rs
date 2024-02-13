@@ -415,8 +415,8 @@ pub enum TextTransformCase {
 }
 
 bitflags! {
-    #[derive(MallocSizeOf, SpecifiedValueInfo, ToComputedValue, ToCss, ToResolvedValue, ToShmem)]
-    #[css(bitflags(mixed = "full-width,full-size-kana"))]
+    #[derive(MallocSizeOf, SpecifiedValueInfo, ToComputedValue, ToResolvedValue, ToShmem)]
+    #[value_info(other_values = "none,full-width,full-size-kana")]
     #[repr(C)]
     /// Specified keyword values for non-case transforms in the text-transform property. (Non-exclusive.)
     pub struct TextTransformOther: u8 {
@@ -424,6 +424,31 @@ bitflags! {
         const FULL_WIDTH = 1 << 0;
         /// full-size-kana
         const FULL_SIZE_KANA = 1 << 1;
+    }
+}
+
+impl ToCss for TextTransformOther {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        let mut writer = SequenceWriter::new(dest, " ");
+        let mut any = false;
+        macro_rules! maybe_write {
+            ($ident:ident => $str:expr) => {
+                if self.contains(TextTransformOther::$ident) {
+                    writer.raw_item($str)?;
+                    any = true;
+                }
+            };
+        }
+
+        maybe_write!(FULL_WIDTH => "full-width");
+        maybe_write!(FULL_SIZE_KANA => "full-size-kana");
+
+        debug_assert!(any || self.is_empty());
+
+        Ok(())
     }
 }
 

@@ -67,7 +67,7 @@ macro_rules! system_font_methods {
 /// System fonts.
 #[repr(u8)]
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem
 )]
 #[allow(missing_docs)]
 #[cfg(feature = "gecko")]
@@ -683,7 +683,10 @@ impl Parse for FontFamily {
         let values =
             input.parse_comma_separated(|input| SingleFontFamily::parse(context, input))?;
         Ok(FontFamily::Values(FontFamilyList {
+            #[cfg(feature = "gecko")]
             list: crate::ArcSlice::from_iter(values.into_iter()),
+            #[cfg(feature = "servo")]
+            list: values.into_boxed_slice(),
         }))
     }
 }
@@ -1005,6 +1008,7 @@ impl Parse for FontSize {
 }
 
 bitflags! {
+    #[cfg_attr(feature = "servo", derive(MallocSizeOf))]
     /// Flags of variant alternates in bit
     struct VariantAlternatesParsingFlags: u8 {
         /// None of variant alternates enabled

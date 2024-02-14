@@ -951,18 +951,6 @@ malloc_size_of_is_0!(time::Duration);
 #[cfg(feature = "servo")]
 malloc_size_of_is_0!(time::Tm);
 
-#[cfg(feature = "servo")]
-impl<T> MallocSizeOf for hyper_serde::Serde<T>
-where
-    for<'de> hyper_serde::De<T>: serde::Deserialize<'de>,
-    for<'a> hyper_serde::Ser<'a, T>: serde::Serialize,
-    T: MallocSizeOf,
-{
-    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.0.size_of(ops)
-    }
-}
-
 // Placeholder for unique case where internals of Sender cannot be measured.
 // malloc size of is 0 macro complains about type supplied!
 #[cfg(feature = "servo")]

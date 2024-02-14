@@ -14,7 +14,6 @@ servo = [
     "content-security-policy",
     "crossbeam-channel",
     "hyper",
-    "hyper_serde",
     "keyboard-types",
     "serde",
     "serde_bytes",
@@ -35,7 +34,6 @@ cssparser = "0.34"
 dom = { path = "../../../dom/base/rust" }
 euclid = "0.22"
 hyper = { version = "0.12", optional = true }
-hyper_serde = { version = "0.11", optional = true }
 keyboard-types = { version = "0.4.3", optional = true }
 selectors = { path = "../selectors" }
 serde = { version = "1.0.27", optional = true }

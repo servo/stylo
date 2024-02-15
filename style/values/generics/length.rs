@@ -166,7 +166,6 @@ pub enum GenericSize<LengthPercent> {
     #[cfg(feature = "gecko")]
     #[animation(error)]
     MozAvailable,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     WebkitFillAvailable,
     #[animation(error)]
@@ -184,14 +183,12 @@ where
 {
     fn collect_completion_keywords(f: style_traits::KeywordsCollectFn) {
         LengthPercent::collect_completion_keywords(f);
-        f(&["auto", "stretch", "fit-content"]);
+        f(&["auto", "stretch", "fit-content", "max-content", "min-content"]);
         if cfg!(feature = "gecko") {
-            f(&[
-                "max-content",
-                "min-content",
-                "-moz-available",
-                "-webkit-fill-available",
-            ]);
+            f(&["-moz-available"]);
+        }
+        if static_prefs::pref!("layout.css.webkit-fill-available.enabled") {
+            f(&["-webkit-fill-available"]);
         }
         if static_prefs::pref!("layout.css.anchor-positioning.enabled") {
             f(&["anchor-size"]);
@@ -245,7 +242,6 @@ pub enum GenericMaxSize<LengthPercent> {
     #[cfg(feature = "gecko")]
     #[animation(error)]
     MozAvailable,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     WebkitFillAvailable,
     #[animation(error)]
@@ -263,14 +259,12 @@ where
 {
     fn collect_completion_keywords(f: style_traits::KeywordsCollectFn) {
         LP::collect_completion_keywords(f);
-        f(&["none", "stretch", "fit-content"]);
+        f(&["none", "stretch", "fit-content", "max-content", "min-content"]);
         if cfg!(feature = "gecko") {
-            f(&[
-                "max-content",
-                "min-content",
-                "-moz-available",
-                "-webkit-fill-available",
-            ]);
+            f(&["-moz-available"]);
+        }
+        if static_prefs::pref!("layout.css.webkit-fill-available.enabled") {
+            f(&["-webkit-fill-available"]);
         }
         if static_prefs::pref!("layout.css.anchor-positioning.enabled") {
             f(&["anchor-size"]);

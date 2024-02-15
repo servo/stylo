@@ -87,7 +87,7 @@ ${helpers.predefined_type(
 ${helpers.predefined_type(
     "font-synthesis-weight",
     "FontSynthesis",
-    engines="gecko",
+    engines="gecko servo",
     initial_value="computed::FontSynthesis::Auto",
     initial_specified_value="specified::FontSynthesis::Auto",
     gecko_ffi_name="mFont.synthesisWeight",

@@ -5,7 +5,6 @@
 //! Specified types for box properties.
 
 use crate::parser::{Parse, ParserContext};
-#[cfg(feature = "gecko")]
 use crate::properties::{LonghandId, PropertyDeclarationId, PropertyId};
 use crate::values::generics::box_::{
     GenericContainIntrinsicSize, GenericLineClamp, GenericPerspective, GenericVerticalAlign,
@@ -16,7 +15,7 @@ use crate::values::specified::{AllowQuirks, Integer, NonNegativeNumberOrPercenta
 use crate::values::CustomIdent;
 use cssparser::Parser;
 use num_traits::FromPrimitive;
-use std::fmt::{self, Write};
+use std::fmt::{self, Debug, Write};
 use style_traits::{CssWriter, KeywordsCollectFn, ParseError};
 use style_traits::{SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 
@@ -31,10 +30,7 @@ fn grid_enabled() -> bool {
 
 #[cfg(feature = "servo")]
 fn flexbox_enabled() -> bool {
-    servo_config::prefs::pref_map()
-        .get("layout.flexbox.enabled")
-        .as_bool()
-        .unwrap_or(false)
+    style_config::get_bool("layout.flexbox.enabled")
 }
 #[cfg(feature = "servo")]
 fn grid_enabled() -> bool {
@@ -1025,7 +1021,7 @@ bitflags! {
 }
 
 #[cfg(feature="servo")]
-fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits { WillChangeBits::empty() }
+fn change_bits_for_longhand(_longhand: LonghandId) -> WillChangeBits { WillChangeBits::empty() }
 
 #[cfg(feature = "gecko")]
 fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits {

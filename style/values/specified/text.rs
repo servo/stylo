@@ -387,10 +387,15 @@ bitflags! {
         /// Capitalize each word.
         const CAPITALIZE = 1 << 2;
         /// Automatic italicization of math variables.
+        #[cfg(feature = "gecko")]
         const MATH_AUTO = 1 << 3;
 
         /// All the case transforms, which are exclusive with each other.
+        #[cfg(feature = "gecko")]
         const CASE_TRANSFORMS = Self::UPPERCASE.0 | Self::LOWERCASE.0 | Self::CAPITALIZE.0 | Self::MATH_AUTO.0;
+        /// All the case transforms, which are exclusive with each other.
+        #[cfg(feature = "servo")]
+        const CASE_TRANSFORMS = Self::UPPERCASE.0 | Self::LOWERCASE.0 | Self::CAPITALIZE.0;
 
         /// full-width
         const FULL_WIDTH = 1 << 4;
@@ -416,6 +421,19 @@ impl TextTransform {
         let case = self.intersection(Self::CASE_TRANSFORMS);
         // Case bits are exclusive with each other.
         case.is_empty() || case.bits().is_power_of_two()
+    }
+
+    /// Returns the corresponding TextTransformCase.
+    pub fn case(&self) -> TextTransformCase {
+        match *self & Self::CASE_TRANSFORMS {
+            Self::NONE => TextTransformCase::None,
+            Self::UPPERCASE => TextTransformCase::Uppercase,
+            Self::LOWERCASE => TextTransformCase::Lowercase,
+            Self::CAPITALIZE => TextTransformCase::Capitalize,
+            #[cfg(feature = "gecko")]
+            Self::MATH_AUTO => TextTransformCase::MathAuto,
+            _ => unreachable!("Case bits are exclusive with each other"),
+        }
     }
 }
 
@@ -505,7 +523,6 @@ pub enum TextAlign {
     /// Since selectors can't depend on the ancestor styles, we implement it with a
     /// magic value that computes to the right thing. Since this is an
     /// implementation detail, it shouldn't be exposed to web content.
-    #[cfg(feature = "gecko")]
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     MozCenterOrInherit,
 }
@@ -541,7 +558,6 @@ impl ToComputedValue for TextAlign {
                     _ => parent,
                 }
             },
-            #[cfg(feature = "gecko")]
             TextAlign::MozCenterOrInherit => {
                 let parent = _context
                     .builder

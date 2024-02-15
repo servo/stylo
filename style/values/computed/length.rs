@@ -18,7 +18,7 @@ use crate::values::{specified, CSSFloat};
 use crate::Zero;
 use app_units::Au;
 use std::fmt::{self, Write};
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use style_traits::{CSSPixel, CssWriter, ToCss};
 
 pub use super::image::Image;
@@ -452,6 +452,13 @@ impl Sub for CSSPixelLength {
     #[inline]
     fn sub(self, other: Self) -> Self {
         Self::new(self.px() - other.px())
+    }
+}
+
+impl SubAssign for CSSPixelLength {
+    #[inline]
+    fn sub_assign(&mut self, other: Self) {
+        self.0 -= other.0;
     }
 }
 

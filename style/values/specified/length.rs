@@ -1224,6 +1224,7 @@ impl NoCalcLength {
     /// absolute or (if a font metrics getter is provided) font-relative units.
     #[cfg(feature = "gecko")]
     #[inline]
+    #[cfg(feature = "gecko")]
     pub fn to_computed_pixel_length_with_font_metrics(
         &self,
         get_font_metrics: Option<impl Fn() -> GeckoFontMetrics>,
@@ -1983,11 +1984,8 @@ fn is_stretch_enabled() -> bool {
 fn is_fit_content_function_enabled() -> bool {
     static_prefs::pref!("layout.css.fit-content-function.enabled")
 }
-#[cfg(feature = "servo")]
-fn is_fit_content_function_enabled() -> bool {
-    false
-}
 
+#[cfg(feature = "gecko")]
 macro_rules! parse_fit_content_function {
     ($size:ident, $input:expr, $context:expr, $allow_quirks:expr) => {
         if is_fit_content_function_enabled() {
@@ -2011,6 +2009,7 @@ impl Size {
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
         parse_size_non_length!(Size, input, "auto" => Auto);
+        #[cfg(feature = "gecko")]
         parse_fit_content_function!(Size, input, context, allow_quirks);
 
         let length = NonNegativeLengthPercentage::parse_quirky(context, input, allow_quirks)?;
@@ -2044,6 +2043,7 @@ impl MaxSize {
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
         parse_size_non_length!(MaxSize, input, "none" => None);
+        #[cfg(feature = "gecko")]
         parse_fit_content_function!(MaxSize, input, context, allow_quirks);
 
         let length = NonNegativeLengthPercentage::parse_quirky(context, input, allow_quirks)?;

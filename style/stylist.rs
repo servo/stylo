@@ -47,10 +47,10 @@ use crate::stylesheets::scope_rule::{
 #[cfg(feature = "gecko")]
 use crate::stylesheets::{
     CounterStyleRule, FontFaceRule, FontFeatureValuesRule, FontPaletteValuesRule,
+    PagePseudoClassFlags,
 };
 use crate::stylesheets::{
-    CssRule, EffectiveRulesIterator, Origin, OriginSet, PagePseudoClassFlags, PageRule, PerOrigin,
-    PerOriginIter,
+    CssRule, EffectiveRulesIterator, Origin, OriginSet, PageRule, PerOrigin, PerOriginIter,
 };
 use crate::stylesheets::{StyleRule, StylesheetContents, StylesheetInDocument};
 use crate::values::{computed, AtomIdent};
@@ -58,9 +58,9 @@ use crate::AllocErr;
 use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded, WeakAtom};
 use dom::{DocumentState, ElementState};
 use fxhash::FxHashMap;
-use malloc_size_of::MallocSizeOf;
+use malloc_size_of::{MallocSizeOf, MallocShallowSizeOf, MallocSizeOfOps};
 #[cfg(feature = "gecko")]
-use malloc_size_of::{MallocShallowSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
+use malloc_size_of::MallocUnconditionalShallowSizeOf;
 use selectors::attr::{CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::BloomFilter;
 use selectors::matching::{
@@ -543,6 +543,7 @@ pub struct Stylist {
     stylesheets: StylistStylesheetSet,
 
     /// A cache of CascadeDatas for AuthorStylesheetSets (i.e., shadow DOM).
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "XXX: how to handle this?")]
     author_data_cache: CascadeDataCache<CascadeData>,
 
     /// If true, the quirks-mode stylesheet is applied.
@@ -565,9 +566,11 @@ pub struct Stylist {
     script_custom_properties: CustomPropertyScriptRegistry,
 
     /// Initial values for registered custom properties.
+    #[ignore_malloc_size_of = "Arc"]
     initial_values_for_custom_properties: ComputedCustomProperties,
 
     /// Flags set from computing registered custom property initial values.
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "missing malloc_size_of")]
     initial_values_for_custom_properties_flags: ComputedValueFlags,
 
     /// The total number of times the stylist has been rebuilt.
@@ -3168,7 +3171,9 @@ impl CascadeData {
             }
         }
         #[cfg(feature = "gecko")]
-        self.extra_data.sort_by_layer(&self.layers);
+        {
+            self.extra_data.sort_by_layer(&self.layers);
+        }
         self.animations
             .sort_with(&self.layers, compare_keyframes_in_same_layer);
         self.custom_property_registrations.sort(&self.layers)

@@ -74,7 +74,7 @@ ${helpers.single_keyword(
     "mix-blend-mode",
     """normal multiply screen overlay darken lighten color-dodge
     color-burn hard-light soft-light difference exclusion hue
-    saturation color luminosity plus-lighter""",
+    saturation color luminosity""" + ("plus-lighter" if engine == 'gecko' else ""),
     engines="gecko servo",
     gecko_enum_prefix="StyleBlend",
     animation_type="discrete",

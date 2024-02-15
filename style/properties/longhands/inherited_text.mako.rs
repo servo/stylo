@@ -142,11 +142,14 @@ ${helpers.predefined_type(
 // TODO: `white-space-collapse: discard` not yet supported
 ${helpers.single_keyword(
     name="white-space-collapse",
-    values="collapse preserve preserve-breaks preserve-spaces break-spaces",
-    engines="gecko",
+    values="collapse preserve preserve-breaks break-spaces",
+    extra_gecko_values="preserve-spaces",
+    engines="gecko servo",
     gecko_enum_prefix="StyleWhiteSpaceCollapse",
+    needs_conversion="True",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text-4/#propdef-white-space-collapse",
+    servo_restyle_damage="rebuild_and_reflow",
     affects="layout",
 )}
 
@@ -378,10 +381,12 @@ ${helpers.single_keyword(
 ${helpers.single_keyword(
     "text-wrap-mode",
     "wrap nowrap",
-    engines="gecko",
+    engines="gecko servo",
     gecko_enum_prefix="StyleTextWrapMode",
+    needs_conversion="True",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text-4/#propdef-text-wrap-mode",
+    servo_restyle_damage="rebuild_and_reflow",
     affects="layout",
 )}
 

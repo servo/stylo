@@ -69,8 +69,6 @@ extern crate smallbitvec;
 extern crate smallvec;
 #[cfg(feature = "servo")]
 extern crate string_cache;
-#[cfg(feature = "servo")]
-extern crate time;
 #[cfg(feature = "url")]
 extern crate url;
 #[cfg(feature = "servo")]
@@ -865,7 +863,6 @@ malloc_size_of_is_0!(app_units::Au);
 
 malloc_size_of_is_0!(cssparser::TokenSerializationType, cssparser::SourceLocation, cssparser::SourcePosition);
 
-#[cfg(feature = "gecko")]
 malloc_size_of_is_0!(dom::ElementState, dom::DocumentState);
 
 malloc_size_of_is_0!(selectors::OpaqueElement);
@@ -946,10 +943,6 @@ impl MallocSizeOf for xml5ever::QualName {
     }
 }
 
-#[cfg(feature = "servo")]
-malloc_size_of_is_0!(time::Duration);
-#[cfg(feature = "servo")]
-malloc_size_of_is_0!(time::Tm);
 #[cfg(feature = "servo")]
 malloc_size_of_is_0!(std::time::Duration);
 #[cfg(feature = "servo")]

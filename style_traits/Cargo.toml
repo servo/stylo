@@ -11,8 +11,8 @@ name = "style_traits"
 path = "lib.rs"
 
 [features]
-servo = ["servo_atoms", "cssparser/serde", "url", "euclid/serde"]
-gecko = ["nsstring"]
+servo = ["stylo_atoms", "cssparser/serde", "url", "euclid/serde"]
+gecko = []
 
 [dependencies]
 app_units = "0.7"
@@ -21,12 +21,11 @@ cssparser = "0.34"
 euclid = "0.22"
 lazy_static = "1"
 malloc_size_of = { path = "../malloc_size_of" }
-malloc_size_of_derive = { path = "../../../xpcom/rust/malloc_size_of_derive" }
-nsstring = {path = "../../../xpcom/rust/nsstring/", optional = true}
+malloc_size_of_derive = "0.1"
 selectors = { path = "../selectors" }
 serde = "1.0"
 servo_arc = { path = "../servo_arc" }
-servo_atoms = { path = "../atoms", optional = true }
+stylo_atoms = { path = "../stylo_atoms", optional = true }
 thin-vec = "0.2"
 to_shmem = { path = "../to_shmem" }
 to_shmem_derive = { path = "../to_shmem_derive" }

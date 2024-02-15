@@ -454,7 +454,7 @@ pub mod property_counts {
     /// The number of non-custom properties.
     pub const NON_CUSTOM: usize = LONGHANDS_AND_SHORTHANDS + ALIASES;
     /// The number of prioritary properties that we have.
-    pub const PRIORITARY: usize = ${len(PRIORITARY_PROPERTIES)};
+    pub const PRIORITARY: usize = ${len(PRIORITARY_PROPERTIES.intersection(set(list(map(lambda p: p.name, data.longhands)))))};
     /// The max number of longhands that a shorthand other than "all" expands to.
     pub const MAX_SHORTHAND_EXPANDED: usize =
         ${max(len(s.sub_properties) for s in data.shorthands_except_all())};
@@ -2081,7 +2081,7 @@ impl ComputedValuesInner {
         use crate::values::generics::counters::Content;
         match self.get_counters().content {
             Content::Normal | Content::None => true,
-            Content::Items(ref items) => items.items.is_empty()
+            Content::Items(ref items) => items.items.is_empty(),
         }
     }
 
@@ -2929,10 +2929,10 @@ macro_rules! css_properties_accessors {
                         % for prop in [property] + property.aliases:
                             % if '-' in prop.name:
                                 [${prop.ident.capitalize()}, Set${prop.ident.capitalize()},
-                                 PropertyId::${kind}(${kind}Id::${property.camel_case})],
+                                 PropertyId::NonCustom(${kind}Id::${property.camel_case}.into())],
                             % endif
                             [${prop.camel_case}, Set${prop.camel_case},
-                             PropertyId::${kind}(${kind}Id::${property.camel_case})],
+                             PropertyId::NonCustom(${kind}Id::${property.camel_case}.into())],
                         % endfor
                     % endif
                 % endfor
@@ -2946,6 +2946,9 @@ macro_rules! css_properties_accessors {
 /// ```
 /// { snake_case_ident }
 /// ```
+///
+/// … where the boolean indicates whether the property value type
+/// is wrapped in a `Box<_>` in the corresponding `PropertyDeclaration` variant.
 #[macro_export]
 macro_rules! longhand_properties_idents {
     ($macro_name: ident) => {
@@ -2958,7 +2961,7 @@ macro_rules! longhand_properties_idents {
 }
 
 // Large pages generate tens of thousands of ComputedValues.
-size_of_test!(ComputedValues, 240);
+size_of_test!(ComputedValues, 208);
 // FFI relies on this.
 size_of_test!(Option<Arc<ComputedValues>>, 8);
 

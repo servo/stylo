@@ -27,18 +27,18 @@ extern crate selectors;
 extern crate serde;
 extern crate servo_arc;
 #[cfg(feature = "servo")]
-extern crate servo_atoms;
+extern crate stylo_atoms;
 extern crate thin_vec;
 extern crate to_shmem;
 #[macro_use]
 extern crate to_shmem_derive;
 #[cfg(feature = "servo")]
- extern crate url;
+extern crate url;
 
 use cssparser::{CowRcStr, Token};
 use selectors::parser::SelectorParseErrorKind;
 #[cfg(feature = "servo")]
-use servo_atoms::Atom;
+use stylo_atoms::Atom;
 
 /// One hardware pixel.
 ///

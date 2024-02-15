@@ -703,7 +703,7 @@ impl DashedIdent {
         #[cfg(feature = "gecko")]
         let name = &self.0.as_slice()[2..];
         #[cfg(feature = "servo")]
-        let name = self.0.get(2..).unwrap();
+        let name = &self.0[2..];
         Atom::from(name)
     }
 }

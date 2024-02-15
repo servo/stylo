@@ -12,11 +12,14 @@
 #[cfg(feature = "gecko")] use crate::gecko_bindings::structs::nsCSSPropertyID;
 use crate::properties::{
     longhands::{
-        self, content_visibility::computed_value::T as ContentVisibility,
-        visibility::computed_value::T as Visibility,
+        self, visibility::computed_value::T as Visibility,
     },
-    CSSWideKeyword, NonCustomPropertyId, LonghandId, NonCustomPropertyIterator,
+    CSSWideKeyword, LonghandId, NonCustomPropertyIterator,
     PropertyDeclaration, PropertyDeclarationId,
+};
+#[cfg(feature = "gecko")] use crate::properties::{
+    longhands::content_visibility::computed_value::T as ContentVisibility,
+    NonCustomPropertyId,
 };
 use std::ptr;
 use std::mem;
@@ -389,7 +392,7 @@ impl AnimationValue {
         Some(animatable)
     }
 
-    /// Get an AnimationValue for an declaration id from a given computed values.
+    /// Get an AnimationValue for an AnimatableLonghand from a given computed values.
     pub fn from_computed_values(
         property: PropertyDeclarationId,
         style: &ComputedValues,
@@ -601,6 +604,7 @@ impl ToAnimatedZero for Visibility {
 }
 
 /// <https://drafts.csswg.org/css-contain-3/#content-visibility-animation>
+#[cfg(feature = "gecko")]
 impl Animate for ContentVisibility {
     #[inline]
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
@@ -622,6 +626,7 @@ impl Animate for ContentVisibility {
     }
 }
 
+#[cfg(feature = "gecko")]
 impl ComputeSquaredDistance for ContentVisibility {
     #[inline]
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
@@ -629,6 +634,7 @@ impl ComputeSquaredDistance for ContentVisibility {
     }
 }
 
+#[cfg(feature = "gecko")]
 impl ToAnimatedZero for ContentVisibility {
     #[inline]
     fn to_animated_zero(&self) -> Result<Self, ()> {
@@ -678,7 +684,7 @@ impl Animate for AnimatedFilter {
     ) -> Result<Self, ()> {
         use crate::values::animated::animate_multiplicative_factor;
         match (self, other) {
-            % for func in ['Blur', 'Grayscale', 'HueRotate', 'Invert', 'Sepia']:
+            % for func in ['Blur', 'DropShadow', 'Grayscale', 'HueRotate', 'Invert', 'Sepia']:
             (&Filter::${func}(ref this), &Filter::${func}(ref other)) => {
                 Ok(Filter::${func}(this.animate(other, procedure)?))
             },
@@ -688,11 +694,6 @@ impl Animate for AnimatedFilter {
                 Ok(Filter::${func}(animate_multiplicative_factor(this, other, procedure)?))
             },
             % endfor
-            % if engine == "gecko":
-            (&Filter::DropShadow(ref this), &Filter::DropShadow(ref other)) => {
-                Ok(Filter::DropShadow(this.animate(other, procedure)?))
-            },
-            % endif
             _ => Err(()),
         }
     }
@@ -702,15 +703,12 @@ impl Animate for AnimatedFilter {
 impl ToAnimatedZero for AnimatedFilter {
     fn to_animated_zero(&self) -> Result<Self, ()> {
         match *self {
-            % for func in ['Blur', 'Grayscale', 'HueRotate', 'Invert', 'Sepia']:
+            % for func in ['Blur', 'DropShadow', 'Grayscale', 'HueRotate', 'Invert', 'Sepia']:
             Filter::${func}(ref this) => Ok(Filter::${func}(this.to_animated_zero()?)),
             % endfor
             % for func in ['Brightness', 'Contrast', 'Opacity', 'Saturate']:
             Filter::${func}(_) => Ok(Filter::${func}(1.)),
             % endfor
-            % if engine == "gecko":
-            Filter::DropShadow(ref this) => Ok(Filter::DropShadow(this.to_animated_zero()?)),
-            % endif
             _ => Err(()),
         }
     }

@@ -132,6 +132,9 @@ bitflags! {
     }
 }
 
+#[cfg(feature = "servo")]
+malloc_size_of_is_0!(ComputedValueFlags);
+
 impl Default for ComputedValueFlags {
     #[inline]
     fn default() -> Self {

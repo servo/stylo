@@ -25,18 +25,19 @@ gecko = [
     "regex",
     "serde",
     "style_traits/gecko",
+    "thin-vec/gecko-ffi",
     "toml"
 ]
 servo = [
-    "arrayvec/use_union",
     "cssparser/serde",
     "encoding_rs",
     "malloc_size_of/servo",
     "markup5ever",
+    "mime",
     "serde",
     "servo_arc/servo",
     "servo_atoms",
-    "servo_config",
+    "style_config",
     "string_cache",
     "style_traits/servo",
     "to_shmem/servo",
@@ -44,6 +45,7 @@ servo = [
 ]
 gecko_debug = []
 gecko_refcount_logging = []
+nsstring = []
 
 [dependencies]
 app_units = "0.7"
@@ -53,7 +55,7 @@ bitflags = "2"
 byteorder = "1.0"
 cssparser = "0.34"
 derive_more = { version = "0.99", default-features = false, features = ["add", "add_assign", "deref", "deref_mut", "from"] }
-dom = { path = "../../../dom/base/rust" }
+dom = { path = "../dom" }
 new_debug_unreachable = "1.0"
 encoding_rs = {version = "0.8", optional = true}
 euclid = "0.22"
@@ -65,10 +67,10 @@ itoa = "1.0"
 lazy_static = "1"
 log = "0.4"
 malloc_size_of = { path = "../malloc_size_of" }
-malloc_size_of_derive = { path = "../../../xpcom/rust/malloc_size_of_derive" }
+malloc_size_of_derive = "0.1"
 markup5ever = { version = "0.12", optional = true }
 matches = "0.1"
-nsstring = {path = "../../../xpcom/rust/nsstring/", optional = true}
+mime = { version = "0.3.13", optional = true }
 num_cpus = {version = "1.1.0"}
 num-integer = "0.1"
 num-traits = "0.2"
@@ -81,22 +83,21 @@ selectors = { path = "../selectors" }
 serde = {version = "1.0", optional = true, features = ["derive"]}
 servo_arc = { path = "../servo_arc" }
 servo_atoms = {path = "../atoms", optional = true}
-servo_config = {path = "../config", optional = true}
 smallbitvec = "2.3.0"
 smallvec = "1.0"
 static_assertions = "1.1"
-static_prefs = { path = "../../../modules/libpref/init/static_prefs" }
+static_prefs = { path = "../style_static_prefs" }
 string_cache = { version = "0.8", optional = true }
+style_config = { path = "../style_config", optional = true }
 style_derive = {path = "../style_derive"}
 style_traits = {path = "../style_traits"}
 to_shmem = {path = "../to_shmem"}
 to_shmem_derive = {path = "../to_shmem_derive"}
 time = "0.1"
-thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
+thin-vec = "0.2.1"
 uluru = "3.0"
 unicode-bidi = { version = "0.3", default-features = false }
 void = "1.0.2"
-gecko-profiler = { path = "../../../tools/profiler/rust-api" }
 url = { version = "2.5", optional = true }
 
 [build-dependencies]

@@ -478,7 +478,7 @@ impl<E: TElement> SequentialTask<E> {
     /// Executes this task.
     pub fn execute(self) {
         use self::SequentialTask::*;
-        debug_assert_eq!(thread_state::get(), ThreadState::LAYOUT);
+        debug_assert!(thread_state::get().contains(ThreadState::LAYOUT));
         match self {
             Unused(_) => unreachable!(),
             #[cfg(feature = "gecko")]
@@ -554,7 +554,7 @@ where
     E: TElement,
 {
     fn drop(&mut self) {
-        debug_assert_eq!(thread_state::get(), ThreadState::LAYOUT);
+        debug_assert!(thread_state::get().contains(ThreadState::LAYOUT));
         for task in self.0.drain(..) {
             task.execute()
         }

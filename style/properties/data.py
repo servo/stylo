@@ -428,6 +428,9 @@ class Longhand(Property):
         self.animation_value_type = animation_value_type
 
         self.animatable = animation_value_type != "none"
+        self.transitionable = (
+            animation_value_type != "none" and animation_value_type != "discrete"
+        )
         self.is_animatable_with_computed_value = (
             animation_value_type == "ComputedValue"
             or animation_value_type == "discrete"
@@ -670,7 +673,16 @@ class Shorthand(Property):
                 return True
         return False
 
+    def get_transitionable(self):
+        transitionable = False
+        for sub in self.sub_properties:
+            if sub.transitionable:
+                transitionable = True
+                break
+        return transitionable
+
     animatable = property(get_animatable)
+    transitionable = property(get_transitionable)
 
     @staticmethod
     def type():
@@ -687,6 +699,7 @@ class Alias(object):
         self.animatable = original.animatable
         self.servo_pref = original.servo_pref
         self.gecko_pref = gecko_pref
+        self.transitionable = original.transitionable
         self.rule_types_allowed = original.rule_types_allowed
         self.flags = original.flags
 
@@ -873,13 +886,13 @@ def _remove_common_first_line_and_first_letter_properties(props, engine):
         props.remove("text-emphasis-position")
         props.remove("text-emphasis-style")
         props.remove("text-emphasis-color")
+        props.remove("text-wrap-style")
 
     props.remove("overflow-wrap")
     props.remove("text-align")
     props.remove("text-justify")
     props.remove("white-space-collapse")
     props.remove("text-wrap-mode")
-    props.remove("text-wrap-style")
     props.remove("word-break")
     props.remove("text-indent")
 

@@ -70,6 +70,7 @@ macro_rules! system_font_methods {
     Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
 )]
 #[allow(missing_docs)]
+#[cfg(feature = "gecko")]
 pub enum SystemFont {
     /// https://drafts.csswg.org/css-fonts/#valdef-font-caption
     Caption,
@@ -97,6 +98,26 @@ pub enum SystemFont {
     MozField,
     #[css(skip)]
     End, // Just for indexing purposes.
+}
+
+// We don't parse system fonts in servo, but in the interest of not
+// littering a lot of code with `if engine == "gecko"` conditionals,
+// we have a dummy system font module that does nothing
+
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem
+)]
+#[allow(missing_docs)]
+#[cfg(feature = "servo")]
+/// void enum for system font, can never exist
+pub enum SystemFont {}
+
+#[allow(missing_docs)]
+#[cfg(feature = "servo")]
+impl SystemFont {
+    pub fn parse(_: &mut Parser) -> Result<Self, ()> {
+        Err(())
+    }
 }
 
 const DEFAULT_SCRIPT_MIN_SIZE_PT: u32 = 8;
@@ -557,6 +578,7 @@ impl KeywordInfo {
     /// text-zoom.
     fn to_computed_value(&self, context: &Context) -> CSSPixelLength {
         debug_assert_ne!(self.kw, FontSizeKeyword::None);
+        #[cfg(feature="gecko")]
         debug_assert_ne!(self.kw, FontSizeKeyword::Math);
         let base = context.maybe_zoom_text(self.kw.to_length(context).0);
         base * self.factor + context.maybe_zoom_text(self.offset)
@@ -667,7 +689,10 @@ impl Parse for FontFamily {
         let values =
             input.parse_comma_separated(|input| SingleFontFamily::parse(context, input))?;
         Ok(FontFamily::Values(FontFamilyList {
+            #[cfg(feature = "gecko")]
             list: crate::ArcSlice::from_iter(values.into_iter()),
+            #[cfg(feature = "servo")]
+            list: values.into_boxed_slice(),
         }))
     }
 }
@@ -750,47 +775,40 @@ pub const FONT_MEDIUM_LINE_HEIGHT_PX: f32 = FONT_MEDIUM_PX * 1.2;
 
 impl FontSizeKeyword {
     #[inline]
-    #[cfg(feature = "servo")]
-    fn to_length(&self, _: &Context) -> NonNegativeLength {
-        let medium = Length::new(FONT_MEDIUM_PX);
-        // https://drafts.csswg.org/css-fonts-3/#font-size-prop
-        NonNegative(match *self {
-            FontSizeKeyword::XXSmall => medium * 3.0 / 5.0,
-            FontSizeKeyword::XSmall => medium * 3.0 / 4.0,
-            FontSizeKeyword::Small => medium * 8.0 / 9.0,
-            FontSizeKeyword::Medium => medium,
-            FontSizeKeyword::Large => medium * 6.0 / 5.0,
-            FontSizeKeyword::XLarge => medium * 3.0 / 2.0,
-            FontSizeKeyword::XXLarge => medium * 2.0,
-            FontSizeKeyword::XXXLarge => medium * 3.0,
-            FontSizeKeyword::Math | FontSizeKeyword::None => unreachable!(),
-        })
-    }
-
-    #[cfg(feature = "gecko")]
-    #[inline]
     fn to_length(&self, cx: &Context) -> NonNegativeLength {
         let font = cx.style().get_font();
+
+        #[cfg(feature = "servo")]
+        let family = &font.font_family.families;
+
+        #[cfg(feature = "gecko")]
         let family = &font.mFont.family.families;
+
         let generic = family
             .single_generic()
             .unwrap_or(computed::GenericFontFamily::None);
+
+        #[cfg(feature = "gecko")]
         let base_size = unsafe {
             Atom::with(font.mLanguage.mRawPtr, |language| {
                 cx.device().base_size_for_generic(language, generic)
             })
         };
+
+        #[cfg(feature = "servo")]
+        let base_size = cx.device().base_size_for_generic(generic);
+
         self.to_length_without_context(cx.quirks_mode, base_size)
     }
 
     /// Resolve a keyword length without any context, with explicit arguments.
-    #[cfg(feature = "gecko")]
     #[inline]
     pub fn to_length_without_context(
         &self,
         quirks_mode: QuirksMode,
         base_size: Length,
     ) -> NonNegativeLength {
+        #[cfg(feature = "gecko")]
         debug_assert_ne!(*self, FontSizeKeyword::Math);
         // The tables in this function are originally from
         // nsRuleNode::CalcFontPointSize in Gecko:
@@ -910,6 +928,7 @@ impl FontSize {
                 calc.resolve(base_size.resolve(context).computed_size())
             },
             FontSize::Keyword(i) => {
+                #[cfg(feature="gecko")]
                 if i.kw == FontSizeKeyword::Math {
                     // Scaling is done in recompute_math_font_size_if_needed().
                     info = compose_keyword(1.);
@@ -920,6 +939,11 @@ impl FontSize {
                         line_height_base,
                     )
                 } else {
+                    // As a specified keyword, this is keyword derived
+                    info = i;
+                    i.to_computed_value(context).clamp_to_non_negative()
+                }
+                #[cfg(feature="servo")] {
                     // As a specified keyword, this is keyword derived
                     info = i;
                     i.to_computed_value(context).clamp_to_non_negative()

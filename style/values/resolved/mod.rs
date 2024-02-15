@@ -5,6 +5,7 @@
 //! Resolved values. These are almost always computed values, but in some cases
 //! there are used values.
 
+#[cfg(feature = "gecko")]
 use crate::media_queries::Device;
 use crate::properties::ComputedValues;
 use crate::ArcSlice;
@@ -17,9 +18,9 @@ mod counters;
 use crate::values::computed;
 
 /// Element-specific information needed to resolve property values.
+#[cfg(feature = "gecko")]
 pub struct ResolvedElementInfo<'a> {
     /// Element we're resolving line-height against.
-    #[cfg(feature = "gecko")]
     pub element: crate::gecko::wrapper::GeckoElement<'a>,
 }
 
@@ -29,8 +30,10 @@ pub struct Context<'a> {
     pub style: &'a ComputedValues,
     /// The device / document we're resolving style for. Useful to do font metrics stuff needed for
     /// line-height.
+    #[cfg(feature = "gecko")]
     pub device: &'a Device,
     /// The element-specific information to resolve the value.
+    #[cfg(feature = "gecko")]
     pub element_info: ResolvedElementInfo<'a>,
 }
 

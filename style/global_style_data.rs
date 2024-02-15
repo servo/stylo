@@ -101,7 +101,7 @@ impl StyleThreadPool {
         }
         {
             // Drop the pool.
-            let _ = STYLE_THREAD_POOL.style_thread_pool.write().take();
+            let _ = STYLE_THREAD_POOL.lock().unwrap().style_thread_pool.write().take();
         }
 
         // Join spawned threads until all of the threads have been joined. This
@@ -139,7 +139,7 @@ impl StyleThreadPool {
 
 #[cfg(feature = "servo")]
 fn stylo_threads_pref() -> i32 {
-    pref!(layout.threads)
+    style_config::get_i32("layout.threads")
 }
 
 #[cfg(feature = "gecko")]
@@ -153,7 +153,7 @@ pub(crate) const STYLO_MAX_THREADS: usize = 6;
 
 lazy_static! {
     /// Global thread pool
-    pub static ref STYLE_THREAD_POOL: StyleThreadPool = {
+    pub static ref STYLE_THREAD_POOL: std::sync::Mutex<StyleThreadPool> = {
         use std::cmp;
         // We always set this pref on startup, before layout or script have had a chance of
         // accessing (and thus creating) the thread-pool.
@@ -196,10 +196,10 @@ lazy_static! {
             (workers.ok(), Some(num_threads))
         };
 
-        StyleThreadPool {
+        std::sync::Mutex::new(StyleThreadPool {
             num_threads,
             style_thread_pool: RwLock::new(pool),
-        }
+        })
     };
 
     /// Global style data

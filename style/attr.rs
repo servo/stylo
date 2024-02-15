@@ -6,6 +6,7 @@
 //!
 //! [attr]: https://dom.spec.whatwg.org/#interface-attr
 
+use crate::shadow_parts::ShadowParts;
 use crate::color::{AbsoluteColor, parsing::parse_color_keyword};
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::Locked;
@@ -72,6 +73,9 @@ pub enum AttrValue {
         String,
         #[ignore_malloc_size_of = "Arc"] Arc<Locked<PropertyDeclarationBlock>>,
     ),
+
+    /// The value of an `exportparts` attribute.
+    ShadowParts(String, ShadowParts),
 }
 
 /// Shared implementation to parse an integer according to
@@ -266,6 +270,11 @@ impl AttrValue {
         AttrValue::Dimension(string, parsed)
     }
 
+    pub fn from_shadow_parts(string: String) -> AttrValue {
+        let shadow_parts = ShadowParts::parse(&string);
+        AttrValue::ShadowParts(string, shadow_parts)
+    }
+
     /// Assumes the `AttrValue` is a `TokenList` and returns its tokens
     ///
     /// ## Panics
@@ -358,6 +367,22 @@ impl AttrValue {
         }
     }
 
+    /// Return the AttrValue as it's shadow-part representation.
+    ///
+    /// This corresponds to attribute values returned as `AttrValue::ShadowParts(_)`
+    /// by `VirtualMethods::parse_plain_attribute()`.
+    ///
+    /// ## Panics
+    ///
+    /// Panics if the `AttrValue` is not a shadow-part.
+    pub fn as_shadow_parts(&self) -> &ShadowParts {
+        if let AttrValue::ShadowParts(_, value) = &self {
+            value
+        } else {
+            panic!("Not a shadowpart attribute");
+        }
+    }
+
     pub fn eval_selector(&self, selector: &AttrSelectorOperation<&AtomString>) -> bool {
         // FIXME(SimonSapin) this can be more efficient by matching on `(self, selector)` variants
         // and doing Atom comparisons instead of string comparisons where possible,
@@ -380,6 +405,7 @@ impl ::std::ops::Deref for AttrValue {
             AttrValue::Int(ref value, _) |
             AttrValue::ResolvedUrl(ref value, _) |
             AttrValue::Declaration(ref value, _) |
+            AttrValue::ShadowParts(ref value, _) |
             AttrValue::Dimension(ref value, _) => &value,
             AttrValue::Atom(ref value) => &value,
         }

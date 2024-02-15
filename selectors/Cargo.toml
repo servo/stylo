@@ -1,6 +1,6 @@
 [package]
 name = "selectors"
-version = "0.26.0"
+version = "0.29.0"
 authors = ["The Servo Project Developers"]
 documentation = "https://docs.rs/selectors/"
 description = "CSS Selectors matching for Rust"
@@ -21,7 +21,7 @@ to_shmem = ["dep:to_shmem", "dep:to_shmem_derive"]
 
 [dependencies]
 bitflags = "2"
-cssparser = "0.34"
+cssparser = "0.35"
 derive_more = { version = "2", features = ["add", "add_assign"] }
 fxhash = "0.2"
 log = "0.4"
@@ -29,7 +29,7 @@ phf = "0.11"
 precomputed-hash = "0.1"
 servo_arc = { version = "0.4", path = "../servo_arc" }
 smallvec = "1.0"
-to_shmem = { version = "0.1", path = "../to_shmem", features = ["servo_arc"], optional = true }
+to_shmem = { version = "0.2", path = "../to_shmem", features = ["servo_arc"], optional = true }
 to_shmem_derive = { version = "0.1", path = "../to_shmem_derive", optional = true }
 new_debug_unreachable = "1"
 

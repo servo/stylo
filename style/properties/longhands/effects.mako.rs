@@ -11,7 +11,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     flags="CAN_ANIMATE_ON_COMPOSITOR",
     spec="https://drafts.csswg.org/css-color/#transparency",
-    servo_restyle_damage = "reflow_out_of_flow",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -53,6 +53,7 @@ ${helpers.predefined_type(
     extra_prefixes="webkit",
     spec="https://drafts.fxtf.org/filters/#propdef-filter",
     affects="overflow",
+    servo_restyle_damage="repaint",
 )}
 
 ${helpers.predefined_type(
@@ -81,4 +82,5 @@ ${helpers.single_keyword(
     animation_type="discrete",
     spec="https://drafts.fxtf.org/compositing/#propdef-mix-blend-mode",
     affects="paint",
+    servo_restyle_damage="repaint",
 )}

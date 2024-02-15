@@ -12,7 +12,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::length::NonNegativeLengthOrAuto::auto()",
     servo_pref="layout.columns.enabled",
     spec="https://drafts.csswg.org/css-multicol/#propdef-column-width",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -24,7 +24,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::ColumnCount::Auto",
     servo_pref="layout.columns.enabled",
     spec="https://drafts.csswg.org/css-multicol/#propdef-column-count",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 

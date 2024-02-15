@@ -12,6 +12,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::Color::currentcolor()",
     ignored_when_colors_disabled=True,
     spec="https://drafts.csswg.org/css-ui/#propdef-outline-color",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -23,6 +24,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::OutlineStyle::none()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-ui/#propdef-outline-style",
+    servo_restyle_damage="repaint",
     affects="overflow",
 )}
 
@@ -33,6 +35,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     initial_specified_value="specified::BorderSideWidth::medium()",
     spec="https://drafts.csswg.org/css-ui/#propdef-outline-width",
+    servo_restyle_damage="repaint",
     affects="overflow",
 )}
 
@@ -42,5 +45,6 @@ ${helpers.predefined_type(
     "crate::values::computed::Length::new(0.)",
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-ui/#propdef-outline-offset",
+    servo_restyle_damage="repaint",
     affects="overflow",
 )}

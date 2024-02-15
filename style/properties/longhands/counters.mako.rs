@@ -12,7 +12,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::Content::normal()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-content/#propdef-content",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -24,7 +24,7 @@ ${helpers.predefined_type(
     initial_value="Default::default()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-lists/#propdef-counter-increment",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -36,7 +36,7 @@ ${helpers.predefined_type(
     initial_value="Default::default()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-lists-3/#propdef-counter-reset",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -47,6 +47,6 @@ ${helpers.predefined_type(
     initial_value="Default::default()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-lists-3/#propdef-counter-set",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}

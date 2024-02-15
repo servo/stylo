@@ -10,6 +10,7 @@ use crate::values::computed::{Context, ToComputedValue};
 use cssparser::Parser;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
+use std::ops::Deref;
 use style_traits::{CssWriter, ParseError, ToCss};
 use to_shmem::{SharedMemoryBuilder, ToShmem};
 use url::Url;
@@ -22,11 +23,16 @@ use url::Url;
 ///
 /// However, this approach is still not necessarily optimal: See
 /// <https://bugzilla.mozilla.org/show_bug.cgi?id=1347435#c6>
-///
-/// TODO(emilio): This should be shrunk by making CssUrl a wrapper type of an
-/// arc, and keep the serialization in that Arc. See gecko/url.rs for example.
 #[derive(Clone, Debug, Deserialize, MallocSizeOf, Serialize, SpecifiedValueInfo)]
-pub struct CssUrl {
+#[css(function = "url")]
+#[repr(C)]
+pub struct CssUrl(#[ignore_malloc_size_of = "Arc"] pub Arc<CssUrlData>);
+
+/// Data shared between CssUrls.
+///
+#[derive(Debug, Deserialize, MallocSizeOf, Serialize, SpecifiedValueInfo)]
+#[repr(C)]
+pub struct CssUrlData {
     /// The original URI. This might be optional since we may insert computed
     /// values of images into the cascade directly, and we don't bother to
     /// convert their serialization.
@@ -47,6 +53,13 @@ impl ToShmem for CssUrl {
     }
 }
 
+impl Deref for CssUrl {
+    type Target = CssUrlData;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl CssUrl {
     /// Try to parse a URL from a string value that is a valid CSS token for a
     /// URL.
@@ -55,10 +68,10 @@ impl CssUrl {
     pub fn parse_from_string(url: String, context: &ParserContext, _: CorsMode) -> Self {
         let serialization = Arc::new(url);
         let resolved = context.url_data.0.join(&serialization).ok().map(Arc::new);
-        CssUrl {
+        CssUrl(Arc::new(CssUrlData {
             original: Some(serialization),
             resolved: resolved,
-        }
+        }))
     }
 
     /// Returns true if the URL is definitely invalid. For Servo URLs, we can
@@ -96,18 +109,18 @@ impl CssUrl {
     /// Creates an already specified url value from an already resolved URL
     /// for insertion in the cascade.
     pub fn for_cascade(url: Arc<::url::Url>) -> Self {
-        CssUrl {
+        CssUrl(Arc::new(CssUrlData {
             original: None,
             resolved: Some(url),
-        }
+        }))
     }
 
     /// Gets a new url from a string for unit tests.
     pub fn new_for_testing(url: &str) -> Self {
-        CssUrl {
+        CssUrl(Arc::new(CssUrlData {
             original: Some(Arc::new(url.into())),
             resolved: ::url::Url::parse(url).ok().map(Arc::new),
-        }
+        }))
     }
 
     /// Parses a URL request and records that the corresponding request needs to
@@ -153,7 +166,7 @@ impl ToCss for CssUrl {
     where
         W: Write,
     {
-        let string = match self.original {
+        let string = match self.0.original {
             Some(ref original) => &**original,
             None => match self.resolved {
                 Some(ref url) => url.as_str(),
@@ -191,16 +204,17 @@ impl ToComputedValue for SpecifiedUrl {
     }
 
     fn from_computed_value(computed: &ComputedUrl) -> Self {
-        match *computed {
-            ComputedUrl::Valid(ref url) => SpecifiedUrl {
+        let data = match *computed {
+            ComputedUrl::Valid(ref url) => CssUrlData {
                 original: None,
                 resolved: Some(url.clone()),
             },
-            ComputedUrl::Invalid(ref url) => SpecifiedUrl {
+            ComputedUrl::Invalid(ref url) => CssUrlData {
                 original: Some(url.clone()),
                 resolved: None,
             },
-        }
+        };
+        CssUrl(Arc::new(data))
     }
 }
 

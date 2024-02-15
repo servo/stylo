@@ -32,7 +32,7 @@ pub type Image = generic::GenericImage<Gradient, ComputedUrl, Color, Percentage,
 #[cfg(feature = "gecko")]
 size_of_test!(Image, 16);
 #[cfg(feature = "servo")]
-size_of_test!(Image, 40);
+size_of_test!(Image, 24);
 
 /// Computed values for a CSS gradient.
 /// <https://drafts.csswg.org/css-images/#gradients>

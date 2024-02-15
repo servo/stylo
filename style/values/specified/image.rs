@@ -43,10 +43,7 @@ fn gradient_color_interpolation_method_enabled() -> bool {
 pub type Image = generic::Image<Gradient, SpecifiedUrl, Color, Percentage, Resolution>;
 
 // Images should remain small, see https://github.com/servo/servo/pull/18430
-#[cfg(feature = "gecko")]
 size_of_test!(Image, 16);
-#[cfg(feature = "servo")]
-size_of_test!(Image, 40);
 
 /// Specified values for a CSS gradient.
 /// <https://drafts.csswg.org/css-images/#gradients>
@@ -246,7 +243,7 @@ impl Image {
         let function = input.expect_function()?.clone();
         input.parse_nested_block(|input| Ok(match_ignore_ascii_case! { &function,
             #[cfg(feature = "servo")]
-            "paint" => Self::PaintWorklet(PaintWorklet::parse_args(context, input)?),
+            "paint" => Self::PaintWorklet(Box::new(<PaintWorklet>::parse_args(context, input)?)),
             "cross-fade" if cross_fade_enabled() => Self::CrossFade(Box::new(CrossFade::parse_args(context, input, cors_mode, flags)?)),
             "light-dark" if image_light_dark_enabled(context) => Self::LightDark(Box::new(GenericLightDark::parse_args_with(input, |input| {
                 Self::parse_with_cors_mode(context, input, cors_mode, flags)

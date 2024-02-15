@@ -12,6 +12,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::Cursor::auto()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-ui/#cursor",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -22,6 +23,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     animation_type="discrete",
     spec="https://svgwg.org/svg2-draft/interact.html#PointerEventsProperty",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 

@@ -11,7 +11,7 @@ ${helpers.single_keyword(
     gecko_enum_prefix="StyleListStylePosition",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-lists/#propdef-list-style-position",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -33,7 +33,7 @@ ${helpers.single_keyword(
         engines="servo",
         animation_type="discrete",
         spec="https://drafts.csswg.org/css-lists/#propdef-list-style-type",
-        servo_restyle_damage="rebuild_and_reflow",
+        servo_restyle_damage="rebuild_box",
         affects="layout",
     )}
 % endif
@@ -46,7 +46,7 @@ ${helpers.single_keyword(
         initial_specified_value="specified::ListStyleType::disc()",
         animation_type="discrete",
         spec="https://drafts.csswg.org/css-lists/#propdef-list-style-type",
-        servo_restyle_damage="rebuild_and_reflow",
+        servo_restyle_damage="rebuild_box",
         affects="layout",
     )}
 % endif
@@ -59,8 +59,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::Image::None",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-lists/#propdef-list-style-image",
-    boxed=engine == "servo",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -71,6 +70,6 @@ ${helpers.predefined_type(
     engines="gecko servo",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-content/#propdef-quotes",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}

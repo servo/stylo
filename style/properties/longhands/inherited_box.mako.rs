@@ -25,7 +25,7 @@ ${helpers.predefined_type(
     spec="https://drafts.csswg.org/css-writing-modes/#propdef-writing-mode",
     servo_pref="layout.writing-mode.enabled",
     animation_type="none",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -36,7 +36,7 @@ ${helpers.single_keyword(
     animation_type="none",
     spec="https://drafts.csswg.org/css-writing-modes/#propdef-direction",
     gecko_enum_prefix="StyleDirection",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 

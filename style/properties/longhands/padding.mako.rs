@@ -22,7 +22,7 @@
         spec=spec,
         gecko_ffi_name="mPadding.{}".format(index),
         allow_quirks="No" if side[1] else "Yes",
-        servo_restyle_damage="reflow rebuild_and_reflow_inline",
+        servo_restyle_damage="rebuild_box",
         affects="layout",
     )}
 % endfor

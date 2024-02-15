@@ -605,7 +605,7 @@ trait PrivateMatchMethods: TElement {
     fn process_animations_for_pseudo(
         &self,
         context: &mut StyleContext<Self>,
-        old_styles: &mut ElementStyles,
+        old_styles: &ElementStyles,
         new_resolved_styles: &mut ResolvedElementStyles,
         pseudo_element: PseudoElement,
     ) {
@@ -613,7 +613,7 @@ trait PrivateMatchMethods: TElement {
         use crate::dom::TDocument;
 
         let key = AnimationSetKey::new_for_pseudo(self.as_node().opaque(), pseudo_element.clone());
-        let mut style = match new_resolved_styles.pseudos.get(&pseudo_element) {
+        let style = match new_resolved_styles.pseudos.get(&pseudo_element) {
             Some(style) => Arc::clone(style),
             None => {
                 context
@@ -624,11 +624,11 @@ trait PrivateMatchMethods: TElement {
             },
         };
 
-        let mut old_style = old_styles.pseudos.get(&pseudo_element).cloned();
+        let old_style = old_styles.pseudos.get(&pseudo_element).cloned();
         self.process_animations_for_style(
             context,
-            &mut old_style,
-            &mut style,
+            &old_style,
+            &style,
             Some(pseudo_element.clone()),
         );
 
@@ -687,8 +687,8 @@ trait PrivateMatchMethods: TElement {
     fn process_animations_for_style(
         &self,
         context: &mut StyleContext<Self>,
-        old_values: &mut Option<Arc<ComputedValues>>,
-        new_values: &mut Arc<ComputedValues>,
+        old_values: &Option<Arc<ComputedValues>>,
+        new_values: &Arc<ComputedValues>,
         pseudo_element: Option<PseudoElement>,
     ) -> bool {
         use crate::animation::{AnimationSetKey, AnimationState};

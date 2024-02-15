@@ -261,11 +261,12 @@ ${helpers.predefined_type(
     "position-area",
     "PositionArea",
     "computed::PositionArea::none()",
-    engines="gecko",
+    engines="gecko servo",
     initial_specified_value="specified::PositionArea::none()",
     animation_type="discrete",
     rule_types_allowed=DEFAULT_RULES_AND_POSITION_TRY,
     gecko_pref="layout.css.anchor-positioning.enabled",
+    servo_pref="layout.unimplemented",
     spec="https://drafts.csswg.org/css-anchor-position-1/#typedef-position-area",
     affects="layout",
 )}

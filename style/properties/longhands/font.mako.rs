@@ -268,7 +268,8 @@ ${helpers.predefined_type(
 ${helpers.single_keyword(
     "font-optical-sizing",
     "auto none",
-    engines="gecko",
+    engines="servo gecko",
+    servo_pref="layout.variable_fonts.enabled",
     gecko_pref="layout.css.font-variations.enabled",
     has_effect_on_gecko_scrollbars=False,
     gecko_ffi_name="mFont.opticalSizing",

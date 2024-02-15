@@ -1410,7 +1410,29 @@ pub mod style_structs {
     use rustc_hash::FxHasher;
     use super::longhands;
     use std::hash::{Hash, Hasher};
+    use crate::logical_geometry::PhysicalSide;
     use crate::values::specified::color::ColorSchemeFlags;
+
+    <%def name="impl_physical_sides(ident, props)">
+        /// Gets the value of the longhand of `${ident}` on the `s` side`.
+        pub fn get_${ident}(&self, s: PhysicalSide) -> &longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T {
+            match s {
+                PhysicalSide::Top => &self.${data.longhands_by_name[props[0]].ident},
+                PhysicalSide::Right => &self.${data.longhands_by_name[props[1]].ident},
+                PhysicalSide::Bottom => &self.${data.longhands_by_name[props[2]].ident},
+                PhysicalSide::Left => &self.${data.longhands_by_name[props[3]].ident},
+            }
+        }
+        /// Sets the value of the longhand of `${ident}` on the `s` side to `v`.
+        pub fn set_${ident}(&mut self, s: PhysicalSide, v: longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T) {
+            match s {
+                PhysicalSide::Top => self.set_${data.longhands_by_name[props[0]].ident}(v),
+                PhysicalSide::Right => self.set_${data.longhands_by_name[props[1]].ident}(v),
+                PhysicalSide::Bottom => self.set_${data.longhands_by_name[props[2]].ident}(v),
+                PhysicalSide::Left => self.set_${data.longhands_by_name[props[3]].ident}(v),
+            }
+        }
+    </%def>
 
     % for style_struct in data.active_style_structs():
         % if style_struct.name == "Font":
@@ -1576,6 +1598,10 @@ pub mod style_structs {
                         self.original_display = dpy;
                     }
                 }
+            % elif style_struct.name == "Margin":
+                ${impl_physical_sides("margin", ["margin-top", "margin-right", "margin-bottom", "margin-left"])}
+            % elif style_struct.name == "Position":
+                ${impl_physical_sides("inset", ["top", "right", "bottom", "left"])}
             % endif
         }
 
@@ -2995,11 +3021,22 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 % for effect_name in ["repaint", "recalculate_overflow", "rebuild_stacking_context", "rebuild_box"]:
 pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &ComputedValues) -> bool {
     % for style_struct in data.active_style_structs():
-        % for longhand in style_struct.longhands:
+        <% longhands_affected = [effect_name in longhand.servo_restyle_damage.split() for longhand in style_struct.longhands if not longhand.logical] %>
+        % if any(longhands_affected):
+        let old_${style_struct.name_lower} = old.get_${style_struct.name_lower}();
+        let new_${style_struct.name_lower} = new.get_${style_struct.name_lower}();
+        if !std::ptr::eq(old_${style_struct.name_lower}, new_${style_struct.name_lower}) {
+            if 
+            % for longhand in style_struct.longhands:
             % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:
-                old.get_${style_struct.name_lower}().${longhand.ident} != new.get_${style_struct.name_lower}().${longhand.ident} ||
+                old_${style_struct.name_lower}.${longhand.ident} != new_${style_struct.name_lower}.${longhand.ident} ||
             % endif
-        % endfor
+            % endfor
+            false {
+                return true;
+            }
+        }
+        % endif
     % endfor
     false
 }

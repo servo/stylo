@@ -1,11 +1,12 @@
 [package]
-name = "style"
-version = "0.0.1"
+name = "stylo"
+version.workspace = true
 authors = ["The Servo Project Developers"]
 license = "MPL-2.0"
 repository = "https://github.com/servo/stylo"
 edition = "2021"
 description = "The Stylo CSS engine"
+readme = "../README.md"
 
 build = "build.rs"
 
@@ -18,6 +19,7 @@ path = "lib.rs"
 doctest = false
 
 [features]
+default = ["servo"]
 gecko = [
     "bindgen",
     "malloc_size_of/gecko",
@@ -31,15 +33,15 @@ gecko = [
     "to_shmem/gecko",
 ]
 servo = [
-    "arrayvec/use_union",
     "cssparser/serde",
     "encoding_rs",
     "malloc_size_of/servo",
     "web_atoms",
+    "mime",
     "serde",
     "servo_arc/servo",
     "stylo_atoms",
-    "servo_config",
+    "style_config",
     "string_cache",
     "style_traits/servo",
     "url",
@@ -48,6 +50,7 @@ servo = [
 ]
 gecko_debug = []
 gecko_refcount_logging = []
+nsstring = []
 
 [dependencies]
 app_units = "0.7.8"
@@ -57,22 +60,22 @@ bitflags = "2"
 byteorder = "1.0"
 cssparser = "0.36"
 derive_more = { version = "2", features = ["add", "add_assign", "deref", "deref_mut", "from"] }
-dom = { path = "../../../dom/base/rust" }
+dom = { workspace = true }
 new_debug_unreachable = "1.0"
 encoding_rs = {version = "0.8", optional = true}
 euclid = "0.22"
 rustc-hash = "2.1.1"
-icu_segmenter = { version = "2.0", default-features = false, features = ["auto", "compiled_data"] }
+icu_segmenter = { version = ">= 1.5, <= 2.*", default-features = false, features = ["auto", "compiled_data"] }
 indexmap = {version = "2", features = ["std"]}
 itertools = "0.14"
 itoa = "1.0"
 lazy_static = "1"
 log = "0.4"
-malloc_size_of = { path = "../malloc_size_of" }
-malloc_size_of_derive = { path = "../../../xpcom/rust/malloc_size_of_derive" }
-web_atoms = { version = "0.1", optional = true }
+malloc_size_of = { workspace = true }
+malloc_size_of_derive = "0.1"
+web_atoms = { version = "0.2.0", optional = true }
 matches = "0.1"
-nsstring = {path = "../../../xpcom/rust/nsstring/", optional = true}
+mime = { version = "0.3.13", optional = true }
 num_cpus = {version = "1.1.0"}
 num-integer = "0.1"
 num-traits = "0.2"
@@ -81,24 +84,23 @@ parking_lot = "0.12"
 precomputed-hash = "0.1.1"
 rayon = "1"
 rayon-core = "1"
-selectors = { path = "../selectors" }
+selectors = { workspace = true }
 serde = {version = "1.0", optional = true, features = ["derive"]}
-servo_arc = { path = "../servo_arc" }
-stylo_atoms = {path = "../atoms", optional = true}
-servo_config = {path = "../config", optional = true}
+servo_arc = { workspace = true}
+stylo_atoms = { workspace = true, optional = true}
 smallbitvec = "2.3.0"
 smallvec = "1.0"
 static_assertions = "1.1"
-static_prefs = { path = "../../../modules/libpref/init/static_prefs" }
-string_cache = { version = "0.8", optional = true }
-style_derive = {path = "../style_derive"}
-style_traits = {path = "../style_traits"}
-to_shmem = {path = "../to_shmem"}
-to_shmem_derive = {path = "../to_shmem_derive"}
-thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
+static_prefs = { workspace = true}
+string_cache = { version = "0.9", optional = true }
+style_config = { workspace = true, optional = true }
+style_derive = { workspace = true }
+style_traits = { workspace = true }
+to_shmem = { workspace = true}
+to_shmem_derive = { workspace = true }
+thin-vec = "0.2.1"
 uluru = "3.0"
 void = "1.0.2"
-gecko-profiler = { path = "../../../tools/profiler/rust-api" }
 url = { version = "2.5", optional = true, features = ["serde"] }
 
 [build-dependencies]

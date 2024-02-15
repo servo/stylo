@@ -1,6 +1,6 @@
 [package]
-name = "malloc_size_of"
-version = "0.0.1"
+name = "stylo_malloc_size_of"
+version.workspace = true
 authors = ["The Servo Project Developers"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/servo/stylo"
@@ -17,10 +17,10 @@ servo = ["string_cache"]
 app_units = "0.7"
 cssparser = "0.36"
 euclid = "0.22"
-selectors = { path = "../selectors" }
-servo_arc = { path = "../servo_arc" }
+selectors = { workspace = true }
+servo_arc = { workspace = true }
 smallbitvec = "2.3.0"
-smallvec = "1.0"
-string_cache = { version = "0.8", optional = true }
-thin-vec = { version = "0.2.1" }
+smallvec = "1.13"
+string_cache = { version = "0.9", optional = true }
+thin-vec = { version = "0.2.13" }
 void = "1.0.2"

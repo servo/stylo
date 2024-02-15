@@ -21,7 +21,7 @@ mod build_gecko {
 lazy_static! {
     pub static ref PYTHON: String = env::var("PYTHON3").ok().unwrap_or_else(|| {
         let candidates = if cfg!(windows) {
-            ["python3.exe"]
+            ["python.exe"]
         } else {
             ["python3"]
         };
@@ -58,6 +58,12 @@ fn generate_properties(engine: &str) {
         .join("build.py");
 
     let status = Command::new(&*PYTHON)
+        // `cargo publish` isn't happy with the `__pycache__` files that are created
+        // when we run the property generator.
+        //
+        // TODO(mrobinson): Is this happening because of how we run this script? It
+        // would be better to ensure are just placed in the output directory.
+        .env("PYTHONDONTWRITEBYTECODE", "1")
         .arg(&script)
         .arg(engine)
         .arg("style-crate")

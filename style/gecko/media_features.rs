@@ -8,7 +8,7 @@ use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs;
 use crate::media_queries::{Device, MediaType};
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
-use crate::queries::values::Orientation;
+use crate::queries::values::{Orientation, PrefersColorScheme};
 use crate::values::computed::{CSSPixelLength, Context, Ratio, Resolution};
 use crate::values::specified::color::ForcedColors;
 use crate::values::AtomString;
@@ -189,15 +189,6 @@ enum PrefersReducedMotion {
 enum PrefersReducedTransparency {
     NoPreference,
     Reduce,
-}
-
-/// Values for the prefers-color-scheme media feature.
-#[derive(Clone, Copy, Debug, FromPrimitive, Parse, PartialEq, ToCss)]
-#[repr(u8)]
-#[allow(missing_docs)]
-pub enum PrefersColorScheme {
-    Light,
-    Dark,
 }
 
 /// Values for the dynamic-range and video-dynamic-range media features.

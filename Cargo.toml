@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = [
+    "derive_common",
+    "dom",
+    "malloc_size_of",
+    "rustfmt.toml",
+    "selectors",
+    "servo_arc",
+    "style",
+    "style_derive",
+    "style_static_prefs",
+    "style_traits",
+    "to_shmem",
+    "to_shmem_derive",
+]
+default-members = ["style"]

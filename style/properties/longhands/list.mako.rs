@@ -69,6 +69,7 @@ ${helpers.predefined_type(
     "Quotes",
     "computed::Quotes::get_initial_value()",
     engines="gecko servo",
+    servo_pref="layout.legacy_layout",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-content/#propdef-quotes",
     servo_restyle_damage="rebuild_and_reflow",

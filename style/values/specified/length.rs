@@ -1225,6 +1225,7 @@ impl NoCalcLength {
     /// absolute or (if a font metrics getter is provided) font-relative units.
     #[cfg(feature = "gecko")]
     #[inline]
+    #[cfg(feature = "gecko")]
     pub fn to_computed_pixel_length_with_font_metrics(
         &self,
         get_font_metrics: Option<impl Fn() -> GeckoFontMetrics>,
@@ -1950,17 +1951,13 @@ macro_rules! parse_size_non_length {
     ($size:ident, $input:expr, $auto_or_none:expr => $auto_or_none_ident:ident) => {{
         let size = $input.try_parse(|input| {
             Ok(try_match_ident_ignore_ascii_case! { input,
-                #[cfg(feature = "gecko")]
                 "min-content" | "-moz-min-content" => $size::MinContent,
-                #[cfg(feature = "gecko")]
                 "max-content" | "-moz-max-content" => $size::MaxContent,
-                #[cfg(feature = "gecko")]
                 "fit-content" | "-moz-fit-content" => $size::FitContent,
                 #[cfg(feature = "gecko")]
                 "-moz-available" => $size::MozAvailable,
                 #[cfg(feature = "gecko")]
                 "-webkit-fill-available" if is_webkit_fill_available_keyword_enabled() => $size::WebkitFillAvailable,
-                #[cfg(feature = "gecko")]
                 "stretch" if is_stretch_enabled() => $size::Stretch,
                 $auto_or_none => $size::$auto_or_none_ident,
             })
@@ -1975,7 +1972,6 @@ macro_rules! parse_size_non_length {
 fn is_webkit_fill_available_keyword_enabled() -> bool {
     static_prefs::pref!("layout.css.webkit-fill-available.enabled")
 }
-#[cfg(feature = "gecko")]
 fn is_stretch_enabled() -> bool {
     static_prefs::pref!("layout.css.stretch-size-keyword.enabled")
 }
@@ -1984,11 +1980,8 @@ fn is_stretch_enabled() -> bool {
 fn is_fit_content_function_enabled() -> bool {
     static_prefs::pref!("layout.css.fit-content-function.enabled")
 }
-#[cfg(feature = "servo")]
-fn is_fit_content_function_enabled() -> bool {
-    false
-}
 
+#[cfg(feature = "gecko")]
 macro_rules! parse_fit_content_function {
     ($size:ident, $input:expr, $context:expr, $allow_quirks:expr) => {
         if is_fit_content_function_enabled() {
@@ -2012,6 +2005,7 @@ impl Size {
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
         parse_size_non_length!(Size, input, "auto" => Auto);
+        #[cfg(feature = "gecko")]
         parse_fit_content_function!(Size, input, context, allow_quirks);
 
         if let Ok(length) = input.try_parse(|i| NonNegativeLengthPercentage::parse_quirky(context, i, allow_quirks)) {
@@ -2047,6 +2041,7 @@ impl MaxSize {
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
         parse_size_non_length!(MaxSize, input, "none" => None);
+        #[cfg(feature = "gecko")]
         parse_fit_content_function!(MaxSize, input, context, allow_quirks);
 
         if let Ok(length) = input.try_parse(|i| NonNegativeLengthPercentage::parse_quirky(context, i, allow_quirks)) {

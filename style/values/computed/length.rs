@@ -19,7 +19,7 @@ use crate::values::{specified, CSSFloat};
 use crate::Zero;
 use app_units::Au;
 use std::fmt::{self, Write};
-use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use style_traits::{CSSPixel, CssWriter, ToCss};
 
 pub use super::image::Image;
@@ -182,8 +182,21 @@ impl MaxSize {
     #[inline]
     pub fn to_used_value(&self, percentage_basis: Au) -> Option<Au> {
         match *self {
-            GenericMaxSize::None => None,
-            GenericMaxSize::LengthPercentage(ref lp) => Some(lp.to_used_value(percentage_basis)),
+            Self::None | Self::MinContent | Self::MaxContent | Self::FitContent | Self::Stretch => {
+                None
+            },
+            Self::LengthPercentage(ref lp) => Some(lp.to_used_value(percentage_basis)),
+        }
+    }
+
+    /// Convert the computed value into used value if there is enough information.
+    #[inline]
+    pub fn maybe_to_used_value(&self, percentage_basis: Option<Au>) -> Option<Au> {
+        match *self {
+            Self::None | Self::MinContent | Self::MaxContent | Self::FitContent | Self::Stretch => {
+                None
+            },
+            Self::LengthPercentage(ref lp) => lp.maybe_to_used_value(percentage_basis),
         }
     }
 }
@@ -194,8 +207,22 @@ impl Size {
     #[cfg(feature = "servo")]
     pub fn to_used_value(&self, percentage_basis: Au) -> Option<Au> {
         match *self {
-            GenericSize::Auto => None,
-            GenericSize::LengthPercentage(ref lp) => Some(lp.to_used_value(percentage_basis)),
+            Self::Auto | Self::MinContent | Self::MaxContent | Self::FitContent | Self::Stretch => {
+                None
+            },
+            Self::LengthPercentage(ref lp) => Some(lp.to_used_value(percentage_basis)),
+        }
+    }
+
+    /// Convert the computed value into used value if there is enough information.
+    #[inline]
+    #[cfg(feature = "servo")]
+    pub fn maybe_to_used_value(&self, percentage_basis: Option<Au>) -> Option<Au> {
+        match *self {
+            Self::Auto | Self::MinContent | Self::MaxContent | Self::FitContent | Self::Stretch => {
+                None
+            },
+            Self::LengthPercentage(ref lp) => lp.maybe_to_used_value(percentage_basis),
         }
     }
 
@@ -205,15 +232,13 @@ impl Size {
         match *self {
             Self::Auto => false,
             Self::LengthPercentage(ref lp) => lp.is_definitely_zero(),
-            #[cfg(feature = "gecko")]
             Self::MinContent |
             Self::MaxContent |
             Self::FitContent |
-            Self::MozAvailable |
-            Self::WebkitFillAvailable |
             Self::Stretch |
-            Self::FitContentFunction(_) |
             Self::AnchorSizeFunction(_) => false,
+            #[cfg(feature = "gecko")]
+            Self::MozAvailable | Self::WebkitFillAvailable | Self::FitContentFunction(_) => false,
         }
     }
 }
@@ -454,6 +479,13 @@ impl Sub for CSSPixelLength {
     #[inline]
     fn sub(self, other: Self) -> Self {
         Self::new(self.px() - other.px())
+    }
+}
+
+impl SubAssign for CSSPixelLength {
+    #[inline]
+    fn sub_assign(&mut self, other: Self) {
+        self.0 -= other.0;
     }
 }
 

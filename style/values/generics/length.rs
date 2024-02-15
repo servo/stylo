@@ -7,7 +7,6 @@
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::Optional;
 use crate::values::DashedIdent;
-#[cfg(feature = "gecko")]
 use crate::Zero;
 use cssparser::Parser;
 use std::fmt::Write;
@@ -75,13 +74,13 @@ impl<LengthPercentage> LengthPercentageOrAuto<LengthPercentage> {
     }
 }
 
-impl<LengthPercentage> LengthPercentageOrAuto<LengthPercentage>
+impl<T> LengthPercentageOrAuto<T>
 where
-    LengthPercentage: Clone,
+    T: Clone,
 {
     /// Resolves `auto` values by calling `f`.
     #[inline]
-    pub fn auto_is(&self, f: impl FnOnce() -> LengthPercentage) -> LengthPercentage {
+    pub fn auto_is(&self, f: impl FnOnce() -> T) -> T {
         match self {
             LengthPercentageOrAuto::LengthPercentage(length) => length.clone(),
             LengthPercentageOrAuto::Auto => f(),
@@ -90,7 +89,7 @@ where
 
     /// Returns the non-`auto` value, if any.
     #[inline]
-    pub fn non_auto(&self) -> Option<LengthPercentage> {
+    pub fn non_auto(&self) -> Option<T> {
         match self {
             LengthPercentageOrAuto::LengthPercentage(length) => Some(length.clone()),
             LengthPercentageOrAuto::Auto => None,
@@ -98,7 +97,7 @@ where
     }
 
     /// Maps the length of this value.
-    pub fn map<T>(&self, f: impl FnOnce(LengthPercentage) -> T) -> LengthPercentageOrAuto<T> {
+    pub fn map<U>(&self, f: impl FnOnce(T) -> U) -> LengthPercentageOrAuto<U> {
         match self {
             LengthPercentageOrAuto::LengthPercentage(l) => {
                 LengthPercentageOrAuto::LengthPercentage(f(l.clone()))
@@ -155,13 +154,10 @@ impl<LengthPercentage: Parse> Parse for LengthPercentageOrAuto<LengthPercentage>
 pub enum GenericSize<LengthPercent> {
     LengthPercentage(LengthPercent),
     Auto,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     MaxContent,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     MinContent,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     FitContent,
     #[cfg(feature = "gecko")]
@@ -172,6 +168,7 @@ pub enum GenericSize<LengthPercent> {
     WebkitFillAvailable,
     #[animation(error)]
     Stretch,
+    #[cfg(feature = "gecko")]
     #[animation(error)]
     #[css(function = "fit-content")]
     FitContentFunction(LengthPercent),
@@ -234,13 +231,10 @@ impl<LengthPercentage> Size<LengthPercentage> {
 pub enum GenericMaxSize<LengthPercent> {
     LengthPercentage(LengthPercent),
     None,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     MaxContent,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     MinContent,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     FitContent,
     #[cfg(feature = "gecko")]
@@ -251,6 +245,7 @@ pub enum GenericMaxSize<LengthPercent> {
     WebkitFillAvailable,
     #[animation(error)]
     Stretch,
+    #[cfg(feature = "gecko")]
     #[animation(error)]
     #[css(function = "fit-content")]
     FitContentFunction(LengthPercent),

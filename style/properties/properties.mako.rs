@@ -27,7 +27,6 @@ use crate::media_queries::Device;
 use crate::parser::ParserContext;
 use crate::selector_parser::PseudoElement;
 use crate::stylist::Stylist;
-#[cfg(feature = "servo")] use servo_config::prefs;
 use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 use crate::stylesheets::{CssRuleType, CssRuleTypes, Origin};
 use crate::logical_geometry::{LogicalAxis, LogicalCorner, LogicalSide};
@@ -455,7 +454,7 @@ pub mod property_counts {
     /// The number of non-custom properties.
     pub const NON_CUSTOM: usize = LONGHANDS_AND_SHORTHANDS + ALIASES;
     /// The number of prioritary properties that we have.
-    pub const PRIORITARY: usize = ${len(PRIORITARY_PROPERTIES)};
+    pub const PRIORITARY: usize = ${len(PRIORITARY_PROPERTIES.intersection(set(list(map(lambda p: p.name, data.longhands)))))};
     /// The max number of longhands that a shorthand other than "all" expands to.
     pub const MAX_SHORTHAND_EXPANDED: usize =
         ${max(len(s.sub_properties) for s in data.shorthands_except_all())};
@@ -484,6 +483,13 @@ impl NonCustomPropertyId {
             % endfor
         ];
         MAP[self.0 as usize]
+    }
+
+    /// Returns whether this property is transitionable.
+    #[inline]
+    pub fn is_transitionable(self) -> bool {
+        ${static_non_custom_property_id_set("TRANSITIONABLE", lambda p: p.transitionable)}
+        TRANSITIONABLE.contains(self)
     }
 
     /// Returns whether this property is animatable.
@@ -529,7 +535,7 @@ impl NonCustomPropertyId {
                     Some(pref) => pref,
                 };
 
-                prefs::pref_map().get(pref).as_bool().unwrap_or(false)
+                style_config::get_bool(pref)
             % endif
         };
 
@@ -826,6 +832,12 @@ impl LonghandIdSet {
     }
 
     #[inline]
+    fn transitionable() -> &'static Self {
+        ${static_longhand_id_set("TRANSITIONABLE", lambda p: p.transitionable)}
+        &TRANSITIONABLE
+    }
+
+    #[inline]
     pub(super) fn logical() -> &'static Self {
         ${static_longhand_id_set("LOGICAL", lambda p: p.logical)}
         &LOGICAL
@@ -1000,6 +1012,12 @@ impl LonghandId {
         % endfor
         ];
         (PARSE_PROPERTY[self as usize])(context, input)
+    }
+
+    /// Returns whether this property is transitionable.
+    #[inline]
+    pub fn is_transitionable(self) -> bool {
+        LonghandIdSet::transitionable().contains(self)
     }
 
     /// Return the relevant data to map a particular logical property into physical.
@@ -1375,9 +1393,6 @@ pub mod style_structs {
     use fxhash::FxHasher;
     use super::longhands;
     use std::hash::{Hash, Hasher};
-    use crate::logical_geometry::WritingMode;
-    use crate::media_queries::Device;
-    use crate::values::computed::NonNegativeLength;
 
     % for style_struct in data.active_style_structs():
         % if style_struct.name == "Font":
@@ -1506,8 +1521,6 @@ pub mod style_structs {
                 /// Computes a font hash in order to be able to cache fonts
                 /// effectively in GFX and layout.
                 pub fn compute_font_hash(&mut self) {
-                    // Corresponds to the fields in
-                    // `gfx::font_template::FontTemplateDescriptor`.
                     let mut hasher: FxHasher = Default::default();
                     self.font_weight.hash(&mut hasher);
                     self.font_stretch.hash(&mut hasher);
@@ -1515,25 +1528,17 @@ pub mod style_structs {
                     self.font_family.hash(&mut hasher);
                     self.hash = hasher.finish()
                 }
-
-                /// (Servo does not handle MathML, so this just calls copy_font_size_from)
-                pub fn inherit_font_size_from(&mut self, parent: &Self,
-                                              _: Option<NonNegativeLength>,
-                                              _: &Device) {
-                    self.copy_font_size_from(parent);
+                /// Create a new Font with the initial values of all members.
+                pub fn initial_values() -> Self {
+                    Self {
+                        % for longhand in style_struct.longhands:
+                            % if not longhand.logical:
+                                ${longhand.ident}: longhands::${longhand.ident}::get_initial_value(),
+                            % endif
+                        % endfor
+                        hash: 0,
+                    }
                 }
-                /// (Servo does not handle MathML, so this just calls set_font_size)
-                pub fn apply_font_size(&mut self,
-                                       v: longhands::font_size::computed_value::T,
-                                       _: &Self,
-                                       _: &Device) -> Option<NonNegativeLength> {
-                    self.set_font_size(v);
-                    None
-                }
-                /// (Servo does not handle MathML, so this does nothing)
-                pub fn apply_unconstrained_font_size(&mut self, _: NonNegativeLength) {
-                }
-
             % elif style_struct.name == "Outline":
                 /// Whether the outline-width property is non-zero.
                 #[inline]
@@ -1701,7 +1706,7 @@ pub struct ComputedValuesInner {
     pub writing_mode: WritingMode,
 
     /// The effective zoom value.
-    pub effective_zoom: Zoom,
+    pub effective_zoom: computed::Zoom,
 
     /// A set of flags we use to store misc information regarding this style.
     pub flags: ComputedValueFlags,
@@ -1943,16 +1948,67 @@ impl ComputedValues {
     }
 
     /// Get the initial computed values.
-    pub fn initial_values() -> &'static Self { &*INITIAL_SERVO_VALUES }
+    pub fn initial_values_with_font_override(default_font: super::style_structs::Font) -> Arc<Self> {
+        use crate::logical_geometry::WritingMode;
+        use crate::computed_value_flags::ComputedValueFlags;
+        use servo_arc::Arc;
+        use super::{ComputedValues, ComputedValuesInner, longhands, style_structs};
+
+        Arc::new(ComputedValues {
+            inner: ComputedValuesInner {
+                % for style_struct in data.active_style_structs():
+                    % if style_struct.name == "Font":
+                        font: Arc::new(default_font),
+                    <% continue %>
+                    % endif %
+
+                    ${style_struct.ident}: Arc::new(style_structs::${style_struct.name} {
+                        % for longhand in style_struct.longhands:
+                            % if not longhand.logical:
+                                ${longhand.ident}: longhands::${longhand.ident}::get_initial_value(),
+                            % endif
+                        % endfor
+                        % if style_struct.name == "InheritedText":
+                            text_decorations_in_effect:
+                                crate::values::computed::text::TextDecorationsInEffect::default(),
+                        % endif
+                        % if style_struct.name == "Box":
+                            original_display: longhands::display::get_initial_value(),
+                        % endif
+                    }),
+                % endfor
+                custom_properties: crate::custom_properties::ComputedCustomProperties::default(),
+                writing_mode: WritingMode::empty(),
+                rules: None,
+                visited_style: None,
+                effective_zoom: crate::values::computed::Zoom::ONE,
+                flags: ComputedValueFlags::empty(),
+            },
+            pseudo: None,
+        })
+    }
+
+    /// Converts the computed values to an Arc<> from a reference.
+    pub fn to_arc(&self) -> Arc<Self> {
+        // SAFETY: We're guaranteed to be allocated as an Arc<> since the
+        // functions above are the only ones that create ComputedValues
+        // instances in Servo (and that must be the case since ComputedValues'
+        // member is private).
+        unsafe { Arc::from_raw_addrefed(self) }
+    }
 
     /// Serializes the computed value of this property as a string.
     pub fn computed_value_to_string(&self, property: PropertyDeclarationId) -> String {
         match property {
             PropertyDeclarationId::Longhand(id) => {
+                let context = resolved::Context {
+                    style: self,
+                };
                 let mut s = String::new();
-                self.get_longhand_property_value(
+                self.computed_or_resolved_value(
                     id,
-                    &mut CssWriter::new(&mut s)
+                    Some(&context),
+                    &mut s
                 ).unwrap();
                 s
             }
@@ -1963,9 +2019,8 @@ impl ComputedValues {
                 let p = &self.custom_properties;
                 let value = p
                     .inherited
-                    .as_ref()
-                    .and_then(|map| map.get(name))
-                    .or_else(|| p.non_inherited.as_ref().and_then(|map| map.get(name)));
+                    .get(name)
+                    .or_else(|| p.non_inherited.get(name));
                 value.map_or(String::new(), |value| value.to_css_string())
             }
         }
@@ -2027,7 +2082,7 @@ impl ComputedValuesInner {
         use crate::values::generics::counters::Content;
         match self.get_counters().content {
             Content::Normal | Content::None => true,
-            Content::Items(ref items) => items.is_empty(),
+            Content::Items(ref items) => items.items.is_empty(),
         }
     }
 
@@ -2796,52 +2851,6 @@ impl<'a> StyleBuilder<'a> {
     % endfor
 }
 
-#[cfg(feature = "servo")]
-pub use self::lazy_static_module::INITIAL_SERVO_VALUES;
-
-// Use a module to work around #[cfg] on lazy_static! not being applied to every generated item.
-#[cfg(feature = "servo")]
-#[allow(missing_docs)]
-mod lazy_static_module {
-    use crate::logical_geometry::WritingMode;
-    use crate::computed_value_flags::ComputedValueFlags;
-    use servo_arc::Arc;
-    use super::{ComputedValues, ComputedValuesInner, longhands, style_structs};
-
-    lazy_static! {
-        /// The initial values for all style structs as defined by the specification.
-        pub static ref INITIAL_SERVO_VALUES: ComputedValues = ComputedValues {
-            inner: ComputedValuesInner {
-                % for style_struct in data.active_style_structs():
-                    ${style_struct.ident}: Arc::new(style_structs::${style_struct.name} {
-                        % for longhand in style_struct.longhands:
-                            % if not longhand.logical:
-                                ${longhand.ident}: longhands::${longhand.ident}::get_initial_value(),
-                            % endif
-                        % endfor
-                        % if style_struct.name == "InheritedText":
-                            text_decorations_in_effect:
-                                crate::values::computed::text::TextDecorationsInEffect::default(),
-                        % endif
-                        % if style_struct.name == "Font":
-                            hash: 0,
-                        % endif
-                        % if style_struct.name == "Box":
-                            original_display: longhands::display::get_initial_value(),
-                        % endif
-                    }),
-                % endfor
-                custom_properties,
-                writing_mode: WritingMode::empty(),
-                rules: None,
-                visited_style: None,
-                flags: ComputedValueFlags::empty(),
-            },
-            pseudo: None,
-        };
-    }
-}
-
 /// A per-longhand function that performs the CSS cascade for that longhand.
 pub type CascadePropertyFn =
     unsafe extern "Rust" fn(
@@ -2921,10 +2930,10 @@ macro_rules! css_properties_accessors {
                         % for prop in [property] + property.aliases:
                             % if '-' in prop.name:
                                 [${prop.ident.capitalize()}, Set${prop.ident.capitalize()},
-                                 PropertyId::${kind}(${kind}Id::${property.camel_case})],
+                                 PropertyId::NonCustom(${kind}Id::${property.camel_case}.into())],
                             % endif
                             [${prop.camel_case}, Set${prop.camel_case},
-                             PropertyId::${kind}(${kind}Id::${property.camel_case})],
+                             PropertyId::NonCustom(${kind}Id::${property.camel_case}.into())],
                         % endfor
                     % endif
                 % endfor
@@ -2938,6 +2947,9 @@ macro_rules! css_properties_accessors {
 /// ```
 /// { snake_case_ident }
 /// ```
+///
+/// … where the boolean indicates whether the property value type
+/// is wrapped in a `Box<_>` in the corresponding `PropertyDeclaration` variant.
 #[macro_export]
 macro_rules! longhand_properties_idents {
     ($macro_name: ident) => {
@@ -2950,7 +2962,7 @@ macro_rules! longhand_properties_idents {
 }
 
 // Large pages generate tens of thousands of ComputedValues.
-size_of_test!(ComputedValues, 240);
+size_of_test!(ComputedValues, 208);
 // FFI relies on this.
 size_of_test!(Option<Arc<ComputedValues>>, 8);
 
@@ -2980,6 +2992,9 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 % for effect_name in ["repaint", "reflow_out_of_flow", "reflow", "rebuild_and_reflow_inline", "rebuild_and_reflow"]:
     macro_rules! restyle_damage_${effect_name} {
         ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ]) => ({
+            restyle_damage_${effect_name}!($old, $new, $damage, [$($effect),*], false)
+        });
+        ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ], $extra:expr) => ({
             if
                 % for style_struct in data.active_style_structs():
                     % for longhand in style_struct.longhands:
@@ -2990,13 +3005,13 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
                     % endfor
                 % endfor
 
-                false {
+                $extra || false {
                     $damage.insert($($effect)|*);
                     true
             } else {
                 false
             }
-        })
+        });
     }
 % endfor
 % endif

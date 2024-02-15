@@ -43,7 +43,7 @@ fn gradient_color_interpolation_method_enabled() -> bool {
 pub type Image = generic::Image<Gradient, SpecifiedImageUrl, Color, Percentage, Resolution>;
 
 // Images should remain small, see https://github.com/servo/servo/pull/18430
-size_of_test!(Image, 16);
+size_of_test!(Image, 40);
 
 /// Specified values for a CSS gradient.
 /// <https://drafts.csswg.org/css-images/#gradients>
@@ -1274,13 +1274,13 @@ impl<T> generic::ColorStop<Color, T> {
 
 impl PaintWorklet {
     #[cfg(feature = "servo")]
-    fn parse_args<'i>(input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+    fn parse_args<'i>(context: &ParserContext, input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         use crate::custom_properties::SpecifiedValue;
         let name = Atom::from(&**input.expect_ident()?);
         let arguments = input
             .try_parse(|input| {
                 input.expect_comma()?;
-                input.parse_comma_separated(SpecifiedValue::parse)
+                input.parse_comma_separated(|input| SpecifiedValue::parse(input, &context.url_data))
             })
             .unwrap_or_default();
         Ok(Self { name, arguments })

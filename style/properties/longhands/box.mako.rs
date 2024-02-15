@@ -352,7 +352,7 @@ ${helpers.predefined_type(
 ${helpers.single_keyword(
     "isolation",
     "auto isolate",
-    engines="gecko",
+    engines="gecko servo",
     spec="https://drafts.fxtf.org/compositing/#isolation",
     gecko_enum_prefix="StyleIsolation",
     animation_type="discrete",

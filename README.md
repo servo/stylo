@@ -13,18 +13,18 @@ The branches are as follows:
 Assuming your local `servo` and `stylo` directories are siblings, you can build `servo` against `stylo` by adding the following to `servo/Cargo.toml`:
 
 ```toml
-[patch."https://github.com/servo/stylo.git"]
-derive_common = { path = "../stylo/derive_common" }
-malloc_size_of = { path = "../stylo/malloc_size_of" }
+[patch."https://github.com/servo/stylo"]
 selectors = { path = "../stylo/selectors" }
 servo_arc = { path = "../stylo/servo_arc" }
 servo_atoms = { path = "../stylo/atoms" }
-size_of_test = { path = "../stylo/size_of_test" }
 static_prefs = { path = "../stylo/style_static_prefs" }
+style = { path = "../stylo/style" }
 style_config = { path = "../stylo/style_config" }
 style_derive = { path = "../stylo/style_derive" }
-style = { path = "../stylo/style" }
+style_dom = { path = "../stylo/dom", package = "dom" }
+style_malloc_size_of = { path = "../stylo/malloc_size_of", package = "malloc_size_of" }
 style_traits = { path = "../stylo/style_traits" }
+to_shmem = { path = "../stylo/to_shmem" }
 ```
 
 ## Syncing `upstream` with mozilla-central

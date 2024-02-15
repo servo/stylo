@@ -1,11 +1,12 @@
 [package]
-name = "style_traits"
-version = "0.0.1"
+name = "stylo_traits"
+version = "0.6.0"
 authors = ["The Servo Project Developers"]
 license = "MPL-2.0"
 repository = "https://github.com/servo/stylo"
 edition = "2021"
 description = "Types used by the Stylo CSS engine"
+readme = "../README.md"
 
 [lib]
 name = "style_traits"
@@ -13,21 +14,20 @@ path = "lib.rs"
 
 [features]
 servo = ["stylo_atoms", "cssparser/serde", "url", "euclid/serde"]
-gecko = ["nsstring"]
+gecko = []
 
 [dependencies]
 app_units = "0.7"
 bitflags = "2"
-cssparser = "0.34"
+cssparser = "0.35"
 euclid = "0.22"
-malloc_size_of = { path = "../malloc_size_of" }
-malloc_size_of_derive = { path = "../../../xpcom/rust/malloc_size_of_derive" }
-nsstring = {path = "../../../xpcom/rust/nsstring/", optional = true}
-selectors = { path = "../selectors" }
+malloc_size_of = { version = "0.6", path = "../malloc_size_of", package = "stylo_malloc_size_of" }
+malloc_size_of_derive = "0.1"
+selectors = { version = "0.31", path = "../selectors" }
 serde = "1.0"
-servo_arc = { path = "../servo_arc" }
-stylo_atoms = { path = "../atoms", optional = true }
+servo_arc = { version = "0.4", path = "../servo_arc" }
+stylo_atoms = { version = "0.6", path = "../stylo_atoms", optional = true }
 thin-vec = "0.2"
-to_shmem = { path = "../to_shmem" }
-to_shmem_derive = { path = "../to_shmem_derive" }
+to_shmem = { version = "0.2", path = "../to_shmem" }
+to_shmem_derive = { version = "0.1", path = "../to_shmem_derive" }
 url = { version = "2.5", optional = true }

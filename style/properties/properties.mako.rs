@@ -32,8 +32,8 @@ use crate::typed_om::{ToTyped, TypedValueList};
 use crate::use_counters::UseCounters;
 use crate::rule_tree::StrongRuleNode;
 use crate::values::{
-    computed,
-    resolved,
+    computed::{self, ToComputedValue},
+    resolved::{self, ToResolvedValue},
     specified::{font::SystemFont, length::LineHeightBase, color::ColorSchemeFlags},
 };
 use std::cell::Cell;
@@ -384,30 +384,15 @@ impl NonCustomPropertyId {
             % if engine == "gecko":
                 unsafe { structs::nsCSSProps_gPropertyEnabled[self.0 as usize] }
             % else:
-                static PREF_NAME: [Option<&str>; ${
-                    len(data.longhands) + len(data.shorthands) + len(data.all_aliases())
-                }] = [
-                    % for property in data.longhands + data.shorthands + data.all_aliases():
-                        <%
-                            pref = getattr(property, "servo_pref")
-                        %>
-                        % if pref:
-                            {
-                                const_assert!(!static_prefs::default_value!("${pref}"));
-                                Some("${pref}")
-                            },
-                        % else:
-                            None,
-                        % endif
-                    % endfor
-                ];
-                let pref = match PREF_NAME[self.0 as usize] {
-                    None => return true,
-                    Some(pref) => pref,
-                };
-
-                // The assertions above guarantee that the pref defaults to false.
-                static_prefs::Preference::get(pref, false)
+                match self.0 {
+                % for (index, property) in enumerate(data.longhands + data.shorthands + data.all_aliases()):
+                    <% preference = getattr(property, "servo_pref") %>
+                    % if preference:
+                        ${index} => static_prefs::pref!("${preference}"),
+                    % endif %
+                % endfor
+                    _ => true,
+                }
             % endif
         };
 
@@ -1710,7 +1695,6 @@ impl ComputedValues {
         context: Option<&mut resolved::Context>,
         dest: &mut CssStringWriter,
     ) -> fmt::Result {
-        use crate::values::resolved::ToResolvedValue;
         let mut dest = CssWriter::new(dest);
         let property_id = property_id.to_physical(self.writing_mode);
         match property_id {
@@ -1767,8 +1751,6 @@ impl ComputedValues {
         property_id: LonghandId,
         context: Option<&mut resolved::Context>,
     ) -> PropertyDeclaration {
-        use crate::values::resolved::ToResolvedValue;
-        use crate::values::computed::ToComputedValue;
         let physical_property_id = property_id.to_physical(self.writing_mode);
         match physical_property_id {
             % for specified_type, props in groupby(data.longhands, key=lambda x: x.specified_type()):
@@ -1947,11 +1929,19 @@ impl ComputedValues {
                 // whether the name corresponds to an inherited custom property
                 // and then choose the inherited/non_inherited map accordingly.
                 let p = &self.custom_properties;
-                let value = p
-                    .inherited
-                    .get(name)
-                    .or_else(|| p.non_inherited.get(name));
-                value.map_or(String::new(), |value| value.to_css_string())
+                let Some(value) = p.inherited.get(name).or_else(|| p.non_inherited.get(name))
+                else {
+                    return String::new();
+                };
+                let mut context = resolved::Context {
+                    style: self,
+                    for_property: PropertyId::Custom(name.clone()),
+                    current_longhand: None,
+                };
+                value
+                    .clone()
+                    .to_resolved_value(&mut context)
+                    .to_css_string()
             }
         }
     }

@@ -863,7 +863,6 @@ affects = "layout"
 type = "FontFeatureSettings"
 initial = "computed::FontFeatureSettings::normal()"
 struct = "font"
-engine = "gecko"
 extra_prefixes = ["moz:layout.css.prefixes.font-features", "webkit"]
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-feature-settings"
@@ -981,7 +980,6 @@ affects = "layout"
 type = "FontVariantEastAsian"
 initial = "computed::FontVariantEastAsian::empty()"
 struct = "font"
-engine = "gecko"
 animation_type = "discrete"
 gecko_ffi_name = "mFont.variantEastAsian"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-east-asian"
@@ -991,7 +989,6 @@ affects = "layout"
 type = "FontVariantLigatures"
 initial = "computed::FontVariantLigatures::empty()"
 struct = "font"
-engine = "gecko"
 animation_type = "discrete"
 gecko_ffi_name = "mFont.variantLigatures"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-ligatures"
@@ -1001,7 +998,6 @@ affects = "layout"
 type = "FontVariantNumeric"
 initial = "computed::FontVariantNumeric::empty()"
 struct = "font"
-engine = "gecko"
 animation_type = "discrete"
 gecko_ffi_name = "mFont.variantNumeric"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-numeric"
@@ -2367,7 +2363,7 @@ affects = "paint"
 type = "position::HorizontalPosition"
 initial = "computed::LengthPercentage::zero_percent()"
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-position"
 vector = { animation_type = "repeatable_list" }
@@ -2377,7 +2373,7 @@ affects = "paint"
 type = "position::VerticalPosition"
 initial = "computed::LengthPercentage::zero_percent()"
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-position"
 vector = { animation_type = "repeatable_list" }
@@ -2387,7 +2383,7 @@ affects = "paint"
 type = "BackgroundRepeat"
 initial = "computed::BackgroundRepeat::repeat()"
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["webkit"]
 animation_type = "discrete"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-repeat"
@@ -2398,7 +2394,7 @@ affects = "paint"
 type = "background::BackgroundSize"
 initial = "computed::BackgroundSize::auto()"
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-size"
 vector = { animation_type = "repeatable_list" }
@@ -3759,7 +3755,6 @@ keyword = { values = ["normal", "text", "emoji", "unicode"] }
 
 [font-variant-position]
 struct = "font"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-position"
 animation_type = "discrete"
 affects = "layout"
@@ -4020,7 +4015,7 @@ keyword = { values = ["fill", "contain", "cover", "none", "scale-down"] }
 
 [mask-type]
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-type"
 animation_type = "discrete"
 affects = "paint"
@@ -4028,7 +4023,7 @@ keyword = { values = ["luminance", "alpha"] }
 
 [mask-mode]
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-mode"
 animation_type = "discrete"
 affects = "paint"
@@ -4037,7 +4032,7 @@ keyword = { values = ["match-source", "alpha", "luminance"] }
 
 [mask-clip]
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-clip"
 animation_type = "discrete"
 affects = "paint"
@@ -4047,7 +4042,7 @@ keyword = { values = ["border-box", "content-box", "padding-box"], extra_gecko_v
 
 [mask-origin]
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-origin"
 animation_type = "discrete"
 affects = "paint"
@@ -4057,7 +4052,7 @@ keyword = { values = ["border-box", "content-box", "padding-box"], extra_gecko_v
 
 [mask-composite]
 struct = "svg"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-composite"
 animation_type = "discrete"
 affects = "paint"

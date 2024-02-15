@@ -14,7 +14,7 @@ jobs:
     name: Linux (Debug)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run Tests
@@ -26,11 +26,35 @@ jobs:
     name: Linux (Release)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run Tests
         run: cargo build --release --features servo
+        env:
+          RUST_BACKTRACE: 1
+
+  macos-debug:
+    name: macOS (Debug)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run Tests
+        run: cargo build --features servo
+        env:
+          RUST_BACKTRACE: 1
+
+  windows-debug:
+    name: Windows (Debug)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run Tests
+        run: cargo build --features servo
         env:
           RUST_BACKTRACE: 1
 
@@ -41,6 +65,8 @@ jobs:
     needs:
       - linux-debug
       - linux-release
+      - macos-debug
+      - windows-debug
     steps:
       - name: Success
         if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}

@@ -30,6 +30,7 @@ use crate::values::computed::TimingFunction;
 use crate::values::generics::easing::BeforeFlag;
 use crate::values::specified::TransitionBehavior;
 use crate::Atom;
+use debug_unreachable::debug_unreachable;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use servo_arc::Arc;
@@ -620,7 +621,9 @@ impl Animation {
                 self.current_direction = match self.current_direction {
                     AnimationDirection::Normal => AnimationDirection::Reverse,
                     AnimationDirection::Reverse => AnimationDirection::Normal,
-                    _ => unreachable!(),
+                    _ => unreachable!(
+                        "Current animation direction can only be `normal` or `reverse`."
+                    ),
                 };
             },
             _ => {},
@@ -694,57 +697,102 @@ impl Animation {
         // NB: We shall not touch the started_at field, since we don't want to
         // restart the animation.
         let old_started_at = self.started_at;
+        let old_delay = self.delay;
         let old_duration = self.duration;
         let old_direction = self.current_direction;
         let old_state = self.state.clone();
         let old_iteration_state = self.iteration_state.clone();
 
         *self = other.clone();
-
-        self.started_at = old_started_at;
         self.current_direction = old_direction;
 
-        // Don't update the iteration count, just the iteration limit.
-        // TODO: see how changing the limit affects rendering in other browsers.
-        // We might need to keep the iteration count even when it's infinite.
-        match (&mut self.iteration_state, old_iteration_state) {
-            (
-                &mut KeyframesIterationState::Finite(ref mut iters, _),
-                KeyframesIterationState::Finite(old_iters, _),
-            ) => *iters = old_iters,
-            _ => {},
-        }
+        if self.delay != old_delay {
+            // `started_at` incorporates the delay, so changing the delay necessarily changes `started_at`.
+            // Note: `started_at` may actually be in the future.
+            self.started_at = old_started_at + (self.delay - old_delay);
 
-        // Don't pause or restart animations that should remain finished.
-        // We call mem::replace because `has_ended(...)` looks at `Animation::state`.
-        let new_state = std::mem::replace(&mut self.state, Running);
-        if old_state == Finished && self.has_ended(now) {
-            self.state = Finished;
+            match old_state {
+                Paused(old_progress) => {
+                    let mut progress = old_progress + (old_delay - self.delay) / self.duration;
+                    while progress > 1. && !self.on_last_iteration() {
+                        self.iterate();
+                        progress -= 1.;
+                    }
+                    self.state = Paused(progress);
+                },
+                Finished => {
+                    if self.has_ended(now) {
+                        self.state = Finished;
+                    } else if self.started_at <= now {
+                        self.state = Running;
+                    } else {
+                        self.state = Pending;
+                    }
+                },
+                _ => {
+                    // Running or Pending — re-advance iterations from a fresh
+                    // iteration state.
+                    let mut starting_progress = (now - self.started_at) / self.duration;
+                    match self.iteration_state {
+                        KeyframesIterationState::Finite(ref mut current, _) => *current = 0.0,
+                        _ => {},
+                    }
+                    while starting_progress > 1. && !self.on_last_iteration() {
+                        self.iterate();
+                        starting_progress -= 1.;
+                    }
+                },
+            }
+
+            // Don't check old_state when delay changed.
+            if self.state == Pending && self.started_at <= now {
+                self.state = Running;
+            }
         } else {
-            self.state = new_state;
-        }
+            self.started_at = old_started_at;
 
-        // If we're unpausing the animation, fake the start time so we seem to
-        // restore it.
-        //
-        // If the animation keeps paused, keep the old value.
-        //
-        // If we're pausing the animation, compute the progress value.
-        match (&mut self.state, &old_state) {
-            (&mut Pending, &Paused(progress)) => {
-                self.started_at = now - (self.duration * progress);
-            },
-            (&mut Paused(ref mut new), &Paused(old)) => *new = old,
-            (&mut Paused(ref mut progress), &Running) => {
-                *progress = (now - old_started_at) / old_duration
-            },
-            _ => {},
-        }
+            // Don't update the iteration count, just the iteration limit.
+            // TODO: see how changing the limit affects rendering in other browsers.
+            // We might need to keep the iteration count even when it's infinite.
+            match (&mut self.iteration_state, old_iteration_state) {
+                (
+                    &mut KeyframesIterationState::Finite(ref mut iters, _),
+                    KeyframesIterationState::Finite(old_iters, _),
+                ) => *iters = old_iters,
+                _ => {},
+            }
 
-        // Try to detect when we should skip straight to the running phase to
-        // avoid sending multiple animationstart events.
-        if self.state == Pending && self.started_at <= now && old_state != Pending {
-            self.state = Running;
+            // Don't pause or restart animations that should remain finished.
+            // We call mem::replace because `has_ended(...)` looks at `Animation::state`.
+            let new_state = std::mem::replace(&mut self.state, Running);
+            if old_state == Finished && self.has_ended(now) {
+                self.state = Finished;
+            } else {
+                self.state = new_state;
+            }
+
+            // If we're unpausing the animation, fake the start time so we seem to
+            // restore it.
+            //
+            // If the animation keeps paused, keep the old value.
+            //
+            // If we're pausing the animation, compute the progress value.
+            match (&mut self.state, &old_state) {
+                (&mut Pending, &Paused(progress)) => {
+                    self.started_at = now - (self.duration * progress);
+                },
+                (&mut Paused(ref mut new), &Paused(old)) => *new = old,
+                (&mut Paused(ref mut progress), &Running) => {
+                    *progress = (now - old_started_at) / old_duration
+                },
+                _ => {},
+            }
+
+            // Try to detect when we should skip straight to the running phase to
+            // avoid sending multiple animationstart events.
+            if self.state == Pending && self.started_at <= now && old_state != Pending {
+                self.state = Running;
+            }
         }
     }
 
@@ -756,7 +804,9 @@ impl Animation {
             return;
         }
 
-        let total_progress = match self.state {
+        // Raw progress ratio of the animation: can be negative (before start) or
+        // >1.0 (after end or during multiple iterations).
+        let progress = match self.state {
             AnimationState::Running | AnimationState::Pending | AnimationState::Finished => {
                 (now - self.started_at) / self.duration
             },
@@ -764,7 +814,7 @@ impl Animation {
             AnimationState::Canceled => return,
         };
 
-        if total_progress < 0.
+        if progress < 0.
             && self.fill_mode != AnimationFillMode::Backwards
             && self.fill_mode != AnimationFillMode::Both
         {
@@ -776,9 +826,43 @@ impl Animation {
         {
             return;
         }
-        let total_progress = total_progress
-            .min(self.current_iteration_end_progress())
-            .max(0.0);
+
+        // If we only need to take into account one keyframe, then exit early
+        // in order to avoid doing more work.
+        let mut add_declarations_to_map = |keyframe: &ComputedKeyframe| {
+            for value_or_reference in keyframe.values.iter() {
+                let AnimationValueOrReference::AnimationValue(value) = value_or_reference else {
+                    unreachable!("First or last keyframes define all properties");
+                };
+                map.insert(value.id().to_owned(), value.clone());
+            }
+        };
+
+        // Handle negative progress (before animation start) with backwards/both fill mode
+        if progress < 0.0 {
+            if let Some(keyframe) = match self.current_direction {
+                AnimationDirection::Normal => self.computed_steps.first(),
+                AnimationDirection::Reverse => self.computed_steps.last(),
+                _ => unreachable!("Current animation direction can only be `normal` or `reverse`."),
+            } {
+                add_declarations_to_map(keyframe);
+            }
+            return;
+        }
+
+        // Progress clamped to the current iteration [0.0, 1.0].
+        let total_progress = progress.min(self.current_iteration_end_progress()).max(0.0);
+
+        // At 1.0 there is nothing left to interpolate. Return end keyframe.
+        if total_progress == 1.0 {
+            let keyframe = match self.current_direction {
+                AnimationDirection::Normal => self.computed_steps.last().unwrap(),
+                AnimationDirection::Reverse => self.computed_steps.first().unwrap(),
+                _ => unreachable!("Current animation direction can only be `normal` or `reverse`."),
+            };
+            add_declarations_to_map(keyframe);
+            return;
+        }
 
         // Get the indices of the previous (from) keyframe and the next (to) keyframe.
         let next_keyframe_index;
@@ -789,7 +873,7 @@ impl Animation {
                 next_keyframe_index = self
                     .computed_steps
                     .iter()
-                    .position(|step| total_progress as f32 <= step.start_percentage);
+                    .position(|step| (total_progress as f32) < step.start_percentage);
                 prev_keyframe_index = next_keyframe_index
                     .and_then(|pos| if pos != 0 { Some(pos - 1) } else { None })
                     .unwrap_or(0);
@@ -819,41 +903,27 @@ impl Animation {
             prev_keyframe_index, next_keyframe_index
         );
 
+        let prev_keyframe = &self.computed_steps[prev_keyframe_index];
         let Some(next_keyframe_index) = next_keyframe_index else {
-            return;
-        };
-
-        // If we only need to take into account one keyframe, then exit early
-        // in order to avoid doing more work.
-        let mut add_declarations_to_map = |keyframe_index: usize| {
-            for value_or_reference in &self.computed_steps[keyframe_index].values {
-                let AnimationValueOrReference::AnimationValue(value) = value_or_reference else {
-                    unreachable!("First or last keyframes define all properties");
-                };
-
-                map.insert(value.id().to_owned(), value.clone());
+            unsafe {
+                debug_unreachable!(
+                    "next_keyframe_index should always be Some: \
+                     total_progress is in [0, 1) at this point. \
+                     Normal direction: keyframe with start_percentage 1.0 always satisfies. \
+                     Reverse direction: keyframe with start_percentage 0.0 always satisfies."
+                );
             }
         };
 
-        let reversed = self.current_direction != AnimationDirection::Normal;
-        if total_progress <= 0.0 {
-            if reversed {
-                add_declarations_to_map(self.computed_steps.len() - 1);
-            } else {
-                add_declarations_to_map(0);
-            }
-            return;
-        }
-        if total_progress >= 1.0 {
-            if reversed {
-                add_declarations_to_map(0);
-            } else {
-                add_declarations_to_map(self.computed_steps.len() - 1);
-            }
+        // Prevent division by zero from percentage_between_keyframes.
+        // This can happen for reverse direction at total_progress == 0.0.
+        if prev_keyframe_index == next_keyframe_index {
+            add_declarations_to_map(&prev_keyframe);
             return;
         }
 
         // Interpolate a new value for each animating property
+        let reversed = self.current_direction != AnimationDirection::Normal;
         for property_index in 0..self.number_of_animating_properties {
             let Some(previous_keyframe) = self.next_relevant_keyframe_for_property_in_direction(
                 property_index,

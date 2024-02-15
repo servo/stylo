@@ -19,5 +19,5 @@ jobs:
           key: upstream
       - run: |
           ./sync.sh _filtered
-          git fetch -f --progress ./_filtered master:upstream
+          git fetch -f --progress ./_filtered main:upstream
           git push -fu --progress origin upstream

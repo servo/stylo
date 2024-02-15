@@ -226,6 +226,20 @@ impl Device {
         self.used_font_metrics.load(Ordering::Relaxed)
     }
 
+    /// Get the viewport size on this [`Device`].
+    pub fn viewport_size(&self) -> Size2D<f32, CSSPixel> {
+        self.viewport_size
+    }
+
+    /// Set the viewport size on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_viewport_size(&mut self, viewport_size: Size2D<f32, CSSPixel>) {
+        self.viewport_size = viewport_size;
+    }
+
     /// Returns the viewport size of the current device in app units, needed,
     /// among other things, to resolve viewport units.
     #[inline]
@@ -267,6 +281,18 @@ impl Device {
         self.device_pixel_ratio
     }
 
+    /// Set a new device pixel ratio on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_device_pixel_ratio(
+        &mut self,
+        device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
+    ) {
+        self.device_pixel_ratio = device_pixel_ratio;
+    }
+
     /// Gets the size of the scrollbar in CSS pixels.
     pub fn scrollbar_inline_size(&self) -> CSSPixelLength {
         // TODO: implement this.
@@ -304,6 +330,15 @@ impl Device {
     /// Returns the default foreground color.
     pub fn default_color(&self) -> AbsoluteColor {
         AbsoluteColor::BLACK
+    }
+
+    /// Set the [`PrefersColorScheme`] value on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_color_scheme(&mut self, new_color_scheme: PrefersColorScheme) {
+        self.prefers_color_scheme = new_color_scheme;
     }
 
     /// Returns the color scheme of this [`Device`].

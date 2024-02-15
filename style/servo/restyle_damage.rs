@@ -59,7 +59,12 @@ impl ServoRestyleDamage {
         old: &ComputedValues,
         new: &ComputedValues,
     ) -> StyleDifference {
-        let mut damage = compute_damage(old, new);
+        let mut damage = if std::ptr::eq(old, new) {
+            ServoRestyleDamage::empty()
+        } else {
+            compute_damage(old, new)
+        };
+
         if damage.is_empty() {
             return StyleDifference {
                 damage,

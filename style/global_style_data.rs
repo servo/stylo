@@ -11,7 +11,7 @@ use crate::parallel::STYLE_THREAD_STACK_SIZE_KB;
 use crate::shared_lock::SharedRwLock;
 use crate::thread_state;
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
-#[cfg(unix)]
+#[cfg(all(unix, not(target_arch = "wasm32")))]
 use std::os::unix::thread::{JoinHandleExt, RawPthread};
 #[cfg(windows)]
 use std::os::windows::{io::AsRawHandle, prelude::RawHandle};
@@ -19,7 +19,7 @@ use std::{io, sync::LazyLock, thread};
 use thin_vec::ThinVec;
 
 /// Platform-specific handle to a thread.
-#[cfg(unix)]
+#[cfg(all(unix, not(target_arch = "wasm32")))]
 pub type PlatformThreadHandle = RawPthread;
 /// Platform-specific handle to a thread.
 #[cfg(windows)]
@@ -139,7 +139,7 @@ impl StyleThreadPool {
         LazyLock::force(&STYLE_THREAD_POOL);
 
         for join_handle in STYLE_THREAD_JOIN_HANDLES.lock().iter() {
-            #[cfg(unix)]
+            #[cfg(all(unix, not(target_arch = "wasm32")))]
             let handle = join_handle.as_pthread_t();
             #[cfg(windows)]
             let handle = join_handle.as_raw_handle();

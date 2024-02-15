@@ -1412,8 +1412,30 @@ pub mod style_structs {
     use rustc_hash::FxHasher;
     use super::longhands;
     use std::hash::{Hash, Hasher};
+    use crate::logical_geometry::PhysicalSide;
     use crate::values::specified::color::ColorSchemeFlags;
     use crate::derives::*;
+
+    <%def name="impl_physical_sides(ident, props)">
+        /// Gets the value of the longhand of `${ident}` on the `s` side`.
+        pub fn get_${ident}(&self, s: PhysicalSide) -> &longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T {
+            match s {
+                PhysicalSide::Top => &self.${data.longhands_by_name[props[0]].ident},
+                PhysicalSide::Right => &self.${data.longhands_by_name[props[1]].ident},
+                PhysicalSide::Bottom => &self.${data.longhands_by_name[props[2]].ident},
+                PhysicalSide::Left => &self.${data.longhands_by_name[props[3]].ident},
+            }
+        }
+        /// Sets the value of the longhand of `${ident}` on the `s` side to `v`.
+        pub fn set_${ident}(&mut self, s: PhysicalSide, v: longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T) {
+            match s {
+                PhysicalSide::Top => self.set_${data.longhands_by_name[props[0]].ident}(v),
+                PhysicalSide::Right => self.set_${data.longhands_by_name[props[1]].ident}(v),
+                PhysicalSide::Bottom => self.set_${data.longhands_by_name[props[2]].ident}(v),
+                PhysicalSide::Left => self.set_${data.longhands_by_name[props[3]].ident}(v),
+            }
+        }
+    </%def>
 
     % for style_struct in data.active_style_structs():
         % if style_struct.name == "Font":
@@ -1522,16 +1544,7 @@ pub mod style_structs {
                     }
                 % endif
             % endfor
-            % if style_struct.name == "Border":
-                % for side in ["top", "right", "bottom", "left"]:
-                    /// Whether the border-${side} property has nonzero width.
-                    #[allow(non_snake_case)]
-                    pub fn border_${side}_has_nonzero_width(&self) -> bool {
-                        use crate::Zero;
-                        !self.border_${side}_width.is_zero()
-                    }
-                % endfor
-            % elif style_struct.name == "Font":
+            % if style_struct.name == "Font":
                 /// Computes a font hash in order to be able to cache fonts
                 /// effectively in GFX and layout.
                 pub fn compute_font_hash(&mut self) {
@@ -1559,13 +1572,6 @@ pub mod style_structs {
                 pub fn color_scheme_bits(&self) -> ColorSchemeFlags {
                     self.color_scheme.bits
                 }
-            % elif style_struct.name == "Outline":
-                /// Whether the outline-width property is non-zero.
-                #[inline]
-                pub fn outline_has_nonzero_width(&self) -> bool {
-                    use crate::Zero;
-                    !self.outline_width.is_zero()
-                }
             % elif style_struct.name == "Box":
                 /// Sets the display property, but without touching original_display,
                 /// except when the adjustment comes from root or item display fixups.
@@ -1579,6 +1585,10 @@ pub mod style_structs {
                         self.original_display = dpy;
                     }
                 }
+            % elif style_struct.name == "Margin":
+                ${impl_physical_sides("margin", ["margin-top", "margin-right", "margin-bottom", "margin-left"])}
+            % elif style_struct.name == "Position":
+                ${impl_physical_sides("inset", ["top", "right", "bottom", "left"])}
             % endif
         }
 
@@ -2043,7 +2053,7 @@ impl ComputedValues {
     pub fn computed_value_to_string(&self, property: PropertyDeclarationId) -> String {
         match property {
             PropertyDeclarationId::Longhand(id) => {
-                let context = resolved::Context {
+                let mut context = resolved::Context {
                     style: self,
                     for_property: id.into(),
                     current_longhand: Some(id),
@@ -2051,7 +2061,7 @@ impl ComputedValues {
                 let mut s = String::new();
                 self.computed_or_resolved_value(
                     id,
-                    Some(&context),
+                    Some(&mut context),
                     &mut s
                 ).unwrap();
                 s
@@ -2198,24 +2208,6 @@ impl ComputedValuesInner {
             &padding_style.padding_bottom.0,
             &padding_style.padding_left.0,
         ))
-    }
-
-    /// Get the logical border width
-    #[inline]
-    pub fn border_width_for_writing_mode(&self, writing_mode: WritingMode) -> LogicalMargin<Au> {
-        let border_style = self.get_border();
-        LogicalMargin::from_physical(writing_mode, SideOffsets2D::new(
-            Au::from(border_style.border_top_width),
-            Au::from(border_style.border_right_width),
-            Au::from(border_style.border_bottom_width),
-            Au::from(border_style.border_left_width),
-        ))
-    }
-
-    /// Gets the logical computed border widths for this style.
-    #[inline]
-    pub fn logical_border_width(&self) -> LogicalMargin<Au> {
-        self.border_width_for_writing_mode(self.writing_mode)
     }
 
     /// Gets the logical computed margin from this style.
@@ -2998,11 +2990,22 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 % for effect_name in ["repaint", "recalculate_overflow", "rebuild_stacking_context", "rebuild_box"]:
 pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &ComputedValues) -> bool {
     % for style_struct in data.active_style_structs():
-        % for longhand in style_struct.longhands:
+        <% longhands_affected = [effect_name in longhand.servo_restyle_damage.split() for longhand in style_struct.longhands if not longhand.logical] %>
+        % if any(longhands_affected):
+        let old_${style_struct.name_lower} = old.get_${style_struct.name_lower}();
+        let new_${style_struct.name_lower} = new.get_${style_struct.name_lower}();
+        if !std::ptr::eq(old_${style_struct.name_lower}, new_${style_struct.name_lower}) {
+            if 
+            % for longhand in style_struct.longhands:
             % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:
-                old.get_${style_struct.name_lower}().${longhand.ident} != new.get_${style_struct.name_lower}().${longhand.ident} ||
+                old_${style_struct.name_lower}.${longhand.ident} != new_${style_struct.name_lower}.${longhand.ident} ||
             % endif
-        % endfor
+            % endfor
+            false {
+                return true;
+            }
+        }
+        % endif
     % endfor
     false
 }

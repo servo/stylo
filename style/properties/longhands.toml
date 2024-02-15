@@ -2182,7 +2182,7 @@ affects = "overflow"
 type = "UserSelect"
 initial = "computed::UserSelect::Auto"
 struct = "ui"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["moz", "webkit"]
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-ui-4/#propdef-user-select"
@@ -2570,9 +2570,8 @@ affects = "layout"
 type = "NonNegativeLengthOrNumber"
 initial = "generics::length::LengthOrNumber::Number(From::from(8.0))"
 struct = "inherited_text"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-text-3/#tab-size-property"
-aliases = ["-moz-tab-size"]
+extra_gecko_aliases = ["-moz-tab-size"]
 affects = "layout"
 
 [text-autospace]
@@ -3651,7 +3650,6 @@ gecko_constant_prefix = "NS_FONT_VARIANT_CAPS"
 
 [font-kerning]
 struct = "font"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-kerning"
 animation_type = "discrete"
 affects = "layout"

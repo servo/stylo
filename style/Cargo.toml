@@ -1,6 +1,6 @@
 [package]
-name = "style"
-version = "0.0.1"
+name = "stylo"
+version = "0.2.1"
 authors = ["The Servo Project Developers"]
 license = "MPL-2.0"
 repository = "https://github.com/servo/stylo"
@@ -18,6 +18,7 @@ path = "lib.rs"
 doctest = false
 
 [features]
+default = ["servo"]
 gecko = [
     "bindgen",
     "malloc_size_of/gecko",
@@ -31,15 +32,15 @@ gecko = [
     "to_shmem/gecko",
 ]
 servo = [
-    "arrayvec/use_union",
     "cssparser/serde",
     "encoding_rs",
     "malloc_size_of/servo",
-    "markup5ever",
+    "web_atoms",
+    "mime",
     "serde",
     "servo_arc/servo",
     "stylo_atoms",
-    "servo_config",
+    "style_config",
     "string_cache",
     "style_traits/servo",
     "url",
@@ -48,6 +49,7 @@ servo = [
 ]
 gecko_debug = []
 gecko_refcount_logging = []
+nsstring = []
 
 [dependencies]
 app_units = "0.7.8"
@@ -55,9 +57,9 @@ arrayvec = "0.7"
 atomic_refcell = "0.1"
 bitflags = "2"
 byteorder = "1.0"
-cssparser = "0.34"
+cssparser = "0.35"
 derive_more = { version = "0.99", default-features = false, features = ["add", "add_assign", "deref", "deref_mut", "from"] }
-dom = { path = "../../../dom/base/rust" }
+dom = { version = "0.2", path = "../stylo_dom", package = "stylo_dom" }
 new_debug_unreachable = "1.0"
 encoding_rs = {version = "0.8", optional = true}
 euclid = "0.22"
@@ -68,11 +70,11 @@ itertools = "0.14"
 itoa = "1.0"
 lazy_static = "1"
 log = "0.4"
-malloc_size_of = { path = "../malloc_size_of" }
-malloc_size_of_derive = { path = "../../../xpcom/rust/malloc_size_of_derive" }
-markup5ever = { version = "0.12", optional = true }
+malloc_size_of = { version = "0.2", path = "../malloc_size_of", package = "stylo_malloc_size_of" }
+malloc_size_of_derive = "0.1"
+web_atoms = { version = "0.1", optional = true }
 matches = "0.1"
-nsstring = {path = "../../../xpcom/rust/nsstring/", optional = true}
+mime = { version = "0.3.13", optional = true }
 num_cpus = {version = "1.1.0"}
 num-integer = "0.1"
 num-traits = "0.2"
@@ -81,25 +83,24 @@ parking_lot = "0.12"
 precomputed-hash = "0.1.1"
 rayon = "1"
 rayon-core = "1"
-selectors = { path = "../selectors" }
+selectors = { version = "0.27.0", path = "../selectors" }
 serde = {version = "1.0", optional = true, features = ["derive"]}
-servo_arc = { path = "../servo_arc" }
-stylo_atoms = {path = "../atoms", optional = true}
-servo_config = {path = "../config", optional = true}
+servo_arc = { version = "0.4.0", path = "../servo_arc" }
+stylo_atoms = { version = "0.2.0", path = "../stylo_atoms", optional = true}
 smallbitvec = "2.3.0"
 smallvec = "1.0"
 static_assertions = "1.1"
-static_prefs = { path = "../../../modules/libpref/init/static_prefs" }
+static_prefs = { version = "0.2", path = "../stylo_static_prefs", package = "stylo_static_prefs" }
 string_cache = { version = "0.8", optional = true }
-style_derive = {path = "../style_derive"}
-style_traits = {path = "../style_traits"}
-to_shmem = {path = "../to_shmem"}
-to_shmem_derive = {path = "../to_shmem_derive"}
-thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
+style_config = { version = "0.2", path = "../stylo_config", package = "stylo_config", optional = true }
+style_derive = { version = "0.2", path = "../style_derive", package = "stylo_derive" }
+style_traits = { version = "0.2", path = "../style_traits", package = "stylo_traits" }
+to_shmem = { version = "0.2", path = "../to_shmem" }
+to_shmem_derive = { version = "0.1", path = "../to_shmem_derive" }
+thin-vec = "0.2.1"
 uluru = "3.0"
 unicode-bidi = { version = "0.3", default-features = false }
 void = "1.0.2"
-gecko-profiler = { path = "../../../tools/profiler/rust-api" }
 url = { version = "2.5", optional = true, features = ["serde"] }
 
 [build-dependencies]

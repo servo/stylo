@@ -1,0 +1,14 @@
+[package]
+name = "stylo_config"
+version = "0.2.0"
+authors = ["The Servo Project Developers"]
+documentation = "https://docs.rs/stylo_config/"
+description = "Runtime configuration for Stylo"
+repository = "https://github.com/servo/stylo"
+keywords = ["css", "style"]
+license = "MPL-2.0"
+edition = "2021"
+
+[lib]
+name = "stylo_config"
+path = "lib.rs"

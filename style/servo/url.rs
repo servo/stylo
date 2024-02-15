@@ -68,7 +68,12 @@ impl CssUrl {
     /// FIXME(emilio): Should honor CorsMode.
     pub fn parse_from_string(url: String, context: &ParserContext, _: CorsMode) -> Self {
         let serialization = Arc::new(url);
-        let resolved = context.url_data.0.join(&serialization).ok().map(Arc::new);
+        // Per https://drafts.csswg.org/css-values-4/#url-empty
+        // If the original url is empty, then the resolved url is considered invalid.
+        let resolved = (!serialization.is_empty())
+            .then(|| context.url_data.0.join(&serialization))
+            .and_then(Result::ok)
+            .map(Arc::new);
         CssUrl(Arc::new(CssUrlData {
             original: Some(serialization),
             resolved: resolved,
@@ -120,7 +125,10 @@ impl CssUrl {
     pub fn new_for_testing(url: &str) -> Self {
         CssUrl(Arc::new(CssUrlData {
             original: Some(Arc::new(url.into())),
-            resolved: ::url::Url::parse(url).ok().map(Arc::new),
+            resolved: (!url.is_empty())
+                .then(|| ::url::Url::parse(url))
+                .and_then(Result::ok)
+                .map(Arc::new),
         }))
     }
 

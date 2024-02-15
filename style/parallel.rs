@@ -34,8 +34,21 @@ pub const STYLE_THREAD_STACK_SIZE_KB: usize = 256;
 
 /// The minimum stack size for a thread in the styling pool, in kilobytes.
 /// Servo requires a bigger stack in debug builds.
+/// We allow configuring the size, since running with ASAN requires an even larger
+/// stack size.
 #[cfg(feature = "servo")]
-pub const STYLE_THREAD_STACK_SIZE_KB: usize = 512;
+pub const STYLE_THREAD_STACK_SIZE_KB: usize = const {
+    let default_stack_size = 512;
+    if let Some(user_def_size) = option_env!("SERVO_STYLE_THREAD_STACK_SIZE_KB") {
+        if let Ok(user_def_size) = usize::from_str_radix(user_def_size, 10) {
+            user_def_size
+        } else {
+            panic!("SERVO_STYLE_THREAD_STACK_SIZE_KB must be a valid integer")
+        }
+    } else {
+        default_stack_size
+    }
+};
 
 /// The stack margin. If we get this deep in the stack, we will skip recursive
 /// optimizations to ensure that there is sufficient room for non-recursive work.

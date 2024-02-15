@@ -27,7 +27,6 @@ use crate::media_queries::Device;
 use crate::parser::ParserContext;
 use crate::selector_parser::PseudoElement;
 use crate::stylist::Stylist;
-#[cfg(feature = "servo")] use servo_config::prefs;
 use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 use crate::stylesheets::{CssRuleType, CssRuleTypes, Origin};
 use crate::logical_geometry::{LogicalAxis, LogicalCorner, LogicalSide};
@@ -528,7 +527,7 @@ impl NonCustomPropertyId {
                     Some(pref) => pref,
                 };
 
-                prefs::pref_map().get(pref).as_bool().unwrap_or(false)
+                style_config::get_bool(pref)
             % endif
         };
 

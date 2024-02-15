@@ -20,6 +20,7 @@ extern crate lazy_static;
 extern crate malloc_size_of;
 #[macro_use]
 extern crate malloc_size_of_derive;
+#[cfg(feature = "gecko")]
 extern crate nsstring;
 extern crate selectors;
 #[macro_use]
@@ -27,14 +28,14 @@ extern crate serde;
 extern crate servo_arc;
 #[cfg(feature = "servo")]
 extern crate servo_atoms;
-#[cfg(feature = "servo")]
-extern crate servo_url;
 extern crate thin_vec;
 extern crate to_shmem;
 #[macro_use]
 extern crate to_shmem_derive;
 #[cfg(feature = "servo")]
 extern crate webrender_api;
+#[cfg(feature = "servo")]
+extern crate url;
 #[cfg(feature = "servo")]
 pub use webrender_api::units::DevicePixel;
 

@@ -12,7 +12,6 @@ use crate::selector_parser::{NonTSPseudoClass, SelectorImpl};
 use crate::values::AtomIdent;
 use crate::AllocErr;
 use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded};
-use dom::{DocumentState, ElementState};
 use selectors::attr::NamespaceConstraint;
 use selectors::parser::{
     Combinator, Component, RelativeSelector, RelativeSelectorCombinatorCount,
@@ -22,6 +21,7 @@ use selectors::parser::{Selector, SelectorIter};
 use selectors::visitor::{SelectorListKind, SelectorVisitor};
 use servo_arc::Arc;
 use smallvec::SmallVec;
+use style_traits::dom::{DocumentState, ElementState};
 
 /// Mapping between (partial) CompoundSelectors (and the combinator to their
 /// right) and the states and attributes they depend on.
@@ -507,7 +507,7 @@ trait Collector {
     fn class_map(&mut self) -> &mut IdOrClassDependencyMap;
     fn state_map(&mut self) -> &mut StateDependencyMap;
     fn attribute_map(&mut self) -> &mut LocalNameDependencyMap;
-    fn custom_state_map(&mut self) -> &mut LocalNameDependencyMap;
+    fn custom_state_map(&mut self) -> &mut CustomStateDependencyMap;
     fn update_states(&mut self, element_state: ElementState, document_state: DocumentState);
 
     // In normal invalidations, type-based dependencies don't need to be explicitly tracked;

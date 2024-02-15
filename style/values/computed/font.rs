@@ -356,7 +356,10 @@ macro_rules! static_font_family {
         lazy_static! {
             static ref $ident: FontFamily = FontFamily {
                 families: FontFamilyList {
+                    #[cfg(feature = "gecko")]
                     list: crate::ArcSlice::from_iter_leaked(std::iter::once($family)),
+                    #[cfg(feature = "servo")]
+                    list: Box::new([$family]),
                 },
                 is_system_font: false,
                 is_initial: false,
@@ -373,6 +376,7 @@ impl FontFamily {
     }
 
     /// Returns the font family for `-moz-bullet-font`.
+    #[cfg(feature = "gecko")]
     pub(crate) fn moz_bullet() -> &'static Self {
         static_font_family!(
             MOZ_BULLET,
@@ -386,6 +390,7 @@ impl FontFamily {
     }
 
     /// Returns a font family for a single system font.
+    #[cfg(feature = "gecko")]
     pub fn for_system_font(name: &str) -> Self {
         Self {
             families: FontFamilyList {
@@ -417,6 +422,7 @@ impl FontFamily {
         generic_font_family!(MONOSPACE, Monospace);
         generic_font_family!(CURSIVE, Cursive);
         generic_font_family!(FANTASY, Fantasy);
+        #[cfg(feature = "gecko")]
         generic_font_family!(MOZ_EMOJI, MozEmoji);
         generic_font_family!(SYSTEM_UI, SystemUi);
 
@@ -430,6 +436,7 @@ impl FontFamily {
             GenericFontFamily::Monospace => &*MONOSPACE,
             GenericFontFamily::Cursive => &*CURSIVE,
             GenericFontFamily::Fantasy => &*FANTASY,
+            #[cfg(feature = "gecko")]
             GenericFontFamily::MozEmoji => &*MOZ_EMOJI,
             GenericFontFamily::SystemUi => &*SYSTEM_UI,
         };
@@ -465,7 +472,12 @@ impl ToCss for FontFamily {
         let mut iter = self.families.iter();
         match iter.next() {
             Some(f) => f.to_css(dest)?,
-            None => return Ok(()),
+            None => {
+                #[cfg(feature = "gecko")]
+                return return Ok(());
+                #[cfg(feature = "servo")]
+                unreachable!();
+            },
         }
         for family in iter {
             dest.write_str(", ")?;
@@ -488,6 +500,7 @@ pub struct FamilyName {
     pub syntax: FontFamilyNameSyntax,
 }
 
+#[cfg(feature = "gecko")]
 impl FamilyName {
     fn is_known_icon_font_family(&self) -> bool {
         use crate::gecko_bindings::bindings;
@@ -613,6 +626,7 @@ impl GenericFontFamily {
     /// When we disallow websites to override fonts, we ignore some generic
     /// families that the website might specify, since they're not configured by
     /// the user. See bug 789788 and bug 1730098.
+    #[cfg(feature = "gecko")]
     pub(crate) fn valid_for_user_font_prioritization(self) -> bool {
         match self {
             Self::None | Self::Fantasy | Self::Cursive | Self::SystemUi | Self::MozEmoji => false,
@@ -685,11 +699,32 @@ impl Parse for SingleFontFamily {
 }
 
 /// A list of font families.
+#[cfg(feature = "gecko")]
 #[derive(Clone, Debug, ToComputedValue, ToResolvedValue, ToShmem, PartialEq, Eq)]
 #[repr(C)]
 pub struct FontFamilyList {
     /// The actual list of font families specified.
     pub list: crate::ArcSlice<SingleFontFamily>,
+}
+
+/// A list of font families.
+#[cfg(feature = "servo")]
+#[derive(
+    Clone,
+    Debug,
+    Deserialize,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+)]
+pub struct FontFamilyList {
+    /// The actual list of font families specified.
+    pub list: Box<[SingleFontFamily]>,
 }
 
 impl FontFamilyList {
@@ -704,6 +739,7 @@ impl FontFamilyList {
     /// generic instead of the site's specified font may cause substantial breakage.
     /// If no suitable generic is found in the list, insert the default generic ahead
     /// of all the listed families except for known ligature-based icon fonts.
+    #[cfg(feature = "gecko")]
     pub(crate) fn prioritize_first_generic_or_prepend(&mut self, generic: GenericFontFamily) {
         let mut index_of_first_generic = None;
         let mut target_index = None;
@@ -752,6 +788,7 @@ impl FontFamilyList {
     }
 
     /// Returns whether we need to prioritize user fonts.
+    #[cfg(feature = "gecko")]
     pub(crate) fn needs_user_font_prioritization(&self) -> bool {
         self.iter().next().map_or(true, |f| match f {
             SingleFontFamily::Generic(f) => !f.valid_for_user_font_prioritization(),
@@ -1192,7 +1229,7 @@ pub type FontStretchFixedPoint = FixedPoint<u16, FONT_STRETCH_FRACTION_BITS>;
 #[derive(
     Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[repr(C)]
 pub struct FontStretch(pub FontStretchFixedPoint);
 
@@ -1338,20 +1375,28 @@ impl ToResolvedValue for LineHeight {
 
     fn to_resolved_value(self, context: &ResolvedContext) -> Self::ResolvedValue {
         // Resolve <number> to an absolute <length> based on font size.
-        if matches!(self, Self::Normal | Self::MozBlockHeight) {
-            return self;
+        #[cfg(feature = "gecko")] {
+            if matches!(self, Self::Normal | Self::MozBlockHeight) {
+                return self;
+            }
+            let wm = context.style.writing_mode;
+            Self::Length(
+                context
+                    .device
+                    .calc_line_height(
+                        context.style.get_font(),
+                        wm,
+                        Some(context.element_info.element),
+                    )
+                    .to_resolved_value(context),
+            )
         }
-        let wm = context.style.writing_mode;
-        Self::Length(
-            context
-                .device
-                .calc_line_height(
-                    context.style.get_font(),
-                    wm,
-                    Some(context.element_info.element),
-                )
-                .to_resolved_value(context),
-        )
+        if let LineHeight::Number(num) = &self {
+            let size = context.style.get_font().clone_font_size().computed_size();
+            LineHeight::Length(NonNegativeLength::new(size.px() * num.0))
+        } else {
+            self
+        }
     }
 
     #[inline]

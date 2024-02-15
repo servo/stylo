@@ -7,6 +7,8 @@
 #[cfg(feature = "gecko")]
 use crate::counter_style::{CounterStyle, CounterStyleParsingFlags};
 use crate::parser::{Parse, ParserContext};
+#[cfg(feature = "servo")]
+use crate::properties::longhands::list_style_type::SpecifiedValue as ListStyleType;
 use cssparser::{Parser, Token};
 use style_traits::{ParseError, StyleParseErrorKind};
 
@@ -70,6 +72,21 @@ impl ListStyleType {
     #[inline]
     pub fn is_bullet(&self) -> bool {
         self.0.is_bullet()
+    }
+}
+
+#[cfg(feature = "servo")]
+impl ListStyleType {
+    /// Initial specified value for `list-style-type`.
+    #[inline]
+    pub fn disc() -> Self {
+        Self::Disc
+    }
+
+    /// none value.
+    #[inline]
+    pub fn none() -> Self {
+        Self::None
     }
 }
 

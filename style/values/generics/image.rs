@@ -13,7 +13,6 @@ use crate::values::generics::Optional;
 use crate::values::serialize_atom_identifier;
 use crate::Atom;
 use crate::Zero;
-use servo_arc::Arc;
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ToCss};
 
@@ -368,10 +367,9 @@ pub struct PaintWorklet {
     pub name: Atom,
     /// The arguments for the worklet.
     /// TODO: store a parsed representation of the arguments.
-    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "Arc")]
     #[compute(no_field_bound)]
     #[resolve(no_field_bound)]
-    pub arguments: Vec<Arc<custom_properties::SpecifiedValue>>,
+    pub arguments: Vec<custom_properties::SpecifiedValue>,
 }
 
 impl ::style_traits::SpecifiedValueInfo for PaintWorklet {}

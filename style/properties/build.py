@@ -8,6 +8,7 @@ import re
 import sys
 
 BASE = os.path.dirname(__file__.replace("\\", "/"))
+sys.path.insert(0, os.path.join(BASE, "Mako-1.1.2-py2.py3-none-any.whl"))
 sys.path.insert(0, BASE)  # For importing `data.py`
 
 from mako import exceptions
@@ -66,7 +67,12 @@ def main():
                 os.path.join(BASE, "properties.html.mako"), properties=properties_dict
             )
             as_json = json.dumps(properties_dict, indent=4, sort_keys=True)
-            doc_servo = os.path.join(BASE, "..", "..", "..", "target", "doc", "servo")
+
+            # Four dotdots: /path/to/target(4)/debug(3)/build(2)/style-*(1)/out
+            # Do not ascend above the target dir, because it may not be called target
+            # or even have a parent (see CARGO_TARGET_DIR).
+            doc_servo = os.path.join(OUT_DIR, "..", "..", "..", "..", "doc", "stylo")
+
             write(doc_servo, "css-properties.html", as_html)
             write(doc_servo, "css-properties.json", as_json)
             write(OUT_DIR, "css-properties.json", as_json)

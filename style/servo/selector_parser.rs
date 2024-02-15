@@ -50,11 +50,11 @@ pub enum PseudoElement {
     // them.  Also, make sure the UA sheet has the !important rules some of the
     // APPLIES_TO_PLACEHOLDER properties expect!
 
-    Backdrop,
-
     // Non-eager pseudos.
+    Backdrop,
     DetailsSummary,
     DetailsContent,
+    Marker,
     ServoAnonymousBox,
     ServoAnonymousTable,
     ServoAnonymousTableCell,
@@ -79,6 +79,7 @@ impl ToCss for PseudoElement {
             Backdrop => "::backdrop",
             DetailsSummary => "::-servo-details-summary",
             DetailsContent => "::-servo-details-content",
+            Marker => "::marker",
             ServoAnonymousBox => "::-servo-anonymous-box",
             ServoAnonymousTable => "::-servo-anonymous-table",
             ServoAnonymousTableCell => "::-servo-anonymous-table-cell",
@@ -139,7 +140,7 @@ impl PseudoElement {
     /// Whether this pseudo-element is the ::marker pseudo.
     #[inline]
     pub fn is_marker(&self) -> bool {
-        false
+        *self == PseudoElement::Marker
     }
 
     /// Whether this pseudo-element is the ::selection pseudo.
@@ -210,16 +211,20 @@ impl PseudoElement {
 
     /// Returns which kind of cascade type has this pseudo.
     ///
-    /// For more info on cascade types, see docs/components/style.md
+    /// See the documentation for `PseudoElementCascadeType` for how we choose
+    /// which cascade type to use.
     ///
-    /// Note: Keep this in sync with EAGER_PSEUDO_COUNT.
+    /// Note: Keep eager pseudos in sync with `EAGER_PSEUDO_COUNT` and
+    /// `EMPTY_PSEUDO_ARRAY` in `style/data.rs`
     #[inline]
     pub fn cascade_type(&self) -> PseudoElementCascadeType {
         match *self {
             PseudoElement::After | PseudoElement::Before | PseudoElement::Selection => {
                 PseudoElementCascadeType::Eager
             },
-            PseudoElement::Backdrop | PseudoElement::DetailsSummary => PseudoElementCascadeType::Lazy,
+            PseudoElement::Backdrop |
+            PseudoElement::DetailsSummary |
+            PseudoElement::Marker  => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
             PseudoElement::ServoAnonymousBox |
             PseudoElement::ServoAnonymousTable |
@@ -474,8 +479,8 @@ impl ::selectors::SelectorImpl for SelectorImpl {
     type LocalName = LocalName;
     type NamespacePrefix = Prefix;
     type NamespaceUrl = Namespace;
-    type BorrowedLocalName = markup5ever::LocalName;
-    type BorrowedNamespaceUrl = markup5ever::Namespace;
+    type BorrowedLocalName = web_atoms::LocalName;
+    type BorrowedNamespaceUrl = web_atoms::Namespace;
 }
 
 impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
@@ -499,7 +504,12 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
 
     #[inline]
     fn parse_parent_selector(&self) -> bool {
-        false
+        true
+    }
+
+    #[inline]
+    fn parse_part(&self) -> bool {
+        true
     }
 
     #[inline]
@@ -584,8 +594,9 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
         let pseudo_element = match_ignore_ascii_case! { &name,
             "before" => Before,
             "after" => After,
-            "selection" => Selection,
             "backdrop" => Backdrop,
+            "selection" => Selection,
+            "marker" => Marker,
             "-servo-details-summary" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
@@ -786,8 +797,13 @@ impl ElementSnapshot for ServoElementSnapshot {
             .map(|v| v.as_atom())
     }
 
-    fn is_part(&self, _name: &AtomIdent) -> bool {
-        false
+    fn is_part(&self, part_name: &AtomIdent) -> bool {
+        self.get_attr(&ns!(), &local_name!("part"))
+            .is_some_and(|v| {
+                v.as_tokens()
+                    .iter()
+                    .any(|atom| CaseSensitivity::CaseSensitive.eq_atom(atom, part_name))
+            })
     }
 
     fn imported_part(&self, _: &AtomIdent) -> Option<AtomIdent> {

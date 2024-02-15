@@ -14,7 +14,7 @@ use crate::context::UpdateAnimationsTasks;
 use crate::data::ElementData;
 use crate::media_queries::Device;
 use crate::properties::{AnimationDeclarations, ComputedValues, PropertyDeclarationBlock};
-use crate::selector_parser::{AttrValue, Lang, PseudoElement, SelectorImpl};
+use crate::selector_parser::{AttrValue, Lang, PseudoElement, RestyleDamage, SelectorImpl};
 use crate::shared_lock::{Locked, SharedRwLock};
 use crate::stylesheets::scope_rule::ImplicitScopeRoot;
 use crate::stylist::CascadeData;
@@ -654,8 +654,6 @@ pub trait TElement:
     ///
     /// Note that we still need to compute the pseudo-elements before-hand,
     /// given otherwise we don't know if we need to create an element or not.
-    ///
-    /// Servo doesn't have to deal with this.
     fn implemented_pseudo_element(&self) -> Option<PseudoElement> {
         None
     }
@@ -909,6 +907,11 @@ pub trait TElement:
         _sheet_index: usize,
     ) -> Option<ImplicitScopeRoot> {
         None
+    }
+
+    /// Compute the damage incurred by the change from the `_old` to `_new`.
+    fn compute_layout_damage(_old: &ComputedValues, _new: &ComputedValues) -> RestyleDamage {
+        Default::default()
     }
 }
 

@@ -454,7 +454,7 @@ pub mod property_counts {
     /// The number of non-custom properties.
     pub const NON_CUSTOM: usize = LONGHANDS_AND_SHORTHANDS + ALIASES;
     /// The number of prioritary properties that we have.
-    pub const PRIORITARY: usize = ${len(PRIORITARY_PROPERTIES)};
+    pub const PRIORITARY: usize = ${len(PRIORITARY_PROPERTIES.intersection(set(list(map(lambda p: p.name, data.longhands)))))};
     /// The max number of longhands that a shorthand other than "all" expands to.
     pub const MAX_SHORTHAND_EXPANDED: usize =
         ${max(len(s.sub_properties) for s in data.shorthands_except_all())};

@@ -180,7 +180,7 @@ ${helpers.single_keyword(
 ${helpers.predefined_type(
     "mask-image",
     "Image",
-    engines="gecko",
+    engines="gecko servo",
     initial_value="computed::Image::None",
     initial_specified_value="specified::Image::None",
     parse_method="parse_with_cors_anonymous",
@@ -189,6 +189,7 @@ ${helpers.predefined_type(
     extra_prefixes="webkit",
     animation_type="discrete",
     affects="paint",
+    servo_pref="layout.unimplemented",
 )}
 
 ${helpers.predefined_type(

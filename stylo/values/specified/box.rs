@@ -5,7 +5,6 @@
 //! Specified types for box properties.
 
 use crate::parser::{Parse, ParserContext};
-#[cfg(feature = "gecko")]
 use crate::properties::{LonghandId, PropertyDeclarationId, PropertyId};
 use crate::values::generics::box_::{
     GenericContainIntrinsicSize, GenericLineClamp, GenericPerspective, GenericVerticalAlign,
@@ -31,10 +30,7 @@ fn grid_enabled() -> bool {
 
 #[cfg(feature = "servo")]
 fn flexbox_enabled() -> bool {
-    servo_config::prefs::pref_map()
-        .get("layout.flexbox.enabled")
-        .as_bool()
-        .unwrap_or(false)
+    style_config::get_bool("layout.flexbox.enabled")
 }
 #[cfg(feature = "servo")]
 fn grid_enabled() -> bool {
@@ -972,7 +968,7 @@ pub struct WillChange {
     /// A bitfield with the kind of change that the value will create, based
     /// on the above field.
     #[css(skip)]
-    bits: WillChangeBits,
+    pub bits: WillChangeBits,
 }
 
 impl WillChange {
@@ -1026,10 +1022,6 @@ bitflags! {
     }
 }
 
-#[cfg(feature="servo")]
-fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits { WillChangeBits::empty() }
-
-#[cfg(feature = "gecko")]
 fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits {
     match longhand {
         LonghandId::Opacity => WillChangeBits::OPACITY,
@@ -1809,7 +1801,6 @@ pub enum Overflow {
     Hidden,
     Scroll,
     Auto,
-    #[cfg(feature = "gecko")]
     Clip,
 }
 
@@ -1825,7 +1816,6 @@ impl Parse for Overflow {
             "hidden" => Self::Hidden,
             "scroll" => Self::Scroll,
             "auto" | "overlay" => Self::Auto,
-            #[cfg(feature = "gecko")]
             "clip" => Self::Clip,
             #[cfg(feature = "gecko")]
             "-moz-hidden-unscrollable" if static_prefs::pref!("layout.css.overflow-moz-hidden-unscrollable.enabled") => {
@@ -1848,7 +1838,6 @@ impl Overflow {
         match *self {
             Self::Hidden | Self::Scroll | Self::Auto => *self,
             Self::Visible => Self::Auto,
-            #[cfg(feature = "gecko")]
             Self::Clip => Self::Hidden,
         }
     }

@@ -227,7 +227,7 @@ where
 
 /// A generic CSS `<ident>` stored as an `Atom`, for the default atom set.
 #[cfg(feature = "servo")]
-pub type AtomIdent = GenericAtomIdent<servo_atoms::AtomStaticSet>;
+pub type AtomIdent = GenericAtomIdent<stylo_atoms::AtomStaticSet>;
 
 #[cfg(feature = "servo")]
 impl<Set: string_cache::StaticAtomSet> style_traits::SpecifiedValueInfo for GenericAtomIdent<Set> {}
@@ -728,7 +728,7 @@ impl ToCss for KeyframesName {
             return dest.write_str("none");
         }
 
-        let serialize = |string: &_| {
+        let mut serialize = |string: &_| {
             if CustomIdent::is_valid(string, &["none"]) {
                 serialize_identifier(string, dest)
             } else {

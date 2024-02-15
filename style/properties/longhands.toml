@@ -1874,7 +1874,7 @@ affects = "paint"
 type = "ScrollbarColor"
 initial = "Default::default()"
 struct = "inherited_ui"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-scrollbars-1/#scrollbar-color"
 boxed = true
 ignored_when_colors_disabled = true
@@ -2088,7 +2088,7 @@ affects = "layout"
 type = "TouchAction"
 initial = "computed::TouchAction::auto()"
 struct = "box"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 animation_type = "discrete"
 spec = "https://compat.spec.whatwg.org/#touch-action"
 affects = "paint"
@@ -4129,7 +4129,7 @@ keyword = { values = ["auto", "normal", "active", "disabled", "inactive"] }
 
 [scrollbar-width]
 struct = "ui"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-scrollbars-1/#scrollbar-width"
 animation_type = "discrete"
 affects = "layout"

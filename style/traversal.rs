@@ -6,7 +6,7 @@
 
 use crate::context::{ElementCascadeInputs, SharedStyleContext, StyleContext};
 use crate::data::{ElementData, ElementStyles, RestyleKind};
-use crate::dom::{NodeInfo, OpaqueNode, TElement, TNode};
+use crate::dom::{OpaqueNode, TElement, TNode};
 use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::matching::MatchMethods;
 use crate::selector_parser::PseudoElement;
@@ -177,14 +177,6 @@ pub trait DomTraversal<E: TElement>: Sync {
         }
 
         PreTraverseToken(if should_traverse { Some(root) } else { None })
-    }
-
-    /// Returns true if traversal should visit a text node. The style system
-    /// never processes text nodes, but Servo overrides this to visit them for
-    /// flow construction when necessary.
-    fn text_node_needs_traversal(node: E::ConcreteNode, _parent_data: &ElementData) -> bool {
-        debug_assert!(node.is_text_node());
-        false
     }
 
     /// Returns true if traversal is needed for the given element and subtree.
@@ -472,7 +464,6 @@ pub fn recalc_style_at<E, D, F>(
         note_children::<E, D, F>(
             context,
             element,
-            data,
             propagated_hint,
             is_initial_style,
             note_child,
@@ -687,7 +678,6 @@ where
 fn note_children<E, D, F>(
     context: &mut StyleContext<E>,
     element: E,
-    data: &ElementData,
     propagated_hint: RestyleHint,
     is_initial_style: bool,
     mut note_child: F,
@@ -701,14 +691,8 @@ fn note_children<E, D, F>(
 
     // Loop over all the traversal children.
     for child_node in element.traversal_children() {
-        let child = match child_node.as_element() {
-            Some(el) => el,
-            None => {
-                if D::text_node_needs_traversal(child_node, data) {
-                    note_child(child_node);
-                }
-                continue;
-            },
+        let Some(child) = child_node.as_element() else {
+            continue;
         };
 
         let mut child_data = child.mutate_data();

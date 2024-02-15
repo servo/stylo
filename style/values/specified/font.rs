@@ -1129,8 +1129,11 @@ bitflags! {
 #[derive(
     Clone,
     Debug,
+    Deserialize,
+    Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToCss,
     ToComputedValue,
@@ -1166,8 +1169,11 @@ pub enum VariantAlternates {
     Clone,
     Debug,
     Default,
+    Deserialize,
+    Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -1183,6 +1189,16 @@ pub struct FontVariantAlternates(
 );
 
 impl FontVariantAlternates {
+    /// Returns true if the list is empty.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Iterates over all alternates in the list.
+    pub fn iter(&self) -> impl Iterator<Item=&VariantAlternates> {
+        self.0.iter()
+    }
+
     /// Returns the length of all variant alternates.
     pub fn len(&self) -> usize {
         self.0.iter().fold(0, |acc, alternate| match *alternate {

@@ -11,6 +11,7 @@ use crate::context::{CascadeInputs, SharedStyleContext};
 use crate::derives::*;
 use crate::dom::{OpaqueNode, TDocument, TElement, TNode};
 use crate::properties::animated_properties::{AnimationValue, AnimationValueMap};
+use crate::properties::longhands::animation_composition::computed_value::single_value::T as AnimationComposition;
 use crate::properties::longhands::animation_direction::computed_value::single_value::T as AnimationDirection;
 use crate::properties::longhands::animation_fill_mode::computed_value::single_value::T as AnimationFillMode;
 use crate::properties::longhands::animation_play_state::computed_value::single_value::T as AnimationPlayState;
@@ -135,6 +136,7 @@ pub enum KeyframesIterationState {
 struct IntermediateComputedKeyframe {
     declarations: PropertyDeclarationBlock,
     timing_function: Option<TimingFunction>,
+    composition: Option<AnimationComposition>,
     start_percentage: f64,
 }
 
@@ -143,6 +145,7 @@ impl IntermediateComputedKeyframe {
         IntermediateComputedKeyframe {
             declarations: PropertyDeclarationBlock::new(),
             timing_function: None,
+            composition: None,
             start_percentage,
         }
     }
@@ -190,6 +193,12 @@ impl IntermediateComputedKeyframe {
         let guard = &context.guards.author;
         if let Some(timing_function) = step.get_animation_timing_function(&guard) {
             self.timing_function = Some(timing_function.to_computed_value_without_context());
+        }
+
+        // Each keyframe declaration may optionally specify a composite operation,
+        // falling back to the one defined globally for the animation.
+        if let Some(composition) = step.get_animation_composition(&guard) {
+            self.composition = Some(composition);
         }
 
         let block = match step.value {
@@ -295,6 +304,25 @@ struct ComputedKeyframe {
     values: Box<[AnimationValueOrReference]>,
 }
 
+/// Composite a keyframe value with the underlying value according to the
+/// given composite operation.
+///
+/// <https://drafts.csswg.org/web-animations-1/#applying-the-composite-operation>
+fn composite_animation_value(
+    underlying_value: &AnimationValue,
+    keyframe_value: AnimationValue,
+    composition: AnimationComposition,
+) -> AnimationValue {
+    let procedure = match composition {
+        AnimationComposition::Replace => return keyframe_value,
+        AnimationComposition::Add => Procedure::Add,
+        AnimationComposition::Accumulate => Procedure::Accumulate { count: 1 },
+    };
+    underlying_value
+        .animate(&keyframe_value, procedure)
+        .unwrap_or(keyframe_value)
+}
+
 /// Caches the indices of keyframes that declare a specific property.
 ///
 /// While traversing the list of keyframes, this is used to avoid repeatedly
@@ -393,6 +421,7 @@ impl ComputedKeyframe {
         context: &SharedStyleContext,
         base_style: &Arc<ComputedValues>,
         default_timing_function: TimingFunction,
+        default_composition: AnimationComposition,
         resolver: &mut StyleResolverForElement<E>,
         animating_properties: PropertyDeclarationIdSet,
         number_of_animating_properties: usize,
@@ -427,6 +456,7 @@ impl ComputedKeyframe {
                 .timing_function
                 .clone()
                 .unwrap_or_else(|| default_timing_function.clone());
+            let composition = step.composition.unwrap_or(default_composition);
             let step_style = step.resolve_style(element, context, base_style, resolver);
 
             let values: Box<[_]> = {
@@ -444,6 +474,11 @@ impl ComputedKeyframe {
                                 &step_style,
                             )
                             .unwrap();
+                            let animation_value = composite_animation_value(
+                                &animation_values_from_style[property_index],
+                                animation_value,
+                                composition,
+                            );
                             return AnimationValueOrReference::AnimationValue(animation_value);
                         }
 
@@ -737,15 +772,17 @@ impl Animation {
                         self.state = Pending;
                     }
                 },
-                _ => {
-                    // Running or Pending — re-advance iterations from a fresh
-                    // iteration state.
-                    let starting_progress = (now - self.started_at) / self.duration;
+                Canceled | Pending | Running => {
+                    // Re-advance iterations from a fresh iteration state.
+                    let new_starting_progress = (now - self.started_at) / self.duration;
                     match self.iteration_state {
                         KeyframesIterationState::Finite(ref mut current, _) => *current = 0.0,
                         _ => {},
                     }
-                    self.iterate_by(starting_progress);
+                    if let AnimationState::Paused(ref mut starting_progress) = &mut self.state {
+                        *starting_progress = new_starting_progress;
+                    }
+                    self.iterate_by(new_starting_progress);
                 },
             }
 
@@ -1839,6 +1876,7 @@ pub fn maybe_start_animations<E>(
             context,
             new_style,
             style.animation_timing_function_mod(i),
+            style.animation_composition_mod(i),
             resolver,
             animating_properties,
             number_of_animating_properties,

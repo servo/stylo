@@ -8,17 +8,18 @@ on:
   merge_group:
     types: [checks_requested]
 
-
 jobs:
   linux-debug:
     name: Linux (Debug)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+      - name: Debug build
+        run: cargo build --workspace
       - name: Run Tests
-        run: cargo build --features servo
+        run: cargo test --workspace
         env:
           RUST_BACKTRACE: 1
 
@@ -26,11 +27,39 @@ jobs:
     name: Linux (Release)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Run Tests
+      - name: Release build
         run: cargo build --release --features servo
+        env:
+          RUST_BACKTRACE: 1
+
+  macos-debug:
+    name: macOS (Debug)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Debug build
+        run: cargo build --workspace
+      - name: Run Tests
+        run: cargo test --workspace
+        env:
+          RUST_BACKTRACE: 1
+
+  windows-debug:
+    name: Windows (Debug)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Debug build
+        run: cargo build --workspace
+      - name: Run Tests
+        run: cargo test --workspace
         env:
           RUST_BACKTRACE: 1
 
@@ -41,6 +70,9 @@ jobs:
     needs:
       - linux-debug
       - linux-release
+      - windows-debug
+      # macos-debug is not required, because there are so few runners that waiting for an
+      # available one would take too long.
     steps:
       - name: Success
         if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
@@ -48,4 +80,3 @@ jobs:
       - name: Failure
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: exit 1
-

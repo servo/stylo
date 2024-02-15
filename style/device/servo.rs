@@ -333,8 +333,21 @@ impl Device {
         self.extra.all_pointer_capabilities
     }
 
-    pub(crate) fn is_dark_color_scheme(&self, _: ColorSchemeFlags) -> bool {
-        false
+    pub(crate) fn is_dark_color_scheme(&self, color_scheme_flags: ColorSchemeFlags) -> bool {
+        // Inspired by
+        // https://searchfox.org/firefox-main/rev/0a7f146ccac85b8f413264042dcd764028d419ec/widget/nsXPLookAndFeel.cpp#1296
+        let prefers_color_scheme = self.color_scheme();
+        let supports_dark_mode = color_scheme_flags.contains(ColorSchemeFlags::DARK);
+        let supports_light_mode = color_scheme_flags.contains(ColorSchemeFlags::LIGHT);
+
+        // If only one is supported, then use dark mode if it was the supported one.
+        if supports_dark_mode != supports_light_mode {
+            return supports_dark_mode;
+        }
+
+        // If either both or none are supported, then use the preferred color scheme
+        // to determine whether the user wants dark mode.
+        return prefers_color_scheme == PrefersColorScheme::Dark;
     }
 
     pub(crate) fn system_color(
@@ -349,7 +362,6 @@ impl Device {
         // Refer to spec
         // <https://www.w3.org/TR/css-color-4/#css-system-colors>
         if self.is_dark_color_scheme(color_scheme_flags) {
-            // Note: is_dark_color_scheme always returns true, so this code is dead code.
             match system_color {
                 SystemColor::Accentcolor => srgb(10, 132, 255),
                 SystemColor::Accentcolortext => srgb(255, 255, 255),

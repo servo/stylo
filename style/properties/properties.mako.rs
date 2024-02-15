@@ -1538,6 +1538,7 @@ pub mod style_structs {
             #[cfg(feature = "servo")]
             pub fn animations_equals(&self, other: &Self) -> bool {
                 self.animation_name_iter().eq(other.animation_name_iter()) &&
+                self.animation_composition_iter().eq(other.animation_composition_iter()) &&
                 self.animation_delay_iter().eq(other.animation_delay_iter()) &&
                 self.animation_direction_iter().eq(other.animation_direction_iter()) &&
                 self.animation_duration_iter().eq(other.animation_duration_iter()) &&
@@ -2837,7 +2838,7 @@ macro_rules! longhand_properties_idents {
 #[cfg(feature = "gecko")]
 size_of_test!(ComputedValues, 248);
 #[cfg(feature = "servo")]
-size_of_test!(ComputedValues, 224);
+size_of_test!(ComputedValues, 232);
 
 // FFI relies on this.
 size_of_test!(Option<Arc<ComputedValues>>, 8);

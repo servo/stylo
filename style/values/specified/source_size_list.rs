@@ -20,7 +20,7 @@ use style_traits::ParseError;
 /// A value for a `<source-size>`:
 ///
 /// https://html.spec.whatwg.org/multipage/#source-size
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SourceSize {
     condition: QueryCondition,
     value: Length,
@@ -40,7 +40,7 @@ impl Parse for SourceSize {
 /// A value for a `<source-size-list>`:
 ///
 /// https://html.spec.whatwg.org/multipage/#source-size-list
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SourceSizeList {
     source_sizes: Vec<SourceSize>,
     value: Option<Length>,

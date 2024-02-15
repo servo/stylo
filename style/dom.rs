@@ -591,7 +591,7 @@ pub trait TElement:
             pseudo.is_eager(),
             "Someone called may_generate_pseudo with a non-eager pseudo."
         );
-        true
+        !pseudo.is_first_line() || crate::pref!("layout.css.first-line.enabled", gecko = true)
     }
 
     /// Returns true if this element may have a descendant needing style processing.
@@ -731,10 +731,15 @@ pub trait TElement:
     /// native anonymous content can opt out of this style fixup.)
     fn skip_item_display_fixup(&self) -> bool;
 
-    /// In Gecko, element has a flag that represents the element may have
-    /// any type of animations or not to bail out animation stuff early.
-    /// Whereas Servo doesn't have such flag.
+    /// Element has a flag that represents whether the element may have any type 
+    /// of animations or not to bail out animation stuff early.
     fn may_have_animations(&self) -> bool;
+
+    /// Called when an animation or transition set is stored for this element or one of its
+    /// pseudo-elements. Embedder should set `may_have_animations` flag on the element to true.
+    /// Gecko manages animation state itself, so only Servo embedders implement it.
+    #[cfg(feature = "servo")]
+    fn set_may_have_animations(&self);
 
     /// Creates a task to update various animation state on a given (pseudo-)element.
     #[cfg(feature = "gecko")]

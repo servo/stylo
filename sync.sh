@@ -30,7 +30,7 @@ fi
 
 step Cloning upstream if needed
 if ! [ -e upstream ]; then
-    git clone --bare --single-branch --progress https://github.com/mozilla/gecko-dev.git upstream
+    git clone --bare --single-branch --branch main --progress https://github.com/mozilla-firefox/firefox.git upstream
 fi
 
 step Updating upstream

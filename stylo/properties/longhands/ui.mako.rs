@@ -432,10 +432,11 @@ ${helpers.predefined_type(
     "view-transition-name",
     "ViewTransitionName",
     "computed::ViewTransitionName::none()",
-    engines="gecko",
+    engines="gecko servo",
     animation_type="discrete",
     gecko_pref="dom.viewTransitions.enabled",
     spec="https://drafts.csswg.org/css-view-transitions-1/#view-transition-name-prop",
     affects="",
     enabled_in="ua",
+    servo_pref="layout.unimplemented",
 )}

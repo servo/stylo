@@ -496,9 +496,9 @@ affects = "layout"
 type = "color::CaretColor"
 initial = "generics::color::CaretColor::auto()"
 struct = "inherited_ui"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-ui/#caret-color"
 ignored_when_colors_disabled = true
+servo_restyle_damage = "repaint"
 affects = "paint"
 
 [clear]
@@ -2587,10 +2587,10 @@ boxed = true
 type = "LineBreak"
 initial = "computed::LineBreak::Auto"
 struct = "inherited_text"
-engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-3/#line-break-property"
 affects = "layout"
+servo_restyle_damage = "rebuild_box"
 
 [ruby-position]
 type = "RubyPosition"
@@ -3904,10 +3904,10 @@ keyword = { values = ["auto", "optimizespeed", "optimizelegibility", "geometricp
 
 [-webkit-text-security]
 struct = "inherited_text"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-text/#MISSING"
 animation_type = "discrete"
 affects = "layout"
+servo_restyle_damage = "rebuild_box"
 keyword = { values = ["none", "circle", "disc", "square"] }
 
 [text-wrap-mode]

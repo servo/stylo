@@ -94,7 +94,7 @@ impl ToCss for PseudoElement {
             Selection => "::selection",
             Backdrop => "::backdrop",
             DetailsSummary => "::-servo-details-summary",
-            DetailsContent => "::-servo-details-content",
+            DetailsContent => "::details-content",
             Marker => "::marker",
             ColorSwatch => "::color-swatch",
             Placeholder => "::placeholder",
@@ -248,10 +248,10 @@ impl PseudoElement {
             | PseudoElement::DetailsSummary
             | PseudoElement::Marker
             | PseudoElement::Placeholder
+            | PseudoElement::DetailsContent
             | PseudoElement::ServoTextControlInnerContainer
             | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
-            PseudoElement::DetailsContent
-            | PseudoElement::ServoAnonymousBox
+            PseudoElement::ServoAnonymousBox
             | PseudoElement::ServoAnonymousTable
             | PseudoElement::ServoAnonymousTableCell
             | PseudoElement::ServoAnonymousTableRow
@@ -328,6 +328,7 @@ pub enum NonTSPseudoClass {
     MozMeterOptimum,
     MozMeterSubOptimum,
     MozMeterSubSubOptimum,
+    Open,
     Optional,
     OutOfRange,
     PlaceholderShown,
@@ -406,6 +407,7 @@ impl ToCss for NonTSPseudoClass {
             Self::MozMeterOptimum => ":-moz-meter-optimum",
             Self::MozMeterSubOptimum => ":-moz-meter-sub-optimum",
             Self::MozMeterSubSubOptimum => ":-moz-meter-sub-sub-optimum",
+            Self::Open => ":open",
             Self::Optional => ":optional",
             Self::OutOfRange => ":out-of-range",
             Self::PlaceholderShown => ":placeholder-shown",
@@ -450,6 +452,7 @@ impl NonTSPseudoClass {
             Self::MozMeterOptimum => ElementState::OPTIMUM,
             Self::MozMeterSubOptimum => ElementState::SUB_OPTIMUM,
             Self::MozMeterSubSubOptimum => ElementState::SUB_SUB_OPTIMUM,
+            Self::Open => ElementState::OPEN,
             Self::Optional => ElementState::OPTIONAL_,
             Self::OutOfRange => ElementState::OUTOFRANGE,
             Self::PlaceholderShown => ElementState::PLACEHOLDER_SHOWN,
@@ -571,6 +574,8 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "indeterminate" => NonTSPseudoClass::Indeterminate,
             "invalid" => NonTSPseudoClass::Invalid,
             "link" => NonTSPseudoClass::Link,
+            "modal" => NonTSPseudoClass::Modal,
+            "open" => NonTSPseudoClass::Open,
             "optional" => NonTSPseudoClass::Optional,
             "out-of-range" => NonTSPseudoClass::OutOfRange,
             "placeholder-shown" => NonTSPseudoClass::PlaceholderShown,
@@ -638,12 +643,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 DetailsSummary
             },
-            "-servo-details-content" => {
-                if !self.in_user_agent_stylesheet() {
-                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
-                }
-                DetailsContent
-            },
+            "details-content" => DetailsContent,
             "color-swatch" => ColorSwatch,
             "placeholder" => {
                 if !self.in_user_agent_stylesheet() {

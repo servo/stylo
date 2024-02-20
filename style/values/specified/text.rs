@@ -856,6 +856,7 @@ pub enum MozControlCharacterVisibility {
     Visible,
 }
 
+#[cfg(feature = "gecko")]
 impl Default for MozControlCharacterVisibility {
     fn default() -> Self {
         if static_prefs::pref!("layout.css.control-characters.visible") {

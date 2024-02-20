@@ -7,6 +7,7 @@
 //! Servo's selector parser.
 
 use crate::attr::{AttrIdentifier, AttrValue};
+use crate::computed_value_flags::ComputedValueFlags;
 use crate::dom::{OpaqueNode, TElement, TNode};
 use crate::invalidation::element::document_state::InvalidationMatchingData;
 use crate::invalidation::element::element_wrapper::ElementSnapshot;
@@ -52,24 +53,21 @@ pub enum PseudoElement {
     // Non-eager pseudos.
     DetailsSummary,
     DetailsContent,
-    ServoText,
-    ServoInputText,
-    ServoTableWrapper,
-    ServoAnonymousTableWrapper,
-    ServoAnonymousTable,
-    ServoAnonymousTableRow,
+    ServoAnonymousBox,
     ServoAnonymousTableCell,
-    ServoAnonymousBlock,
-    ServoInlineBlockWrapper,
-    ServoInlineAbsolute,
+    ServoAnonymousTableRow,
+    ServoLegacyText,
+    ServoLegacyInputText,
+    ServoLegacyTableWrapper,
+    ServoLegacyAnonymousTableWrapper,
+    ServoLegacyAnonymousTable,
+    ServoLegacyAnonymousBlock,
+    ServoLegacyInlineBlockWrapper,
+    ServoLegacyInlineAbsolute,
 }
 
 /// The count of all pseudo-elements.
-pub const PSEUDO_COUNT: usize = PseudoElement::ServoInlineAbsolute as usize + 1;
-
-impl ::selectors::parser::PseudoElement for PseudoElement {
-    type Impl = SelectorImpl;
-}
+pub const PSEUDO_COUNT: usize = PseudoElement::ServoLegacyInlineAbsolute as usize + 1;
 
 impl ToCss for PseudoElement {
     fn to_css<W>(&self, dest: &mut W) -> fmt::Result
@@ -83,18 +81,23 @@ impl ToCss for PseudoElement {
             Selection => "::selection",
             DetailsSummary => "::-servo-details-summary",
             DetailsContent => "::-servo-details-content",
-            ServoText => "::-servo-text",
-            ServoInputText => "::-servo-input-text",
-            ServoTableWrapper => "::-servo-table-wrapper",
-            ServoAnonymousTableWrapper => "::-servo-anonymous-table-wrapper",
-            ServoAnonymousTable => "::-servo-anonymous-table",
-            ServoAnonymousTableRow => "::-servo-anonymous-table-row",
+            ServoAnonymousBox => "::-servo-anonymous-box",
             ServoAnonymousTableCell => "::-servo-anonymous-table-cell",
-            ServoAnonymousBlock => "::-servo-anonymous-block",
-            ServoInlineBlockWrapper => "::-servo-inline-block-wrapper",
-            ServoInlineAbsolute => "::-servo-inline-absolute",
+            ServoAnonymousTableRow => "::-servo-anonymous-table-row",
+            ServoLegacyText => "::-servo-legacy-text",
+            ServoLegacyInputText => "::-servo-legacy-input-text",
+            ServoLegacyTableWrapper => "::-servo-legacy-table-wrapper",
+            ServoLegacyAnonymousTableWrapper => "::-servo-legacy-anonymous-table-wrapper",
+            ServoLegacyAnonymousTable => "::-servo-legacy-anonymous-table",
+            ServoLegacyAnonymousBlock => "::-servo-legacy-anonymous-block",
+            ServoLegacyInlineBlockWrapper => "::-servo-legacy-inline-block-wrapper",
+            ServoLegacyInlineAbsolute => "::-servo-legacy-inline-absolute",
         })
     }
+}
+
+impl ::selectors::parser::PseudoElement for PseudoElement {
+    type Impl = SelectorImpl;
 }
 
 /// The number of eager pseudo-elements. Keep this in sync with cascade_type.
@@ -225,16 +228,17 @@ impl PseudoElement {
             },
             PseudoElement::DetailsSummary => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
-            PseudoElement::ServoText |
-            PseudoElement::ServoInputText |
-            PseudoElement::ServoTableWrapper |
-            PseudoElement::ServoAnonymousTableWrapper |
-            PseudoElement::ServoAnonymousTable |
-            PseudoElement::ServoAnonymousTableRow |
+            PseudoElement::ServoAnonymousBox |
             PseudoElement::ServoAnonymousTableCell |
-            PseudoElement::ServoAnonymousBlock |
-            PseudoElement::ServoInlineBlockWrapper |
-            PseudoElement::ServoInlineAbsolute => PseudoElementCascadeType::Precomputed,
+            PseudoElement::ServoAnonymousTableRow |
+            PseudoElement::ServoLegacyText |
+            PseudoElement::ServoLegacyInputText |
+            PseudoElement::ServoLegacyTableWrapper |
+            PseudoElement::ServoLegacyAnonymousTableWrapper |
+            PseudoElement::ServoLegacyAnonymousTable |
+            PseudoElement::ServoLegacyAnonymousBlock |
+            PseudoElement::ServoLegacyInlineBlockWrapper |
+            PseudoElement::ServoLegacyInlineAbsolute => PseudoElementCascadeType::Precomputed,
         }
     }
 
@@ -281,6 +285,8 @@ pub enum NonTSPseudoClass {
     Active,
     AnyLink,
     Checked,
+    Valid,
+    Invalid,
     Defined,
     Disabled,
     Enabled,
@@ -338,6 +344,8 @@ impl ToCss for NonTSPseudoClass {
             Active => ":active",
             AnyLink => ":any-link",
             Checked => ":checked",
+            Valid => ":valid",
+            Invalid => ":invalid",
             Defined => ":defined",
             Disabled => ":disabled",
             Enabled => ":enabled",
@@ -399,20 +407,34 @@ impl NonTSPseudoClass {
 #[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct SelectorImpl;
 
+/// A set of extra data to carry along with the matching context, either for
+/// selector-matching or invalidation.
+#[derive(Debug, Default)]
+pub struct ExtraMatchingData<'a> {
+    /// The invalidation data to invalidate doc-state pseudo-classes correctly.
+    pub invalidation_data: InvalidationMatchingData,
+
+    /// The invalidation bits from matching container queries. These are here
+    /// just for convenience mostly.
+    pub cascade_input_flags: ComputedValueFlags,
+
+    /// The style of the originating element in order to evaluate @container
+    /// size queries affecting pseudo-elements.
+    pub originating_element_style: Option<&'a ComputedValues>,
+}
+
 impl ::selectors::SelectorImpl for SelectorImpl {
     type PseudoElement = PseudoElement;
     type NonTSPseudoClass = NonTSPseudoClass;
 
-    type ExtraMatchingData = InvalidationMatchingData;
-    type AttrValue = String;
-    type Identifier = Atom;
-    type ClassName = Atom;
-    type PartName = Atom;
+    type ExtraMatchingData<'a> = ExtraMatchingData<'a>;
+    type AttrValue = AtomString;
+    type Identifier = AtomIdent;
     type LocalName = LocalName;
     type NamespacePrefix = Prefix;
     type NamespaceUrl = Namespace;
-    type BorrowedLocalName = LocalName;
-    type BorrowedNamespaceUrl = Namespace;
+    type BorrowedLocalName = html5ever::LocalName;
+    type BorrowedNamespaceUrl = html5ever::Namespace;
 }
 
 impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
@@ -429,6 +451,8 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "active" => Active,
             "any-link" => AnyLink,
             "checked" => Checked,
+            "valid" => Valid,
+            "invalid" => Invalid,
             "defined" => Defined,
             "disabled" => Disabled,
             "enabled" => Enabled,
@@ -436,7 +460,6 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "fullscreen" => Fullscreen,
             "hover" => Hover,
             "indeterminate" => Indeterminate,
-            "-moz-inert" => MozInert,
             "link" => Link,
             "placeholder-shown" => PlaceholderShown,
             "read-write" => ReadWrite,
@@ -495,35 +518,41 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 DetailsContent
             },
-            "-servo-text" => {
+            "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoText
+                ServoAnonymousBox
             },
-            "-servo-input-text" => {
+            "-servo-legacy-text" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoInputText
+                ServoLegacyText
             },
-            "-servo-table-wrapper" => {
+            "-servo-legacy-input-text" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoTableWrapper
+                ServoLegacyInputText
             },
-            "-servo-anonymous-table-wrapper" => {
+            "-servo-legacy-table-wrapper" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoAnonymousTableWrapper
+                ServoLegacyTableWrapper
             },
-            "-servo-anonymous-table" => {
+            "-servo-legacy-anonymous-table-wrapper" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoAnonymousTable
+                ServoLegacyAnonymousTableWrapper
+            },
+            "-servo-legacy-anonymous-table" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoLegacyAnonymousTable
             },
             "-servo-anonymous-table-row" => {
                 if !self.in_user_agent_stylesheet() {
@@ -537,23 +566,23 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 ServoAnonymousTableCell
             },
-            "-servo-anonymous-block" => {
+            "-servo-legacy-anonymous-block" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoAnonymousBlock
+                ServoLegacyAnonymousBlock
             },
-            "-servo-inline-block-wrapper" => {
+            "-servo-legacy-inline-block-wrapper" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoInlineBlockWrapper
+                ServoLegacyInlineBlockWrapper
             },
-            "-servo-inline-absolute" => {
+            "-servo-legacy-inline-absolute" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoInlineAbsolute
+                ServoLegacyInlineAbsolute
             },
             _ => return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
 

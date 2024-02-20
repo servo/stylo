@@ -65,6 +65,7 @@ fn get_safearea_inset_right(device: &Device) -> VariableValue {
     VariableValue::pixels(device.safe_area_insets().right)
 }
 
+#[cfg(feature = "gecko")]
 fn get_content_preferred_color_scheme(device: &Device) -> VariableValue {
     use crate::gecko::media_features::PrefersColorScheme;
     let prefers_color_scheme = unsafe {
@@ -79,6 +80,12 @@ fn get_content_preferred_color_scheme(device: &Device) -> VariableValue {
     })
 }
 
+#[cfg(feature = "servo")]
+fn get_content_preferred_color_scheme(_device: &Device) -> VariableValue {
+    // TODO: implement this.
+    VariableValue::ident("light")
+}
+
 fn get_scrollbar_inline_size(device: &Device) -> VariableValue {
     VariableValue::pixels(device.scrollbar_inline_size().px())
 }
@@ -90,6 +97,7 @@ static ENVIRONMENT_VARIABLES: [EnvironmentVariable; 4] = [
     make_variable!(atom!("safe-area-inset-right"), get_safearea_inset_right),
 ];
 
+#[cfg(feature = "gecko")]
 macro_rules! lnf_int {
     ($id:ident) => {
         unsafe {
@@ -97,6 +105,14 @@ macro_rules! lnf_int {
                 crate::gecko_bindings::bindings::LookAndFeel_IntID::$id as i32,
             )
         }
+    };
+}
+
+#[cfg(feature = "servo")]
+macro_rules! lnf_int {
+    ($id:ident) => {
+        // TODO: implement this.
+        0
     };
 }
 

@@ -74,6 +74,7 @@ fn distribute_one_chunk<'a, 'scope, E, D>(
     D: DomTraversal<E>,
 {
     scope.spawn_fifo(move |scope| {
+        #[cfg(feature = "gecko")]
         gecko_profiler_label!(Layout, StyleComputation);
         let mut tlc = tls.ensure(create_thread_local_context);
         let mut context = StyleContext {

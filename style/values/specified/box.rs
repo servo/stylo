@@ -5,6 +5,7 @@
 //! Specified types for box properties.
 
 use crate::parser::{Parse, ParserContext};
+#[cfg(feature = "gecko")]
 use crate::properties::{LonghandId, PropertyDeclarationId, PropertyId};
 use crate::values::generics::box_::{
     GenericContainIntrinsicSize, GenericLineClamp, GenericPerspective, GenericVerticalAlign,
@@ -1019,6 +1020,7 @@ bitflags! {
     }
 }
 
+#[cfg(feature = "gecko")]
 fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits {
     match longhand {
         LonghandId::Opacity => WillChangeBits::OPACITY,
@@ -1047,6 +1049,7 @@ fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits {
     }
 }
 
+#[cfg(feature = "gecko")]
 fn change_bits_for_maybe_property(ident: &str, context: &ParserContext) -> WillChangeBits {
     let id = match PropertyId::parse_ignoring_rule_type(ident, context) {
         Ok(id) => id,
@@ -1064,6 +1067,7 @@ fn change_bits_for_maybe_property(ident: &str, context: &ParserContext) -> WillC
     }
 }
 
+#[cfg(feature = "gecko")]
 impl Parse for WillChange {
     /// auto | <animateable-feature>#
     fn parse<'i, 't>(
@@ -1663,6 +1667,7 @@ impl BreakBetween {
     /// Parse a legacy break-between value for `page-break-{before,after}`.
     ///
     /// See https://drafts.csswg.org/css-break/#page-break-properties.
+    #[cfg(feature = "gecko")]
     #[inline]
     pub(crate) fn parse_legacy<'i>(
         _: &ParserContext,
@@ -1683,6 +1688,7 @@ impl BreakBetween {
     /// Serialize a legacy break-between value for `page-break-*`.
     ///
     /// See https://drafts.csswg.org/css-break/#page-break-properties.
+    #[cfg(feature = "gecko")]
     pub(crate) fn to_css_legacy<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: Write,
@@ -1728,6 +1734,7 @@ impl BreakWithin {
     /// Parse a legacy break-between value for `page-break-inside`.
     ///
     /// See https://drafts.csswg.org/css-break/#page-break-properties.
+    #[cfg(feature = "gecko")]
     #[inline]
     pub(crate) fn parse_legacy<'i>(
         _: &ParserContext,
@@ -1745,6 +1752,7 @@ impl BreakWithin {
     /// Serialize a legacy break-between value for `page-break-inside`.
     ///
     /// See https://drafts.csswg.org/css-break/#page-break-properties.
+    #[cfg(feature = "gecko")]
     pub(crate) fn to_css_legacy<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: Write,

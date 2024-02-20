@@ -4,19 +4,23 @@
 
 //! Servo's media-query device and expression representation.
 
+use crate::color::AbsoluteColor;
 use crate::context::QuirksMode;
 use crate::custom_properties::CssEnvironment;
-use crate::media_queries::media_feature::{AllowsRanges, ParsingRequirements};
-use crate::media_queries::media_feature::{Evaluator, MediaFeatureDescription};
-use crate::media_queries::media_feature_expression::RangeOrOperator;
+use crate::font_metrics::FontMetrics;
+use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
 use crate::media_queries::MediaType;
 use crate::properties::ComputedValues;
 use crate::values::computed::CSSPixelLength;
+use crate::values::computed::Context;
+use crate::values::computed::Resolution;
 use crate::values::specified::font::FONT_MEDIUM_PX;
+use crate::values::specified::ViewportVariant;
 use crate::values::KeyframesName;
-use app_units::Au;
+use app_units::{Au, AU_PER_PX};
 use euclid::default::Size2D as UntypedSize2D;
 use euclid::{Scale, SideOffsets2D, Size2D};
+use mime::Mime;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use style_traits::{CSSPixel, DevicePixel};
 
@@ -113,7 +117,7 @@ impl Device {
     /// Sets the body text color for the "inherit color from body" quirk.
     ///
     /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
-    pub fn set_body_text_color(&self, _color: RGBA) {
+    pub fn set_body_text_color(&self, _color: AbsoluteColor) {
         // Servo doesn't implement this quirk (yet)
     }
 
@@ -139,8 +143,13 @@ impl Device {
     }
 
     /// Like the above, but records that we've used viewport units.
-    pub fn au_viewport_size_for_viewport_unit_resolution(&self) -> UntypedSize2D<Au> {
+    pub fn au_viewport_size_for_viewport_unit_resolution(
+        &self,
+        _: ViewportVariant,
+    ) -> UntypedSize2D<Au> {
         self.used_viewport_units.store(true, Ordering::Relaxed);
+        // Servo doesn't have dynamic UA interfaces that affect the viewport,
+        // so we can just ignore the ViewportVariant.
         self.au_viewport_size()
     }
 
@@ -149,9 +158,36 @@ impl Device {
         self.used_viewport_units.load(Ordering::Relaxed)
     }
 
+    /// Returns the number of app units per device pixel we're using currently.
+    pub fn app_units_per_device_pixel(&self) -> i32 {
+        (AU_PER_PX as f32 / self.device_pixel_ratio.0) as i32
+    }
+
     /// Returns the device pixel ratio.
     pub fn device_pixel_ratio(&self) -> Scale<f32, CSSPixel, DevicePixel> {
         self.device_pixel_ratio
+    }
+
+    /// Gets the size of the scrollbar in CSS pixels.
+    pub fn scrollbar_inline_size(&self) -> CSSPixelLength {
+        // TODO: implement this.
+        CSSPixelLength::new(0.0)
+    }
+
+    /// Queries dummy font metrics for Servo. Knows nothing about fonts and does not provide
+    /// any metrics.
+    /// TODO: Servo's font metrics provider will probably not live in this crate, so this will
+    /// have to be replaced with something else (perhaps a trait method on TElement)
+    /// when we get there
+    pub fn query_font_metrics(
+        &self,
+        _vertical: bool,
+        _font: &crate::properties::style_structs::Font,
+        _base_size: CSSPixelLength,
+        _in_media_query: bool,
+        _retrieve_math_scales: bool,
+    ) -> FontMetrics {
+        Default::default()
     }
 
     /// Return the media type of the current device.
@@ -165,32 +201,47 @@ impl Device {
     }
 
     /// Returns the default background color.
-    pub fn default_background_color(&self) -> RGBA {
-        RGBA::new(255, 255, 255, 255)
+    pub fn default_background_color(&self) -> AbsoluteColor {
+        AbsoluteColor::white()
     }
 
-    /// Returns the default color color.
-    pub fn default_color(&self) -> RGBA {
-        RGBA::new(0, 0, 0, 255)
+    /// Returns the default foreground color.
+    pub fn default_color(&self) -> AbsoluteColor {
+        AbsoluteColor::black()
     }
 
     /// Returns safe area insets
     pub fn safe_area_insets(&self) -> SideOffsets2D<f32, CSSPixel> {
         SideOffsets2D::zero()
     }
+
+    /// Returns true if the given MIME type is supported
+    pub fn is_supported_mime_type(&self, mime_type: &str) -> bool {
+        match mime_type.parse::<Mime>() {
+            Ok(m) => {
+                // Keep this in sync with 'image_classifer' from
+                // components/net/mime_classifier.rs
+                m == mime::IMAGE_BMP
+                    || m == mime::IMAGE_GIF
+                    || m == mime::IMAGE_PNG
+                    || m == mime::IMAGE_JPEG
+                    || m == "image/x-icon"
+                    || m == "image/webp"
+            }
+            _ => false,
+        }
+    }
+
+    /// Return whether the document is a chrome document.
+    #[inline]
+    pub fn chrome_rules_enabled_for_document(&self) -> bool {
+        false
+    }
 }
 
 /// https://drafts.csswg.org/mediaqueries-4/#width
-fn eval_width(
-    device: &Device,
-    value: Option<CSSPixelLength>,
-    range_or_operator: Option<RangeOrOperator>,
-) -> bool {
-    RangeOrOperator::evaluate(
-        range_or_operator,
-        value.map(Au::from),
-        device.au_viewport_size().width,
-    )
+fn eval_width(context: &Context) -> CSSPixelLength {
+    CSSPixelLength::new(context.device().au_viewport_size().width.to_f32_px())
 }
 
 #[derive(Clone, Copy, Debug, FromPrimitive, Parse, ToCss)]
@@ -201,26 +252,54 @@ enum Scan {
 }
 
 /// https://drafts.csswg.org/mediaqueries-4/#scan
-fn eval_scan(_: &Device, _: Option<Scan>) -> bool {
+fn eval_scan(_: &Context, _: Option<Scan>) -> bool {
     // Since we doesn't support the 'tv' media type, the 'scan' feature never
     // matches.
     false
 }
 
+/// https://drafts.csswg.org/mediaqueries-4/#resolution
+fn eval_resolution(context: &Context) -> Resolution {
+    Resolution::from_dppx(context.device().device_pixel_ratio.0)
+}
+
+/// https://compat.spec.whatwg.org/#css-media-queries-webkit-device-pixel-ratio
+fn eval_device_pixel_ratio(context: &Context) -> f32 {
+    eval_resolution(context).dppx()
+}
+
 lazy_static! {
     /// A list with all the media features that Servo supports.
-    pub static ref MEDIA_FEATURES: [MediaFeatureDescription; 2] = [
+    pub static ref MEDIA_FEATURES: [QueryFeatureDescription; 5] = [
         feature!(
             atom!("width"),
             AllowsRanges::Yes,
             Evaluator::Length(eval_width),
-            ParsingRequirements::empty(),
+            FeatureFlags::empty(),
         ),
         feature!(
             atom!("scan"),
             AllowsRanges::No,
             keyword_evaluator!(eval_scan, Scan),
-            ParsingRequirements::empty(),
+            FeatureFlags::empty(),
+        ),
+        feature!(
+            atom!("resolution"),
+            AllowsRanges::Yes,
+            Evaluator::Resolution(eval_resolution),
+            FeatureFlags::empty(),
+        ),
+        feature!(
+            atom!("device-pixel-ratio"),
+            AllowsRanges::Yes,
+            Evaluator::Float(eval_device_pixel_ratio),
+            FeatureFlags::WEBKIT_PREFIX,
+        ),
+        feature!(
+            atom!("-moz-device-pixel-ratio"),
+            AllowsRanges::Yes,
+            Evaluator::Float(eval_device_pixel_ratio),
+            FeatureFlags::empty(),
         ),
     ];
 }

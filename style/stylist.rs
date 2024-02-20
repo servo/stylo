@@ -45,9 +45,9 @@ use crate::AllocErr;
 use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded, WeakAtom};
 use dom::{DocumentState, ElementState};
 use fxhash::FxHashMap;
-use malloc_size_of::MallocSizeOf;
+use malloc_size_of::{MallocSizeOf, MallocShallowSizeOf, MallocSizeOfOps};
 #[cfg(feature = "gecko")]
-use malloc_size_of::{MallocShallowSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
+use malloc_size_of::MallocUnconditionalShallowSizeOf;
 use selectors::attr::{CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::BloomFilter;
 use selectors::matching::{matches_selector, MatchingContext, MatchingMode, NeedsSelectorFlags};
@@ -1564,6 +1564,7 @@ impl<T> Default for LayerOrderedMap<T> {
     }
 }
 
+#[cfg(feature = "gecko")]
 impl<T: 'static> LayerOrderedVec<T> {
     fn clear(&mut self) {
         self.0.clear();
@@ -1584,6 +1585,7 @@ impl<T: 'static> LayerOrderedMap<T> {
     fn clear(&mut self) {
         self.0.clear();
     }
+    #[cfg(feature = "gecko")]
     fn try_insert(&mut self, name: Atom, v: T, id: LayerId) -> Result<(), AllocErr> {
         self.try_insert_with(name, v, id, |_, _| Ordering::Equal)
     }
@@ -1607,6 +1609,7 @@ impl<T: 'static> LayerOrderedMap<T> {
         vec.push((v, id));
         Ok(())
     }
+    #[cfg(feature = "gecko")]
     fn sort(&mut self, layers: &[CascadeLayer]) {
         self.sort_with(layers, |_, _| Ordering::Equal)
     }
@@ -1645,6 +1648,7 @@ pub struct PageRuleMap {
     pub rules: PrecomputedHashMap<Atom, SmallVec<[PageRuleData; 1]>>,
 }
 
+#[cfg(feature = "gecko")]
 impl PageRuleMap {
     #[inline]
     fn clear(&mut self) {
@@ -2599,7 +2603,10 @@ impl CascadeData {
                 order.inc();
             }
         }
-        self.extra_data.sort_by_layer(&self.layers);
+        #[cfg(feature = "gecko")]
+        {
+            self.extra_data.sort_by_layer(&self.layers);
+        }
         self.animations
             .sort_with(&self.layers, compare_keyframes_in_same_layer);
         self.custom_property_registrations.sort(&self.layers)
@@ -3191,7 +3198,10 @@ impl CascadeData {
         self.container_conditions.clear();
         self.container_conditions
             .push(ContainerConditionReference::none());
-        self.extra_data.clear();
+        #[cfg(feature = "gecko")]
+        {
+            self.extra_data.clear();
+        }
         self.rules_source_order = 0;
         self.num_selectors = 0;
         self.num_declarations = 0;

@@ -14,14 +14,16 @@ use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
 use crate::str::CssStringWriter;
 use crate::values::computed::font::{FamilyName, FontStretch};
 use crate::values::generics::font::FontStyle as GenericFontStyle;
+#[cfg(feature = "gecko")]
+use crate::values::specified::font::MetricsOverride;
 use crate::values::specified::font::SpecifiedFontStyle;
-use crate::values::specified::font::{
-    AbsoluteFontWeight, FontStretch as SpecifiedFontStretch, MetricsOverride,
-};
+use crate::values::specified::font::{AbsoluteFontWeight, FontStretch as SpecifiedFontStretch};
 #[cfg(feature = "gecko")]
 use crate::values::specified::font::{FontFeatureSettings, FontVariationSettings};
 use crate::values::specified::url::SpecifiedUrl;
-use crate::values::specified::{Angle, NonNegativePercentage};
+use crate::values::specified::Angle;
+#[cfg(feature = "gecko")]
+use crate::values::specified::NonNegativePercentage;
 #[cfg(feature = "gecko")]
 use cssparser::UnicodeRange;
 use cssparser::{

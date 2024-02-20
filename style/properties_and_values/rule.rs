@@ -17,6 +17,7 @@ use cssparser::{
     AtRuleParser, CowRcStr, DeclarationParser, ParseErrorKind, Parser, QualifiedRuleParser,
     RuleBodyItemParser, RuleBodyParser, SourceLocation,
 };
+#[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use selectors::parser::SelectorParseErrorKind;
 use servo_arc::Arc;

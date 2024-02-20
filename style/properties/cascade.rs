@@ -26,12 +26,14 @@ use crate::shared_lock::StylesheetGuards;
 use crate::style_adjuster::StyleAdjuster;
 use crate::stylesheets::container_rule::ContainerSizeQuery;
 use crate::stylesheets::{layer_rule::LayerOrder, Origin};
+#[cfg(feature = "gecko")]
 use crate::values::specified::length::FontBaseSize;
 use crate::values::{computed, specified};
 use fxhash::FxHashMap;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::borrow::Cow;
+#[cfg(feature = "gecko")]
 use std::mem;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -428,12 +430,14 @@ fn tweak_when_ignoring_colors(
     }
 
     // Always honor colors if forced-color-adjust is set to none.
-    let forced = context
-        .builder
-        .get_inherited_text()
-        .clone_forced_color_adjust();
-    if forced == computed::ForcedColorAdjust::None {
-        return;
+    #[cfg(feature = "gecko")] {
+        let forced = context
+            .builder
+            .get_inherited_text()
+            .clone_forced_color_adjust();
+        if forced == computed::ForcedColorAdjust::None {
+            return;
+        }
     }
 
     // Don't override background-color on ::-moz-color-swatch. It is set as an
@@ -852,6 +856,7 @@ impl<'a, 'b: 'a> Cascade<'a, 'b> {
             builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_WORD_SPACING);
         }
 
+        #[cfg(feature = "gecko")]
         if self
             .author_specified
             .contains(LonghandId::FontSynthesisWeight)
@@ -859,6 +864,7 @@ impl<'a, 'b: 'a> Cascade<'a, 'b> {
             builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_FONT_SYNTHESIS_WEIGHT);
         }
 
+        #[cfg(feature = "gecko")]
         if self
             .author_specified
             .contains(LonghandId::FontSynthesisStyle)

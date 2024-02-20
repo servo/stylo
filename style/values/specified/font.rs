@@ -4,6 +4,7 @@
 
 //! Specified values for font properties
 
+#[cfg(feature = "gecko")]
 use crate::context::QuirksMode;
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::font::{FamilyName, FontFamilyList, SingleFontFamily};
@@ -70,6 +71,7 @@ macro_rules! system_font_methods {
     Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
 )]
 #[allow(missing_docs)]
+#[cfg(feature = "gecko")]
 pub enum SystemFont {
     /// https://drafts.csswg.org/css-fonts/#valdef-font-caption
     Caption,

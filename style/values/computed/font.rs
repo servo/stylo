@@ -353,6 +353,7 @@ impl FontFamily {
     }
 
     /// Returns the font family for `-moz-bullet-font`.
+    #[cfg(feature = "gecko")]
     pub(crate) fn moz_bullet() -> &'static Self {
         static_font_family!(
             MOZ_BULLET,
@@ -366,6 +367,7 @@ impl FontFamily {
     }
 
     /// Returns a font family for a single system font.
+    #[cfg(feature = "gecko")]
     pub fn for_system_font(name: &str) -> Self {
         Self {
             families: FontFamilyList {
@@ -397,6 +399,7 @@ impl FontFamily {
         generic_font_family!(MONOSPACE, Monospace);
         generic_font_family!(CURSIVE, Cursive);
         generic_font_family!(FANTASY, Fantasy);
+        #[cfg(feature = "gecko")]
         generic_font_family!(MOZ_EMOJI, MozEmoji);
         generic_font_family!(SYSTEM_UI, SystemUi);
 
@@ -410,6 +413,7 @@ impl FontFamily {
             GenericFontFamily::Monospace => &*MONOSPACE,
             GenericFontFamily::Cursive => &*CURSIVE,
             GenericFontFamily::Fantasy => &*FANTASY,
+            #[cfg(feature = "gecko")]
             GenericFontFamily::MozEmoji => &*MOZ_EMOJI,
             GenericFontFamily::SystemUi => &*SYSTEM_UI,
         };
@@ -468,6 +472,7 @@ pub struct FamilyName {
     pub syntax: FontFamilyNameSyntax,
 }
 
+#[cfg(feature = "gecko")]
 impl FamilyName {
     fn is_known_icon_font_family(&self) -> bool {
         use crate::gecko_bindings::bindings;
@@ -593,6 +598,7 @@ impl GenericFontFamily {
     /// When we disallow websites to override fonts, we ignore some generic
     /// families that the website might specify, since they're not configured by
     /// the user. See bug 789788 and bug 1730098.
+    #[cfg(feature = "gecko")]
     pub(crate) fn valid_for_user_font_prioritization(self) -> bool {
         match self {
             Self::None | Self::Fantasy | Self::Cursive | Self::SystemUi | Self::MozEmoji => false,
@@ -715,6 +721,7 @@ impl FontFamilyList {
     /// generic instead of the site's specified font may cause substantial breakage.
     /// If no suitable generic is found in the list, insert the default generic ahead
     /// of all the listed families except for known ligature-based icon fonts.
+    #[cfg(feature = "gecko")]
     pub(crate) fn prioritize_first_generic_or_prepend(&mut self, generic: GenericFontFamily) {
         let mut index_of_first_generic = None;
         let mut target_index = None;
@@ -763,6 +770,7 @@ impl FontFamilyList {
     }
 
     /// Returns whether we need to prioritize user fonts.
+    #[cfg(feature = "gecko")]
     pub(crate) fn needs_user_font_prioritization(&self) -> bool {
         self.iter().next().map_or(true, |f| match f {
             SingleFontFamily::Generic(f) => !f.valid_for_user_font_prioritization(),

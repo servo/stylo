@@ -1005,7 +1005,6 @@ impl Parse for FontSize {
 }
 
 bitflags! {
-    #[derive(Clone, Copy)]
     /// Flags of variant alternates in bit
     struct VariantAlternatesParsingFlags: u8 {
         /// None of variant alternates enabled
@@ -1238,7 +1237,7 @@ macro_rules! impl_variant_east_asian {
         )+
     } => {
         bitflags! {
-            #[derive(Clone, Copy, Eq, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem)]
+            #[derive(MallocSizeOf, ToComputedValue, ToResolvedValue, ToShmem)]
             /// Vairants for east asian variant
             pub struct FontVariantEastAsian: u16 {
                 /// None of the features
@@ -1409,7 +1408,7 @@ macro_rules! impl_variant_ligatures {
         )+
     } => {
         bitflags! {
-            #[derive(Clone, Copy, Eq, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem)]
+            #[derive(MallocSizeOf, ToComputedValue, ToResolvedValue, ToShmem)]
             /// Variants of ligatures
             pub struct FontVariantLigatures: u16 {
                 /// Specifies that common default features are enabled
@@ -1587,7 +1586,7 @@ macro_rules! impl_variant_numeric {
         )+
     } => {
         bitflags! {
-            #[derive(Clone, Copy, Eq, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem)]
+            #[derive(MallocSizeOf, ToComputedValue, ToResolvedValue, ToShmem)]
             /// Variants of numeric values
             pub struct FontVariantNumeric: u8 {
                 /// None of other variants are enabled.

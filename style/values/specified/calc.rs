@@ -119,7 +119,6 @@ bitflags! {
     /// This is used as a hint for the parser to fast-reject invalid
     /// expressions. Numbers are always allowed because they multiply other
     /// units.
-    #[derive(Clone, Copy)]
     struct CalcUnits: u8 {
         const LENGTH = 1 << 0;
         const PERCENTAGE = 1 << 1;

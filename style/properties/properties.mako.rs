@@ -1166,7 +1166,6 @@ impl CSSWideKeyword {
 
 bitflags! {
     /// A set of flags for properties.
-    #[derive(Clone, Copy)]
     pub struct PropertyFlags: u16 {
         /// This longhand property applies to ::first-letter.
         const APPLIES_TO_FIRST_LETTER = 1 << 1;
@@ -1396,7 +1395,7 @@ impl LonghandId {
                 0,
             % endfor
         ];
-        PropertyFlags::from_bits_retain(FLAGS[self as usize])
+        PropertyFlags::from_bits_truncate(FLAGS[self as usize])
     }
 
     /// Returns true if the property is one that is ignored when document
@@ -1571,7 +1570,7 @@ impl ShorthandId {
                 0,
             % endfor
         ];
-        PropertyFlags::from_bits_retain(FLAGS[self as usize])
+        PropertyFlags::from_bits_truncate(FLAGS[self as usize])
     }
 
     /// Returns whether this property is a legacy shorthand.

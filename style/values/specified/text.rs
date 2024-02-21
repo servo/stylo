@@ -232,7 +232,7 @@ impl ToComputedValue for TextOverflow {
 }
 
 bitflags! {
-    #[derive(Clone, Copy, Eq, MallocSizeOf, PartialEq, Parse, Serialize, SpecifiedValueInfo, ToCss, ToComputedValue, ToResolvedValue, ToShmem)]
+    #[derive(MallocSizeOf, Parse, Serialize, SpecifiedValueInfo, ToCss, ToComputedValue, ToResolvedValue, ToShmem)]
     #[css(bitflags(single = "none", mixed = "underline,overline,line-through,blink"))]
     #[repr(C)]
     /// Specified keyword values for the text-decoration-line property.
@@ -408,7 +408,7 @@ pub enum TextTransformCase {
 }
 
 bitflags! {
-    #[derive(Clone, Copy, Eq, MallocSizeOf, PartialEq, Parse, Serialize, SpecifiedValueInfo, ToCss, ToComputedValue, ToResolvedValue, ToShmem)]
+    #[derive(MallocSizeOf, SpecifiedValueInfo, ToComputedValue, ToCss, ToResolvedValue, ToShmem)]
     #[css(bitflags(mixed = "full-width,full-size-kana"))]
     #[repr(C)]
     /// Specified keyword values for non-case transforms in the text-transform property. (Non-exclusive.)
@@ -747,7 +747,7 @@ impl Parse for TextEmphasisStyle {
 }
 
 bitflags! {
-    #[derive(Clone, Copy, Eq, MallocSizeOf, PartialEq, Parse, Serialize, SpecifiedValueInfo, ToCss, ToComputedValue, ToResolvedValue, ToShmem)]
+    #[derive(MallocSizeOf, SpecifiedValueInfo, ToComputedValue, ToResolvedValue, ToShmem, Parse, ToCss)]
     #[repr(C)]
     #[css(bitflags(mixed="over,under,left,right", validate_mixed="Self::validate_and_simplify"))]
     /// Values for text-emphasis-position:
@@ -960,7 +960,7 @@ impl TextDecorationLength {
 }
 
 bitflags! {
-    #[derive(Clone, Copy, Eq, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToComputedValue, ToResolvedValue, ToShmem)]
+    #[derive(MallocSizeOf, SpecifiedValueInfo, ToComputedValue, ToResolvedValue, ToShmem)]
     #[value_info(other_values = "auto,from-font,under,left,right")]
     #[repr(C)]
     /// Specified keyword values for the text-underline-position property.

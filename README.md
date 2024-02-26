@@ -8,6 +8,25 @@ The branches are as follows:
 - [`upstream`](https://github.com/servo/style/tree/upstream) has upstream mozilla-central filtered to the paths we care about ([style.paths](style.paths)), but is otherwise unmodified
 - [`main`](https://github.com/servo/style/tree/ci) has our downstream patches, plus the scripts and workflows for syncing with mozilla-central, to be rebased onto `upstream`
 
+## Building Servo against your local Stylo
+
+Assuming your local `servo` and `stylo` directories are siblings, you can build `servo` against `stylo` by adding the following to `servo/Cargo.toml`:
+
+```toml
+[patch."https://github.com/servo/stylo.git"]
+derive_common = { path = "../stylo/derive_common" }
+malloc_size_of = { path = "../stylo/malloc_size_of" }
+selectors = { path = "../stylo/selectors" }
+servo_arc = { path = "../stylo/servo_arc" }
+servo_atoms = { path = "../stylo/atoms" }
+size_of_test = { path = "../stylo/size_of_test" }
+static_prefs = { path = "../stylo/style_static_prefs" }
+style_config = { path = "../stylo/style_config" }
+style_derive = { path = "../stylo/style_derive" }
+style = { path = "../stylo/style" }
+style_traits = { path = "../stylo/style_traits" }
+```
+
 ## Syncing `upstream` with mozilla-central
 
 Start by generating a filtered copy of mozilla-central. This will cache the raw mozilla-central in `_cache/upstream`, storing the result in `_filtered`:

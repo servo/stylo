@@ -218,7 +218,7 @@ impl Parse for PageSelector {
         _context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        let name = input.try_parse(parse_page_name).unwrap_or(AtomIdent(atom!("")));
+        let name = input.try_parse(parse_page_name).unwrap_or(AtomIdent::new(atom!("")));
         let mut pseudos = PagePseudoClasses::default();
         while let Ok(pc) = input.try_parse(PagePseudoClass::parse) {
             pseudos.push(pc);

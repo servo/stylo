@@ -63,6 +63,9 @@ macro_rules! pref {
     ("layout.css.forced-colors.enabled") => {
         false
     };
+    ("layout.css.gradient-color-interpolation-method.enabled") => {
+        false
+    };
     ("layout.css.grid-template-masonry-value.enabled") => {
         false
     };

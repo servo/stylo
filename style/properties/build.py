@@ -66,7 +66,10 @@ def main():
                 os.path.join(BASE, "properties.html.mako"), properties=properties_dict
             )
             as_json = json.dumps(properties_dict, indent=4, sort_keys=True)
-            doc_servo = os.path.join(BASE, "..", "..", "..", "target", "doc", "servo")
+
+            # Five dotdots: /path/to/servo(5)/target(4)/debug(3)/build(2)/style-*(1)/out
+            doc_servo = os.path.join(OUT_DIR, "..", "..", "..", "..", "..", "target", "doc", "stylo")
+
             write(doc_servo, "css-properties.html", as_html)
             write(doc_servo, "css-properties.json", as_json)
             write(OUT_DIR, "css-properties.json", as_json)

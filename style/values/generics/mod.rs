@@ -160,7 +160,6 @@ impl SpecifiedValueInfo for CounterStyle {
 }
 
 /// A wrapper of Non-negative values.
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[derive(
     Animate,
     Clone,

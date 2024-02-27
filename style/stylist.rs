@@ -35,10 +35,10 @@ use crate::stylesheets::layer_rule::{LayerName, LayerOrder};
 #[cfg(feature = "gecko")]
 use crate::stylesheets::{
     CounterStyleRule, FontFaceRule, FontFeatureValuesRule, FontPaletteValuesRule,
+    PagePseudoClassFlags,
 };
 use crate::stylesheets::{
     CssRule, EffectiveRulesIterator, Origin, OriginSet, PageRule, PerOrigin, PerOriginIter,
-    PagePseudoClassFlags, PageRule,
 };
 use crate::stylesheets::{StyleRule, StylesheetContents, StylesheetInDocument};
 use crate::AllocErr;

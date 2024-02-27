@@ -1616,7 +1616,6 @@ impl<T: 'static> LayerOrderedMap<T> {
     fn clear(&mut self) {
         self.0.clear();
     }
-    #[cfg(feature = "gecko")]
     fn try_insert(&mut self, name: Atom, v: T, id: LayerId) -> Result<(), AllocErr> {
         self.try_insert_with(name, v, id, |_, _| Ordering::Equal)
     }
@@ -1640,7 +1639,6 @@ impl<T: 'static> LayerOrderedMap<T> {
         vec.push((v, id));
         Ok(())
     }
-    #[cfg(feature = "gecko")]
     fn sort(&mut self, layers: &[CascadeLayer]) {
         self.sort_with(layers, |_, _| Ordering::Equal)
     }

@@ -28,6 +28,7 @@ pub struct PropertyRegistration {
 /// The script registry of custom properties.
 /// <https://drafts.css-houdini.org/css-properties-values-api-1/#dom-window-registeredpropertyset-slot>
 #[derive(Default)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct ScriptRegistry {
     properties: PrecomputedHashMap<Atom, PropertyRegistration>,
 }

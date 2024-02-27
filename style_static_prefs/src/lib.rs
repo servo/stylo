@@ -93,6 +93,9 @@ macro_rules! pref {
     ("layout.css.motion-path-basic-shapes.enabled") => {
         false
     };
+    ("layout.css.motion-path-coord-box.enabled") => {
+        false
+    };
     ("layout.css.motion-path-ray.enabled") => {
         false
     };

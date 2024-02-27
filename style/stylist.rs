@@ -48,10 +48,10 @@ use crate::stylesheets::scope_rule::{
 #[cfg(feature = "gecko")]
 use crate::stylesheets::{
     CounterStyleRule, FontFaceRule, FontFeatureValuesRule, FontPaletteValuesRule,
+    PagePseudoClassFlags,
 };
 use crate::stylesheets::{
-    CssRule, EffectiveRulesIterator, Origin, OriginSet, PagePseudoClassFlags, PageRule, PerOrigin,
-    PerOriginIter,
+    CssRule, EffectiveRulesIterator, Origin, OriginSet, PageRule, PerOrigin, PerOriginIter,
 };
 use crate::stylesheets::{StyleRule, StylesheetContents, StylesheetInDocument};
 use crate::values::{computed, AtomIdent};

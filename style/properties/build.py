@@ -121,7 +121,7 @@ def main():
             as_json = json.dumps(properties_dict, indent=4, sort_keys=True)
 
             # Five dotdots: /path/to/servo(5)/target(4)/debug(3)/build(2)/style-*(1)/out
-            doc_servo = os.path.join(OUT_DIR, "..", "..", "..", "..", "..", "target", "doc", "servo")
+            doc_servo = os.path.join(OUT_DIR, "..", "..", "..", "..", "..", "target", "doc", "stylo")
 
             write(doc_servo, "css-properties.html", as_html)
             write(doc_servo, "css-properties.json", as_json)

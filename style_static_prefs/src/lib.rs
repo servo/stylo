@@ -21,6 +21,9 @@ macro_rules! pref {
     ("gfx.font_rendering.opentype_svg.enabled") => {
         false
     };
+    ("layout.css.basic-shape-xywh.enabled") => {
+        false
+    };
     ("layout.css.color-mix.enabled") => {
         true
     };

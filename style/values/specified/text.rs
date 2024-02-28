@@ -286,6 +286,7 @@ impl Parse for TextTransform {
                 "capitalize" if result.case_ == TextTransformCase::None => {
                     result.case_ = TextTransformCase::Capitalize
                 },
+                #[cfg(feature = "gecko")]
                 "math-auto" if result.case_ == TextTransformCase::None &&
                     result.other_.is_empty() => {
                     result.case_ = TextTransformCase::MathAuto;
@@ -356,6 +357,7 @@ pub enum TextTransformCase {
     /// Capitalize each word.
     Capitalize,
     /// Automatic italicization of math variables.
+    #[cfg(feature = "gecko")]
     MathAuto,
 }
 

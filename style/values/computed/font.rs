@@ -397,7 +397,7 @@ impl FontFamily {
         generic_font_family!(MOZ_EMOJI, MozEmoji);
         generic_font_family!(SYSTEM_UI, SystemUi);
 
-        let family = match generic {
+        match generic {
             GenericFontFamily::None => {
                 debug_assert!(false, "Bogus caller!");
                 &*SERIF
@@ -410,12 +410,7 @@ impl FontFamily {
             #[cfg(feature = "gecko")]
             GenericFontFamily::MozEmoji => &*MOZ_EMOJI,
             GenericFontFamily::SystemUi => &*SYSTEM_UI,
-        };
-        debug_assert_eq!(
-            *family.families.iter().next().unwrap(),
-            SingleFontFamily::Generic(generic)
-        );
-        family
+        }
     }
 }
 

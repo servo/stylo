@@ -326,7 +326,6 @@
 
 <%helpers:shorthand name="font-variant"
                     engines="gecko servo"
-                    servo_pref="layout.legacy_layout",
                     flags="SHORTHAND_IN_GETCS"
                     sub_properties="font-variant-caps
                                     ${'font-variant-alternates' if engine == 'gecko' else ''}

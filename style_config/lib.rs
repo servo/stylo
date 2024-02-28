@@ -69,7 +69,7 @@ pub fn set_i32(key: &str, value: i32) {
 
 #[test]
 fn test() {
-    let mut prefs = Preferences::default();
+    let prefs = Preferences::default();
 
     // Prefs have default values when unset.
     assert_eq!(prefs.get_bool("foo"), false);

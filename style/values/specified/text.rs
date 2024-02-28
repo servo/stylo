@@ -278,6 +278,7 @@ pub enum TextTransformCase {
     /// Capitalize each word.
     Capitalize,
     /// Automatic italicization of math variables.
+    #[cfg(feature = "gecko")]
     MathAuto,
 }
 

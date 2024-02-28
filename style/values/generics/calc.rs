@@ -217,7 +217,7 @@ bitflags! {
     /// This is used as a hint for the parser to fast-reject invalid
     /// expressions. Numbers are always allowed because they multiply other
     /// units.
-    #[derive(Clone, Copy, PartialEq, Eq)]
+    #[cfg_attr(feature = "gecko", derive(Clone, Copy, PartialEq, Eq))]
     pub struct CalcUnits: u8 {
         /// <length>
         const LENGTH = 1 << 0;

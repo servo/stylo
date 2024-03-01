@@ -24,6 +24,9 @@ macro_rules! pref {
     ("layout.css.abs-sign.enabled") => {
         false
     };
+    ("layout.css.basic-shape-rect.enabled") => {
+        false
+    };
     ("layout.css.basic-shape-xywh.enabled") => {
         false
     };

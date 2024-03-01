@@ -138,11 +138,18 @@ pub struct LightDark {
 }
 
 impl LightDark {
+    #[cfg(feature = "gecko")]
     fn compute(&self, cx: &Context) -> ComputedColor {
         let style_color_scheme = cx.style().get_inherited_ui().clone_color_scheme();
         let dark = cx.device().is_dark_color_scheme(&style_color_scheme);
         let used = if dark { &self.dark } else { &self.light };
         used.to_computed_value(cx)
+    }
+
+    #[cfg(feature = "servo")]
+    fn compute(&self, cx: &Context) -> ComputedColor {
+        // Servo doesn't support color-scheme yet.
+        self.light.to_computed_value(cx)
     }
 
     fn parse<'i, 't>(

@@ -93,6 +93,9 @@ macro_rules! pref {
     ("layout.css.inverted-colors.enabled") => {
         false
     };
+    ("layout.css.light-dark.enabled") => {
+        false
+    };
     ("layout.css.marker.restricted") => {
         false
     };

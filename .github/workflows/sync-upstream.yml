@@ -1,4 +1,4 @@
-name: Sync
+name: Sync upstream with mozilla-central
 
 on:
   schedule:

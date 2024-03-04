@@ -903,6 +903,18 @@ fn thin_to_thick<H, T>(
 }
 
 impl<H, T> ThinArc<H, T> {
+    /// Returns the dynamically sized slice in this HeaderSlice.
+    #[inline(always)]
+    pub fn slice(&self) -> &[T] {
+        &self.slice
+    }
+
+    /// Returns the len of the slice.
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.slice.len()
+    }
+
     /// Temporarily converts |self| into a bonafide Arc and exposes it to the
     /// provided callback. The refcount is not modified.
     #[inline]

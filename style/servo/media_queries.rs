@@ -202,12 +202,12 @@ impl Device {
 
     /// Returns the default background color.
     pub fn default_background_color(&self) -> AbsoluteColor {
-        AbsoluteColor::white()
+        AbsoluteColor::WHITE
     }
 
     /// Returns the default foreground color.
     pub fn default_color(&self) -> AbsoluteColor {
-        AbsoluteColor::black()
+        AbsoluteColor::BLACK
     }
 
     /// Returns safe area insets

@@ -1,8 +1,8 @@
-name: Sync
+name: Sync upstream with mozilla-central
 
 on:
-  # schedule:
-  #   - cron: '0 13 * * *'
+  schedule:
+    - cron: '0 13 * * *'
   workflow_dispatch:
 
 jobs:

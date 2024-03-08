@@ -54,6 +54,7 @@ pub enum PseudoElement {
     DetailsSummary,
     DetailsContent,
     ServoAnonymousBox,
+    ServoAnonymousTable,
     ServoAnonymousTableCell,
     ServoAnonymousTableRow,
     ServoLegacyText,
@@ -82,6 +83,7 @@ impl ToCss for PseudoElement {
             DetailsSummary => "::-servo-details-summary",
             DetailsContent => "::-servo-details-content",
             ServoAnonymousBox => "::-servo-anonymous-box",
+            ServoAnonymousTable => "::-servo-anonymous-table",
             ServoAnonymousTableCell => "::-servo-anonymous-table-cell",
             ServoAnonymousTableRow => "::-servo-anonymous-table-row",
             ServoLegacyText => "::-servo-legacy-text",
@@ -229,6 +231,7 @@ impl PseudoElement {
             PseudoElement::DetailsSummary => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
             PseudoElement::ServoAnonymousBox |
+            PseudoElement::ServoAnonymousTable |
             PseudoElement::ServoAnonymousTableCell |
             PseudoElement::ServoAnonymousTableRow |
             PseudoElement::ServoLegacyText |
@@ -553,6 +556,12 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 ServoLegacyAnonymousTable
+            },
+            "-servo-anonymous-table" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoAnonymousTable
             },
             "-servo-anonymous-table-row" => {
                 if !self.in_user_agent_stylesheet() {

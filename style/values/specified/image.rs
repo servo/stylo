@@ -977,7 +977,7 @@ impl Gradient {
             AngleOrPercentage::parse_with_unitless,
         )?;
 
-        if cfg!(feature = "servo") || items.len() < 2 {
+        if items.len() < 2 {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
 

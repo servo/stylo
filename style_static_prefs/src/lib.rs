@@ -120,6 +120,9 @@ macro_rules! pref {
     ("layout.css.motion-path-ray.enabled") => {
         false
     };
+    ("layout.css.motion-path-url.enabled") => {
+        false
+    };
     ("layout.css.moz-control-character-visibility.enabled") => {
         false
     };

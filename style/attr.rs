@@ -15,7 +15,7 @@ use crate::values::specified::Length;
 use crate::values::AtomString;
 use crate::{Atom, LocalName, Namespace, Prefix};
 use app_units::Au;
-use cssparser::{self, Color, RGBA};
+use cssparser::{self, Color, RgbaLegacy};
 use euclid::num::Zero;
 use num_traits::ToPrimitive;
 use selectors::attr::AttrSelectorOperation;
@@ -43,7 +43,7 @@ pub enum AttrValue {
     Double(String, f64),
     Atom(Atom),
     Length(String, Option<Length>),
-    Color(String, Option<RGBA>),
+    Color(String, Option<RgbaLegacy>),
     Dimension(String, LengthOrPercentageOrAuto),
 
     /// Stores a URL, computed from the input string and a document's base URL.
@@ -294,7 +294,7 @@ impl AttrValue {
     /// ## Panics
     ///
     /// Panics if the `AttrValue` is not a `Color`
-    pub fn as_color(&self) -> Option<&RGBA> {
+    pub fn as_color(&self) -> Option<&RgbaLegacy> {
         match *self {
             AttrValue::Color(_, ref color) => color.as_ref(),
             _ => panic!("Color not found"),
@@ -406,7 +406,7 @@ pub fn parse_nonzero_length(value: &str) -> LengthOrPercentageOrAuto {
 /// Parses a [legacy color][color]. If unparseable, `Err` is returned.
 ///
 /// [color]: https://html.spec.whatwg.org/multipage/#rules-for-parsing-a-legacy-colour-value
-pub fn parse_legacy_color(mut input: &str) -> Result<RGBA, ()> {
+pub fn parse_legacy_color(mut input: &str) -> Result<RgbaLegacy, ()> {
     // Steps 1 and 2.
     if input.is_empty() {
         return Err(());
@@ -433,7 +433,7 @@ pub fn parse_legacy_color(mut input: &str) -> Result<RGBA, ()> {
             hex(input.as_bytes()[2] as char),
             hex(input.as_bytes()[3] as char),
         ) {
-            return Ok(RGBA::new(Some(r * 17), Some(g * 17), Some(b * 17), Some(1.0)));
+            return Ok(RgbaLegacy::new(r * 17, g * 17, b * 17, 1.0));
         }
     }
 
@@ -502,11 +502,11 @@ pub fn parse_legacy_color(mut input: &str) -> Result<RGBA, ()> {
     }
 
     // Steps 15-20.
-    return Ok(RGBA::new(
-        Some(hex_string(red).unwrap()),
-        Some(hex_string(green).unwrap()),
-        Some(hex_string(blue).unwrap()),
-        Some(1.0),
+    return Ok(RgbaLegacy::new(
+        hex_string(red).unwrap(),
+        hex_string(green).unwrap(),
+        hex_string(blue).unwrap(),
+        1.0,
     ));
 
     fn hex(ch: char) -> Result<u8, ()> {

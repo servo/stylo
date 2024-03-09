@@ -839,7 +839,7 @@ malloc_size_of_is_0!(Range<f32>, Range<f64>);
 
 malloc_size_of_is_0!(app_units::Au);
 
-malloc_size_of_is_0!(cssparser::TokenSerializationType);
+malloc_size_of_is_0!(cssparser::RgbaLegacy, cssparser::TokenSerializationType);
 
 #[cfg(feature = "servo")]
 malloc_size_of_is_0!(csp::Destination);

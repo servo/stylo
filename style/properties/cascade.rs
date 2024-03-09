@@ -1223,6 +1223,7 @@ impl<'a, 'b: 'a> Cascade<'a, 'b> {
 
     /// If font-size-adjust used the from-font value, we need to resolve it to an actual number
     /// using metrics from the font.
+    #[cfg(feature = "gecko")]
     fn resolve_font_size_adjust_from_font_if_needed(&mut self) {
         use crate::values::computed::font::{FontSizeAdjust, FontSizeAdjustFactor as Factor};
 

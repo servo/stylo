@@ -161,7 +161,8 @@ pub use self::GenericImageSetItem as ImageSetItem;
 
 bitflags! {
     /// State flags stored on each variant of a Gradient.
-    #[derive(Clone, Copy, Default, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem)]
+    #[derive(Default, MallocSizeOf, ToComputedValue, ToResolvedValue, ToShmem)]
+    #[cfg_attr(feature = "gecko", derive(Clone, Copy, PartialEq))]
     #[repr(C)]
     pub struct GradientFlags: u8 {
         /// Set if this is a repeating gradient.

@@ -183,7 +183,4 @@ macro_rules! pref {
     ("layout.css.bucket-attribute-names.enabled") => {
         false
     };
-    ("layout.css.font-size-adjust.basis.enabled") => {
-        false
-    };
 }

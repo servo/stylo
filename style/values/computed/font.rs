@@ -982,6 +982,7 @@ where
     ToResolvedValue,
     ToShmem,
 )]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 #[value_info(other_values = "normal")]
 pub struct FontLanguageOverride(pub u32);

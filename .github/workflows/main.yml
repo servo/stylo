@@ -18,7 +18,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run Tests
-        run: cargo build --features servo
+        run: cargo build --locked --features servo
         env:
           RUST_BACKTRACE: 1
 
@@ -30,7 +30,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       - name: Run Tests
-        run: cargo build --release --features servo
+        run: cargo build --locked --release --features servo
         env:
           RUST_BACKTRACE: 1
 

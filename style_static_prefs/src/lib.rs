@@ -57,9 +57,6 @@ macro_rules! pref {
     ("layout.css.font-display.enabled") => {
         false
     };
-    ("layout.css.font-metrics-overrides.enabled") => {
-        false
-    };
     ("layout.css.font-palette.enabled") => {
         false
     };

@@ -494,6 +494,8 @@ impl RgbaLegacy {
     }
 }
 
+malloc_size_of_is_0!(RgbaLegacy);
+
 #[cfg(feature = "serde")]
 impl Serialize for RgbaLegacy {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

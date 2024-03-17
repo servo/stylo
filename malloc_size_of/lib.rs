@@ -54,6 +54,7 @@ extern crate content_security_policy;
 #[cfg(feature = "servo")]
 extern crate crossbeam_channel;
 extern crate cssparser;
+extern crate cssparser_color;
 extern crate euclid;
 #[cfg(feature = "servo")]
 extern crate http;

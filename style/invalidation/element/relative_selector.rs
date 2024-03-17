@@ -22,7 +22,6 @@ use crate::invalidation::element::state_and_attributes::{
     invalidated_sibling, push_invalidation, should_process_descendants,
 };
 use crate::stylist::{CascadeData, Stylist};
-use dom::ElementState;
 use fxhash::FxHashMap;
 use selectors::matching::{
     matches_compound_selector_from, matches_selector, CompoundSelectorMatchingResult,
@@ -33,6 +32,7 @@ use selectors::parser::{Combinator, SelectorKey};
 use selectors::OpaqueElement;
 use smallvec::SmallVec;
 use std::ops::DerefMut;
+use style_traits::dom::ElementState;
 
 /// Kind of DOM mutation this relative selector invalidation is being carried out in.
 #[derive(Clone, Copy)]

@@ -54,6 +54,7 @@ extern crate content_security_policy;
 #[cfg(feature = "servo")]
 extern crate crossbeam_channel;
 extern crate cssparser;
+extern crate cssparser_color;
 extern crate euclid;
 #[cfg(feature = "servo")]
 extern crate http;
@@ -840,7 +841,7 @@ malloc_size_of_is_0!(Range<f32>, Range<f64>);
 
 malloc_size_of_is_0!(app_units::Au);
 
-malloc_size_of_is_0!(cssparser::RgbaLegacy, cssparser::TokenSerializationType);
+malloc_size_of_is_0!(cssparser_color::RgbaLegacy, cssparser::TokenSerializationType);
 
 #[cfg(feature = "servo")]
 malloc_size_of_is_0!(csp::Destination);

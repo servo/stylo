@@ -31,6 +31,7 @@ atomic_refcell = "0.1"
 bitflags = "2"
 byteorder = "1.0"
 cssparser = { workspace = true }
+cssparser-color = { workspace = true }
 derive_more = { version = "0.99", default-features = false, features = ["add", "add_assign", "deref", "deref_mut", "from"] }
 encoding_rs = { version = "0.8", optional = true }
 euclid = "0.22"

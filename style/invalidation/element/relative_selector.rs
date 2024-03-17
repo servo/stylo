@@ -21,7 +21,6 @@ use crate::invalidation::element::state_and_attributes::{
     invalidated_sibling, push_invalidation, should_process_descendants,
 };
 use crate::stylist::{CascadeData, Stylist};
-use dom::ElementState;
 use fxhash::FxHashMap;
 use selectors::matching::{
     ElementSelectorFlags, MatchingContext, MatchingForInvalidation, MatchingMode,
@@ -31,6 +30,7 @@ use selectors::parser::SelectorKey;
 use selectors::OpaqueElement;
 use smallvec::SmallVec;
 use std::ops::DerefMut;
+use style_traits::dom::ElementState;
 
 /// Overall invalidator for handling relative selector invalidations.
 pub struct RelativeSelectorInvalidator<'a, 'b, E>

@@ -31,7 +31,6 @@ app_units = { workspace = true }
 content-security-policy = { workspace = true, optional = true }
 crossbeam-channel = { workspace = true, optional = true }
 cssparser = { workspace = true }
-cssparser-color = { workspace = true }
 euclid = { workspace = true }
 http = { workspace = true, optional = true }
 indexmap = { workspace = true }

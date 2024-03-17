@@ -6,6 +6,7 @@
 //!
 //! [attr]: https://dom.spec.whatwg.org/#interface-attr
 
+use crate::color::parsing::{Color, RgbaLegacy, parse_color_keyword};
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::Locked;
 use crate::str::str_join;
@@ -15,7 +16,6 @@ use crate::values::specified::Length;
 use crate::values::AtomString;
 use crate::{Atom, LocalName, Namespace, Prefix};
 use app_units::Au;
-use cssparser_color::{Color, RgbaLegacy, parse_color_keyword};
 use euclid::num::Zero;
 use num_traits::ToPrimitive;
 use selectors::attr::AttrSelectorOperation;

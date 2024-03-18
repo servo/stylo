@@ -933,7 +933,7 @@ PRIORITARY_PROPERTIES = set([
     "zoom",
     # Line height lengths depend on this.
     "line-height",
-])
+]).intersection(set(list(map(lambda p: p.name, data.longhands))))
 
 def is_visited_dependent(p):
     return p.name in [

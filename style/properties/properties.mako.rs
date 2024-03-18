@@ -2827,7 +2827,7 @@ mod lazy_static_module {
                         % endif
                     }),
                 % endfor
-                custom_properties,
+                custom_properties: crate::custom_properties::ComputedCustomProperties::default(),
                 writing_mode: WritingMode::empty(),
                 rules: None,
                 visited_style: None,

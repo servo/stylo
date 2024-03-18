@@ -100,7 +100,7 @@ ${helpers.single_keyword(
     // FIXME: Update Servo to support the same Syntax as Gecko.
     ${helpers.single_keyword(
         "justify-content",
-        "flex-start stretch flex-end center space-between space-around space-evenly",
+        "start flex-start stretch end flex-end center space-between space-around space-evenly",
         engines="servo",
         servo_pref="layout.flexbox.enabled",
         extra_prefixes="webkit",
@@ -140,7 +140,7 @@ ${helpers.single_keyword(
     // FIXME: Update Servo to support the same Syntax as Gecko.
     ${helpers.single_keyword(
         "align-content",
-        "stretch flex-start flex-end center space-between space-around space-evenly",
+        "stretch start flex-start end flex-end center space-between space-around space-evenly",
         engines="servo",
         servo_pref="layout.flexbox.enabled",
         extra_prefixes="webkit",

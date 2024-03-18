@@ -12,6 +12,7 @@ use std::fmt;
 
 bitflags! {
     /// Individual layout actions that may be necessary after restyling.
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct ServoRestyleDamage: u8 {
         /// Repaint the node itself.
         ///

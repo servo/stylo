@@ -739,56 +739,70 @@ impl<'a, 'b: 'a> Cascade<'a, 'b> {
 
         let has_writing_mode = self
             .apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::WritingMode) |
-            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::Direction) |
+            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::Direction);
+        #[cfg(feature = "gecko")]
+        let has_writing_mode = has_writing_mode |
             self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::TextOrientation);
         if has_writing_mode {
             self.compute_writing_mode();
         }
 
-        if self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::Zoom) {
-            self.compute_zoom();
-        }
+        #[cfg(feature = "gecko")] {
+            if self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::Zoom) {
+                self.compute_zoom();
+            }
 
-        // Compute font-family.
-        let has_font_family =
-            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontFamily);
-        let has_lang = self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::XLang);
-        if has_lang {
-            self.recompute_initial_font_family_if_needed();
+            // Compute font-family.
+            let has_font_family =
+                self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontFamily);
+            let has_lang = self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::XLang);
+            if has_lang {
+                self.recompute_initial_font_family_if_needed();
+            }
+            if has_font_family {
+                self.prioritize_user_fonts_if_needed();
+            }
         }
-        if has_font_family {
-            self.prioritize_user_fonts_if_needed();
+        #[cfg(feature = "servo")] {
+            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontFamily);
+            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::XLang);
         }
 
         // Compute font-size.
-        if self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::XTextScale) {
-            self.unzoom_fonts_if_needed();
-        }
-        let has_font_size =
-            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontSize);
-        let has_math_depth =
-            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::MathDepth);
-        let has_min_font_size_ratio =
-            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::MozMinFontSizeRatio);
+        #[cfg(feature = "gecko")] {
+            if self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::XTextScale) {
+                self.unzoom_fonts_if_needed();
+            }
+            let has_font_size =
+                self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontSize);
+            let has_math_depth =
+                self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::MathDepth);
+            let has_min_font_size_ratio =
+                self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::MozMinFontSizeRatio);
 
-        if has_math_depth && has_font_size {
-            self.recompute_math_font_size_if_needed();
+            if has_math_depth && has_font_size {
+                self.recompute_math_font_size_if_needed();
+            }
+            if has_lang || has_font_family {
+                self.recompute_keyword_font_size_if_needed();
+            }
+            if has_font_size || has_min_font_size_ratio || has_lang || has_font_family {
+                self.constrain_font_size_if_needed();
+            }
         }
-        if has_lang || has_font_family {
-            self.recompute_keyword_font_size_if_needed();
-        }
-        if has_font_size || has_min_font_size_ratio || has_lang || has_font_family {
-            self.constrain_font_size_if_needed();
-        }
+        #[cfg(feature = "servo")]
+        self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontSize);
 
         // Compute the rest of the first-available-font-affecting properties.
         self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontWeight);
         self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontStretch);
         self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontStyle);
-        self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontSizeAdjust);
+        #[cfg(feature = "gecko")] {
+            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::FontSizeAdjust);
 
-        self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::ColorScheme);
-        self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::ForcedColorAdjust);
+            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::ColorScheme);
+            self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::ForcedColorAdjust);
+        }
 
         // Compute the line height.
         self.apply_one_prioritary_property(decls, cache, PrioritaryPropertyId::LineHeight);

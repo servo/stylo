@@ -757,56 +757,70 @@ impl<'b> Cascade<'b> {
             return;
         }
 
-        let has_writing_mode = apply!(WritingMode) | apply!(Direction) | apply!(TextOrientation);
+        let has_writing_mode = apply!(WritingMode) | apply!(Direction);
+        #[cfg(feature = "gecko")]
+        let has_writing_mode = has_writing_mode | apply!(TextOrientation);
         if has_writing_mode {
             self.compute_writing_mode(context);
         }
 
-        if apply!(Zoom) {
-            self.compute_zoom(context);
-            // NOTE(emilio): This is a bit of a hack, but matches the shipped WebKit and Blink
-            // behavior for now. Ideally, in the future, we have a pass over all
-            // implicitly-or-explicitly-inherited properties that can contain lengths and
-            // re-compute them properly, see https://github.com/w3c/csswg-drafts/issues/9397.
-            self.recompute_font_size_for_zoom_change(&mut context.builder);
-        }
+        #[cfg(feature = "gecko")] {
+            if apply!(Zoom) {
+                self.compute_zoom(context);
+                // NOTE(emilio): This is a bit of a hack, but matches the shipped WebKit and Blink
+                // behavior for now. Ideally, in the future, we have a pass over all
+                // implicitly-or-explicitly-inherited properties that can contain lengths and
+                // re-compute them properly, see https://github.com/w3c/csswg-drafts/issues/9397.
+                self.recompute_font_size_for_zoom_change(&mut context.builder);
+            }
 
-        // Compute font-family.
-        let has_font_family = apply!(FontFamily);
-        let has_lang = apply!(XLang);
-        if has_lang {
-            self.recompute_initial_font_family_if_needed(&mut context.builder);
+            // Compute font-family.
+            let has_font_family = apply!(FontFamily);
+            let has_lang = apply!(XLang);
+            if has_lang {
+                self.recompute_initial_font_family_if_needed(&mut context.builder);
+            }
+            if has_font_family {
+                self.prioritize_user_fonts_if_needed(&mut context.builder);
+            }
         }
-        if has_font_family {
-            self.prioritize_user_fonts_if_needed(&mut context.builder);
+        #[cfg(feature = "servo")] {
+            apply!(FontFamily);
+            apply!(XLang);
         }
 
         // Compute font-size.
-        if apply!(XTextScale) {
-            self.unzoom_fonts_if_needed(&mut context.builder);
-        }
-        let has_font_size = apply!(FontSize);
-        let has_math_depth = apply!(MathDepth);
-        let has_min_font_size_ratio = apply!(MozMinFontSizeRatio);
+        #[cfg(feature = "gecko")] {
+            if apply!(XTextScale) {
+                self.unzoom_fonts_if_needed(&mut context.builder);
+            }
+            let has_font_size = apply!(FontSize);
+            let has_math_depth = apply!(MathDepth);
+            let has_min_font_size_ratio = apply!(MozMinFontSizeRatio);
 
-        if has_math_depth && has_font_size {
-            self.recompute_math_font_size_if_needed(context);
+            if has_math_depth && has_font_size {
+                self.recompute_math_font_size_if_needed(context);
+            }
+            if has_lang || has_font_family {
+                self.recompute_keyword_font_size_if_needed(context);
+            }
+            if has_font_size || has_min_font_size_ratio || has_lang || has_font_family {
+                self.constrain_font_size_if_needed(&mut context.builder);
+            }
         }
-        if has_lang || has_font_family {
-            self.recompute_keyword_font_size_if_needed(context);
-        }
-        if has_font_size || has_min_font_size_ratio || has_lang || has_font_family {
-            self.constrain_font_size_if_needed(&mut context.builder);
-        }
+        #[cfg(feature = "servo")]
+        apply!(FontSize);
 
         // Compute the rest of the first-available-font-affecting properties.
         apply!(FontWeight);
         apply!(FontStretch);
         apply!(FontStyle);
-        apply!(FontSizeAdjust);
+        #[cfg(feature = "gecko")] {
+            apply!(FontSizeAdjust);
 
-        apply!(ColorScheme);
-        apply!(ForcedColorAdjust);
+            apply!(ColorScheme);
+            apply!(ForcedColorAdjust);
+        }
 
         // Compute the line height.
         apply!(LineHeight);

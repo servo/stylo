@@ -32,6 +32,7 @@ impl OpaqueNode {
 bitflags! {
     /// Event-based element states.
     #[repr(C)]
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct ElementState: u64 {
         /// The mouse is down on this element.
         /// <https://html.spec.whatwg.org/multipage/#selector-active>
@@ -84,7 +85,7 @@ bitflags! {
         /// <https://html.spec.whatwg.org/multipage/#selector-link>
         const UNVISITED = 1 << 20;
         /// <https://drafts.csswg.org/selectors-4/#the-any-link-pseudo>
-        const VISITED_OR_UNVISITED = Self::VISITED.bits | Self::UNVISITED.bits;
+        const VISITED_OR_UNVISITED = Self::VISITED.bits() | Self::UNVISITED.bits();
         /// Non-standard: https://developer.mozilla.org/en-US/docs/Web/CSS/:-moz-drag-over
         const DRAGOVER = 1 << 21;
         /// <https://html.spec.whatwg.org/multipage/#selector-in-range>
@@ -149,16 +150,16 @@ bitflags! {
         const REVEALED = 1u64 << 48;
 
         /// Some convenience unions.
-        const DIR_STATES = Self::LTR.bits | Self::RTL.bits;
+        const DIR_STATES = Self::LTR.bits() | Self::RTL.bits();
 
-        const DIR_ATTR_STATES = Self::HAS_DIR_ATTR.bits |
-                                Self::HAS_DIR_ATTR_LTR.bits |
-                                Self::HAS_DIR_ATTR_RTL.bits |
-                                Self::HAS_DIR_ATTR_LIKE_AUTO.bits;
+        const DIR_ATTR_STATES = Self::HAS_DIR_ATTR.bits() |
+                                Self::HAS_DIR_ATTR_LTR.bits() |
+                                Self::HAS_DIR_ATTR_RTL.bits() |
+                                Self::HAS_DIR_ATTR_LIKE_AUTO.bits();
 
-        const DISABLED_STATES = Self::DISABLED.bits | Self::ENABLED.bits;
+        const DISABLED_STATES = Self::DISABLED.bits() | Self::ENABLED.bits();
 
-        const REQUIRED_STATES = Self::REQUIRED.bits | Self::OPTIONAL_.bits;
+        const REQUIRED_STATES = Self::REQUIRED.bits() | Self::OPTIONAL_.bits();
 
         /// Event states that can be added and removed through
         /// Element::{Add,Remove}ManuallyManagedStates.
@@ -167,38 +168,39 @@ bitflags! {
         /// for setting or clearing the bit when an Element is added or removed
         /// from a document (e.g. in BindToTree and UnbindFromTree), if that is
         /// an appropriate thing to do for your state bit.
-        const MANUALLY_MANAGED_STATES = Self::AUTOFILL.bits | Self::AUTOFILL_PREVIEW.bits;
+        const MANUALLY_MANAGED_STATES = Self::AUTOFILL.bits() | Self::AUTOFILL_PREVIEW.bits();
 
         /// Event states that are managed externally to an element (by the
         /// EventStateManager, or by other code).  As opposed to those in
         /// INTRINSIC_STATES, which are are computed by the element itself
         /// and returned from Element::IntrinsicState.
         const EXTERNALLY_MANAGED_STATES =
-            Self::MANUALLY_MANAGED_STATES.bits |
-            Self::DIR_ATTR_STATES.bits |
-            Self::DISABLED_STATES.bits |
-            Self::REQUIRED_STATES.bits |
-            Self::ACTIVE.bits |
-            Self::DEFINED.bits |
-            Self::DRAGOVER.bits |
-            Self::FOCUS.bits |
-            Self::FOCUSRING.bits |
-            Self::FOCUS_WITHIN.bits |
-            Self::FULLSCREEN.bits |
-            Self::HOVER.bits |
-            Self::URLTARGET.bits |
-            Self::MODAL_DIALOG.bits |
-            Self::INERT.bits |
-            Self::TOPMOST_MODAL.bits |
-            Self::REVEALED.bits;
+            Self::MANUALLY_MANAGED_STATES.bits() |
+            Self::DIR_ATTR_STATES.bits() |
+            Self::DISABLED_STATES.bits() |
+            Self::REQUIRED_STATES.bits() |
+            Self::ACTIVE.bits() |
+            Self::DEFINED.bits() |
+            Self::DRAGOVER.bits() |
+            Self::FOCUS.bits() |
+            Self::FOCUSRING.bits() |
+            Self::FOCUS_WITHIN.bits() |
+            Self::FULLSCREEN.bits() |
+            Self::HOVER.bits() |
+            Self::URLTARGET.bits() |
+            Self::MODAL_DIALOG.bits() |
+            Self::INERT.bits() |
+            Self::TOPMOST_MODAL.bits() |
+            Self::REVEALED.bits();
 
-        const INTRINSIC_STATES = !Self::EXTERNALLY_MANAGED_STATES.bits;
+        const INTRINSIC_STATES = !Self::EXTERNALLY_MANAGED_STATES.bits();
     }
 }
 
 bitflags! {
     /// Event-based document states.
     #[repr(C)]
+    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct DocumentState: u64 {
         /// Window activation status
         const WINDOW_INACTIVE = 1 << 0;
@@ -209,7 +211,7 @@ bitflags! {
         /// LWTheme status
         const LWTHEME = 1 << 3;
 
-        const ALL_LOCALEDIR_BITS = Self::LTR_LOCALE.bits | Self::RTL_LOCALE.bits;
+        const ALL_LOCALEDIR_BITS = Self::LTR_LOCALE.bits() | Self::RTL_LOCALE.bits();
     }
 }
 

@@ -953,6 +953,7 @@ impl<'b> Cascade<'b> {
         (CASCADE_PROPERTY[longhand_id as usize])(&declaration, context);
     }
 
+    #[cfg(feature = "gecko")]
     fn compute_zoom(&self, context: &mut computed::Context) {
         context.builder.effective_zoom = context
             .builder

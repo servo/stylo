@@ -415,30 +415,20 @@ impl DisplayKeyword {
         use self::DisplayKeyword::*;
         Ok(try_match_ident_ignore_ascii_case! { input,
             "none" => Full(Display::None),
-            #[cfg(any(feature = "servo-layout-2020", feature = "gecko"))]
             "contents" => Full(Display::Contents),
             "inline-block" => Full(Display::InlineBlock),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "inline-table" => Full(Display::InlineTable),
             "-webkit-flex" if flexbox_enabled() => Full(Display::Flex),
             "inline-flex" | "-webkit-inline-flex" if flexbox_enabled() => Full(Display::InlineFlex),
             #[cfg(feature = "gecko")]
             "inline-grid" => Full(Display::InlineGrid),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table-caption" => Full(Display::TableCaption),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table-row-group" => Full(Display::TableRowGroup),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table-header-group" => Full(Display::TableHeaderGroup),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table-footer-group" => Full(Display::TableFooterGroup),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table-column" => Full(Display::TableColumn),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table-column-group" => Full(Display::TableColumnGroup),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table-row" => Full(Display::TableRow),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table-cell" => Full(Display::TableCell),
             #[cfg(feature = "gecko")]
             "ruby-base" => Full(Display::RubyBase),
@@ -464,9 +454,7 @@ impl DisplayKeyword {
             /// https://drafts.csswg.org/css-display/#typedef-display-inside
             "flow" => Inside(DisplayInside::Flow),
             "flex" if flexbox_enabled() => Inside(DisplayInside::Flex),
-            #[cfg(any(feature = "servo-layout-2020", feature = "gecko"))]
             "flow-root" => Inside(DisplayInside::FlowRoot),
-            #[cfg(any(feature = "servo-layout-2013", feature = "gecko"))]
             "table" => Inside(DisplayInside::Table),
             #[cfg(feature = "gecko")]
             "grid" => Inside(DisplayInside::Grid),

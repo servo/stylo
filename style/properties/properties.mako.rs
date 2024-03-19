@@ -3076,7 +3076,7 @@ pub struct ComputedValuesInner {
     pub writing_mode: WritingMode,
 
     /// The effective zoom value.
-    pub effective_zoom: Zoom,
+    pub effective_zoom: computed::Zoom,
 
     /// A set of flags we use to store misc information regarding this style.
     pub flags: ComputedValueFlags,
@@ -4100,7 +4100,10 @@ impl<'a> StyleBuilder<'a> {
 
     /// The zoom specified on this element.
     pub fn specified_zoom(&self) -> computed::Zoom {
-        self.get_box().clone_zoom()
+        #[cfg(feature = "gecko")]
+        return self.get_box().clone_zoom();
+        #[cfg(feature = "servo")]
+        return computed::Zoom::ONE;
     }
 
     /// Inherited zoom.
@@ -4191,6 +4194,7 @@ mod lazy_static_module {
                 writing_mode: WritingMode::empty(),
                 rules: None,
                 visited_style: None,
+                effective_zoom: crate::values::computed::Zoom::ONE,
                 flags: ComputedValueFlags::empty(),
             },
             pseudo: None,

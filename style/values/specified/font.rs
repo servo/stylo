@@ -2007,9 +2007,8 @@ impl XTextScale {
     ToCss,
     ToResolvedValue,
     ToShmem,
-    Serialize,
-    Deserialize,
 )]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 /// Internal property that reflects the lang attribute
 pub struct XLang(#[css(skip)] pub Atom);
 

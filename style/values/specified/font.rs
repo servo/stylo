@@ -2007,6 +2007,8 @@ impl XTextScale {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    Serialize,
+    Deserialize,
 )]
 /// Internal property that reflects the lang attribute
 pub struct XLang(#[css(skip)] pub Atom);

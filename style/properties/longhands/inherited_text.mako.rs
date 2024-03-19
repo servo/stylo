@@ -161,7 +161,6 @@ ${helpers.predefined_type(
     "SimpleShadow",
     None,
     engines="gecko servo",
-    servo_pref="layout.legacy_layout",
     vector=True,
     vector_animation_type="with_zero",
     animation_value_type="AnimatedTextShadowList",

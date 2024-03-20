@@ -9,12 +9,11 @@ use crate::context::QuirksMode;
 use crate::custom_properties::CssEnvironment;
 use crate::font_metrics::FontMetrics;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
+use crate::logical_geometry::WritingMode;
 use crate::media_queries::MediaType;
 use crate::properties::ComputedValues;
-use crate::values::computed::CSSPixelLength;
-use crate::values::computed::Context;
-use crate::values::computed::Resolution;
-use crate::values::specified::font::FONT_MEDIUM_PX;
+use crate::values::computed::{CSSPixelLength, Context, LineHeight, NonNegativeLength, Resolution};
+use crate::values::specified::font::{FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX};
 use crate::values::specified::ViewportVariant;
 use crate::values::KeyframesName;
 use app_units::{Au, AU_PER_PX};
@@ -50,10 +49,17 @@ pub struct Device {
     /// a relaxed atomic here.
     #[ignore_malloc_size_of = "Pure stack type"]
     root_font_size: AtomicU32,
+    /// Line height of the root element, used for rlh units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_line_height: AtomicU32,
     /// Whether any styles computed in the document relied on the root font-size
     /// by using rem units.
     #[ignore_malloc_size_of = "Pure stack type"]
     used_root_font_size: AtomicBool,
+    /// Whether any styles computed in the document relied on the root line-height
+    /// by using rlh units.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    used_root_line_height: AtomicBool,
     /// Whether any styles computed in the document relied on the viewport size.
     #[ignore_malloc_size_of = "Pure stack type"]
     used_viewport_units: AtomicBool,
@@ -77,7 +83,9 @@ impl Device {
             quirks_mode,
             // FIXME(bz): Seems dubious?
             root_font_size: AtomicU32::new(FONT_MEDIUM_PX.to_bits()),
+            root_line_height: AtomicU32::new(FONT_MEDIUM_LINE_HEIGHT_PX.to_bits()),
             used_root_font_size: AtomicBool::new(false),
+            used_root_line_height: AtomicBool::new(false),
             used_viewport_units: AtomicBool::new(false),
             environment: CssEnvironment,
         }
@@ -109,6 +117,37 @@ impl Device {
             .store(size.px().to_bits(), Ordering::Relaxed)
     }
 
+    /// Get the line height of the root element (for rlh)
+    pub fn root_line_height(&self) -> CSSPixelLength {
+        self.used_root_line_height.store(true, Ordering::Relaxed);
+        CSSPixelLength::new(f32::from_bits(
+            self.root_line_height.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the line height of the root element (for rlh)
+    pub fn set_root_line_height(&self, size: CSSPixelLength) {
+        self.root_line_height
+            .store(size.px().to_bits(), Ordering::Relaxed);
+    }
+
+    /// Returns the computed line-height for the font in a given computed values instance.
+    ///
+    /// If you pass down an element, then the used line-height is returned.
+    pub fn calc_line_height(
+        &self,
+        font: &crate::properties::style_structs::Font,
+        _writing_mode: WritingMode,
+        _element: Option<()>,
+    ) -> NonNegativeLength {
+        (match font.line_height {
+            // TODO: compute `normal` from the font metrics
+            LineHeight::Normal => CSSPixelLength::new(0.),
+            LineHeight::Number(number) => font.font_size.computed_size() * number.0,
+            LineHeight::Length(length) => length.0,
+        }).into()
+    }
+
     /// Get the quirks mode of the current device.
     pub fn quirks_mode(&self) -> QuirksMode {
         self.quirks_mode
@@ -130,6 +169,11 @@ impl Device {
     /// Returns whether we ever looked up the root font size of the Device.
     pub fn used_root_font_size(&self) -> bool {
         self.used_root_font_size.load(Ordering::Relaxed)
+    }
+
+    /// Returns whether we ever looked up the root line-height of the device.
+    pub fn used_root_line_height(&self) -> bool {
+        self.used_root_line_height.load(Ordering::Relaxed)
     }
 
     /// Returns the viewport size of the current device in app units, needed,

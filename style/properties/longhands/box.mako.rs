@@ -104,7 +104,7 @@ ${helpers.predefined_type(
     "baseline-source",
     "BaselineSource",
     "computed::BaselineSource::Auto",
-    engines="gecko servo-2013",
+    engines="gecko servo",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-inline-3/#baseline-source",
     servo_restyle_damage = "reflow",

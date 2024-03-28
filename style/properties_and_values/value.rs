@@ -274,7 +274,7 @@ impl ToCss for SpecifiedValueComponentList {
         first.to_css(dest)?;
 
         // The separator implied by the multiplier for this list.
-        let separator = match self.0.header {
+        let separator = match self.0.header.header {
             // <https://drafts.csswg.org/cssom-1/#serialize-a-whitespace-separated-list>
             Multiplier::Space => " ",
             // <https://drafts.csswg.org/cssom-1/#serialize-a-comma-separated-list>

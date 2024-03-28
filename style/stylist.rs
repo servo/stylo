@@ -551,6 +551,7 @@ pub struct Stylist {
     script_custom_properties: CustomPropertyScriptRegistry,
 
     /// Initial values for registered custom properties.
+    #[ignore_malloc_size_of = "Arc"]
     initial_values_for_custom_properties: ComputedCustomProperties,
 
     /// The total number of times the stylist has been rebuilt.

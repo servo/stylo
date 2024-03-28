@@ -547,6 +547,7 @@ pub struct Stylist {
     script_custom_properties: CustomPropertyScriptRegistry,
 
     /// Initial values for registered custom properties.
+    #[ignore_malloc_size_of = "Arc"]
     initial_values_for_custom_properties: ComputedCustomProperties,
 
     /// Flags set from computing registered custom property initial values.

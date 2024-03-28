@@ -258,7 +258,7 @@ impl ToComputedValue for SpecifiedValueComponentList {
             .slice()
             .iter()
             .map(SpecifiedValueComponent::from_computed_value);
-        Self::new(computed.0.header, iter)
+        Self::new(computed.0.header.header, iter)
     }
 }
 

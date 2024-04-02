@@ -249,7 +249,7 @@ impl ToComputedValue for SpecifiedValueComponentList {
             .slice()
             .iter()
             .map(|item| item.to_computed_value(context));
-        ComputedValueComponentList::new(self.0.header.header, iter)
+        ComputedValueComponentList::new(self.0.header, iter)
     }
 
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
@@ -258,7 +258,7 @@ impl ToComputedValue for SpecifiedValueComponentList {
             .slice()
             .iter()
             .map(SpecifiedValueComponent::from_computed_value);
-        Self::new(computed.0.header.header, iter)
+        Self::new(computed.0.header, iter)
     }
 }
 
@@ -274,7 +274,7 @@ impl ToCss for SpecifiedValueComponentList {
         first.to_css(dest)?;
 
         // The separator implied by the multiplier for this list.
-        let separator = match self.0.header.header {
+        let separator = match self.0.header {
             // <https://drafts.csswg.org/cssom-1/#serialize-a-whitespace-separated-list>
             Multiplier::Space => " ",
             // <https://drafts.csswg.org/cssom-1/#serialize-a-comma-separated-list>

@@ -411,7 +411,10 @@ impl FontFamily {
             GenericFontFamily::MozEmoji => &*MOZ_EMOJI,
             GenericFontFamily::SystemUi => &*SYSTEM_UI,
         };
-        debug_assert_eq!(*family.families.iter().next().unwrap(), SingleFontFamily::Generic(generic));
+        debug_assert_eq!(
+            *family.families.iter().next().unwrap(),
+            SingleFontFamily::Generic(generic)
+        );
         family
     }
 }

@@ -672,7 +672,7 @@ impl<H: PartialEq, T: PartialEq> PartialEq for HeaderSlice<H, T> {
 impl<H, T> Drop for HeaderSlice<H, T> {
     fn drop(&mut self) {
         unsafe {
-            let mut ptr = self.data.as_mut_ptr();
+            let mut ptr = self.data_mut();
             for _ in 0..self.len {
                 std::ptr::drop_in_place(ptr);
                 ptr = ptr.offset(1);
@@ -880,18 +880,6 @@ impl<H, T> Arc<HeaderSlice<H, T>> {
 pub type ThinArc<H, T> = Arc<HeaderSlice<H, T>>;
 
 impl<H, T> UniqueArc<HeaderSlice<H, T>> {
-    /// Returns the dynamically sized slice in this HeaderSlice.
-    #[inline(always)]
-    pub fn slice(&self) -> &[T] {
-        &self.slice
-    }
-
-    /// Returns the len of the slice.
-    #[inline(always)]
-    pub fn len(&self) -> usize {
-        self.slice.len()
-    }
-
     #[inline]
     pub fn from_header_and_iter<I>(header: H, items: I) -> Self
     where

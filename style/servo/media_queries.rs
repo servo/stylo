@@ -11,6 +11,7 @@ use crate::font_metrics::FontMetrics;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
 use crate::logical_geometry::WritingMode;
 use crate::media_queries::MediaType;
+use crate::properties::style_structs::Font;
 use crate::properties::ComputedValues;
 use crate::values::computed::{CSSPixelLength, Context, LineHeight, NonNegativeLength, Resolution};
 use crate::values::specified::font::{FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX};
@@ -20,8 +21,23 @@ use app_units::{Au, AU_PER_PX};
 use euclid::default::Size2D as UntypedSize2D;
 use euclid::{Scale, SideOffsets2D, Size2D};
 use mime::Mime;
+use std::fmt::Debug;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use style_traits::{CSSPixel, DevicePixel};
+
+/// A trait used to query font metrics in clients of Stylo. This is used by Device to
+/// query font metrics in a way that is specific to the client using Stylo.
+pub trait FontMetricsProvider: Debug + Sync {
+    /// Query the font metrics for the given font and the given base font size.
+    fn query_font_metrics(
+        &self,
+        vertical: bool,
+        font: &Font,
+        base_size: CSSPixelLength,
+        in_media_query: bool,
+        retrieve_math_scales: bool,
+    ) -> FontMetrics;
+}
 
 /// A device is a structure that represents the current media a given document
 /// is displayed in.
@@ -60,12 +76,17 @@ pub struct Device {
     /// by using rlh units.
     #[ignore_malloc_size_of = "Pure stack type"]
     used_root_line_height: AtomicBool,
+    /// Whether any styles computed in the document relied on font metrics.
+    used_font_metrics: AtomicBool,
     /// Whether any styles computed in the document relied on the viewport size.
     #[ignore_malloc_size_of = "Pure stack type"]
     used_viewport_units: AtomicBool,
     /// The CssEnvironment object responsible of getting CSS environment
     /// variables.
     environment: CssEnvironment,
+    /// An implementation of a trait which implements support for querying font metrics.
+    #[ignore_malloc_size_of = "Owned by embedder"]
+    font_metrics_provider: Box<dyn FontMetricsProvider>,
 }
 
 impl Device {
@@ -75,6 +96,7 @@ impl Device {
         quirks_mode: QuirksMode,
         viewport_size: Size2D<f32, CSSPixel>,
         device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
+        font_metrics_provider: Box<dyn FontMetricsProvider>,
     ) -> Device {
         Device {
             media_type,
@@ -86,8 +108,10 @@ impl Device {
             root_line_height: AtomicU32::new(FONT_MEDIUM_LINE_HEIGHT_PX.to_bits()),
             used_root_font_size: AtomicBool::new(false),
             used_root_line_height: AtomicBool::new(false),
+            used_font_metrics: AtomicBool::new(false),
             used_viewport_units: AtomicBool::new(false),
             environment: CssEnvironment,
+            font_metrics_provider,
         }
     }
 
@@ -176,6 +200,11 @@ impl Device {
         self.used_root_line_height.load(Ordering::Relaxed)
     }
 
+    /// Returns whether font metrics have been queried.
+    pub fn used_font_metrics(&self) -> bool {
+        self.used_font_metrics.load(Ordering::Relaxed)
+    }
+
     /// Returns the viewport size of the current device in app units, needed,
     /// among other things, to resolve viewport units.
     #[inline]
@@ -218,20 +247,23 @@ impl Device {
         CSSPixelLength::new(0.0)
     }
 
-    /// Queries dummy font metrics for Servo. Knows nothing about fonts and does not provide
-    /// any metrics.
-    /// TODO: Servo's font metrics provider will probably not live in this crate, so this will
-    /// have to be replaced with something else (perhaps a trait method on TElement)
-    /// when we get there
+    /// Queries font metrics using the [`FontMetricsProvider`] interface.
     pub fn query_font_metrics(
         &self,
-        _vertical: bool,
-        _font: &crate::properties::style_structs::Font,
-        _base_size: CSSPixelLength,
-        _in_media_query: bool,
-        _retrieve_math_scales: bool,
+        vertical: bool,
+        font: &Font,
+        base_size: CSSPixelLength,
+        in_media_query: bool,
+        retrieve_math_scales: bool,
     ) -> FontMetrics {
-        Default::default()
+        self.used_font_metrics.store(true, Ordering::Relaxed);
+        self.font_metrics_provider.query_font_metrics(
+            vertical,
+            font,
+            base_size,
+            in_media_query,
+            retrieve_math_scales,
+        )
     }
 
     /// Return the media type of the current device.

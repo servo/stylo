@@ -180,7 +180,4 @@ macro_rules! pref {
     ("layout.css.exp.enabled") => {
         false
     };
-    ("layout.css.bucket-attribute-names.enabled") => {
-        false
-    };
 }

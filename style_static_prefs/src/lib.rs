@@ -168,6 +168,9 @@ macro_rules! pref {
     ("layout.css.nan-inf.enabled") => {
         false
     };
+    ("layout.css.text-indent-keywords.enabled") => {
+        false
+    };
     ("layout.css.trig.enabled") => {
         false
     };

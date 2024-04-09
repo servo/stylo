@@ -98,9 +98,9 @@ fn get_content_preferred_color_scheme(device: &Device, url_data: &UrlExtraData) 
 }
 
 #[cfg(feature = "servo")]
-fn get_content_preferred_color_scheme(_device: &Device) -> VariableValue {
+fn get_content_preferred_color_scheme(_device: &Device, url_data: &UrlExtraData) -> VariableValue {
     // TODO: implement this.
-    VariableValue::ident("light")
+    VariableValue::ident("light", url_data)
 }
 
 fn get_scrollbar_inline_size(device: &Device, url_data: &UrlExtraData) -> VariableValue {

@@ -1384,7 +1384,6 @@ pub mod style_structs {
     use fxhash::FxHasher;
     use super::longhands;
     use std::hash::{Hash, Hasher};
-    use crate::logical_geometry::WritingMode;
     use crate::media_queries::Device;
     use crate::values::computed::NonNegativeLength;
 

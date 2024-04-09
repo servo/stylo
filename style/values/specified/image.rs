@@ -252,7 +252,7 @@ impl Image {
         input.parse_nested_block(|input| {
             Ok(match_ignore_ascii_case! { &function,
                 #[cfg(feature = "servo")]
-                "paint" => Self::PaintWorklet(PaintWorklet::parse_args(input)?),
+                "paint" => Self::PaintWorklet(PaintWorklet::parse_args(context, input)?),
                 "cross-fade" if cross_fade_enabled() => Self::CrossFade(Box::new(CrossFade::parse_args(context, input, cors_mode, flags)?)),
                 #[cfg(feature = "gecko")]
                 "-moz-element" => Self::Element(Self::parse_element(input)?),
@@ -1285,13 +1285,13 @@ impl<T> generic::ColorStop<Color, T> {
 
 impl PaintWorklet {
     #[cfg(feature = "servo")]
-    fn parse_args<'i>(input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+    fn parse_args<'i>(context: &ParserContext, input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
         use crate::custom_properties::SpecifiedValue;
         let name = Atom::from(&**input.expect_ident()?);
         let arguments = input
             .try_parse(|input| {
                 input.expect_comma()?;
-                input.parse_comma_separated(SpecifiedValue::parse)
+                input.parse_comma_separated(|input| SpecifiedValue::parse(input, &context.url_data))
             })
             .unwrap_or_default();
         Ok(Self { name, arguments })

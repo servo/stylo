@@ -12,7 +12,8 @@ path = "lib.rs"
 
 [features]
 gecko_refcount_logging = []
-servo = ["serde"]
+servo = ["serde", "track_alloc_size"]
+track_alloc_size = []
 
 [dependencies]
 nodrop = { version = "0.1.8" }

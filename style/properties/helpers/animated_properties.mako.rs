@@ -13,12 +13,12 @@
 use crate::custom_properties::SpecifiedValue as SpecifiedCustomPropertyValue;
 use crate::properties::{
     longhands::{
-        self, content_visibility::computed_value::T as ContentVisibility,
-        visibility::computed_value::T as Visibility,
+        self, visibility::computed_value::T as Visibility,
     },
     CSSWideKeyword, CustomDeclaration, CustomDeclarationValue, NonCustomPropertyId, LonghandId,
     NonCustomPropertyIterator, PropertyDeclaration, PropertyDeclarationId,
 };
+#[cfg(feature = "gecko")] use crate::properties::longhands::content_visibility::computed_value::T as ContentVisibility;
 use std::ptr;
 use std::mem;
 use fxhash::FxHashMap;
@@ -620,6 +620,7 @@ impl ToAnimatedZero for Visibility {
 }
 
 /// <https://drafts.csswg.org/css-contain-3/#content-visibility-animation>
+#[cfg(feature = "gecko")]
 impl Animate for ContentVisibility {
     #[inline]
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
@@ -641,6 +642,7 @@ impl Animate for ContentVisibility {
     }
 }
 
+#[cfg(feature = "gecko")]
 impl ComputeSquaredDistance for ContentVisibility {
     #[inline]
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
@@ -648,6 +650,7 @@ impl ComputeSquaredDistance for ContentVisibility {
     }
 }
 
+#[cfg(feature = "gecko")]
 impl ToAnimatedZero for ContentVisibility {
     #[inline]
     fn to_animated_zero(&self) -> Result<Self, ()> {

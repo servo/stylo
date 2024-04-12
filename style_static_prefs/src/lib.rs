@@ -54,9 +54,6 @@ macro_rules! pref {
     ("layout.css.fit-content-function.enabled") => {
         false
     };
-    ("layout.css.font-display.enabled") => {
-        false
-    };
     ("layout.css.font-palette.enabled") => {
         false
     };

@@ -1029,7 +1029,7 @@ impl ElementAnimationSet {
         old_style: &ComputedValues,
         new_style: &Arc<ComputedValues>,
     ) {
-        if !longhand_id.is_transitionable() {
+        if !property_declaration_id.is_transitionable() {
             return;
         }
 

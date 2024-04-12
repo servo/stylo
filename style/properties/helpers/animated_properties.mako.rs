@@ -14,10 +14,13 @@ use crate::properties::{
     longhands::{
         self, visibility::computed_value::T as Visibility,
     },
-    CSSWideKeyword, NonCustomPropertyId, LonghandId, NonCustomPropertyIterator,
+    CSSWideKeyword, LonghandId, NonCustomPropertyIterator,
     PropertyDeclaration, PropertyDeclarationId,
 };
-#[cfg(feature = "gecko")] use crate::properties::longhands::content_visibility::computed_value::T as ContentVisibility;
+#[cfg(feature = "gecko")] use crate::properties::{
+    longhands::content_visibility::computed_value::T as ContentVisibility,
+    NonCustomPropertyId,
+};
 use std::ptr;
 use std::mem;
 use fxhash::FxHashMap;

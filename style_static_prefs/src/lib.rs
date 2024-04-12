@@ -21,9 +21,6 @@ macro_rules! pref {
     ("gfx.font_rendering.opentype_svg.enabled") => {
         false
     };
-    ("layout.css.abs-sign.enabled") => {
-        false
-    };
     ("layout.css.basic-shape-rect.enabled") => {
         false
     };
@@ -162,22 +159,7 @@ macro_rules! pref {
     ("layout.css.system-ui.enabled") => {
         false
     };
-    ("layout.css.nan-inf.enabled") => {
-        false
-    };
     ("layout.css.text-indent-keywords.enabled") => {
-        false
-    };
-    ("layout.css.trig.enabled") => {
-        false
-    };
-    ("layout.css.round.enabled") => {
-        false
-    };
-    ("layout.css.mod-rem.enabled") => {
-        false
-    };
-    ("layout.css.exp.enabled") => {
         false
     };
 }

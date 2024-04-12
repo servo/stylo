@@ -30,9 +30,6 @@ macro_rules! pref {
     ("layout.css.basic-shape-xywh.enabled") => {
         false
     };
-    ("layout.css.color-mix.enabled") => {
-        true
-    };
     ("layout.css.contain-intrinsic-size.enabled") => {
         false
     };

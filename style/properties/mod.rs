@@ -1097,6 +1097,15 @@ impl<'a> PropertyDeclarationId<'a> {
         }
     }
 
+    /// Returns whether this property is transitionable.
+    #[inline]
+    pub fn is_transitionable(self) -> bool {
+        match self {
+            PropertyDeclarationId::Longhand(id) => id.is_transitionable(),
+            PropertyDeclarationId::Custom(..) => false,
+        }
+    }
+
     /// Converts from a to an adequate nsCSSPropertyID, returning
     /// eCSSPropertyExtra_variable for custom properties.
     #[cfg(feature = "gecko")]

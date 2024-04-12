@@ -491,10 +491,11 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
         &self,
         name: CowRcStr<'i>,
         parser: &mut CssParser<'i, 't>,
+        after_part: bool,
     ) -> Result<NonTSPseudoClass, ParseError<'i>> {
         use self::NonTSPseudoClass::*;
         let pseudo_class = match_ignore_ascii_case! { &name,
-            "lang" => {
+            "lang" if !after_part => {
                 Lang(parser.expect_ident_or_string()?.as_ref().into())
             },
             _ => return Err(parser.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone()))),

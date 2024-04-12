@@ -1977,9 +1977,8 @@ impl ComputedValues {
                 let p = &self.custom_properties;
                 let value = p
                     .inherited
-                    .as_ref()
-                    .and_then(|map| map.get(name))
-                    .or_else(|| p.non_inherited.as_ref().and_then(|map| map.get(name)));
+                    .get(name)
+                    .or_else(|| p.non_inherited.get(name));
                 value.map_or(String::new(), |value| value.to_css_string())
             }
         }

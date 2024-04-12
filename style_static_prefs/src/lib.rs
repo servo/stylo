@@ -93,6 +93,9 @@ macro_rules! pref {
     ("layout.css.light-dark.enabled") => {
         false
     };
+    ("layout.css.margin-rules.enabled") => {
+        false
+    };
     ("layout.css.marker.restricted") => {
         false
     };

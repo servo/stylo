@@ -120,9 +120,6 @@ macro_rules! pref {
     ("layout.css.overflow-moz-hidden-unscrollable.enabled") => {
         false
     };
-    ("layout.css.overflow-overlay.enabled") => {
-        false
-    };
     ("layout.css.page-orientation.enabled") => {
         false
     };

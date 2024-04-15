@@ -145,6 +145,50 @@ ${helpers.predefined_type(
     affects="layout",
 )}
 
+<%helpers:single_keyword
+    name="white-space"
+    values="normal pre nowrap pre-wrap pre-line"
+    engines="servo",
+    gecko_enum_prefix="StyleWhiteSpace"
+    needs_conversion="True"
+    animation_value_type="discrete"
+    spec="https://drafts.csswg.org/css-text/#propdef-white-space"
+    servo_restyle_damage="rebuild_and_reflow"
+    affects="layout"
+>
+    impl SpecifiedValue {
+        pub fn allow_wrap(&self) -> bool {
+            match *self {
+                SpecifiedValue::Nowrap |
+                SpecifiedValue::Pre => false,
+                SpecifiedValue::Normal |
+                SpecifiedValue::PreWrap |
+                SpecifiedValue::PreLine => true,
+            }
+        }
+
+        pub fn preserve_newlines(&self) -> bool {
+            match *self {
+                SpecifiedValue::Normal |
+                SpecifiedValue::Nowrap => false,
+                SpecifiedValue::Pre |
+                SpecifiedValue::PreWrap |
+                SpecifiedValue::PreLine => true,
+            }
+        }
+
+        pub fn preserve_spaces(&self) -> bool {
+            match *self {
+                SpecifiedValue::Normal |
+                SpecifiedValue::Nowrap |
+                SpecifiedValue::PreLine => false,
+                SpecifiedValue::Pre |
+                SpecifiedValue::PreWrap => true,
+            }
+        }
+    }
+</%helpers:single_keyword>
+
 // TODO: `white-space-collapse: discard` not yet supported
 ${helpers.single_keyword(
     name="white-space-collapse",

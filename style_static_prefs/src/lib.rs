@@ -96,9 +96,6 @@ macro_rules! pref {
     ("layout.css.math-style.enabled") => {
         false
     };
-    ("layout.css.more_color_4.enabled") => {
-        true
-    };
     ("layout.css.motion-path-offset-position.enabled") => {
         false
     };

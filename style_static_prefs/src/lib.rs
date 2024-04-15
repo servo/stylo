@@ -156,4 +156,7 @@ macro_rules! pref {
     ("layout.css.text-indent-keywords.enabled") => {
         false
     };
+    ("layout.css.transition-behavior.enabled") => {
+        false
+    };
 }

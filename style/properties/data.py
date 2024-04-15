@@ -886,6 +886,7 @@ def _remove_common_first_line_and_first_letter_properties(props, engine):
         props.remove("text-emphasis-style")
         props.remove("text-emphasis-color")
         props.remove("text-wrap-mode")
+        props.remove("text-wrap-style")
         props.remove("white-space-collapse")
     else:
         props.remove("white-space")
@@ -893,7 +894,6 @@ def _remove_common_first_line_and_first_letter_properties(props, engine):
     props.remove("overflow-wrap")
     props.remove("text-align")
     props.remove("text-justify")
-    props.remove("text-wrap-style")
     props.remove("word-break")
     props.remove("text-indent")
 

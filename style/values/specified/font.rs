@@ -580,6 +580,7 @@ impl KeywordInfo {
     /// text-zoom.
     fn to_computed_value(&self, context: &Context) -> CSSPixelLength {
         debug_assert_ne!(self.kw, FontSizeKeyword::None);
+        #[cfg(feature="gecko")]
         debug_assert_ne!(self.kw, FontSizeKeyword::Math);
         let base = context.maybe_zoom_text(self.kw.to_length(context).0);
         base * self.factor + context.maybe_zoom_text(self.offset)
@@ -789,7 +790,9 @@ impl FontSizeKeyword {
             FontSizeKeyword::XLarge => medium * 3.0 / 2.0,
             FontSizeKeyword::XXLarge => medium * 2.0,
             FontSizeKeyword::XXXLarge => medium * 3.0,
-            FontSizeKeyword::Math | FontSizeKeyword::None => unreachable!(),
+            #[cfg(feature="gecko")]
+            FontSizeKeyword::Math => unreachable!(),
+            FontSizeKeyword::None => unreachable!(),
         })
     }
 
@@ -936,6 +939,7 @@ impl FontSize {
                 calc.resolve(base_size.resolve(context).computed_size())
             },
             FontSize::Keyword(i) => {
+                #[cfg(feature="gecko")]
                 if i.kw == FontSizeKeyword::Math {
                     // Scaling is done in recompute_math_font_size_if_needed().
                     info = compose_keyword(1.);
@@ -946,6 +950,11 @@ impl FontSize {
                         line_height_base,
                     )
                 } else {
+                    // As a specified keyword, this is keyword derived
+                    info = i;
+                    i.to_computed_value(context).clamp_to_non_negative()
+                }
+                #[cfg(feature="servo")] {
                     // As a specified keyword, this is keyword derived
                     info = i;
                     i.to_computed_value(context).clamp_to_non_negative()

@@ -126,6 +126,9 @@ macro_rules! pref {
     ("layout.css.properties-and-values.enabled") => {
         false
     };
+    ("layout.css.relative-color-syntax.enabled") => {
+        false
+    };
     ("layout.css.scroll-driven-animations.enabled") => {
         false
     };

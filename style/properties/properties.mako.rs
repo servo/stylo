@@ -92,11 +92,12 @@ pub mod longhands {
 }
 
 
-#[cfg(feature = "gecko")]
+% if engine == "gecko":
 #[allow(unsafe_code, missing_docs)]
 pub mod gecko {
     <%include file="/gecko.mako.rs" />
 }
+% endif
 
 
 macro_rules! unwrap_or_initial {

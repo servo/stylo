@@ -241,7 +241,10 @@ impl AnimationDirection {
     #[inline]
     pub fn match_keywords(name: &AnimationName) -> bool {
         if let Some(name) = name.as_atom() {
+            #[cfg(feature = "gecko")]
             return name.with_str(|n| Self::from_ident(n).is_ok());
+            #[cfg(feature = "servo")]
+            return Self::from_ident(name).is_ok();
         }
         false
     }
@@ -261,7 +264,10 @@ impl AnimationPlayState {
     #[inline]
     pub fn match_keywords(name: &AnimationName) -> bool {
         if let Some(name) = name.as_atom() {
+            #[cfg(feature = "gecko")]
             return name.with_str(|n| Self::from_ident(n).is_ok());
+            #[cfg(feature = "servo")]
+            return Self::from_ident(name).is_ok();
         }
         false
     }
@@ -284,7 +290,10 @@ impl AnimationFillMode {
     #[inline]
     pub fn match_keywords(name: &AnimationName) -> bool {
         if let Some(atom) = name.as_atom() {
+            #[cfg(feature = "gecko")]
             return !name.is_none() && atom.with_str(|n| Self::from_ident(n).is_ok());
+            #[cfg(feature = "servo")]
+            return !name.is_none() && Self::from_ident(atom).is_ok();
         }
         false
     }

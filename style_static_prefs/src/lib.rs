@@ -132,6 +132,9 @@ macro_rules! pref {
     ("layout.css.size-adjust.enabled") => {
         false
     };
+    ("layout.css.starting-style-at-rules.enabled") => {
+        false
+    };
     ("layout.css.stylo-local-work-queue.in-main-thread") => {
         32
     };

@@ -11,6 +11,7 @@ use crate::values::generics::basic_shape::GenericShapeCommand;
 use crate::values::generics::basic_shape::{ArcSize, ArcSweep, ByTo, CoordinatePair};
 use crate::values::CSSFloat;
 use cssparser::Parser;
+#[cfg(feature = "gecko")]
 use num_traits::FromPrimitive;
 use std::fmt::{self, Write};
 use std::iter::{Cloned, Peekable};

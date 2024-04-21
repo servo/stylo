@@ -21,6 +21,9 @@ macro_rules! pref {
     ("gfx.font_rendering.opentype_svg.enabled") => {
         false
     };
+    ("layout.css.at-scope.enabled") => {
+        false
+    };
     ("layout.css.basic-shape-rect.enabled") => {
         false
     };

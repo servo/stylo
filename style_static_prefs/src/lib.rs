@@ -102,18 +102,6 @@ macro_rules! pref {
     ("layout.css.math-style.enabled") => {
         false
     };
-    ("layout.css.motion-path-offset-position.enabled") => {
-        false
-    };
-    ("layout.css.motion-path-basic-shapes.enabled") => {
-        false
-    };
-    ("layout.css.motion-path-coord-box.enabled") => {
-        false
-    };
-    ("layout.css.motion-path-ray.enabled") => {
-        false
-    };
     ("layout.css.motion-path-url.enabled") => {
         false
     };

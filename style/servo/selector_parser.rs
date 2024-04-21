@@ -281,7 +281,7 @@ impl PseudoElement {
 pub type Lang = Box<str>;
 
 /// The type used to store the state argument to the `:state` pseudo-class.
-#[derive(Clone, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, Debug, Eq, Hash, MallocSizeOf, PartialEq, ToCss, ToShmem)]
 pub struct CustomState(pub AtomIdent);
 
 /// A non tree-structural pseudo-class.
@@ -309,6 +309,8 @@ pub enum NonTSPseudoClass {
     ServoNonZeroBorder,
     Target,
     Visited,
+    /// The :state` pseudo-class.
+    CustomState(CustomState),
 }
 
 impl ::selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
@@ -367,7 +369,7 @@ impl ToCss for NonTSPseudoClass {
             ServoNonZeroBorder => ":-servo-nonzero-border",
             Target => ":target",
             Visited => ":visited",
-            Lang(_) => unreachable!(),
+            Lang(_) | CustomState(_) => unreachable!(),
         })
     }
 }
@@ -393,7 +395,7 @@ impl NonTSPseudoClass {
             PlaceholderShown => ElementState::PLACEHOLDER_SHOWN,
             Target => ElementState::URLTARGET,
 
-            AnyLink | Lang(_) | Link | Visited | ServoNonZeroBorder => ElementState::empty(),
+            AnyLink | CustomState(_) | Lang(_) | Link | Visited | ServoNonZeroBorder => ElementState::empty(),
         }
     }
 
@@ -774,6 +776,25 @@ impl ElementSnapshot for ServoElementSnapshot {
         self.get_attr(&ns!(xml), &local_name!("lang"))
             .or_else(|| self.get_attr(&ns!(), &local_name!("lang")))
             .map(|v| SelectorAttrValue::from(v as &str))
+    }
+
+    /// Returns true if the snapshot has stored state for custom states
+    #[inline]
+    fn has_custom_states(&self) -> bool {
+        false
+    }
+
+    /// Returns true if the snapshot has a given CustomState
+    #[inline]
+    fn has_custom_state(&self, _state: &AtomIdent) -> bool {
+        false
+    }
+
+    #[inline]
+    fn each_custom_state<F>(&self, mut _callback: F)
+    where
+        F: FnMut(&AtomIdent),
+    {
     }
 }
 

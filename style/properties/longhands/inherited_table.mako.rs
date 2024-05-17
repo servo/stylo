@@ -8,7 +8,6 @@ ${helpers.single_keyword(
     "border-collapse",
     "separate collapse",
     engines="gecko servo",
-    servo_pref="layout.legacy_layout",
     gecko_enum_prefix="StyleBorderCollapse",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-tables/#propdef-border-collapse",

@@ -764,16 +764,16 @@ impl<'b> Cascade<'b> {
             self.compute_writing_mode(context);
         }
 
-        #[cfg(feature = "gecko")] {
-            if apply!(Zoom) {
-                self.compute_zoom(context);
-                // NOTE(emilio): This is a bit of a hack, but matches the shipped WebKit and Blink
-                // behavior for now. Ideally, in the future, we have a pass over all
-                // implicitly-or-explicitly-inherited properties that can contain lengths and
-                // re-compute them properly, see https://github.com/w3c/csswg-drafts/issues/9397.
-                self.recompute_font_size_for_zoom_change(&mut context.builder);
-            }
+        if apply!(Zoom) {
+            self.compute_zoom(context);
+            // NOTE(emilio): This is a bit of a hack, but matches the shipped WebKit and Blink
+            // behavior for now. Ideally, in the future, we have a pass over all
+            // implicitly-or-explicitly-inherited properties that can contain lengths and
+            // re-compute them properly, see https://github.com/w3c/csswg-drafts/issues/9397.
+            self.recompute_font_size_for_zoom_change(&mut context.builder);
+        }
 
+        #[cfg(feature = "gecko")] {
             // Compute font-family.
             let has_font_family = apply!(FontFamily);
             let has_lang = apply!(XLang);
@@ -953,7 +953,6 @@ impl<'b> Cascade<'b> {
         (CASCADE_PROPERTY[longhand_id as usize])(&declaration, context);
     }
 
-    #[cfg(feature = "gecko")]
     fn compute_zoom(&self, context: &mut computed::Context) {
         context.builder.effective_zoom = context
             .builder
@@ -1271,7 +1270,6 @@ impl<'b> Cascade<'b> {
         builder.mutate_font().unzoom_fonts(device);
     }
 
-    #[cfg(feature = "gecko")]
     fn recompute_font_size_for_zoom_change(&self, builder: &mut StyleBuilder) {
         debug_assert!(self.seen.contains(LonghandId::Zoom));
         // NOTE(emilio): Intentionally not using the effective zoom here, since all the inherited

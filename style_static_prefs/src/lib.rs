@@ -36,9 +36,6 @@ macro_rules! pref {
     ("layout.css.contain-intrinsic-size.enabled") => {
         false
     };
-    ("layout.css.container-queries.enabled") => {
-        false
-    };
     ("layout.css.content.alt-text.enabled") => {
         false
     };

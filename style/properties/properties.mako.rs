@@ -2048,7 +2048,7 @@ impl ComputedValuesInner {
         use crate::values::generics::counters::Content;
         match self.get_counters().content {
             Content::Normal | Content::None => true,
-            Content::Items(ref items) => items.is_empty(),
+            Content::Items(ref items) => items.items.is_empty(),
         }
     }
 

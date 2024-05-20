@@ -39,6 +39,9 @@ macro_rules! pref {
     ("layout.css.container-queries.enabled") => {
         false
     };
+    ("layout.css.content.alt-text.enabled") => {
+        false
+    };
     ("layout.css.content-visibility.enabled") => {
         false
     };

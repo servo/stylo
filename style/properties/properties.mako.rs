@@ -2740,10 +2740,7 @@ impl<'a> StyleBuilder<'a> {
 
     /// The zoom specified on this element.
     pub fn specified_zoom(&self) -> computed::Zoom {
-        #[cfg(feature = "gecko")]
         return self.get_box().clone_zoom();
-        #[cfg(feature = "servo")]
-        return computed::Zoom::ONE;
     }
 
     /// Inherited zoom.

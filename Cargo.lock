@@ -1374,6 +1374,7 @@ dependencies = [
  "servo_arc",
  "servo_atoms",
  "size_of_test",
+ "thin-vec",
  "to_shmem",
  "to_shmem_derive",
  "url",

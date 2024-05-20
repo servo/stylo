@@ -136,10 +136,9 @@ impl Device {
         CSSPixelLength::new(f32::from_bits(self.root_font_size.load(Ordering::Relaxed)))
     }
 
-    /// Set the font size of the root element (for rem)
-    pub fn set_root_font_size(&self, size: CSSPixelLength) {
-        self.root_font_size
-            .store(size.px().to_bits(), Ordering::Relaxed)
+    /// Set the font size of the root element (for rem), in zoom-independent CSS pixels.
+    pub fn set_root_font_size(&self, size: f32) {
+        self.root_font_size.store(size.to_bits(), Ordering::Relaxed)
     }
 
     /// Get the line height of the root element (for rlh)
@@ -150,10 +149,9 @@ impl Device {
         ))
     }
 
-    /// Set the line height of the root element (for rlh)
-    pub fn set_root_line_height(&self, size: CSSPixelLength) {
-        self.root_line_height
-            .store(size.px().to_bits(), Ordering::Relaxed);
+    /// Set the line height of the root element (for rlh), in zoom-independent CSS pixels.
+    pub fn set_root_line_height(&self, size: f32) {
+        self.root_line_height.store(size.to_bits(), Ordering::Relaxed);
     }
 
     /// Returns the computed line-height for the font in a given computed values instance.

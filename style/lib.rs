@@ -69,6 +69,7 @@ extern crate servo_atoms;
 extern crate static_assertions;
 #[macro_use]
 extern crate style_derive;
+#[cfg(feature = "gecko")]
 #[macro_use]
 extern crate thin_vec;
 #[macro_use]

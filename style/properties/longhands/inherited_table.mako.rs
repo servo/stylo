@@ -19,7 +19,6 @@ ${helpers.single_keyword(
     "empty-cells",
     "show hide",
     engines="gecko servo",
-    servo_pref="layout.legacy_layout",
     gecko_enum_prefix="StyleEmptyCells",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-tables/#propdef-empty-cells",

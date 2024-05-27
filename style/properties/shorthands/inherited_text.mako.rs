@@ -183,7 +183,6 @@
                         Collapse::PreserveBreaks => return dest.write_str("pre-line"),
                         #[cfg(feature = "gecko")]
                         Collapse::PreserveSpaces => return dest.write_str("-moz-pre-space"),
-                        #[cfg(feature = "gecko")]
                         _ => (),
                     }
                 },

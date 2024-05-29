@@ -70,7 +70,6 @@ ${helpers.predefined_type(
     "OverflowWrap",
     "computed::OverflowWrap::Normal",
     engines="gecko servo",
-    servo_pref="layout.legacy_layout",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-overflow-wrap",
     aliases="word-wrap",
@@ -83,7 +82,6 @@ ${helpers.predefined_type(
     "WordBreak",
     "computed::WordBreak::Normal",
     engines="gecko servo",
-    servo_pref="layout.legacy_layout",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-text/#propdef-word-break",
     servo_restyle_damage="rebuild_and_reflow",
@@ -148,8 +146,8 @@ ${helpers.predefined_type(
 // TODO: `white-space-collapse: discard` not yet supported
 ${helpers.single_keyword(
     name="white-space-collapse",
-    values="collapse preserve preserve-breaks",
-    extra_gecko_values="preserve-spaces break-spaces",
+    values="collapse preserve preserve-breaks break-spaces",
+    extra_gecko_values="preserve-spaces",
     engines="gecko servo",
     gecko_enum_prefix="StyleWhiteSpaceCollapse",
     needs_conversion="True",

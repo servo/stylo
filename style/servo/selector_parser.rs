@@ -65,10 +65,11 @@ pub enum PseudoElement {
     ServoLegacyAnonymousBlock,
     ServoLegacyInlineBlockWrapper,
     ServoLegacyInlineAbsolute,
+    ServoTableWrapper,
 }
 
 /// The count of all pseudo-elements.
-pub const PSEUDO_COUNT: usize = PseudoElement::ServoLegacyInlineAbsolute as usize + 1;
+pub const PSEUDO_COUNT: usize = PseudoElement::ServoTableWrapper as usize + 1;
 
 impl ToCss for PseudoElement {
     fn to_css<W>(&self, dest: &mut W) -> fmt::Result
@@ -94,6 +95,7 @@ impl ToCss for PseudoElement {
             ServoLegacyAnonymousBlock => "::-servo-legacy-anonymous-block",
             ServoLegacyInlineBlockWrapper => "::-servo-legacy-inline-block-wrapper",
             ServoLegacyInlineAbsolute => "::-servo-legacy-inline-absolute",
+            ServoTableWrapper => "::-servo-table-wrapper",
         })
     }
 }
@@ -241,7 +243,8 @@ impl PseudoElement {
             PseudoElement::ServoLegacyAnonymousTable |
             PseudoElement::ServoLegacyAnonymousBlock |
             PseudoElement::ServoLegacyInlineBlockWrapper |
-            PseudoElement::ServoLegacyInlineAbsolute => PseudoElementCascadeType::Precomputed,
+            PseudoElement::ServoLegacyInlineAbsolute |
+            PseudoElement::ServoTableWrapper => PseudoElementCascadeType::Precomputed,
         }
     }
 
@@ -599,6 +602,12 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 ServoLegacyInlineAbsolute
+            },
+            "-servo-table-wrapper" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTableWrapper
             },
             _ => return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
 

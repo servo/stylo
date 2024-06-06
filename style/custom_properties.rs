@@ -1091,6 +1091,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                     NonCustomReferences::LH_UNITS | NonCustomReferences::FONT_UNITS
                 }
             },
+            #[cfg(feature = "gecko")]
             LonghandId::ColorScheme => {
                 // If we might change the color-scheme, we need to defer computation of colors.
                 self.has_color_scheme = true;

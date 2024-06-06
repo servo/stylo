@@ -122,11 +122,7 @@
                 self.list_style_image.to_css(dest)?;
                 have_one_non_initial_value = true;
             }
-            #[cfg(feature = "gecko")]
-            let type_is_initial = self.list_style_type == &ListStyleType::disc();
-            #[cfg(feature = "servo")]
-            let type_is_initial = self.list_style_type == &ListStyleType::Disc;
-            if !type_is_initial {
+            if self.list_style_type != &ListStyleType::disc() {
                 if have_one_non_initial_value {
                     dest.write_char(' ')?;
                 }

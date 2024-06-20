@@ -16,6 +16,7 @@ use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo,
     Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem,
 )]
 #[repr(C)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct AlignFlags(u8);
 bitflags! {
     impl AlignFlags: u8 {
@@ -266,6 +267,7 @@ impl ContentDistribution {
     ToShmem,
 )]
 #[repr(transparent)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct AlignContent(pub ContentDistribution);
 
 impl Parse for AlignContent {
@@ -306,6 +308,7 @@ impl SpecifiedValueInfo for AlignContent {
 )]
 #[repr(transparent)]
 #[css(comma)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct AlignTracks(#[css(iterable, if_empty = "normal")] pub crate::OwnedSlice<AlignContent>);
 
 impl Parse for AlignTracks {
@@ -334,6 +337,7 @@ impl Parse for AlignTracks {
     ToShmem,
 )]
 #[repr(transparent)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct JustifyContent(pub ContentDistribution);
 
 impl Parse for JustifyContent {
@@ -373,6 +377,7 @@ impl SpecifiedValueInfo for JustifyContent {
 )]
 #[repr(transparent)]
 #[css(comma)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct JustifyTracks(
     #[css(iterable, if_empty = "normal")] pub crate::OwnedSlice<JustifyContent>,
 );
@@ -401,6 +406,7 @@ impl Parse for JustifyTracks {
     ToShmem,
 )]
 #[repr(transparent)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct SelfAlignment(pub AlignFlags);
 
 impl SelfAlignment {
@@ -473,6 +479,7 @@ impl SelfAlignment {
     ToShmem,
 )]
 #[repr(C)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct AlignSelf(pub SelfAlignment);
 
 impl Parse for AlignSelf {
@@ -511,6 +518,7 @@ impl SpecifiedValueInfo for AlignSelf {
     ToShmem,
 )]
 #[repr(C)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct JustifySelf(pub SelfAlignment);
 
 impl Parse for JustifySelf {
@@ -549,6 +557,7 @@ impl SpecifiedValueInfo for JustifySelf {
     ToShmem,
 )]
 #[repr(C)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct AlignItems(pub AlignFlags);
 
 impl AlignItems {
@@ -601,6 +610,7 @@ impl SpecifiedValueInfo for AlignItems {
 /// <https://drafts.csswg.org/css-align/#justify-items-property>
 #[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem)]
 #[repr(C)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct JustifyItems(pub AlignFlags);
 
 impl JustifyItems {

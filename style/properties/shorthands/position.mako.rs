@@ -128,7 +128,7 @@
 
 <%helpers:shorthand
     name="gap"
-    engines="gecko"
+    engines="gecko servo"
     aliases="grid-gap"
     sub_properties="row-gap column-gap"
     spec="https://drafts.csswg.org/css-align-3/#gap-shorthand"
@@ -164,7 +164,8 @@
 <%helpers:shorthand
     name="grid-${kind}"
     sub_properties="grid-${kind}-start grid-${kind}-end"
-    engines="gecko",
+    engines="gecko servo",
+    servo_pref="layout.grid.enabled",
     spec="https://drafts.csswg.org/css-grid/#propdef-grid-${kind}"
 >
     use crate::values::specified::GridLine;
@@ -218,7 +219,8 @@
 
 <%helpers:shorthand
     name="grid-area"
-    engines="gecko"
+    engines="gecko servo"
+    servo_pref="layout.grid.enabled",
     sub_properties="grid-row-start grid-row-end grid-column-start grid-column-end"
     spec="https://drafts.csswg.org/css-grid/#propdef-grid-area"
 >
@@ -313,7 +315,8 @@
 
 <%helpers:shorthand
     name="grid-template"
-    engines="gecko"
+    engines="gecko servo"
+    servo_pref="layout.grid.enabled",
     sub_properties="grid-template-rows grid-template-columns grid-template-areas"
     spec="https://drafts.csswg.org/css-grid/#propdef-grid-template"
 >
@@ -554,7 +557,8 @@
 
 <%helpers:shorthand
     name="grid"
-    engines="gecko"
+    engines="gecko servo"
+    servo_pref="layout.grid.enabled",
     sub_properties="grid-template-rows grid-template-columns grid-template-areas
                     grid-auto-rows grid-auto-columns grid-auto-flow"
     spec="https://drafts.csswg.org/css-grid/#propdef-grid"
@@ -716,7 +720,7 @@
 
 <%helpers:shorthand
     name="place-content"
-    engines="gecko"
+    engines="gecko servo"
     sub_properties="align-content justify-content"
     spec="https://drafts.csswg.org/css-align/#propdef-place-content"
 >
@@ -771,7 +775,7 @@
 
 <%helpers:shorthand
     name="place-self"
-    engines="gecko"
+    engines="gecko servo"
     sub_properties="align-self justify-self"
     spec="https://drafts.csswg.org/css-align/#place-self-property"
 >
@@ -812,7 +816,7 @@
 
 <%helpers:shorthand
     name="place-items"
-    engines="gecko"
+    engines="gecko servo"
     sub_properties="align-items justify-items"
     spec="https://drafts.csswg.org/css-align/#place-items-property"
 >

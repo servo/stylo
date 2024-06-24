@@ -817,12 +817,12 @@ impl<'b> Cascade<'b> {
         apply!(FontWeight);
         apply!(FontStretch);
         apply!(FontStyle);
-        #[cfg(feature = "gecko")] {
-            apply!(FontSizeAdjust);
+        #[cfg(feature = "gecko")]
+        apply!(FontSizeAdjust);
 
-            apply!(ColorScheme);
-            apply!(ForcedColorAdjust);
-        }
+        apply!(ColorScheme);
+        #[cfg(feature = "gecko")]
+        apply!(ForcedColorAdjust);
 
         // Compute the line height.
         apply!(LineHeight);

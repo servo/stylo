@@ -8,6 +8,8 @@
 #![deny(missing_docs)]
 
 use crate::computed_value_flags::ComputedValueFlags;
+#[cfg(feature = "servo")]
+use crate::context::CascadeInputs;
 use crate::context::{ElementCascadeInputs, QuirksMode};
 use crate::context::{SharedStyleContext, StyleContext};
 use crate::data::{ElementData, ElementStyles};

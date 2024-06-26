@@ -1392,8 +1392,6 @@ pub mod style_structs {
     use fxhash::FxHasher;
     use super::longhands;
     use std::hash::{Hash, Hasher};
-    use crate::media_queries::Device;
-    use crate::values::computed::NonNegativeLength;
 
     % for style_struct in data.active_style_structs():
         % if style_struct.name == "Font":
@@ -1522,8 +1520,6 @@ pub mod style_structs {
                 /// Computes a font hash in order to be able to cache fonts
                 /// effectively in GFX and layout.
                 pub fn compute_font_hash(&mut self) {
-                    // Corresponds to the fields in
-                    // `gfx::font_template::FontTemplateDescriptor`.
                     let mut hasher: FxHasher = Default::default();
                     self.font_weight.hash(&mut hasher);
                     self.font_stretch.hash(&mut hasher);
@@ -1531,25 +1527,17 @@ pub mod style_structs {
                     self.font_family.hash(&mut hasher);
                     self.hash = hasher.finish()
                 }
-
-                /// (Servo does not handle MathML, so this just calls copy_font_size_from)
-                pub fn inherit_font_size_from(&mut self, parent: &Self,
-                                              _: Option<NonNegativeLength>,
-                                              _: &Device) {
-                    self.copy_font_size_from(parent);
+                /// Create a new Font with the initial values of all members.
+                pub fn initial_values() -> Self {
+                    Self {
+                        % for longhand in style_struct.longhands:
+                            % if not longhand.logical:
+                                ${longhand.ident}: longhands::${longhand.ident}::get_initial_value(),
+                            % endif
+                        % endfor
+                        hash: 0,
+                    }
                 }
-                /// (Servo does not handle MathML, so this just calls set_font_size)
-                pub fn apply_font_size(&mut self,
-                                       v: longhands::font_size::computed_value::T,
-                                       _: &Self,
-                                       _: &Device) -> Option<NonNegativeLength> {
-                    self.set_font_size(v);
-                    None
-                }
-                /// (Servo does not handle MathML, so this does nothing)
-                pub fn apply_unconstrained_font_size(&mut self, _: NonNegativeLength) {
-                }
-
             % elif style_struct.name == "Outline":
                 /// Whether the outline-width property is non-zero.
                 #[inline]
@@ -1952,7 +1940,45 @@ impl ComputedValues {
     }
 
     /// Get the initial computed values.
-    pub fn initial_values() -> &'static Self { &*INITIAL_SERVO_VALUES }
+    pub fn initial_values_with_font_override(default_font: super::style_structs::Font) -> Arc<Self> {
+        use crate::logical_geometry::WritingMode;
+        use crate::computed_value_flags::ComputedValueFlags;
+        use servo_arc::Arc;
+        use super::{ComputedValues, ComputedValuesInner, longhands, style_structs};
+
+        Arc::new(ComputedValues {
+            inner: ComputedValuesInner {
+                % for style_struct in data.active_style_structs():
+                    % if style_struct.name == "Font":
+                        font: Arc::new(default_font),
+                    <% continue %>
+                    % endif %
+
+                    ${style_struct.ident}: Arc::new(style_structs::${style_struct.name} {
+                        % for longhand in style_struct.longhands:
+                            % if not longhand.logical:
+                                ${longhand.ident}: longhands::${longhand.ident}::get_initial_value(),
+                            % endif
+                        % endfor
+                        % if style_struct.name == "InheritedText":
+                            text_decorations_in_effect:
+                                crate::values::computed::text::TextDecorationsInEffect::default(),
+                        % endif
+                        % if style_struct.name == "Box":
+                            original_display: longhands::display::get_initial_value(),
+                        % endif
+                    }),
+                % endfor
+                custom_properties: crate::custom_properties::ComputedCustomProperties::default(),
+                writing_mode: WritingMode::empty(),
+                rules: None,
+                visited_style: None,
+                effective_zoom: crate::values::computed::Zoom::ONE,
+                flags: ComputedValueFlags::empty(),
+            },
+            pseudo: None,
+        })
+    }
 
     /// Converts the computed values to an Arc<> from a reference.
     pub fn to_arc(&self) -> Arc<Self> {
@@ -2796,53 +2822,6 @@ impl<'a> StyleBuilder<'a> {
             self.inherited_style.get_${style_struct.name_lower}()
         }
     % endfor
-}
-
-#[cfg(feature = "servo")]
-pub use self::lazy_static_module::INITIAL_SERVO_VALUES;
-
-// Use a module to work around #[cfg] on lazy_static! not being applied to every generated item.
-#[cfg(feature = "servo")]
-#[allow(missing_docs)]
-mod lazy_static_module {
-    use crate::logical_geometry::WritingMode;
-    use crate::computed_value_flags::ComputedValueFlags;
-    use servo_arc::Arc;
-    use super::{ComputedValues, ComputedValuesInner, longhands, style_structs};
-
-    lazy_static! {
-        /// The initial values for all style structs as defined by the specification.
-        pub static ref INITIAL_SERVO_VALUES : Arc<ComputedValues> = Arc::new(ComputedValues {
-            inner: ComputedValuesInner {
-                % for style_struct in data.active_style_structs():
-                    ${style_struct.ident}: Arc::new(style_structs::${style_struct.name} {
-                        % for longhand in style_struct.longhands:
-                            % if not longhand.logical:
-                                ${longhand.ident}: longhands::${longhand.ident}::get_initial_value(),
-                            % endif
-                        % endfor
-                        % if style_struct.name == "InheritedText":
-                            text_decorations_in_effect:
-                                crate::values::computed::text::TextDecorationsInEffect::default(),
-                        % endif
-                        % if style_struct.name == "Font":
-                            hash: 0,
-                        % endif
-                        % if style_struct.name == "Box":
-                            original_display: longhands::display::get_initial_value(),
-                        % endif
-                    }),
-                % endfor
-                custom_properties: crate::custom_properties::ComputedCustomProperties::default(),
-                writing_mode: WritingMode::empty(),
-                rules: None,
-                visited_style: None,
-                effective_zoom: crate::values::computed::Zoom::ONE,
-                flags: ComputedValueFlags::empty(),
-            },
-            pseudo: None,
-        });
-    }
 }
 
 /// A per-longhand function that performs the CSS cascade for that longhand.

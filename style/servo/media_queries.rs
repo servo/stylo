@@ -14,7 +14,8 @@ use crate::media_queries::MediaType;
 use crate::parser::ParserContext;
 use crate::properties::style_structs::Font;
 use crate::properties::ComputedValues;
-use crate::values::computed::{CSSPixelLength, Context, LineHeight, NonNegativeLength, Resolution};
+use crate::values::computed::{CSSPixelLength, Context, Length, LineHeight, NonNegativeLength, Resolution};
+use crate::values::computed::font::GenericFontFamily;
 use crate::values::specified::font::{FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX};
 use crate::values::specified::ViewportVariant;
 use crate::values::KeyframesName;
@@ -22,6 +23,7 @@ use app_units::{Au, AU_PER_PX};
 use euclid::default::Size2D as UntypedSize2D;
 use euclid::{Scale, SideOffsets2D, Size2D};
 use mime::Mime;
+use servo_arc::Arc;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use style_traits::{CSSPixel, DevicePixel};
@@ -38,6 +40,8 @@ pub trait FontMetricsProvider: Debug + Sync {
         in_media_query: bool,
         retrieve_math_scales: bool,
     ) -> FontMetrics;
+    /// Gets the base size given a generic font family.
+    fn base_size_for_generic(&self, generic: GenericFontFamily) -> Length;
 }
 
 /// A device is a structure that represents the current media a given document
@@ -88,6 +92,9 @@ pub struct Device {
     /// An implementation of a trait which implements support for querying font metrics.
     #[ignore_malloc_size_of = "Owned by embedder"]
     font_metrics_provider: Box<dyn FontMetricsProvider>,
+    /// The default computed values for this Device.
+    #[ignore_malloc_size_of = "Arc is shared"]
+    default_computed_values: Arc<ComputedValues>,
 }
 
 impl Device {
@@ -98,13 +105,13 @@ impl Device {
         viewport_size: Size2D<f32, CSSPixel>,
         device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
         font_metrics_provider: Box<dyn FontMetricsProvider>,
+        default_computed_values: Arc<ComputedValues>,
     ) -> Device {
         Device {
             media_type,
             viewport_size,
             device_pixel_ratio,
             quirks_mode,
-            // FIXME(bz): Seems dubious?
             root_font_size: AtomicU32::new(FONT_MEDIUM_PX.to_bits()),
             root_line_height: AtomicU32::new(FONT_MEDIUM_LINE_HEIGHT_PX.to_bits()),
             used_root_font_size: AtomicBool::new(false),
@@ -113,6 +120,7 @@ impl Device {
             used_viewport_units: AtomicBool::new(false),
             environment: CssEnvironment,
             font_metrics_provider,
+            default_computed_values,
         }
     }
 
@@ -124,10 +132,7 @@ impl Device {
 
     /// Return the default computed values for this device.
     pub fn default_computed_values(&self) -> &ComputedValues {
-        // FIXME(bz): This isn't really right, but it's no more wrong
-        // than what we used to do.  See
-        // https://github.com/servo/servo/issues/14773 for fixing it properly.
-        ComputedValues::initial_values()
+        &self.default_computed_values
     }
 
     /// Get the font size of the root element (for rem)
@@ -181,6 +186,11 @@ impl Device {
     /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
     pub fn set_body_text_color(&self, _color: AbsoluteColor) {
         // Servo doesn't implement this quirk (yet)
+    }
+
+    /// Gets the base size given a generic font family.
+    pub fn base_size_for_generic(&self, generic: GenericFontFamily) -> Length {
+        self.font_metrics_provider.base_size_for_generic(generic)
     }
 
     /// Whether a given animation name may be referenced from style.

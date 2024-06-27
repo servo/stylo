@@ -31,7 +31,6 @@ ${helpers.predefined_type(
     "table::CaptionSide",
     "computed::table::CaptionSide::Top",
     engines="gecko servo",
-    servo_pref="layout.legacy_layout",
     animation_value_type="discrete",
     spec="https://drafts.csswg.org/css-tables/#propdef-caption-side",
     servo_restyle_damage="rebuild_and_reflow",

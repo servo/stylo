@@ -65,6 +65,7 @@ pub enum PseudoElement {
     ServoLegacyAnonymousBlock,
     ServoLegacyInlineBlockWrapper,
     ServoLegacyInlineAbsolute,
+    ServoTableGrid,
     ServoTableWrapper,
 }
 
@@ -95,6 +96,7 @@ impl ToCss for PseudoElement {
             ServoLegacyAnonymousBlock => "::-servo-legacy-anonymous-block",
             ServoLegacyInlineBlockWrapper => "::-servo-legacy-inline-block-wrapper",
             ServoLegacyInlineAbsolute => "::-servo-legacy-inline-absolute",
+            ServoTableGrid => "::-servo-table-grid",
             ServoTableWrapper => "::-servo-table-wrapper",
         })
     }
@@ -244,6 +246,7 @@ impl PseudoElement {
             PseudoElement::ServoLegacyAnonymousBlock |
             PseudoElement::ServoLegacyInlineBlockWrapper |
             PseudoElement::ServoLegacyInlineAbsolute |
+            PseudoElement::ServoTableGrid |
             PseudoElement::ServoTableWrapper => PseudoElementCascadeType::Precomputed,
         }
     }
@@ -602,6 +605,12 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 ServoLegacyInlineAbsolute
+            },
+            "-servo-table-grid" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTableGrid
             },
             "-servo-table-wrapper" => {
                 if !self.in_user_agent_stylesheet() {

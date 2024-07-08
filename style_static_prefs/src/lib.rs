@@ -15,6 +15,9 @@ macro_rules! pref {
     ("layout.css.stylo-local-work-queue.in-worker") => {
         0
     };
+    ("layout.css.system-ui.enabled") => {
+        true
+    };
     ($string:literal) => {
         false
     };

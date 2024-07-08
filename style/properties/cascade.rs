@@ -773,20 +773,17 @@ impl<'b> Cascade<'b> {
             self.recompute_font_size_for_zoom_change(&mut context.builder);
         }
 
+        // Compute font-family.
+        let has_font_family = apply!(FontFamily);
+        let has_lang = apply!(XLang);
+
         #[cfg(feature = "gecko")] {
-            // Compute font-family.
-            let has_font_family = apply!(FontFamily);
-            let has_lang = apply!(XLang);
             if has_lang {
                 self.recompute_initial_font_family_if_needed(&mut context.builder);
             }
             if has_font_family {
                 self.prioritize_user_fonts_if_needed(&mut context.builder);
             }
-        }
-        #[cfg(feature = "servo")] {
-            apply!(FontFamily);
-            apply!(XLang);
         }
 
         // Compute font-size.
@@ -809,7 +806,12 @@ impl<'b> Cascade<'b> {
             }
         }
         #[cfg(feature = "servo")]
-        apply!(FontSize);
+        {
+            apply!(FontSize);
+            if has_lang || has_font_family {
+                self.recompute_keyword_font_size_if_needed(context);
+            }
+        }
 
         // Compute the rest of the first-available-font-affecting properties.
         apply!(FontWeight);
@@ -1193,7 +1195,6 @@ impl<'b> Cascade<'b> {
     }
 
     /// Some keyword sizes depend on the font family and language.
-    #[cfg(feature = "gecko")]
     fn recompute_keyword_font_size_if_needed(&self, context: &mut computed::Context) {
         use crate::values::computed::ToComputedValue;
 
@@ -1212,6 +1213,7 @@ impl<'b> Cascade<'b> {
                 },
             };
 
+            #[cfg(feature = "gecko")]
             if font.mScriptUnconstrainedSize == new_size.computed_size {
                 return;
             }

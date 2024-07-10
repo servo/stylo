@@ -25,10 +25,8 @@ use std::ops::Add;
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 
-#[cfg(feature = "gecko")]
-pub use self::align::{AlignContent, AlignItems, AlignSelf, AlignTracks, ContentDistribution};
-#[cfg(feature = "gecko")]
-pub use self::align::{JustifyContent, JustifyItems, JustifySelf, JustifyTracks, SelfAlignment};
+pub use self::align::{AlignContent, AlignItems, AlignSelf, ContentDistribution};
+pub use self::align::{JustifyContent, JustifyItems, JustifySelf, SelfAlignment};
 pub use self::angle::{AllowUnitlessZeroAngle, Angle};
 pub use self::animation::{
     AnimationComposition, AnimationDirection, AnimationFillMode, AnimationIterationCount,
@@ -113,7 +111,6 @@ pub use self::ui::CursorImage;
 pub use self::ui::{BoolInteger, Cursor, UserSelect};
 pub use super::generics::grid::GridTemplateComponent as GenericGridTemplateComponent;
 
-#[cfg(feature = "gecko")]
 pub mod align;
 pub mod angle;
 pub mod animation;

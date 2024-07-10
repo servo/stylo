@@ -75,119 +75,52 @@ ${helpers.single_keyword(
     affects="layout",
 )}
 
-% if engine in "servo":
-    // FIXME: Update Servo to support the same Syntax as Gecko.
-    ${helpers.single_keyword(
-        "justify-content",
-        "start flex-start stretch end flex-end center space-between space-around space-evenly",
-        engines="servo",
-        servo_pref="layout.flexbox.enabled",
-        extra_prefixes="webkit",
-        spec="https://drafts.csswg.org/css-align/#propdef-justify-content",
-        animation_value_type="discrete",
-        servo_restyle_damage = "reflow",
-        affects="layout",
-    )}
-% endif
-% if engine == "gecko":
-    ${helpers.predefined_type(
-        "justify-content",
-        "JustifyContent",
-        "specified::JustifyContent(specified::ContentDistribution::normal())",
-        engines="gecko",
-        spec="https://drafts.csswg.org/css-align/#propdef-justify-content",
-        extra_prefixes="webkit",
-        animation_value_type="discrete",
-        servo_restyle_damage="reflow",
-        affects="layout",
-    )}
+${helpers.predefined_type(
+    "justify-content",
+    "JustifyContent",
+    "specified::JustifyContent(specified::ContentDistribution::normal())",
+    engines="gecko servo",
+    spec="https://drafts.csswg.org/css-align/#propdef-justify-content",
+    extra_prefixes="webkit",
+    animation_value_type="discrete",
+    servo_restyle_damage="reflow",
+    affects="layout",
+)}
 
-    ${helpers.predefined_type(
-        "justify-tracks",
-        "JustifyTracks",
-        "specified::JustifyTracks::default()",
-        engines="gecko",
-        gecko_pref="layout.css.grid-template-masonry-value.enabled",
-        animation_value_type="discrete",
-        servo_restyle_damage="reflow",
-        spec="https://github.com/w3c/csswg-drafts/issues/4650",
-        affects="layout",
-    )}
-% endif
+${helpers.predefined_type(
+    "align-content",
+    "AlignContent",
+    "specified::AlignContent(specified::ContentDistribution::normal())",
+    engines="gecko servo",
+    spec="https://drafts.csswg.org/css-align/#propdef-align-content",
+    extra_prefixes="webkit",
+    animation_value_type="discrete",
+    servo_restyle_damage="reflow",
+    affects="layout",
+)}
 
-% if engine == "servo":
-    // FIXME: Update Servo to support the same Syntax as Gecko.
-    ${helpers.single_keyword(
-        "align-content",
-        "stretch start flex-start end flex-end center space-between space-around space-evenly",
-        engines="servo",
-        servo_pref="layout.flexbox.enabled",
-        extra_prefixes="webkit",
-        spec="https://drafts.csswg.org/css-align/#propdef-align-content",
-        animation_value_type="discrete",
-        servo_restyle_damage="reflow",
-        affects="layout",
-    )}
+${helpers.predefined_type(
+    "align-items",
+    "AlignItems",
+    "specified::AlignItems::normal()",
+    engines="gecko servo",
+    spec="https://drafts.csswg.org/css-align/#propdef-align-items",
+    extra_prefixes="webkit",
+    animation_value_type="discrete",
+    servo_restyle_damage="reflow",
+    affects="layout",
+)}
 
-    ${helpers.single_keyword(
-        "align-items",
-        "stretch flex-start flex-end center baseline",
-        engines="servo",
-        servo_pref="layout.flexbox.enabled",
-        extra_prefixes="webkit",
-        spec="https://drafts.csswg.org/css-flexbox/#align-items-property",
-        animation_value_type="discrete",
-        servo_restyle_damage="reflow",
-        affects="layout",
-    )}
-% endif
-% if engine == "gecko":
-    ${helpers.predefined_type(
-        "align-content",
-        "AlignContent",
-        "specified::AlignContent(specified::ContentDistribution::normal())",
-        engines="gecko",
-        spec="https://drafts.csswg.org/css-align/#propdef-align-content",
-        extra_prefixes="webkit",
-        animation_value_type="discrete",
-        servo_restyle_damage="reflow",
-        affects="layout",
-    )}
+${helpers.predefined_type(
+    "justify-items",
+    "JustifyItems",
+    "computed::JustifyItems::legacy()",
+    engines="gecko servo",
+    spec="https://drafts.csswg.org/css-align/#propdef-justify-items",
+    animation_value_type="discrete",
+    affects="layout",
+)}
 
-    ${helpers.predefined_type(
-        "align-tracks",
-        "AlignTracks",
-        "specified::AlignTracks::default()",
-        engines="gecko",
-        gecko_pref="layout.css.grid-template-masonry-value.enabled",
-        animation_value_type="discrete",
-        servo_restyle_damage="reflow",
-        spec="https://github.com/w3c/csswg-drafts/issues/4650",
-        affects="layout",
-    )}
-
-    ${helpers.predefined_type(
-        "align-items",
-        "AlignItems",
-        "specified::AlignItems::normal()",
-        engines="gecko",
-        spec="https://drafts.csswg.org/css-align/#propdef-align-items",
-        extra_prefixes="webkit",
-        animation_value_type="discrete",
-        servo_restyle_damage="reflow",
-        affects="layout",
-    )}
-
-    ${helpers.predefined_type(
-        "justify-items",
-        "JustifyItems",
-        "computed::JustifyItems::legacy()",
-        engines="gecko",
-        spec="https://drafts.csswg.org/css-align/#propdef-justify-items",
-        animation_value_type="discrete",
-        affects="layout",
-    )}
-% endif
 
 // Flex item properties
 ${helpers.predefined_type(
@@ -195,7 +128,6 @@ ${helpers.predefined_type(
     "NonNegativeNumber",
     "From::from(0.0)",
     engines="gecko servo",
-    servo_pref="layout.flexbox.enabled",
     spec="https://drafts.csswg.org/css-flexbox/#flex-grow-property",
     extra_prefixes="webkit",
     animation_value_type="NonNegativeNumber",
@@ -217,42 +149,26 @@ ${helpers.predefined_type(
 )}
 
 // https://drafts.csswg.org/css-align/#align-self-property
-% if engine == "servo":
-    // FIXME: Update Servo to support the same syntax as Gecko.
-    ${helpers.single_keyword(
-        "align-self",
-        "auto stretch flex-start flex-end center baseline",
-        engines="servo",
-        servo_pref="layout.flexbox.enabled",
-        extra_prefixes="webkit",
-        spec="https://drafts.csswg.org/css-flexbox/#propdef-align-self",
-        animation_value_type="discrete",
-        servo_restyle_damage = "reflow",
-        affects="layout",
-    )}
-% endif
-% if engine == "gecko":
-    ${helpers.predefined_type(
-        "align-self",
-        "AlignSelf",
-        "specified::AlignSelf(specified::SelfAlignment::auto())",
-        engines="gecko",
-        spec="https://drafts.csswg.org/css-align/#align-self-property",
-        extra_prefixes="webkit",
-        animation_value_type="discrete",
-        affects="layout",
-    )}
+${helpers.predefined_type(
+    "align-self",
+    "AlignSelf",
+    "specified::AlignSelf(specified::SelfAlignment::auto())",
+    engines="gecko servo",
+    spec="https://drafts.csswg.org/css-align/#align-self-property",
+    extra_prefixes="webkit",
+    animation_value_type="discrete",
+    affects="layout",
+)}
 
-    ${helpers.predefined_type(
-        "justify-self",
-        "JustifySelf",
-        "specified::JustifySelf(specified::SelfAlignment::auto())",
-        engines="gecko",
-        spec="https://drafts.csswg.org/css-align/#justify-self-property",
-        animation_value_type="discrete",
-        affects="layout",
-    )}
-% endif
+${helpers.predefined_type(
+    "justify-self",
+    "JustifySelf",
+    "specified::JustifySelf(specified::SelfAlignment::auto())",
+    engines="gecko servo",
+    spec="https://drafts.csswg.org/css-align/#justify-self-property",
+    animation_value_type="discrete",
+    affects="layout",
+)}
 
 // https://drafts.csswg.org/css-flexbox/#propdef-order
 ${helpers.predefined_type(

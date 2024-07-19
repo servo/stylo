@@ -251,7 +251,6 @@ impl Parse for Content {
                         },
                         #[cfg(feature = "gecko")]
                         "-moz-label-content" if context.chrome_rules_enabled() => {
-                            has_alt_content = true;
                             generics::ContentItem::MozLabelContent
                         },
                         _ =>{

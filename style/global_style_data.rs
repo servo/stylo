@@ -47,7 +47,7 @@ pub struct StyleThreadPool {
 }
 
 fn thread_name(index: usize) -> String {
-    format!("Style#{}", index)
+    format!("StyleThread#{}", index)
 }
 
 lazy_static! {

@@ -16,7 +16,7 @@ gecko = []
 [dependencies]
 app_units = "0.7"
 bitflags = "2"
-cssparser = { workspace = true }
+cssparser = "0.34"
 euclid = "0.22"
 lazy_static = "1"
 malloc_size_of = { path = "../malloc_size_of" }
@@ -30,4 +30,4 @@ thin-vec = "0.2"
 to_shmem = { path = "../to_shmem" }
 to_shmem_derive = { path = "../to_shmem_derive" }
 url = { version = "2.5", optional = true }
-webrender_api = { workspace = true, optional = true }
+webrender_api = { git = "https://github.com/servo/webrender", branch = "0.64", optional = true }

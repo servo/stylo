@@ -11,4 +11,4 @@ name = "style_config"
 path = "lib.rs"
 
 [dependencies]
-lazy_static = { workspace = true }
+lazy_static = "1.4"

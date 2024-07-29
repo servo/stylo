@@ -17,8 +17,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install mako
-        run: sudo apt install python3-mako
       - name: Run Tests
         run: cargo build --features servo
         env:
@@ -31,8 +29,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-      - name: Install mako
-        run: sudo apt install python3-mako
       - name: Run Tests
         run: cargo build --release --features servo
         env:

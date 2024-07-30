@@ -130,6 +130,7 @@ screen
 scroll-position
 scrollbar-inline-size
 search
+securitypolicyviolation
 seeked
 seeking
 select

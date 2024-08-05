@@ -30,4 +30,4 @@ thin-vec = "0.2"
 to_shmem = { path = "../to_shmem" }
 to_shmem_derive = { path = "../to_shmem_derive" }
 url = { version = "2.5", optional = true }
-webrender_api = { git = "https://github.com/servo/webrender", branch = "0.64", optional = true }
+webrender_api = { git = "https://github.com/servo/webrender", branch = "0.65", optional = true }

@@ -32,8 +32,6 @@ use fxhash::FxHashMap;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::borrow::Cow;
-#[cfg(feature = "gecko")]
-use std::mem;
 
 /// Whether we're resolving a style with the purposes of reparenting for ::first-line.
 #[derive(Copy, Clone)]
@@ -419,7 +417,8 @@ fn tweak_when_ignoring_colors(
     }
 
     // Always honor colors if forced-color-adjust is set to none.
-    #[cfg(feature = "gecko")] {
+    #[cfg(feature = "gecko")]
+    {
         let forced = context
             .builder
             .get_inherited_text()
@@ -1331,7 +1330,7 @@ impl<'b> Cascade<'b> {
                 return s;
             }
             if b < a {
-                mem::swap(&mut a, &mut b);
+                std::mem::swap(&mut a, &mut b);
                 invert_scale_factor = true;
             }
             let mut e = b - a;

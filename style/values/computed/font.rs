@@ -21,7 +21,6 @@ use crate::values::specified::font::{
 use crate::values::specified::length::{FontBaseSize, LineHeightBase, NoCalcLength};
 use crate::Atom;
 use cssparser::{serialize_identifier, CssStringWriter, Parser};
-#[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use num_traits::abs;
 use num_traits::cast::AsPrimitive;
@@ -338,7 +337,7 @@ impl ToResolvedValue for FontSize {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ToComputedValue, ToResolvedValue)]
-#[cfg_attr(feature = "servo", derive(Hash, MallocSizeOf, Serialize, Deserialize))]
+#[cfg_attr(feature = "servo", derive(Hash, Serialize, Deserialize))]
 /// Specifies a prioritized list of font family names or generic family names.
 #[repr(C)]
 pub struct FontFamily {
@@ -356,10 +355,7 @@ macro_rules! static_font_family {
         lazy_static! {
             static ref $ident: FontFamily = FontFamily {
                 families: FontFamilyList {
-                    #[cfg(feature = "gecko")]
                     list: crate::ArcSlice::from_iter_leaked(std::iter::once($family)),
-                    #[cfg(feature = "servo")]
-                    list: Box::new([$family]),
                 },
                 is_system_font: false,
                 is_initial: false,
@@ -448,7 +444,6 @@ impl FontFamily {
     }
 }
 
-#[cfg(feature = "gecko")]
 impl MallocSizeOf for FontFamily {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         use malloc_size_of::MallocUnconditionalSizeOf;
@@ -505,6 +500,13 @@ impl FamilyName {
     fn is_known_icon_font_family(&self) -> bool {
         use crate::gecko_bindings::bindings;
         unsafe { bindings::Gecko_IsKnownIconFontFamily(self.name.as_ptr()) }
+    }
+}
+
+#[cfg(feature = "servo")]
+impl FamilyName {
+    fn is_known_icon_font_family(&self) -> bool {
+        false
     }
 }
 
@@ -626,11 +628,11 @@ impl GenericFontFamily {
     /// When we disallow websites to override fonts, we ignore some generic
     /// families that the website might specify, since they're not configured by
     /// the user. See bug 789788 and bug 1730098.
-    #[cfg(feature = "gecko")]
     pub(crate) fn valid_for_user_font_prioritization(self) -> bool {
         match self {
-            Self::None | Self::Fantasy | Self::Cursive | Self::SystemUi | Self::MozEmoji => false,
-
+            Self::None | Self::Fantasy | Self::Cursive | Self::SystemUi => false,
+            #[cfg(feature = "gecko")]
+            Self::MozEmoji => false,
             Self::Serif | Self::SansSerif | Self::Monospace => true,
         }
     }
@@ -699,32 +701,12 @@ impl Parse for SingleFontFamily {
 }
 
 /// A list of font families.
-#[cfg(feature = "gecko")]
 #[derive(Clone, Debug, ToComputedValue, ToResolvedValue, ToShmem, PartialEq, Eq)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize, Hash))]
 #[repr(C)]
 pub struct FontFamilyList {
     /// The actual list of font families specified.
     pub list: crate::ArcSlice<SingleFontFamily>,
-}
-
-/// A list of font families.
-#[cfg(feature = "servo")]
-#[derive(
-    Clone,
-    Debug,
-    Deserialize,
-    Eq,
-    Hash,
-    MallocSizeOf,
-    PartialEq,
-    Serialize,
-    ToComputedValue,
-    ToResolvedValue,
-    ToShmem,
-)]
-pub struct FontFamilyList {
-    /// The actual list of font families specified.
-    pub list: Box<[SingleFontFamily]>,
 }
 
 impl FontFamilyList {
@@ -739,7 +721,7 @@ impl FontFamilyList {
     /// generic instead of the site's specified font may cause substantial breakage.
     /// If no suitable generic is found in the list, insert the default generic ahead
     /// of all the listed families except for known ligature-based icon fonts.
-    #[cfg(feature = "gecko")]
+    #[cfg_attr(feature = "servo", allow(unused))]
     pub(crate) fn prioritize_first_generic_or_prepend(&mut self, generic: GenericFontFamily) {
         let mut index_of_first_generic = None;
         let mut target_index = None;
@@ -788,7 +770,7 @@ impl FontFamilyList {
     }
 
     /// Returns whether we need to prioritize user fonts.
-    #[cfg(feature = "gecko")]
+    #[cfg_attr(feature = "servo", allow(unused))]
     pub(crate) fn needs_user_font_prioritization(&self) -> bool {
         self.iter().next().map_or(true, |f| match f {
             SingleFontFamily::Generic(f) => !f.valid_for_user_font_prioritization(),

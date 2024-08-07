@@ -14,7 +14,7 @@ use crate::media_queries::MediaType;
 use crate::parser::ParserContext;
 use crate::properties::style_structs::Font;
 use crate::properties::ComputedValues;
-use crate::values::computed::{CSSPixelLength, Context, Length, LineHeight, NonNegativeLength, Resolution};
+use crate::values::computed::{CSSPixelLength, ColorScheme, Context, Length, LineHeight, NonNegativeLength, Resolution};
 use crate::values::computed::font::GenericFontFamily;
 use crate::values::specified::font::{FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX};
 use crate::values::specified::ViewportVariant;
@@ -293,6 +293,10 @@ impl Device {
     /// Returns the default foreground color.
     pub fn default_color(&self) -> AbsoluteColor {
         AbsoluteColor::BLACK
+    }
+
+    pub(crate) fn is_dark_color_scheme(&self, _: &ColorScheme) -> bool {
+        false
     }
 
     /// Returns safe area insets

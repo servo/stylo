@@ -1,5 +1,6 @@
 -moz-content-preferred-color-scheme
 -moz-device-pixel-ratio
+-moz-fixed-pos-containing-block
 -moz-gtk-csd-close-button-position
 -moz-gtk-csd-maximize-button-position
 -moz-gtk-csd-menu-radius

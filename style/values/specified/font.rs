@@ -689,10 +689,7 @@ impl Parse for FontFamily {
         let values =
             input.parse_comma_separated(|input| SingleFontFamily::parse(context, input))?;
         Ok(FontFamily::Values(FontFamilyList {
-            #[cfg(feature = "gecko")]
             list: crate::ArcSlice::from_iter(values.into_iter()),
-            #[cfg(feature = "servo")]
-            list: values.into_boxed_slice(),
         }))
     }
 }

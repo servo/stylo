@@ -120,16 +120,6 @@ fn cross_fade_enabled() -> bool {
     false
 }
 
-#[cfg(feature = "gecko")]
-fn image_set_enabled() -> bool {
-    true
-}
-
-#[cfg(feature = "servo")]
-fn image_set_enabled() -> bool {
-    false
-}
-
 impl SpecifiedValueInfo for Gradient {
     const SUPPORTED_TYPES: u8 = CssType::GRADIENT;
 
@@ -171,9 +161,7 @@ impl<Image, Resolution> SpecifiedValueInfo for generic::ImageSet<Image, Resoluti
     const SUPPORTED_TYPES: u8 = 0;
 
     fn collect_completion_keywords(f: KeywordsCollectFn) {
-        if image_set_enabled() {
-            f(&["image-set"]);
-        }
+        f(&["image-set"]);
     }
 }
 
@@ -232,7 +220,7 @@ impl Image {
             return Ok(generic::Image::Url(url));
         }
 
-        if !flags.contains(ParseImageFlags::FORBID_IMAGE_SET) && image_set_enabled() {
+        if !flags.contains(ParseImageFlags::FORBID_IMAGE_SET) {
             if let Ok(is) =
                 input.try_parse(|input| ImageSet::parse(context, input, cors_mode, flags))
             {

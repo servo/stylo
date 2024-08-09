@@ -84,7 +84,7 @@ ${helpers.predefined_type(
     "clip-path",
     "basic_shape::ClipPath",
     "generics::basic_shape::ClipPath::None",
-    engines="gecko",
+    engines="gecko servo",
     extra_prefixes="webkit",
     animation_value_type="basic_shape::ClipPath",
     spec="https://drafts.fxtf.org/css-masking-1/#propdef-clip-path",

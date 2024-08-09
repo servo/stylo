@@ -2935,7 +2935,7 @@ macro_rules! longhand_properties_idents {
 }
 
 // Large pages generate tens of thousands of ComputedValues.
-size_of_test!(ComputedValues, 200);
+size_of_test!(ComputedValues, 208);
 // FFI relies on this.
 size_of_test!(Option<Arc<ComputedValues>>, 8);
 

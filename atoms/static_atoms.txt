@@ -113,6 +113,7 @@ ratechange
 readystatechange
 referrer
 reftest-wait
+test-wait
 rejectionhandled
 removetrack
 reset

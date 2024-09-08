@@ -430,7 +430,7 @@ class Longhand(Property):
         self.animation_type = animation_type
         self.animatable = animation_type != "none"
         self.transitionable = (
-            animation_value_type != "none" and animation_value_type != "discrete"
+            animation_type != "none" and animation_type != "discrete"
         )
 
         # See compute_damage for the various values this can take

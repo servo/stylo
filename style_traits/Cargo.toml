@@ -25,7 +25,6 @@ selectors = { path = "../selectors" }
 serde = "1.0"
 servo_arc = { path = "../servo_arc" }
 servo_atoms = { path = "../atoms", optional = true }
-size_of_test = { path = "../size_of_test" }
 thin-vec = "0.2"
 to_shmem = { path = "../to_shmem" }
 to_shmem_derive = { path = "../to_shmem_derive" }

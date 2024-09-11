@@ -15,3 +15,4 @@ proc-macro2 = "1"
 quote = "1"
 syn = { version = "2", default-features = false, features = ["derive", "parsing"] }
 synstructure = "0.13"
+to_shmem = { version = "0.1", path = "../to_shmem" }

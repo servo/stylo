@@ -2,3 +2,4 @@
 /_filtered/
 /target/
 /style/properties/__pycache__/
+Cargo.lock

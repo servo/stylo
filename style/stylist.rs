@@ -570,7 +570,6 @@ pub struct Stylist {
     initial_values_for_custom_properties: ComputedCustomProperties,
 
     /// Flags set from computing registered custom property initial values.
-    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "missing malloc_size_of")]
     initial_values_for_custom_properties_flags: ComputedValueFlags,
 
     /// The total number of times the stylist has been rebuilt.

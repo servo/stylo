@@ -150,13 +150,10 @@ impl<LengthPercentage: Parse> Parse for LengthPercentageOrAuto<LengthPercentage>
 pub enum GenericSize<LengthPercent> {
     LengthPercentage(LengthPercent),
     Auto,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     MaxContent,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     MinContent,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     FitContent,
     #[cfg(feature = "gecko")]
@@ -165,7 +162,6 @@ pub enum GenericSize<LengthPercent> {
     #[cfg(feature = "gecko")]
     #[animation(error)]
     WebkitFillAvailable,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     Stretch,
     #[cfg(feature = "gecko")]
@@ -212,13 +208,10 @@ impl<LengthPercentage> Size<LengthPercentage> {
 pub enum GenericMaxSize<LengthPercent> {
     LengthPercentage(LengthPercent),
     None,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     MaxContent,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     MinContent,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     FitContent,
     #[cfg(feature = "gecko")]
@@ -227,7 +220,6 @@ pub enum GenericMaxSize<LengthPercent> {
     #[cfg(feature = "gecko")]
     #[animation(error)]
     WebkitFillAvailable,
-    #[cfg(feature = "gecko")]
     #[animation(error)]
     Stretch,
     #[cfg(feature = "gecko")]

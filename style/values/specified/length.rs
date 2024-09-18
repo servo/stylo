@@ -1950,17 +1950,13 @@ macro_rules! parse_size_non_length {
     ($size:ident, $input:expr, $auto_or_none:expr => $auto_or_none_ident:ident) => {{
         let size = $input.try_parse(|input| {
             Ok(try_match_ident_ignore_ascii_case! { input,
-                #[cfg(feature = "gecko")]
                 "min-content" | "-moz-min-content" => $size::MinContent,
-                #[cfg(feature = "gecko")]
                 "max-content" | "-moz-max-content" => $size::MaxContent,
-                #[cfg(feature = "gecko")]
                 "fit-content" | "-moz-fit-content" => $size::FitContent,
                 #[cfg(feature = "gecko")]
                 "-moz-available" => $size::MozAvailable,
                 #[cfg(feature = "gecko")]
                 "-webkit-fill-available" if is_webkit_fill_available_keyword_enabled() => $size::WebkitFillAvailable,
-                #[cfg(feature = "gecko")]
                 "stretch" if is_stretch_enabled() => $size::Stretch,
                 $auto_or_none => $size::$auto_or_none_ident,
             })
@@ -1975,7 +1971,6 @@ macro_rules! parse_size_non_length {
 fn is_webkit_fill_available_keyword_enabled() -> bool {
     static_prefs::pref!("layout.css.webkit-fill-available.enabled")
 }
-#[cfg(feature = "gecko")]
 fn is_stretch_enabled() -> bool {
     static_prefs::pref!("layout.css.stretch-size-keyword.enabled")
 }

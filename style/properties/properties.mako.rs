@@ -2188,7 +2188,7 @@ impl ComputedValuesInner {
 
     /// Gets the logical position from this style.
     #[inline]
-    pub fn logical_position(&self) -> LogicalMargin<<&computed::LengthPercentageOrAuto> {
+    pub fn logical_position(&self) -> LogicalMargin<<&computed::Inset> {
         // FIXME(SimonSapin): should be the writing mode of the containing block, maybe?
         let position_style = self.get_position();
         LogicalMargin::from_physical(self.writing_mode, SideOffsets2D::new(

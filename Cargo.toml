@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "derive_common",
     "dom",
     "malloc_size_of",
     "rustfmt.toml",

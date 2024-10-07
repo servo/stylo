@@ -2176,7 +2176,7 @@ impl ComputedValuesInner {
 
     /// Gets the logical computed margin from this style.
     #[inline]
-    pub fn logical_margin(&self) -> LogicalMargin<<&computed::LengthPercentageOrAuto> {
+    pub fn logical_margin(&self) -> LogicalMargin<<&computed::Margin> {
         let margin_style = self.get_margin();
         LogicalMargin::from_physical(self.writing_mode, SideOffsets2D::new(
             &margin_style.margin_top,

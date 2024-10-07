@@ -2260,6 +2260,15 @@ impl ComputedValuesInner {
     }
 }
 
+#[cfg(feature = "servo")]
+impl crate::properties::style_structs::InheritedUI {
+    /// Returns the ColorSchemeFlags corresponding to the value of `color-scheme`.
+    #[inline]
+    pub fn color_scheme_bits(&self) -> ColorSchemeFlags {
+        ColorSchemeFlags::default()
+    }
+}
+
 /// A reference to a style struct of the parent, or our own style struct.
 pub enum StyleStructRef<'a, T: 'static> {
     /// A borrowed struct from the parent, for example, for inheriting style.

@@ -14,8 +14,9 @@ use crate::media_queries::MediaType;
 use crate::parser::ParserContext;
 use crate::properties::style_structs::Font;
 use crate::properties::ComputedValues;
-use crate::values::computed::{CSSPixelLength, ColorScheme, Context, Length, LineHeight, NonNegativeLength, Resolution};
+use crate::values::computed::{CSSPixelLength, Context, Length, LineHeight, NonNegativeLength, Resolution};
 use crate::values::computed::font::GenericFontFamily;
+use crate::values::specified::color::ColorSchemeFlags;
 use crate::values::specified::font::{FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX};
 use crate::values::specified::ViewportVariant;
 use crate::values::KeyframesName;
@@ -295,7 +296,7 @@ impl Device {
         AbsoluteColor::BLACK
     }
 
-    pub(crate) fn is_dark_color_scheme(&self, _: &ColorScheme) -> bool {
+    pub(crate) fn is_dark_color_scheme(&self, _: ColorSchemeFlags) -> bool {
         false
     }
 

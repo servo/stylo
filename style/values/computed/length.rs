@@ -186,6 +186,7 @@ impl MaxSize {
                 None
             },
             Self::LengthPercentage(ref lp) => Some(lp.to_used_value(percentage_basis)),
+            Self::AnchorSizeFunction(_) => unreachable!("anchor-size() should be disabled"),
         }
     }
 
@@ -197,6 +198,7 @@ impl MaxSize {
                 None
             },
             Self::LengthPercentage(ref lp) => lp.maybe_to_used_value(percentage_basis),
+            Self::AnchorSizeFunction(_) => unreachable!("anchor-size() should be disabled"),
         }
     }
 }
@@ -211,6 +213,7 @@ impl Size {
                 None
             },
             Self::LengthPercentage(ref lp) => Some(lp.to_used_value(percentage_basis)),
+            Self::AnchorSizeFunction(_) => unreachable!("anchor-size() should be disabled"),
         }
     }
 
@@ -223,6 +226,7 @@ impl Size {
                 None
             },
             Self::LengthPercentage(ref lp) => lp.maybe_to_used_value(percentage_basis),
+            Self::AnchorSizeFunction(_) => unreachable!("anchor-size() should be disabled"),
         }
     }
 

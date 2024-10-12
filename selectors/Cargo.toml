@@ -1,9 +1,9 @@
 [package]
-name = "selectors"
-version = "0.25.0"
+name = "stylo_selectors"
+version = "0.26.0"
 authors = ["The Servo Project Developers"]
-documentation = "https://docs.rs/selectors/"
-description = "CSS Selectors matching for Rust"
+documentation = "https://docs.rs/stylo_selectors/"
+description = "Temporary fork of the selectors crate for Stylo"
 repository = "https://github.com/servo/stylo"
 readme = "README.md"
 keywords = ["css", "selectors"]
@@ -12,7 +12,7 @@ edition = "2021"
 build = "build.rs"
 
 [lib]
-name = "selectors"
+name = "stylo_selectors"
 path = "lib.rs"
 
 [features]

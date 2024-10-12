@@ -27,7 +27,7 @@ serde = "1.0"
 servo_arc = { path = "../servo_arc", package = "stylo_arc" }
 servo_atoms = { path = "../atoms", optional = true }
 thin-vec = "0.2"
-to_shmem = { path = "../to_shmem" }
-to_shmem_derive = { path = "../to_shmem_derive" }
+to_shmem = { path = "../to_shmem", package = "stylo_to_shmem" }
+to_shmem_derive = { path = "../to_shmem_derive", package = "stylo_to_shmem_derive" }
 url = { version = "2.5", optional = true }
 webrender_api = { git = "https://github.com/servo/webrender", branch = "0.65", optional = true }

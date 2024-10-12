@@ -1,7 +1,9 @@
 [package]
-name = "to_shmem_derive"
+name = "stylo_to_shmem_derive"
 version = "0.1.0"
 authors = ["The Servo Project Developers"]
+documentation = "https://docs.rs/stylo_to_shmem_derive/"
+description = "Support crate for Stylo CSS engine"
 license = "MPL-2.0"
 repository = "https://github.com/servo/stylo"
 edition = "2021"

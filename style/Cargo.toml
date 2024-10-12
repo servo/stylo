@@ -92,7 +92,7 @@ static_assertions = "1.1"
 static_prefs = { version = "0.1", path = "../style_static_prefs", package = "stylo_static_prefs" }
 string_cache = { version = "0.8", optional = true }
 style_config = { version = "0.1", path = "../style_config", package = "stylo_config", optional = true }
-style_derive = {path = "../style_derive"}
+style_derive = { version = "0.1", path = "../style_derive", package = "stylo_derive" }
 style_traits = { version = "0.1", path = "../style_traits", package = "stylo_traits" }
 to_shmem = { version = "0.1", path = "../to_shmem", package = "stylo_to_shmem"}
 to_shmem_derive = { version = "0.1", path = "../to_shmem_derive", package = "stylo_to_shmem_derive"}

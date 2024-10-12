@@ -25,7 +25,7 @@ malloc_size_of_derive = "0.1"
 selectors = { path = "../selectors" }
 serde = "1.0"
 servo_arc = { path = "../servo_arc", package = "stylo_arc" }
-servo_atoms = { path = "../atoms", optional = true }
+servo_atoms = { path = "../atoms", package = "stylo_atoms", optional = true }
 thin-vec = "0.2"
 to_shmem = { path = "../to_shmem", package = "stylo_to_shmem" }
 to_shmem_derive = { path = "../to_shmem_derive", package = "stylo_to_shmem_derive" }

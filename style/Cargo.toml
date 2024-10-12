@@ -85,7 +85,7 @@ rayon-core = "1"
 selectors = { path = "../selectors" }
 serde = {version = "1.0", optional = true, features = ["derive"]}
 servo_arc = { path = "../servo_arc", version = "0.4", package = "stylo_arc" }
-servo_atoms = {path = "../atoms", package = "stylo_atoms", optional = true}
+servo_atoms = { version = "0.1", path = "../atoms", package = "stylo_atoms", optional = true}
 smallbitvec = "2.3.0"
 smallvec = "1.0"
 static_assertions = "1.1"

@@ -69,7 +69,7 @@ itertools = "0.10"
 itoa = "1.0"
 lazy_static = "1"
 log = "0.4"
-malloc_size_of = { path = "../malloc_size_of" }
+malloc_size_of = { version = "0.1", path = "../malloc_size_of", package = "stylo_malloc_size_of" }
 malloc_size_of_derive = "0.1"
 markup5ever = { version = "0.14", optional = true }
 matches = "0.1"

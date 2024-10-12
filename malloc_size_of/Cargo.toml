@@ -42,7 +42,7 @@ keyboard-types = { version = "0.7", optional = true }
 selectors = { path = "../selectors" }
 serde = { version = "1.0.195", optional = true }
 serde_bytes = { version = "0.11", optional = true }
-servo_arc = { path = "../servo_arc" }
+servo_arc = { path = "../servo_arc", package = "stylo_arc" }
 smallbitvec = "2.3.0"
 smallvec = "1.13"
 string_cache = { version = "0.8", optional = true }

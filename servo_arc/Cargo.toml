@@ -1,14 +1,15 @@
 [package]
-name = "servo_arc"
+name = "stylo_arc"
 version = "0.4.0"
 authors = ["The Servo Project Developers"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/servo/stylo"
+documentation = "https://docs.rs/stylo_arc/"
 description = "A fork of std::sync::Arc with some extra functionality and without weak references"
 edition = "2021"
 
 [lib]
-name = "servo_arc"
+name = "stylo_arc"
 path = "lib.rs"
 
 [features]

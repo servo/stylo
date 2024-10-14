@@ -1,7 +1,9 @@
 [package]
-name = "to_shmem"
+name = "stylo_to_shmem"
 version = "0.1.0"
 authors = ["The Servo Project Developers"]
+documentation = "https://docs.rs/stylo_to_shmem/"
+description = "Support crate for Stylo CSS engine"
 license = "MPL-2.0"
 repository = "https://github.com/servo/stylo"
 edition = "2021"
@@ -23,7 +25,7 @@ thin-vec = ["dep:thin-vec"]
 
 [dependencies]
 cssparser = { version = "0.34", optional = true }
-servo_arc = { version = "0.4.0", path = "../servo_arc", optional = true }
+servo_arc = { version = "0.4.0", path = "../servo_arc", package = "stylo_arc", optional = true }
 smallbitvec = { version = "2.3.0", optional = true }
 smallvec = { version = "1.13", optional = true }
 string_cache = { version = "0.8", optional = true }

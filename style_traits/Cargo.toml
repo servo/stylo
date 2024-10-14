@@ -1,17 +1,20 @@
 [package]
-name = "style_traits"
-version = "0.0.1"
+name = "stylo_traits"
+version = "0.1.0"
 authors = ["The Servo Project Developers"]
-license = "MPL-2.0"
+documentation = "https://docs.rs/stylo_traits/"
+description = "Vocabulary types for the Stylo CSS engine"
 repository = "https://github.com/servo/stylo"
-publish = false
+keywords = ["css", "style"]
+license = "MPL-2.0"
+edition = "2015"
 
 [lib]
-name = "style_traits"
+name = "stylo_traits"
 path = "lib.rs"
 
 [features]
-servo = ["servo_atoms", "cssparser/serde", "webrender_api", "url", "euclid/serde"]
+servo = ["servo_atoms", "cssparser/serde", "url", "euclid/serde"]
 gecko = []
 
 [dependencies]
@@ -20,14 +23,13 @@ bitflags = "2"
 cssparser = "0.34"
 euclid = "0.22"
 lazy_static = "1"
-malloc_size_of = { path = "../malloc_size_of" }
+malloc_size_of = { version = "0.1", path = "../malloc_size_of", package = "stylo_malloc_size_of" }
 malloc_size_of_derive = "0.1"
-selectors = { path = "../selectors" }
+selectors = { version = "0.26", path = "../selectors", package = "stylo_selectors" }
 serde = "1.0"
-servo_arc = { path = "../servo_arc" }
-servo_atoms = { path = "../atoms", optional = true }
+servo_arc = { path = "../servo_arc", version = "0.4", package = "stylo_arc" }
+servo_atoms = { version = "0.1", path = "../atoms", package = "stylo_atoms", optional = true }
 thin-vec = "0.2"
-to_shmem = { path = "../to_shmem" }
-to_shmem_derive = { path = "../to_shmem_derive" }
+to_shmem = { version = "0.1", path = "../to_shmem", package = "stylo_to_shmem" }
+to_shmem_derive = { version = "0.1", path = "../to_shmem_derive", package = "stylo_to_shmem_derive" }
 url = { version = "2.5", optional = true }
-webrender_api = { git = "https://github.com/servo/webrender", branch = "0.65", optional = true }

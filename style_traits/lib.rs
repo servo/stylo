@@ -6,7 +6,7 @@
 //! The traits are here instead of in script so that the devtools crate can be
 //! modified independently of the rest of Servo.
 
-#![crate_name = "style_traits"]
+#![crate_name = "stylo_traits"]
 #![crate_type = "rlib"]
 #![deny(unsafe_code, missing_docs)]
 
@@ -33,11 +33,7 @@ extern crate to_shmem;
 #[macro_use]
 extern crate to_shmem_derive;
 #[cfg(feature = "servo")]
-extern crate webrender_api;
-#[cfg(feature = "servo")]
 extern crate url;
-#[cfg(feature = "servo")]
-pub use webrender_api::units::DevicePixel;
 
 use cssparser::{CowRcStr, Token};
 use selectors::parser::SelectorParseErrorKind;
@@ -47,7 +43,6 @@ use servo_atoms::Atom;
 /// One hardware pixel.
 ///
 /// This unit corresponds to the smallest addressable element of the display hardware.
-#[cfg(not(feature = "servo"))]
 #[derive(Clone, Copy, Debug)]
 pub enum DevicePixel {}
 

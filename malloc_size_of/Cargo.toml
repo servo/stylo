@@ -1,10 +1,13 @@
 [package]
-name = "malloc_size_of"
-version = "0.0.1"
+name = "stylo_malloc_size_of"
+version = "0.1.1"
 authors = ["The Servo Project Developers"]
-license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/stylo_malloc_size_of/"
+description = "Support crate for Stylo CSS engine"
 repository = "https://github.com/servo/stylo"
-publish = false
+keywords = ["css", "style"]
+license = "MIT OR Apache-2.0"
+edition = "2021"
 
 [lib]
 path = "lib.rs"
@@ -22,7 +25,6 @@ servo = [
     "string_cache",
     "url",
     "uuid",
-    "webrender_api",
     "xml5ever",
 ]
 gecko = ["thin-vec/gecko-ffi"]
@@ -33,15 +35,15 @@ app_units = "0.7"
 content-security-policy = { version = "0.5", features = ["serde"], optional = true }
 crossbeam-channel = { version = "0.5", optional = true }
 cssparser = "0.34"
-dom = { path = "../dom" }
+dom = { path = "../dom", version = "0.1", package = "stylo_dom" }
 euclid = "0.22"
 http = { version = "0.2", optional = true }
 indexmap = { version = "2.2", optional = true }
 keyboard-types = { version = "0.7", optional = true }
-selectors = { path = "../selectors" }
+selectors = { version = "0.26", path = "../selectors", package = "stylo_selectors" }
 serde = { version = "1.0.195", optional = true }
 serde_bytes = { version = "0.11", optional = true }
-servo_arc = { path = "../servo_arc" }
+servo_arc = { path = "../servo_arc", version = "0.4", package = "stylo_arc" }
 smallbitvec = "2.3.0"
 smallvec = "1.13"
 string_cache = { version = "0.8", optional = true }
@@ -50,5 +52,4 @@ tokio = { version = "1", features = ["sync"] }
 url = { version = "2.5", features = ["serde"], optional = true }
 uuid = { version = "1.7.0", optional = true }
 void = "1.0.2"
-webrender_api = { git = "https://github.com/servo/webrender", branch = "0.65", optional = true }
 xml5ever = { version = "0.20", optional = true }

@@ -47,39 +47,6 @@
 //!   publishing this crate on crates.io.
 
 #[cfg(feature = "servo")]
-extern crate accountable_refcell;
-extern crate app_units;
-#[cfg(feature = "servo")]
-extern crate content_security_policy;
-#[cfg(feature = "servo")]
-extern crate crossbeam_channel;
-extern crate cssparser;
-extern crate euclid;
-#[cfg(feature = "servo")]
-extern crate http;
-#[cfg(feature = "servo")]
-extern crate keyboard_types;
-extern crate selectors;
-#[cfg(feature = "servo")]
-extern crate serde;
-#[cfg(feature = "servo")]
-extern crate serde_bytes;
-extern crate servo_arc;
-extern crate smallbitvec;
-extern crate smallvec;
-#[cfg(feature = "servo")]
-extern crate string_cache;
-#[cfg(feature = "url")]
-extern crate url;
-#[cfg(feature = "servo")]
-extern crate uuid;
-extern crate void;
-#[cfg(feature = "webrender_api")]
-extern crate webrender_api;
-#[cfg(feature = "servo")]
-extern crate xml5ever;
-
-#[cfg(feature = "servo")]
 use content_security_policy as csp;
 #[cfg(feature = "servo")]
 use serde_bytes::ByteBuf;
@@ -882,46 +849,6 @@ impl MallocSizeOf for url::Host {
         }
     }
 }
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::BorderRadius);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::BorderStyle);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::BoxShadowClipMode);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::ColorF);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::ComplexClipRegion);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::ExtendMode);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::FilterOp);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::ExternalScrollId);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::FontInstanceKey);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::GradientStop);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::GlyphInstance);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::NinePatchBorder);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::ImageKey);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::ImageRendering);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::LineStyle);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::MixBlendMode);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::NormalBorder);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::RepeatMode);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::StickyOffsetBounds);
-#[cfg(feature = "webrender_api")]
-malloc_size_of_is_0!(webrender_api::TransformStyle);
 
 #[cfg(feature = "servo")]
 impl MallocSizeOf for keyboard_types::Key {

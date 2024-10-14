@@ -1,10 +1,13 @@
 [package]
-name = "style_derive"
-version = "0.0.1"
+name = "stylo_derive"
+version = "0.1.0"
 authors = ["The Servo Project Developers"]
-license = "MPL-2.0"
+documentation = "https://docs.rs/stylo_derive/"
+description = "Derive crate for Stylo CSS engine"
 repository = "https://github.com/servo/stylo"
-publish = false
+keywords = ["css", "style"]
+license = "MPL-2.0"
+edition = "2015"
 
 [lib]
 path = "lib.rs"

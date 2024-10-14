@@ -1,9 +1,9 @@
 [package]
-name = "selectors"
-version = "0.25.0"
+name = "stylo_selectors"
+version = "0.26.0"
 authors = ["The Servo Project Developers"]
-documentation = "https://docs.rs/selectors/"
-description = "CSS Selectors matching for Rust"
+documentation = "https://docs.rs/stylo_selectors/"
+description = "Temporary fork of the selectors crate for Stylo"
 repository = "https://github.com/servo/stylo"
 readme = "README.md"
 keywords = ["css", "selectors"]
@@ -12,7 +12,7 @@ edition = "2021"
 build = "build.rs"
 
 [lib]
-name = "selectors"
+name = "stylo_selectors"
 path = "lib.rs"
 
 [features]
@@ -27,10 +27,10 @@ fxhash = "0.2"
 log = "0.4"
 phf = "0.11"
 precomputed-hash = "0.1"
-servo_arc = { version = "0.4", path = "../servo_arc" }
+servo_arc = { version = "0.4", path = "../servo_arc", package = "stylo_arc" }
 smallvec = "1.0"
-to_shmem = { version = "0.1", path = "../to_shmem", features = ["servo_arc"], optional = true }
-to_shmem_derive = { version = "0.1", path = "../to_shmem_derive", optional = true }
+to_shmem = { version = "0.1", path = "../to_shmem", package = "stylo_to_shmem", features = ["servo_arc"], optional = true }
+to_shmem_derive = { version = "0.1", path = "../to_shmem_derive", package = "stylo_to_shmem_derive", optional = true }
 new_debug_unreachable = "1"
 
 [build-dependencies]

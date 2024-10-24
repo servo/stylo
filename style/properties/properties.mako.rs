@@ -485,13 +485,6 @@ impl NonCustomPropertyId {
         MAP[self.0 as usize]
     }
 
-    /// Returns whether this property is transitionable.
-    #[inline]
-    pub fn is_transitionable(self) -> bool {
-        ${static_non_custom_property_id_set("TRANSITIONABLE", lambda p: p.transitionable)}
-        TRANSITIONABLE.contains(self)
-    }
-
     /// Returns whether this property is animatable.
     #[inline]
     pub fn is_animatable(self) -> bool {
@@ -832,12 +825,6 @@ impl LonghandIdSet {
     }
 
     #[inline]
-    fn transitionable() -> &'static Self {
-        ${static_longhand_id_set("TRANSITIONABLE", lambda p: p.transitionable)}
-        &TRANSITIONABLE
-    }
-
-    #[inline]
     pub(super) fn logical() -> &'static Self {
         ${static_longhand_id_set("LOGICAL", lambda p: p.logical)}
         &LOGICAL
@@ -1012,12 +999,6 @@ impl LonghandId {
         % endfor
         ];
         (PARSE_PROPERTY[self as usize])(context, input)
-    }
-
-    /// Returns whether this property is transitionable.
-    #[inline]
-    pub fn is_transitionable(self) -> bool {
-        LonghandIdSet::transitionable().contains(self)
     }
 
     /// Return the relevant data to map a particular logical property into physical.

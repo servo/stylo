@@ -367,14 +367,6 @@ impl PropertyId {
         }
     }
 
-    /// Returns true if this property is one of the transitionable properties.
-    pub fn is_transitionable(&self) -> bool {
-        match self {
-            Self::NonCustom(id) => id.is_transitionable(),
-            Self::Custom(..) => true,
-        }
-    }
-
     /// Returns a given property from the given name, _regardless of whether it is enabled or
     /// not_, or Err(()) for unknown properties.
     ///
@@ -1114,15 +1106,6 @@ impl<'a> PropertyDeclarationId<'a> {
             Self::Custom(_) => true,
             #[cfg(feature = "servo")]
             Self::Custom(_) => false,
-        }
-    }
-
-    /// Returns whether this property is transitionable.
-    #[inline]
-    pub fn is_transitionable(self) -> bool {
-        match self {
-            PropertyDeclarationId::Longhand(id) => id.is_transitionable(),
-            PropertyDeclarationId::Custom(..) => false,
         }
     }
 

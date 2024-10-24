@@ -27,6 +27,9 @@ macro_rules! pref {
     ("layout.css.stretch-size-keyword.enabled") => {
         true
     };
+    ("layout.css.transition-behavior.enabled") => {
+        true
+    };
     ($string:literal) => {
         false
     };

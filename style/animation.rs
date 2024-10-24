@@ -27,6 +27,7 @@ use crate::stylesheets::layer_rule::LayerOrder;
 use crate::values::animated::{Animate, Procedure};
 use crate::values::computed::{Time, TimingFunction};
 use crate::values::generics::easing::BeforeFlag;
+use crate::values::specified::TransitionBehavior;
 use crate::Atom;
 use fxhash::FxHashMap;
 use parking_lot::RwLock;
@@ -1029,11 +1030,16 @@ impl ElementAnimationSet {
         old_style: &ComputedValues,
         new_style: &Arc<ComputedValues>,
     ) {
-        if !property_declaration_id.is_transitionable() {
+        let style = new_style.get_ui();
+
+        #[cfg(feature = "servo")]
+        if !property_declaration_id.is_animatable() ||
+            (style.transition_behavior_mod(index) != TransitionBehavior::AllowDiscrete &&
+                property_declaration_id.is_discrete_animatable())
+        {
             return;
         }
 
-        let style = new_style.get_ui();
         let timing_function = style.transition_timing_function_mod(index);
         let duration = style.transition_duration_mod(index);
         let delay = style.transition_delay_mod(index).seconds() as f64;

@@ -1,0 +1,20 @@
+[package]
+name = "stylo_taffy"
+version = "0.1.0"
+license = "MIT OR APACHE 2.0"
+description = "Interop crate for the Stylo and Taffy crates"
+keywords = ["css", "layout"]
+categories = ["gui"]
+edition = "2021"
+repository = "https://github.com/servo/stylo"
+
+[features]
+default = ["std", "block", "flexbox", "grid"]
+std = ["taffy/std"]
+block = ["taffy/block_layout"]
+flexbox = ["taffy/flexbox"]
+grid = ["taffy/grid"]
+
+[dependencies]
+taffy = { version = "0.6.1", default-features = false, features = ["std"] }
+style = { path = "../style", features = ["servo"] }

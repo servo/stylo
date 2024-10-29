@@ -10,6 +10,7 @@ members = [
     "style_derive",
     "style_static_prefs",
     "style_traits",
+    "stylo_taffy",
     "to_shmem",
     "to_shmem_derive",
 ]

@@ -86,6 +86,9 @@ pub struct Device {
     /// Whether any styles computed in the document relied on the viewport size.
     #[ignore_malloc_size_of = "Pure stack type"]
     used_viewport_units: AtomicBool,
+    /// Whether the user prefers light mode or dark mode
+    #[ignore_malloc_size_of = "Pure stack type"]
+    prefers_color_scheme: PrefersColorScheme,
     /// The CssEnvironment object responsible of getting CSS environment
     /// variables.
     environment: CssEnvironment,
@@ -106,6 +109,7 @@ impl Device {
         device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
         font_metrics_provider: Box<dyn FontMetricsProvider>,
         default_computed_values: Arc<ComputedValues>,
+        prefers_color_scheme: PrefersColorScheme,
     ) -> Device {
         Device {
             media_type,
@@ -118,6 +122,7 @@ impl Device {
             used_root_line_height: AtomicBool::new(false),
             used_font_metrics: AtomicBool::new(false),
             used_viewport_units: AtomicBool::new(false),
+            prefers_color_scheme,
             environment: CssEnvironment,
             font_metrics_provider,
             default_computed_values,
@@ -357,8 +362,24 @@ fn eval_device_pixel_ratio(context: &Context) -> f32 {
     eval_resolution(context).dppx()
 }
 
+/// Values for the prefers-color-scheme media feature.
+#[derive(Clone, Copy, Debug, FromPrimitive, Parse, PartialEq, ToCss)]
+#[repr(u8)]
+#[allow(missing_docs)]
+pub enum PrefersColorScheme {
+    Light,
+    Dark,
+}
+
+fn eval_prefers_color_scheme(context: &Context, query_value: Option<PrefersColorScheme>) -> bool {
+    match query_value {
+        Some(v) => context.device().prefers_color_scheme == v,
+        None => true,
+    }
+}
+
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 5] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 6] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -387,6 +408,12 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 5] = [
         atom!("-moz-device-pixel-ratio"),
         AllowsRanges::Yes,
         Evaluator::Float(eval_device_pixel_ratio),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-color-scheme"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_prefers_color_scheme, PrefersColorScheme),
         FeatureFlags::empty(),
     ),
 ];

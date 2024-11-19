@@ -494,6 +494,31 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     type Impl = SelectorImpl;
     type Error = StyleParseErrorKind<'i>;
 
+    #[inline]
+    fn parse_nth_child_of(&self) -> bool {
+        false
+    }
+
+    #[inline]
+    fn parse_is_and_where(&self) -> bool {
+        true
+    }
+
+    #[inline]
+    fn parse_has(&self) -> bool {
+        false
+    }
+
+    #[inline]
+    fn parse_parent_selector(&self) -> bool {
+        false
+    }
+
+    #[inline]
+    fn allow_forgiving_selectors(&self) -> bool {
+        !self.for_supports_rule
+    }
+
     fn parse_non_ts_pseudo_class(
         &self,
         location: SourceLocation,

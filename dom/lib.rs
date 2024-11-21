@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 use bitflags::bitflags;
+use malloc_size_of::malloc_size_of_is_0;
 
 // DOM types to be shared between Rust and C++.
 bitflags! {
@@ -159,3 +160,5 @@ bitflags! {
         const ALL_LOCALEDIR_BITS = Self::LTR_LOCALE.bits() | Self::RTL_LOCALE.bits();
     }
 }
+
+malloc_size_of_is_0!(ElementState, DocumentState);

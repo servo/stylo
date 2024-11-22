@@ -11,3 +11,4 @@ path = "lib.rs"
 
 [dependencies]
 bitflags = "2"
+malloc_size_of = { path = "../malloc_size_of" }

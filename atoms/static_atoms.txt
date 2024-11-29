@@ -105,6 +105,7 @@ play
 playing
 popstate
 postershown
+prefers-color-scheme
 print
 progress
 radio

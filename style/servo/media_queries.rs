@@ -9,6 +9,7 @@ use crate::context::QuirksMode;
 use crate::custom_properties::CssEnvironment;
 use crate::font_metrics::FontMetrics;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
+use crate::queries::values::PrefersColorScheme;
 use crate::logical_geometry::WritingMode;
 use crate::media_queries::MediaType;
 use crate::properties::style_structs::Font;
@@ -360,15 +361,6 @@ fn eval_resolution(context: &Context) -> Resolution {
 /// https://compat.spec.whatwg.org/#css-media-queries-webkit-device-pixel-ratio
 fn eval_device_pixel_ratio(context: &Context) -> f32 {
     eval_resolution(context).dppx()
-}
-
-/// Values for the prefers-color-scheme media feature.
-#[derive(Clone, Copy, Debug, FromPrimitive, Parse, PartialEq, ToCss)]
-#[repr(u8)]
-#[allow(missing_docs)]
-pub enum PrefersColorScheme {
-    Light,
-    Dark,
 }
 
 fn eval_prefers_color_scheme(context: &Context, query_value: Option<PrefersColorScheme>) -> bool {

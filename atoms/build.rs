@@ -22,7 +22,7 @@ fn main() {
             }
         }
     }
-    include!("../style/counter_style/predefined.rs");
+    include!("./predefined_counter_styles.rs");
 
     atom_type
         .atoms(static_atoms.lines().map(Result::unwrap))

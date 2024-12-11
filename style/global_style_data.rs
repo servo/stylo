@@ -25,6 +25,20 @@ pub type PlatformThreadHandle = RawPthread;
 #[cfg(windows)]
 pub type PlatformThreadHandle = RawHandle;
 
+/// A noop thread join handle for wasm
+#[cfg(target_arch = "wasm32")]
+pub struct DummyThreadHandle;
+#[cfg(target_arch = "wasm32")]
+impl DummyThreadHandle {
+    /// A noop thread join method for wasm
+    pub fn join(&self) {
+        // Do nothing
+    }
+}
+#[cfg(target_arch = "wasm32")]
+/// Platform-specific handle to a thread.
+pub type PlatformThreadHandle = DummyThreadHandle;
+
 /// Global style data
 pub struct GlobalStyleData {
     /// Shared RWLock for CSSOM objects
@@ -101,7 +115,7 @@ impl StyleThreadPool {
         }
         {
             // Drop the pool.
-            let _ = STYLE_THREAD_POOL.style_thread_pool.write().take();
+            let _ = STYLE_THREAD_POOL.lock().unwrap().style_thread_pool.write().take();
         }
 
         // Join spawned threads until all of the threads have been joined. This
@@ -131,6 +145,8 @@ impl StyleThreadPool {
             let handle = join_handle.as_pthread_t();
             #[cfg(windows)]
             let handle = join_handle.as_raw_handle();
+            #[cfg(target_arch = "wasm32")]
+            let handle = DummyThreadHandle;
 
             handles.push(handle);
         }
@@ -153,7 +169,7 @@ pub(crate) const STYLO_MAX_THREADS: usize = 6;
 
 lazy_static! {
     /// Global thread pool
-    pub static ref STYLE_THREAD_POOL: StyleThreadPool = {
+    pub static ref STYLE_THREAD_POOL: std::sync::Mutex<StyleThreadPool> = {
         use std::cmp;
         // We always set this pref on startup, before layout or script have had a chance of
         // accessing (and thus creating) the thread-pool.
@@ -196,10 +212,10 @@ lazy_static! {
             (workers.ok(), Some(num_threads))
         };
 
-        StyleThreadPool {
+        std::sync::Mutex::new(StyleThreadPool {
             num_threads,
             style_thread_pool: RwLock::new(pool),
-        }
+        })
     };
 
     /// Global style data

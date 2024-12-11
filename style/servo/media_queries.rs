@@ -301,7 +301,7 @@ impl Device {
         AbsoluteColor::BLACK
     }
 
-    /// Returns color scheme of the current device
+    /// Returns the color scheme of this [`Device`].
     pub fn color_scheme(&self) -> PrefersColorScheme {
         self.prefers_color_scheme
     }

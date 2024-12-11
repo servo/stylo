@@ -301,6 +301,11 @@ impl Device {
         AbsoluteColor::BLACK
     }
 
+    /// Returns the color scheme of this [`Device`].
+    pub fn color_scheme(&self) -> PrefersColorScheme {
+        self.prefers_color_scheme
+    }
+
     pub(crate) fn is_dark_color_scheme(&self, _: ColorSchemeFlags) -> bool {
         false
     }

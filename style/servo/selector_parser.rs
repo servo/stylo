@@ -50,6 +50,8 @@ pub enum PseudoElement {
     // them.  Also, make sure the UA sheet has the !important rules some of the
     // APPLIES_TO_PLACEHOLDER properties expect!
 
+    Backdrop,
+
     // Non-eager pseudos.
     DetailsSummary,
     DetailsContent,
@@ -82,6 +84,7 @@ impl ToCss for PseudoElement {
             After => "::after",
             Before => "::before",
             Selection => "::selection",
+            Backdrop => "::backdrop",
             DetailsSummary => "::-servo-details-summary",
             DetailsContent => "::-servo-details-content",
             ServoAnonymousBox => "::-servo-anonymous-box",
@@ -232,7 +235,7 @@ impl PseudoElement {
             PseudoElement::After | PseudoElement::Before | PseudoElement::Selection => {
                 PseudoElementCascadeType::Eager
             },
-            PseudoElement::DetailsSummary => PseudoElementCascadeType::Lazy,
+            PseudoElement::Backdrop | PseudoElement::DetailsSummary => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
             PseudoElement::ServoAnonymousBox |
             PseudoElement::ServoAnonymousTable |
@@ -594,6 +597,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "before" => Before,
             "after" => After,
             "selection" => Selection,
+            "backdrop" => Backdrop,
             "-servo-details-summary" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))

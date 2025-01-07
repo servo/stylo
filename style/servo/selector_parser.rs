@@ -704,6 +704,10 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     fn namespace_for_prefix(&self, prefix: &Prefix) -> Option<Namespace> {
         self.namespaces.prefixes.get(prefix).cloned()
     }
+
+    fn parse_host(&self) -> bool {
+        true
+    }
 }
 
 impl SelectorImpl {

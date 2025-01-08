@@ -24,6 +24,9 @@ macro_rules! pref {
     ("layout.css.basic-shape-xywh.enabled") => {
         true
     };
+    ("layout.css.relative-color-syntax.enabled") => {
+        true
+    };
     ("layout.css.stretch-size-keyword.enabled") => {
         true
     };

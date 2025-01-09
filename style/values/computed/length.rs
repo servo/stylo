@@ -496,7 +496,7 @@ impl SubAssign for CSSPixelLength {
 impl From<CSSPixelLength> for Au {
     #[inline]
     fn from(len: CSSPixelLength) -> Self {
-        Au::from_f32_px(len.0)
+        Au::from_f32_px_trunc(len.0)
     }
 }
 

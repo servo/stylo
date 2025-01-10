@@ -7,7 +7,7 @@
 <%helpers:shorthand name="columns"
                     engines="gecko servo"
                     sub_properties="column-width column-count"
-                    servo_pref="layout.columns.enabled"
+                    servo_pref="layout_columns_enabled"
                     spec="https://drafts.csswg.org/css-multicol/#propdef-columns">
     use crate::properties::longhands::{column_count, column_width};
 

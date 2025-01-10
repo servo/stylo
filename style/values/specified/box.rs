@@ -30,11 +30,11 @@ fn grid_enabled() -> bool {
 
 #[cfg(feature = "servo")]
 fn flexbox_enabled() -> bool {
-    style_config::get_bool("layout.flexbox.enabled")
+    style_config::get_bool("layout_flexbox_enabled")
 }
 #[cfg(feature = "servo")]
 fn grid_enabled() -> bool {
-    style_config::get_bool("layout.grid.enabled")
+    style_config::get_bool("layout_grid_enabled")
 }
 
 /// Defines an element’s display type, which consists of

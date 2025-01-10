@@ -7,7 +7,7 @@
 
 <%helpers:shorthand name="flex-flow"
                     engines="gecko servo",
-                    servo_pref="layout.flexbox.enabled",
+                    servo_pref="layout_flexbox_enabled",
                     sub_properties="flex-direction flex-wrap"
                     extra_prefixes="webkit"
                     spec="https://drafts.csswg.org/css-flexbox/#flex-flow-property">
@@ -62,7 +62,7 @@
 
 <%helpers:shorthand name="flex"
                     engines="gecko servo",
-                    servo_pref="layout.flexbox.enabled",
+                    servo_pref="layout_flexbox_enabled",
                     sub_properties="flex-grow flex-shrink flex-basis"
                     extra_prefixes="webkit"
                     derive_serialize="True"
@@ -130,7 +130,7 @@
 <%helpers:shorthand
     name="gap"
     engines="gecko servo"
-    servo_pref="layout.flexbox.enabled",
+    servo_pref="layout_flexbox_enabled",
     aliases="grid-gap"
     sub_properties="row-gap column-gap"
     spec="https://drafts.csswg.org/css-align-3/#gap-shorthand"
@@ -167,7 +167,7 @@
     name="grid-${kind}"
     sub_properties="grid-${kind}-start grid-${kind}-end"
     engines="gecko servo",
-    servo_pref="layout.grid.enabled",
+    servo_pref="layout_grid_enabled",
     spec="https://drafts.csswg.org/css-grid/#propdef-grid-${kind}"
 >
     use crate::values::specified::GridLine;
@@ -222,7 +222,7 @@
 <%helpers:shorthand
     name="grid-area"
     engines="gecko servo"
-    servo_pref="layout.grid.enabled",
+    servo_pref="layout_grid_enabled",
     sub_properties="grid-row-start grid-row-end grid-column-start grid-column-end"
     spec="https://drafts.csswg.org/css-grid/#propdef-grid-area"
 >
@@ -318,7 +318,7 @@
 <%helpers:shorthand
     name="grid-template"
     engines="gecko servo"
-    servo_pref="layout.grid.enabled",
+    servo_pref="layout_grid_enabled",
     sub_properties="grid-template-rows grid-template-columns grid-template-areas"
     spec="https://drafts.csswg.org/css-grid/#propdef-grid-template"
 >
@@ -560,7 +560,7 @@
 <%helpers:shorthand
     name="grid"
     engines="gecko servo"
-    servo_pref="layout.grid.enabled",
+    servo_pref="layout_grid_enabled",
     sub_properties="grid-template-rows grid-template-columns grid-template-areas
                     grid-auto-rows grid-auto-columns grid-auto-flow"
     spec="https://drafts.csswg.org/css-grid/#propdef-grid"

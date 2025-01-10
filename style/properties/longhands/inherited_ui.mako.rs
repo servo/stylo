@@ -88,7 +88,7 @@ ${helpers.predefined_type(
     "ColorScheme",
     "specified::color::ColorScheme::normal()",
     engines="gecko servo",
-    servo_pref="layout.unimplemented",
+    servo_pref="layout_unimplemented",
     spec="https://drafts.csswg.org/css-color-adjust/#color-scheme-prop",
     animation_type="discrete",
     ignored_when_colors_disabled=True,

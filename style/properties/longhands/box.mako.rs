@@ -505,7 +505,7 @@ ${helpers.predefined_type(
     "computed::ContainerType::Normal",
     engines="gecko servo",
     animation_type="none",
-    servo_pref="layout.container-queries.enabled",
+    servo_pref="layout_container_queries_enabled",
     spec="https://drafts.csswg.org/css-contain-3/#container-type",
     affects="layout",
 )}
@@ -516,7 +516,7 @@ ${helpers.predefined_type(
     "computed::ContainerName::none()",
     engines="gecko servo",
     animation_type="none",
-    servo_pref="layout.container-queries.enabled",
+    servo_pref="layout_container_queries_enabled",
     spec="https://drafts.csswg.org/css-contain-3/#container-name",
     affects="",
 )}
@@ -632,7 +632,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     spec="Non-standard (https://github.com/atanassov/css-zoom/ is the closest)",
     gecko_pref="layout.css.zoom.enabled",
-    servo_pref="layout.unimplemented",
+    servo_pref="layout_unimplemented",
     affects="layout",
     enabled_in="chrome",
 )}

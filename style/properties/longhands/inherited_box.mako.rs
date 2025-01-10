@@ -25,7 +25,7 @@ ${helpers.single_keyword(
     gecko_aliases="lr=horizontal-tb lr-tb=horizontal-tb \
                          rl=horizontal-tb rl-tb=horizontal-tb \
                          tb=vertical-rl   tb-rl=vertical-rl",
-    servo_pref="layout.writing-mode.enabled",
+    servo_pref="layout_writing_mode_enabled",
     animation_type="none",
     spec="https://drafts.csswg.org/css-writing-modes/#propdef-writing-mode",
     gecko_enum_prefix="StyleWritingModeProperty",

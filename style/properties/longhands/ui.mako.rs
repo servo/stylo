@@ -189,7 +189,7 @@ ${helpers.predefined_type(
     need_index=True,
     animation_type="none",
     gecko_pref="layout.css.transition-behavior.enabled",
-    servo_pref="layout.css.transition-behavior.enabled",
+    servo_pref="layout_css_transition_behavior_enabled",
     spec="https://drafts.csswg.org/css-transitions-2/#transition-behavior-property",
     affects="",
 )}
@@ -311,7 +311,7 @@ ${helpers.predefined_type(
     need_index=True,
     animation_type="none",
     gecko_pref="layout.css.animation-composition.enabled",
-    servo_pref="layout.unimplemented",
+    servo_pref="layout_unimplemented",
     spec="https://drafts.csswg.org/css-animations-2/#animation-composition",
     affects="",
 )}
@@ -336,7 +336,7 @@ ${helpers.predefined_type(
     "AnimationTimeline",
     "computed::AnimationTimeline::auto()",
     engines="gecko servo",
-    servo_pref="layout.unimplemented",
+    servo_pref="layout_unimplemented",
     initial_specified_value="specified::AnimationTimeline::auto()",
     vector=True,
     need_index=True,

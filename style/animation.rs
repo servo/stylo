@@ -95,11 +95,21 @@ impl PropertyAnimation {
     }
 
     /// Update the given animation at a given point of progress.
-    fn calculate_value(&self, progress: f64) -> Result<AnimationValue, ()> {
+    fn calculate_value(&self, progress: f64, allow_discrete: bool) -> Result<AnimationValue, ()> {
+        let progress = self.timing_function_output(progress);
         let procedure = Procedure::Interpolate {
-            progress: self.timing_function_output(progress),
+            progress,
         };
-        self.from.animate(&self.to, procedure)
+        let animate = self.from.animate(&self.to, procedure);
+        if animate.is_ok() || !allow_discrete {
+            return animate;
+        }
+        // Fall back to discrete interpolation
+        Ok(if progress < 0.5 {
+            self.from.clone()
+        } else {
+            self.to.clone()
+        })
     }
 }
 
@@ -702,7 +712,9 @@ impl Animation {
                 duration: duration_between_keyframes as f64,
             };
 
-            if let Ok(value) = animation.calculate_value(progress_between_keyframes) {
+            if let Ok(value) = animation
+                .calculate_value(progress_between_keyframes, true /* allow_discrete */)
+            {
                 map.insert(value.id().to_owned(), value);
             }
         }
@@ -752,6 +764,10 @@ pub struct Transition {
     /// If this `Transition` has been replaced by a new one this field is
     /// used to help produce better reversed transitions.
     pub reversing_shortening_factor: f64,
+
+    /// Whether this `Transition` allows discrete interpolation of values that
+    /// can't be interpolated according to the animation type of the property.
+    pub allow_discrete: bool,
 }
 
 impl Transition {
@@ -833,14 +849,14 @@ impl Transition {
     }
 
     /// Update the given animation at a given point of progress.
-    pub fn calculate_value(&self, time: f64) -> Option<AnimationValue> {
+    pub fn calculate_value(&self, time: f64, allow_discrete: bool) -> Option<AnimationValue> {
         let progress = (time - self.start_time) / (self.property_animation.duration);
         if progress < 0.0 {
             return None;
         }
 
         self.property_animation
-            .calculate_value(progress.min(1.0))
+            .calculate_value(progress.min(1.0), allow_discrete)
             .ok()
     }
 }
@@ -1031,11 +1047,10 @@ impl ElementAnimationSet {
         new_style: &Arc<ComputedValues>,
     ) {
         let style = new_style.get_ui();
+        let allow_discrete = style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
 
-        #[cfg(feature = "servo")]
-        if !property_declaration_id.is_animatable() ||
-            (style.transition_behavior_mod(index) != TransitionBehavior::AllowDiscrete &&
-                property_declaration_id.is_discrete_animatable())
+        if !property_declaration_id.is_animatable()
+            || (!allow_discrete && property_declaration_id.is_discrete_animatable())
         {
             return;
         }
@@ -1082,6 +1097,7 @@ impl ElementAnimationSet {
             is_new: true,
             reversing_adjusted_start_value,
             reversing_shortening_factor: 1.0,
+            allow_discrete,
         };
 
         if let Some(old_transition) = self
@@ -1114,7 +1130,7 @@ impl ElementAnimationSet {
             if transition.state == AnimationState::Canceled {
                 continue;
             }
-            let value = match transition.calculate_value(now) {
+            let value = match transition.calculate_value(now, transition.allow_discrete) {
                 Some(value) => value,
                 None => continue,
             };

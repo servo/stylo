@@ -53,7 +53,7 @@ pub use self::border::{
 pub use self::box_::{
     Appearance, BaselineSource, BreakBetween, BreakWithin, Clear, Contain, ContainIntrinsicSize,
     ContainerName, ContainerType, ContentVisibility, Display, Float, LineClamp, Overflow,
-    OverflowAnchor, OverflowClipBox, OverscrollBehavior, Perspective, Resize, ScrollSnapAlign,
+    OverflowAnchor, OverflowClipBox, OverflowClipMargin, OverscrollBehavior, Perspective, Resize, ScrollSnapAlign,
     ScrollSnapAxis, ScrollSnapStop, ScrollSnapStrictness, ScrollSnapType, ScrollbarGutter,
     TouchAction, VerticalAlign, WillChange, Zoom,
 };

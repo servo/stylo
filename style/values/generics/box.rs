@@ -211,3 +211,32 @@ impl<L> Perspective<L> {
         Perspective::None
     }
 }
+
+#[derive(
+    Animate,
+    Clone,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToAnimatedZero,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+)]
+/// A generic value for the `overflow-clip-margin` property.
+pub enum GenericOverflowClipMargin<NonNegativeLength, VisualBox> {
+    /// None
+    None,
+    /// A non-negative length.
+    Margin(NonNegativeLength),
+    /// A visual box.
+    VisualBox(VisualBox),
+    /// Both a visual box and a non-negative length.
+    VisualBoxAndMargin(VisualBox, NonNegativeLength),
+}
+
+pub use self::GenericOverflowClipMargin as OverflowClipMargin;

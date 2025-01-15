@@ -587,6 +587,7 @@ class Longhand(Property):
                 "Overflow",
                 "OverflowAnchor",
                 "OverflowClipBox",
+                "OverflowClipMargin",
                 "OverflowWrap",
                 "OverscrollBehavior",
                 "PageOrientation",

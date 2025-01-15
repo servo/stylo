@@ -30,12 +30,12 @@
 
 ${helpers.predefined_type(
     "overflow-clip-margin",
-    "Length",
-    "computed::Length::zero()",
-    parse_method="parse_non_negative",
-    engines="gecko",
+    "OverflowClipMargin",
+    "generics::box_::OverflowClipMargin::None",
+    engines="gecko servo",
     spec="https://drafts.csswg.org/css-overflow/#propdef-overflow-clip-margin",
     affects="overflow",
+    animation_type="discrete",
 )}
 
 % for index, side in enumerate(ALL_SIDES):

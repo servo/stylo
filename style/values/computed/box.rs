@@ -18,7 +18,7 @@ use style_traits::{CssWriter, ToCss};
 pub use crate::values::specified::box_::{
     Appearance, BaselineSource, BreakBetween, BreakWithin, Clear, Contain,
     ContainerName, ContainerType, ContentVisibility, Display, Float, Overflow,
-    OverflowAnchor, OverflowClipBox, OverscrollBehavior, ScrollSnapAlign, ScrollSnapAxis,
+    OverflowAnchor, OverflowClipBox, OverflowClipMargin, OverscrollBehavior, ScrollSnapAlign, ScrollSnapAxis,
     ScrollSnapStop, ScrollSnapStrictness, ScrollSnapType, ScrollbarGutter, TouchAction, WillChange,
 };
 

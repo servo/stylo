@@ -10,14 +10,20 @@ use crate::values::generics::box_::{
     GenericContainIntrinsicSize, GenericLineClamp, GenericPerspective, GenericVerticalAlign,
     VerticalAlignKeyword,
 };
-use crate::values::specified::length::{LengthPercentage, NonNegativeLength};
+use crate::values::specified::length::{LengthPercentage, NonNegativeLength, Length as SpecifiedLength};
 use crate::values::specified::{AllowQuirks, Integer, NonNegativeNumberOrPercentage};
+use crate::values::computed::Length;
 use crate::values::CustomIdent;
+use crate::Zero;
 use cssparser::Parser;
 use num_traits::FromPrimitive;
 use std::fmt::{self, Debug, Write};
 use style_traits::{CssWriter, KeywordsCollectFn, ParseError};
 use style_traits::{SpecifiedValueInfo, StyleParseErrorKind, ToCss};
+use crate::values::generics::box_ as generic;
+
+/// OverflowClipMargin
+pub type OverflowClipMargin = generic::OverflowClipMargin<Length, VisualBox>;
 
 #[cfg(not(feature = "servo"))]
 fn flexbox_enabled() -> bool {
@@ -1813,7 +1819,6 @@ pub enum Overflow {
     Hidden,
     Scroll,
     Auto,
-    #[cfg(feature = "gecko")]
     Clip,
 }
 
@@ -1829,7 +1834,6 @@ impl Parse for Overflow {
             "hidden" => Self::Hidden,
             "scroll" => Self::Scroll,
             "auto" | "overlay" => Self::Auto,
-            #[cfg(feature = "gecko")]
             "clip" => Self::Clip,
             #[cfg(feature = "gecko")]
             "-moz-hidden-unscrollable" if static_prefs::pref!("layout.css.overflow-moz-hidden-unscrollable.enabled") => {
@@ -1852,9 +1856,120 @@ impl Overflow {
         match *self {
             Self::Hidden | Self::Scroll | Self::Auto => *self,
             Self::Visible => Self::Auto,
-            #[cfg(feature = "gecko")]
             Self::Clip => Self::Hidden,
         }
+    }
+}
+
+#[allow(missing_docs)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+)]
+#[repr(u8)]
+pub enum VisualBox {
+    PaddingBox,
+    ContentBox,
+    BorderBox,
+}
+
+// overflow-clip-margin: <length> <visual-box>[padding-box | content-box | border-box]
+impl Parse for OverflowClipMargin {
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        let mut visual_box = None;
+        let mut clip_margin = None;
+
+        loop {
+            if visual_box.is_none() {
+                visual_box = input
+                    .try_parse(|input| VisualBox::parse(input))
+                    .ok();
+
+                if visual_box.is_some() {
+                    continue;
+                }
+            }
+
+            if clip_margin.is_none() {
+                clip_margin = input
+                    .try_parse(|input| SpecifiedLength::parse_non_negative(context, input))
+                    .ok();
+
+                if clip_margin.is_some() {
+                    continue;
+                }
+            }
+
+            break;
+        }
+
+        // To pass the `overflow-clip-margin` parsing test:
+        // 1. If visual-box is padding-box, visual-box is ommitted.
+        // 2, If clip-margin value is zero and visual-box is specified, clip-margin value is ommitted.
+        let result = match (visual_box, clip_margin) {
+            (None, None) => Self::None,
+            (Some(VisualBox::PaddingBox), None) => Self::Margin(Length::new(0.0)),
+            (Some(visual_box), None) => Self::VisualBox(visual_box),
+            (None, Some(length)) => {
+                let px_length = length
+                    .to_computed_pixel_length_without_context()
+                    .unwrap();
+
+                Self::Margin(Length::new(px_length))
+            },
+            (Some(VisualBox::PaddingBox), Some(length)) => {
+                let px_length = length
+                    .to_computed_pixel_length_without_context()
+                    .unwrap();
+
+                Self::Margin(Length::new(px_length))
+            },
+            (Some(visual_box), Some(length)) => {
+                if length.is_zero() {
+                    return Ok(Self::VisualBox(visual_box));
+                }
+
+                let px_length = length
+                    .to_computed_pixel_length_without_context()
+                    .unwrap();
+
+                Self::VisualBoxAndMargin(visual_box, Length::new(px_length))
+            },
+        };
+
+        Ok(result)
+    }
+}
+
+impl SpecifiedValueInfo for OverflowClipMargin {
+    fn collect_completion_keywords(f: KeywordsCollectFn) {
+        f(&[
+            "padding-box",
+            "content-box",
+            "border-box",
+        ]);
+    }
+}
+
+impl OverflowClipMargin {
+    /// Return zero value of `overflow-clip-margin` as `0px`.
+    pub fn zero() -> Self {
+        OverflowClipMargin::Margin(Length::new(0.0))
     }
 }
 

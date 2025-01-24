@@ -28,6 +28,7 @@ center
 change
 characteristicvaluechanged
 checkbox
+cancel
 click
 close
 closing

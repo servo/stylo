@@ -95,20 +95,18 @@ impl PropertyAnimation {
     }
 
     /// Update the given animation at a given point of progress.
-    fn calculate_value(&self, progress: f64, allow_discrete: bool) -> Result<AnimationValue, ()> {
+    fn calculate_value(&self, progress: f64) -> AnimationValue {
         let progress = self.timing_function_output(progress);
         let procedure = Procedure::Interpolate {
             progress,
         };
-        let animate = self.from.animate(&self.to, procedure);
-        if animate.is_ok() || !allow_discrete {
-            return animate;
-        }
-        // Fall back to discrete interpolation
-        Ok(if progress < 0.5 {
-            self.from.clone()
-        } else {
-            self.to.clone()
+        self.from.animate(&self.to, procedure).unwrap_or_else(|()| {
+            // Fall back to discrete interpolation
+            if progress < 0.5 {
+                self.from.clone()
+            } else {
+                self.to.clone()
+            }
         })
     }
 }
@@ -712,11 +710,8 @@ impl Animation {
                 duration: duration_between_keyframes as f64,
             };
 
-            if let Ok(value) = animation
-                .calculate_value(progress_between_keyframes, true /* allow_discrete */)
-            {
-                map.insert(value.id().to_owned(), value);
-            }
+            let value = animation.calculate_value(progress_between_keyframes);
+            map.insert(value.id().to_owned(), value);
         }
     }
 }
@@ -764,10 +759,6 @@ pub struct Transition {
     /// If this `Transition` has been replaced by a new one this field is
     /// used to help produce better reversed transitions.
     pub reversing_shortening_factor: f64,
-
-    /// Whether this `Transition` allows discrete interpolation of values that
-    /// can't be interpolated according to the animation type of the property.
-    pub allow_discrete: bool,
 }
 
 impl Transition {
@@ -849,15 +840,9 @@ impl Transition {
     }
 
     /// Update the given animation at a given point of progress.
-    pub fn calculate_value(&self, time: f64, allow_discrete: bool) -> Option<AnimationValue> {
+    pub fn calculate_value(&self, time: f64) -> AnimationValue {
         let progress = (time - self.start_time) / (self.property_animation.duration);
-        if progress < 0.0 {
-            return None;
-        }
-
-        self.property_animation
-            .calculate_value(progress.min(1.0), allow_discrete)
-            .ok()
+        self.property_animation.calculate_value(progress.clamp(0.0, 1.0))
     }
 }
 
@@ -1073,6 +1058,14 @@ impl ElementAnimationSet {
             None => return,
         };
 
+        // A property may have an animation type different than 'discrete', but still
+        // not be able to interpolate some values. In that case we would fall back to
+        // discrete interpolation, so we need to abort if `transition-behavior` doesn't
+        // allow discrete transitions.
+        if !allow_discrete && !property_animation.from.interpolable_with(&property_animation.to) {
+            return;
+        }
+
         // Per [1], don't trigger a new transition if the end state for that
         // transition is the same as that of a transition that's running or
         // completed. We don't take into account any canceled animations.
@@ -1097,7 +1090,6 @@ impl ElementAnimationSet {
             is_new: true,
             reversing_adjusted_start_value,
             reversing_shortening_factor: 1.0,
-            allow_discrete,
         };
 
         if let Some(old_transition) = self
@@ -1130,10 +1122,7 @@ impl ElementAnimationSet {
             if transition.state == AnimationState::Canceled {
                 continue;
             }
-            let value = match transition.calculate_value(now, transition.allow_discrete) {
-                Some(value) => value,
-                None => continue,
-            };
+            let value = transition.calculate_value(now);
             map.insert(value.id().to_owned(), value);
         }
 

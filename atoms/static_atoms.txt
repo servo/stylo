@@ -28,6 +28,7 @@ center
 change
 characteristicvaluechanged
 checkbox
+cancel
 click
 close
 closing
@@ -141,6 +142,7 @@ selectstart
 serif
 sessionavailable
 signalingstatechange
+slotchange
 squeeze
 squeezeend
 squeezestart

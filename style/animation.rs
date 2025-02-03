@@ -95,11 +95,19 @@ impl PropertyAnimation {
     }
 
     /// Update the given animation at a given point of progress.
-    fn calculate_value(&self, progress: f64) -> Result<AnimationValue, ()> {
+    fn calculate_value(&self, progress: f64) -> AnimationValue {
+        let progress = self.timing_function_output(progress);
         let procedure = Procedure::Interpolate {
-            progress: self.timing_function_output(progress),
+            progress,
         };
-        self.from.animate(&self.to, procedure)
+        self.from.animate(&self.to, procedure).unwrap_or_else(|()| {
+            // Fall back to discrete interpolation
+            if progress < 0.5 {
+                self.from.clone()
+            } else {
+                self.to.clone()
+            }
+        })
     }
 }
 
@@ -702,9 +710,8 @@ impl Animation {
                 duration: duration_between_keyframes as f64,
             };
 
-            if let Ok(value) = animation.calculate_value(progress_between_keyframes) {
-                map.insert(value.id().to_owned(), value);
-            }
+            let value = animation.calculate_value(progress_between_keyframes);
+            map.insert(value.id().to_owned(), value);
         }
     }
 }
@@ -833,15 +840,9 @@ impl Transition {
     }
 
     /// Update the given animation at a given point of progress.
-    pub fn calculate_value(&self, time: f64) -> Option<AnimationValue> {
+    pub fn calculate_value(&self, time: f64) -> AnimationValue {
         let progress = (time - self.start_time) / (self.property_animation.duration);
-        if progress < 0.0 {
-            return None;
-        }
-
-        self.property_animation
-            .calculate_value(progress.min(1.0))
-            .ok()
+        self.property_animation.calculate_value(progress.clamp(0.0, 1.0))
     }
 }
 
@@ -1031,11 +1032,10 @@ impl ElementAnimationSet {
         new_style: &Arc<ComputedValues>,
     ) {
         let style = new_style.get_ui();
+        let allow_discrete = style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
 
-        #[cfg(feature = "servo")]
-        if !property_declaration_id.is_animatable() ||
-            (style.transition_behavior_mod(index) != TransitionBehavior::AllowDiscrete &&
-                property_declaration_id.is_discrete_animatable())
+        if !property_declaration_id.is_animatable()
+            || (!allow_discrete && property_declaration_id.is_discrete_animatable())
         {
             return;
         }
@@ -1057,6 +1057,14 @@ impl ElementAnimationSet {
             Some(property_animation) => property_animation,
             None => return,
         };
+
+        // A property may have an animation type different than 'discrete', but still
+        // not be able to interpolate some values. In that case we would fall back to
+        // discrete interpolation, so we need to abort if `transition-behavior` doesn't
+        // allow discrete transitions.
+        if !allow_discrete && !property_animation.from.interpolable_with(&property_animation.to) {
+            return;
+        }
 
         // Per [1], don't trigger a new transition if the end state for that
         // transition is the same as that of a transition that's running or
@@ -1114,10 +1122,7 @@ impl ElementAnimationSet {
             if transition.state == AnimationState::Canceled {
                 continue;
             }
-            let value = match transition.calculate_value(now) {
-                Some(value) => value,
-                None => continue,
-            };
+            let value = transition.calculate_value(now);
             map.insert(value.id().to_owned(), value);
         }
 

@@ -562,8 +562,14 @@ impl LengthPercentage {
     /// Convert the computed value into used value.
     #[inline]
     pub fn maybe_to_used_value(&self, container_len: Option<Au>) -> Option<Au> {
-        self.maybe_percentage_relative_to(container_len.map(Length::from))
-            .map(Au::from)
+        match self.unpack() {
+            Unpacked::Calc(_) | Unpacked::Percentage(_) => self
+                .maybe_percentage_relative_to(container_len.map(Length::from))
+                .map(|length| an_from_f32_px_trunc(length.px())),
+            Unpacked::Length(_) => self
+                .maybe_percentage_relative_to(container_len.map(Length::from))
+                .map(Au::from),
+        }
     }
 
     /// If there are special rules for computing percentages in a value (e.g.
@@ -588,6 +594,11 @@ impl LengthPercentage {
             },
         }
     }
+}
+
+fn an_from_f32_px_trunc(px: f32) -> Au {
+    let float = (px * app_units::AU_PER_PX as f32).trunc();
+    Au::from_f64_au(float as f64)
 }
 
 impl PartialEq for LengthPercentage {

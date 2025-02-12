@@ -59,7 +59,7 @@ ${helpers.predefined_type(
     "backdrop-filter",
     "Filter",
     None,
-    engines="gecko",
+    engines="gecko servo",
     vector=True,
     simple_vector_bindings=True,
     gecko_ffi_name="mBackdropFilters",

@@ -16,7 +16,7 @@ def main(filename):
         if b'data-dfn-for="<counter-style-name>"' in line
         or b'data-dfn-for="<counter-style>"' in line
     ]
-    with open(filename, "w") as f:
+    with open(filename, "w", newline='', encoding="utf-8") as f:
         f.write(
             """\
 /* This Source Code Form is subject to the terms of the Mozilla Public

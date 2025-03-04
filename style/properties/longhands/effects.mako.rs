@@ -59,7 +59,7 @@ ${helpers.predefined_type(
     "backdrop-filter",
     "Filter",
     None,
-    engines="gecko",
+    engines="gecko servo",
     vector=True,
     simple_vector_bindings=True,
     gecko_ffi_name="mBackdropFilters",
@@ -68,6 +68,7 @@ ${helpers.predefined_type(
     gecko_pref="layout.css.backdrop-filter.enabled",
     spec="https://drafts.fxtf.org/filter-effects-2/#propdef-backdrop-filter",
     affects="overflow",
+    servo_pref="layout.unimplemented",
 )}
 
 ${helpers.single_keyword(

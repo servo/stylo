@@ -15,7 +15,7 @@ servo = ["servo_atoms", "cssparser/serde", "url", "euclid/serde"]
 gecko = []
 
 [dependencies]
-app_units = "0.7"
+app_units = { git = "https://github.com/servo/app_units", rev = "refs/pull/60/head" }
 bitflags = "2"
 cssparser = "0.34"
 euclid = "0.22"

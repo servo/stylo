@@ -1,13 +1,16 @@
 [package]
-name = "style_config"
-version = "0.0.1"
+name = "stylo_config"
+version = "0.1.0"
 authors = ["The Servo Project Developers"]
+documentation = "https://docs.rs/stylo_config/"
+description = "Static configuration crate for Stylo CSS engine"
+repository = "https://github.com/servo/stylo"
+keywords = ["css", "style"]
 license = "MPL-2.0"
 edition = "2021"
-publish = false
 
 [lib]
-name = "style_config"
+name = "stylo_config"
 path = "lib.rs"
 
 [dependencies]

@@ -58,7 +58,7 @@ bitflags = "2"
 byteorder = "1.0"
 cssparser = "0.34"
 derive_more = { version = "0.99", default-features = false, features = ["add", "add_assign", "deref", "deref_mut", "from"] }
-dom = { path = "../dom" }
+dom = { path = "../dom", version = "0.1", package = "stylo_dom" }
 new_debug_unreachable = "1.0"
 encoding_rs = {version = "0.8", optional = true}
 euclid = "0.22"
@@ -89,9 +89,9 @@ servo_atoms = {path = "../atoms", optional = true}
 smallbitvec = "2.3.0"
 smallvec = "1.0"
 static_assertions = "1.1"
-static_prefs = { path = "../style_static_prefs" }
+static_prefs = { version = "0.1", path = "../style_static_prefs", package = "stylo_static_prefs" }
 string_cache = { version = "0.8", optional = true }
-style_config = { path = "../style_config", optional = true }
+style_config = { version = "0.1", path = "../style_config", package = "stylo_config", optional = true }
 style_derive = {path = "../style_derive"}
 style_traits = {path = "../style_traits"}
 to_shmem = {path = "../to_shmem"}

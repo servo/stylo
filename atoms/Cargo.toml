@@ -1,10 +1,12 @@
 [package]
 name = "servo_atoms"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["The Servo Project Developers"]
+documentation = "https://docs.rs/servo_atoms/"
+description = "Interned string type for the servo and stylo projects"
+repository = "https://github.com/servo/stylo"
 license = "MPL-2.0"
 edition = "2018"
-publish = false
 build = "build.rs"
 
 [lib]

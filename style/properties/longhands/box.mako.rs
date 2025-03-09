@@ -233,11 +233,12 @@ ${helpers.predefined_type(
     "offset-path",
     "OffsetPath",
     "computed::OffsetPath::none()",
-    engines="gecko",
+    engines="gecko servo",
     flags="CAN_ANIMATE_ON_COMPOSITOR",
     spec="https://drafts.fxtf.org/motion-1/#offset-path-property",
     servo_restyle_damage="reflow_out_of_flow",
     affects="overflow",
+    servo_pref="layout.unimplemented",
 )}
 
 // Motion Path Module Level 1
@@ -476,10 +477,11 @@ ${helpers.predefined_type(
     "contain",
     "Contain",
     "specified::Contain::empty()",
-    engines="gecko",
+    engines="gecko servo",
     animation_type="none",
     spec="https://drafts.csswg.org/css-contain/#contain-property",
     affects="layout",
+    servo_pref="layout.unimplemented",
 )}
 
 ${helpers.predefined_type(
@@ -554,7 +556,7 @@ ${helpers.predefined_type(
     "will-change",
     "WillChange",
     "computed::WillChange::auto()",
-    engines="gecko",
+    engines="gecko servo",
     animation_type="none",
     spec="https://drafts.csswg.org/css-will-change/#will-change",
     affects="layout",

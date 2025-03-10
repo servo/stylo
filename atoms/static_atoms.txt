@@ -141,6 +141,7 @@ selectionchange
 selectstart
 serif
 sessionavailable
+show
 signalingstatechange
 slotchange
 squeeze

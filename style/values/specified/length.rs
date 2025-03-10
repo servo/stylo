@@ -1231,7 +1231,6 @@ impl NoCalcLength {
     /// absolute or (if a font metrics getter is provided) font-relative units.
     #[cfg(feature = "gecko")]
     #[inline]
-    #[cfg(feature = "gecko")]
     pub fn to_computed_pixel_length_with_font_metrics(
         &self,
         get_font_metrics: Option<impl Fn() -> GeckoFontMetrics>,

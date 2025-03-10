@@ -1949,7 +1949,6 @@ impl ComputedValues {
 
     /// Get the initial computed values.
     pub fn initial_values_with_font_override(default_font: super::style_structs::Font) -> Arc<Self> {
-        use crate::logical_geometry::WritingMode;
         use crate::computed_value_flags::ComputedValueFlags;
         use servo_arc::Arc;
         use super::{ComputedValues, ComputedValuesInner, longhands, style_structs};

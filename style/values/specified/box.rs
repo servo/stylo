@@ -15,7 +15,7 @@ use crate::values::specified::{AllowQuirks, Integer, NonNegativeNumberOrPercenta
 use crate::values::CustomIdent;
 use cssparser::Parser;
 use num_traits::FromPrimitive;
-use std::fmt::{self, Debug, Write};
+use std::fmt::{self, Write};
 use style_traits::{CssWriter, KeywordsCollectFn, ParseError};
 use style_traits::{SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 

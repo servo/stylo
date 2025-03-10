@@ -11,6 +11,8 @@ use crate::custom_properties::{
     CustomPropertiesBuilder, DeferFontRelativeCustomPropertyResolution,
 };
 use crate::dom::TElement;
+#[cfg(feature = "gecko")]
+use crate::font_metrics::FontMetricsOrientation;
 use crate::logical_geometry::WritingMode;
 use crate::properties::{
     property_counts, CSSWideKeyword, ComputedValues, DeclarationImportanceIterator, Importance,

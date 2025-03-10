@@ -1,8 +1,8 @@
 [package]
-name = "servo_atoms"
+name = "stylo_atoms"
 version = "0.1.0"
 authors = ["The Servo Project Developers"]
-documentation = "https://docs.rs/servo_atoms/"
+documentation = "https://docs.rs/stylo_atoms/"
 description = "Interned string type for the servo and stylo projects"
 repository = "https://github.com/servo/stylo"
 license = "MPL-2.0"

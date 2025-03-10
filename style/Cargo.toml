@@ -38,7 +38,7 @@ servo = [
     "mime",
     "serde",
     "servo_arc/servo",
-    "servo_atoms",
+    "stylo_atoms",
     "style_config",
     "string_cache",
     "style_traits/servo",
@@ -85,7 +85,7 @@ rayon-core = "1"
 selectors = { path = "../selectors" }
 serde = {version = "1.0", optional = true, features = ["derive"]}
 servo_arc = { path = "../servo_arc" }
-servo_atoms = {path = "../atoms", optional = true}
+stylo_atoms = {path = "../atoms", optional = true}
 smallbitvec = "2.3.0"
 smallvec = "1.0"
 static_assertions = "1.1"

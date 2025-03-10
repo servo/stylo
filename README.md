@@ -16,7 +16,7 @@ Assuming your local `servo` and `stylo` directories are siblings, you can build 
 [patch."https://github.com/servo/stylo"]
 selectors = { path = "../stylo/selectors" }
 servo_arc = { path = "../stylo/servo_arc" }
-servo_atoms = { path = "../stylo/atoms" }
+stylo_atoms = { path = "../stylo/atoms" }
 static_prefs = { path = "../stylo/style_static_prefs" }
 style = { path = "../stylo/style" }
 style_config = { path = "../stylo/style_config" }

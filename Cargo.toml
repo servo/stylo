@@ -3,16 +3,16 @@ resolver = "2"
 members = [
     "stylo_atoms",
     "stylo_dom",
-    "malloc_size_of",
+    "stylo_malloc_size_of",
     "rustfmt.toml",
     "selectors",
     "servo_arc",
-    "style",
-    "style_derive",
+    "stylo",
+    "stylo_derive",
     "stylo_config",
     "stylo_static_prefs",
-    "style_traits",
+    "stylo_traits",
     "to_shmem",
     "to_shmem_derive",
 ]
-default-members = ["style"]
+default-members = ["stylo"]

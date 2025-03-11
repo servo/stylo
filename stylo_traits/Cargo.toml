@@ -1,5 +1,5 @@
 [package]
-name = "style_traits"
+name = "stylo_traits"
 version = "0.0.1"
 authors = ["The Servo Project Developers"]
 license = "MPL-2.0"
@@ -20,7 +20,7 @@ bitflags = "2"
 cssparser = "0.34"
 euclid = "0.22"
 lazy_static = "1"
-malloc_size_of = { path = "../malloc_size_of" }
+malloc_size_of = { path = "../stylo_malloc_size_of", package = "stylo_malloc_size_of" }
 malloc_size_of_derive = "0.1"
 selectors = { path = "../selectors" }
 serde = "1.0"

@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 use bitflags::bitflags;
-use malloc_size_of::malloc_size_of_is_0;
+use stylo_malloc_size_of::malloc_size_of_is_0;
 
 // DOM types to be shared between Rust and C++.
 bitflags! {

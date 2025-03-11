@@ -5,4 +5,8 @@ servo/components/
 servo/rustfmt.toml
 
 regex:servo/components/(.+)==>\1
+style==>stylo
+style_derive==>stylo_derive
+style_traits==>stylo_traits
+malloc_size_of==>stylo_malloc_size_of
 servo/rustfmt.toml==>rustfmt.toml

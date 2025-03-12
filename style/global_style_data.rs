@@ -25,6 +25,21 @@ pub type PlatformThreadHandle = RawPthread;
 #[cfg(windows)]
 pub type PlatformThreadHandle = RawHandle;
 
+/// A noop thread join handle for wasm
+/// The usize field is a dummy field to make this type non-zero sized so as not to confuse FFI
+#[cfg(target_arch = "wasm32")]
+pub struct DummyThreadHandle(#[allow(dead_code)] usize);
+#[cfg(target_arch = "wasm32")]
+impl DummyThreadHandle {
+    /// A noop thread join method for wasm
+    pub fn join(&self) {
+        // Do nothing
+    }
+}
+#[cfg(target_arch = "wasm32")]
+/// Platform-specific handle to a thread.
+pub type PlatformThreadHandle = DummyThreadHandle;
+
 /// Global style data
 pub struct GlobalStyleData {
     /// Shared RWLock for CSSOM objects
@@ -131,6 +146,11 @@ impl StyleThreadPool {
             let handle = join_handle.as_pthread_t();
             #[cfg(windows)]
             let handle = join_handle.as_raw_handle();
+            #[cfg(target_arch = "wasm32")]
+            let handle = {
+                let _ = join_handle;
+                DummyThreadHandle(0)
+            };
 
             handles.push(handle);
         }

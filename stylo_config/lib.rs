@@ -3,13 +3,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 use std::collections::HashMap;
-use std::sync::RwLock;
+use std::sync::{LazyLock, RwLock};
 
-use lazy_static::lazy_static;
-
-lazy_static! {
-    static ref PREFS: Preferences = Preferences::default();
-}
+static PREFS: LazyLock<Preferences> = LazyLock::new(Preferences::default);
 
 #[derive(Debug, Default)]
 pub struct Preferences {

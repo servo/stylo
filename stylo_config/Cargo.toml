@@ -12,6 +12,3 @@ edition = "2021"
 [lib]
 name = "stylo_config"
 path = "lib.rs"
-
-[dependencies]
-lazy_static = "1.4"

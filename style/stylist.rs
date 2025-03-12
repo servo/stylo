@@ -3194,9 +3194,7 @@ impl CascadeData {
             }
         }
         #[cfg(feature = "gecko")]
-        {
-            self.extra_data.sort_by_layer(&self.layers);
-        }
+        self.extra_data.sort_by_layer(&self.layers);
         self.animations
             .sort_with(&self.layers, compare_keyframes_in_same_layer);
         self.custom_property_registrations.sort(&self.layers)

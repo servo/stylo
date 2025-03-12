@@ -2081,7 +2081,7 @@ impl ComputedValuesInner {
         use crate::values::generics::counters::Content;
         match self.get_counters().content {
             Content::Normal | Content::None => true,
-            Content::Items(ref items) => items.items.is_empty(),
+            Content::Items(ref items) => items.items.is_empty()
         }
     }
 
@@ -2946,9 +2946,6 @@ macro_rules! css_properties_accessors {
 /// ```
 /// { snake_case_ident }
 /// ```
-///
-/// … where the boolean indicates whether the property value type
-/// is wrapped in a `Box<_>` in the corresponding `PropertyDeclaration` variant.
 #[macro_export]
 macro_rules! longhand_properties_idents {
     ($macro_name: ident) => {

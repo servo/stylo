@@ -214,11 +214,8 @@ pub enum Unpacked<'a> {
 
 /// An unpacked `<length-percentage>` that mutably borrows the `calc()` variant.
 enum UnpackedMut<'a> {
-    /// A `calc()` value
     Calc(&'a mut CalcLengthPercentage),
-    /// A length value
     Length(Length),
-    /// A percentage value
     Percentage(Percentage),
 }
 

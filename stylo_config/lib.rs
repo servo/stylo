@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 use std::sync::{LazyLock, RwLock};
 
-static PREFS: LazyLock<Preferences> = LazyLock::new(|| Preferences::default());
+static PREFS: LazyLock<Preferences> = LazyLock::new(Preferences::default);
 
 #[derive(Debug, Default)]
 pub struct Preferences {

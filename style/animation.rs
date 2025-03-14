@@ -70,7 +70,7 @@ impl PropertyAnimation {
         let to = AnimationValue::from_computed_values(property_declaration, new_style)?;
         let duration = duration.seconds() as f64;
 
-        if from == to || duration == 0.0 {
+        if from == to || duration <= 0.0 {
             return None;
         }
 
@@ -1015,11 +1015,58 @@ impl ElementAnimationSet {
             if transition.state == AnimationState::Finished {
                 continue;
             }
-            if transitioning_properties.contains(transition.property_animation.property_id()) {
+            // Step 3 in https://drafts.csswg.org/css-transitions/#starting
+            // "If the element has a running transition or completed transition for the property, 
+            // and there is not a matching transition-property value, then implementations 
+            // must cancel the running transition or remove the completed transition from the set of completed transitions."
+            let transition_property_id = transition.property_animation.property_id();
+            if !transitioning_properties.contains(transition_property_id) {
+                transition.state = AnimationState::Canceled;
+                self.dirty = true;
                 continue;
             }
-            transition.state = AnimationState::Canceled;
-            self.dirty = true;
+            
+            let after_change_to = AnimationValue::from_computed_values(transition_property_id, &after_change_style).unwrap();
+            // Step 4
+            // "If the element has a running transition for the property, there is a matching transition-property value, 
+            // and the end value of the running transition is not equal to the value of the property in the after-change style, then:"
+            if transition.property_animation.to != after_change_to {
+                // index for after-change transition declaration
+                let index = after_change_style.transition_properties().position(|declared_transition| declared_transition.property
+                    .as_borrowed()
+                    .to_physical(after_change_style.writing_mode) == transition_property_id).unwrap();
+
+                let now = context.current_time_for_animations;
+                let after_change_style = after_change_style.get_ui();
+                let allow_discrete = after_change_style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
+                let current_val = transition.calculate_value(now);
+                let not_transitionable = 
+                    (!transition_property_id.is_animatable() || (!allow_discrete && transition_property_id.is_discrete_animatable())) 
+                    || (!allow_discrete && !current_val.interpolable_with(&after_change_to));
+                    
+                let combined_duration = after_change_style.transition_duration_mod(index).seconds() + after_change_style.transition_delay_mod(index).seconds();
+                
+                // Step 4.1
+                //"If the current value of the property in the running transition is equal 
+                // to the value of the property in the after-change style, 
+                // or if these two values are not transitionable, then implementations must cancel the running transition."
+                if current_val == after_change_to || not_transitionable {
+                    transition.state = AnimationState::Canceled;
+                    self.dirty = true;
+                    continue;
+                }
+                // Step 4.2
+                // "Otherwise, if the combined duration is less than or equal to 0s, or if the current value of the property in the 
+                // running transition is not transitionable with the value of the property in the after-change style,
+                // then implementations must cancel the running transition."
+                else if combined_duration <= 0.0 {
+                    transition.state = AnimationState::Canceled;
+                    self.dirty = true;
+                    continue;
+                }
+
+                //Step 4.4
+            }
         }
     }
 
@@ -1079,6 +1126,7 @@ impl ElementAnimationSet {
             return;
         }
 
+        // Step 1 in https://drafts.csswg.org/css-transitions/#starting
         // We are going to start a new transition, but we might have to update
         // it if we are replacing a reversed transition.
         let reversing_adjusted_start_value = property_animation.from.clone();
@@ -1120,6 +1168,26 @@ impl ElementAnimationSet {
             AnimationValueMap::with_capacity_and_hasher(self.transitions.len(), Default::default());
         for transition in &self.transitions {
             if transition.state == AnimationState::Canceled {
+                continue;
+            }
+            let value = transition.calculate_value(now);
+            map.insert(value.id().to_owned(), value);
+        }
+
+        Some(map)
+    }
+
+    /// Generate a `AnimationValueMap` for this `ElementAnimationSet`'s
+    ///  transitions that are not canceled or finished at the given time value.
+    pub fn get_value_map_for_running_transitions(&self, now: f64) -> Option<AnimationValueMap> {
+        if !self.has_active_transition() {
+            return None;
+        }
+
+        let mut map =
+            AnimationValueMap::with_capacity_and_hasher(self.transitions.len(), Default::default());
+        for transition in &self.transitions {
+            if transition.state == AnimationState::Canceled || transition.state == AnimationState::Finished {
                 continue;
             }
             let value = transition.calculate_value(now);
@@ -1235,7 +1303,7 @@ impl DocumentAnimationSet {
         self.sets
             .read()
             .get(key)
-            .and_then(|set| set.get_value_map_for_active_transitions(time))
+            .and_then(|set| set.get_value_map_for_running_transitions(time))
             .map(|map| {
                 let block = PropertyDeclarationBlock::from_animation_value_map(&map);
                 Arc::new(shared_lock.wrap(block))

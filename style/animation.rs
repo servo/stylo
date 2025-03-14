@@ -1026,8 +1026,6 @@ impl ElementAnimationSet {
                 continue;
             }
             
-            
-            // Never panic: We made sure in fn start_transition_if_applicable if a transition is valid, after_change_to is also valid
             let after_change_to = AnimationValue::from_computed_values(transition_property_id, &after_change_style).unwrap();
             // Step 4
             // "If the element has a running transition for the property, there is a matching transition-property value, 
@@ -1047,11 +1045,11 @@ impl ElementAnimationSet {
                     || (!allow_discrete && !current_val.interpolable_with(&after_change_to));
                     
                 let combined_duration = after_change_style.transition_duration_mod(index).seconds() + after_change_style.transition_delay_mod(index).seconds();
+                
                 // Step 4.1
                 //"If the current value of the property in the running transition is equal 
                 // to the value of the property in the after-change style, 
                 // or if these two values are not transitionable, then implementations must cancel the running transition."
-                
                 if current_val == after_change_to || not_transitionable {
                     transition.state = AnimationState::Canceled;
                     self.dirty = true;

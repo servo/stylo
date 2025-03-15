@@ -1012,7 +1012,7 @@ impl ElementAnimationSet {
 
         // Cancel any non-finished transitions that have properties which no longer transition.
         for transition in self.transitions.iter_mut() {
-            if transition.state == AnimationState::Finished {
+            if transition.state == AnimationState::Finished || transition.state == AnimationState::Canceled {
                 continue;
             }
             // Step 3 in https://drafts.csswg.org/css-transitions/#starting

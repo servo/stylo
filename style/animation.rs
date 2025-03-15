@@ -25,7 +25,7 @@ use crate::style_resolver::StyleResolverForElement;
 use crate::stylesheets::keyframes_rule::{KeyframesAnimation, KeyframesStep, KeyframesStepValue};
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::values::animated::{Animate, Procedure};
-use crate::values::computed::{Time, TimingFunction};
+use crate::values::computed::TimingFunction;
 use crate::values::generics::easing::BeforeFlag;
 use crate::values::specified::TransitionBehavior;
 use crate::Atom;
@@ -60,7 +60,7 @@ impl PropertyAnimation {
     fn from_property_declaration(
         property_declaration: &PropertyDeclarationId,
         timing_function: TimingFunction,
-        duration: Time,
+        duration: f64,
         old_style: &ComputedValues,
         new_style: &ComputedValues,
     ) -> Option<PropertyAnimation> {
@@ -68,9 +68,8 @@ impl PropertyAnimation {
         let property_declaration = property_declaration.to_physical(new_style.writing_mode);
         let from = AnimationValue::from_computed_values(property_declaration, old_style)?;
         let to = AnimationValue::from_computed_values(property_declaration, new_style)?;
-        let duration = duration.seconds() as f64;
 
-        if from == to || duration <= 0.0 {
+        if from == to {
             return None;
         }
 
@@ -1088,9 +1087,13 @@ impl ElementAnimationSet {
         }
 
         let timing_function = style.transition_timing_function_mod(index);
-        let duration = style.transition_duration_mod(index);
+        let duration = style.transition_duration_mod(index).seconds() as f64;
         let delay = style.transition_delay_mod(index).seconds() as f64;
         let now = context.current_time_for_animations;
+
+        if duration + delay <= 0.0 {
+            return;
+        }
 
         // Only start a new transition if the style actually changes between
         // the old style and the new style.

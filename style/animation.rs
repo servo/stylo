@@ -1064,7 +1064,7 @@ impl ElementAnimationSet {
                     continue;
                 }
 
-                //Step 4.4
+                //Step 4.3, 4.4 have been done in `fn start_transition_if_applicable`
             }
         }
     }
@@ -1129,7 +1129,7 @@ impl ElementAnimationSet {
             return;
         }
 
-        // Step 1 in https://drafts.csswg.org/css-transitions/#starting
+        // Step 1 + 4.3 + 4.4 in https://drafts.csswg.org/css-transitions/#starting
         // We are going to start a new transition, but we might have to update
         // it if we are replacing a reversed transition.
         let reversing_adjusted_start_value = property_animation.from.clone();

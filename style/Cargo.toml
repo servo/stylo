@@ -1,5 +1,5 @@
 [package]
-name = "style"
+name = "stylo"
 version = "0.0.1"
 authors = ["The Servo Project Developers"]
 license = "MPL-2.0"
@@ -70,7 +70,7 @@ itertools = "0.10"
 itoa = "1.0"
 lazy_static = "1"
 log = "0.4"
-malloc_size_of = { path = "../malloc_size_of" }
+malloc_size_of = { path = "../malloc_size_of", package = "stylo_malloc_size_of" }
 malloc_size_of_derive = "0.1"
 markup5ever = { version = "0.15", optional = true }
 matches = "0.1"
@@ -93,8 +93,8 @@ static_assertions = "1.1"
 static_prefs = { version = "0.1", path = "../stylo_static_prefs", package = "stylo_static_prefs" }
 string_cache = { version = "0.8", optional = true }
 style_config = { version = "0.1", path = "../stylo_config", package = "stylo_config", optional = true }
-style_derive = {path = "../style_derive"}
-style_traits = {path = "../style_traits"}
+style_derive = { path = "../style_derive", package = "stylo_derive" }
+style_traits = { path = "../style_traits", package = "stylo_traits" }
 to_shmem = {path = "../to_shmem"}
 to_shmem_derive = {path = "../to_shmem_derive"}
 thin-vec = "0.2.1"

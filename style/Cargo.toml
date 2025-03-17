@@ -18,6 +18,7 @@ path = "lib.rs"
 doctest = false
 
 [features]
+default = ["servo"]
 gecko = [
     "bindgen",
     "malloc_size_of/gecko",

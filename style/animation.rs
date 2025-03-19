@@ -57,30 +57,6 @@ impl PropertyAnimation {
         self.from.id()
     }
 
-    fn from_property_declaration(
-        property_declaration: &PropertyDeclarationId,
-        timing_function: TimingFunction,
-        duration: f64,
-        old_style: &ComputedValues,
-        new_style: &ComputedValues,
-    ) -> Option<PropertyAnimation> {
-        // FIXME(emilio): Handle the case where old_style and new_style's writing mode differ.
-        let property_declaration = property_declaration.to_physical(new_style.writing_mode);
-        let from = AnimationValue::from_computed_values(property_declaration, old_style)?;
-        let to = AnimationValue::from_computed_values(property_declaration, new_style)?;
-
-        if from == to {
-            return None;
-        }
-
-        Some(PropertyAnimation {
-            from,
-            to,
-            timing_function,
-            duration,
-        })
-    }
-
     /// The output of the timing function given the progress ration of this animation.
     fn timing_function_output(&self, progress: f64) -> f64 {
         let epsilon = 1. / (200. * self.duration);
@@ -1022,69 +998,25 @@ impl ElementAnimationSet {
             if !transitioning_properties.contains(transition_property_id) {
                 transition.state = AnimationState::Canceled;
                 self.dirty = true;
-                continue;
             }
-            
-            let after_change_to = AnimationValue::from_computed_values(transition_property_id, &after_change_style).unwrap();
-            // Step 4
-            // "If the element has a running transition for the property, there is a matching transition-property value, 
-            // and the end value of the running transition is not equal to the value of the property in the after-change style, then:"
-            if transition.property_animation.to != after_change_to {
-                // index for after-change transition declaration
-                let index = after_change_style.transition_properties().position(|declared_transition| declared_transition.property
-                    .as_borrowed()
-                    .to_physical(after_change_style.writing_mode) == transition_property_id).unwrap();
-
-                let now = context.current_time_for_animations;
-                let after_change_style = after_change_style.get_ui();
-                let allow_discrete = after_change_style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
-                let current_val = transition.calculate_value(now);
-                let not_transitionable = 
-                    (!transition_property_id.is_animatable() || (!allow_discrete && transition_property_id.is_discrete_animatable())) 
-                    || (!allow_discrete && !current_val.interpolable_with(&after_change_to));
-                    
-                let combined_duration = after_change_style.transition_duration_mod(index).seconds() + after_change_style.transition_delay_mod(index).seconds();
-                
-                // Step 4.1
-                //"If the current value of the property in the running transition is equal 
-                // to the value of the property in the after-change style, 
-                // or if these two values are not transitionable, then implementations must cancel the running transition."
-                if current_val == after_change_to || not_transitionable {
-                    transition.state = AnimationState::Canceled;
-                    self.dirty = true;
-                    continue;
-                }
-                // Step 4.2
-                // "Otherwise, if the combined duration is less than or equal to 0s, or if the current value of the property in the 
-                // running transition is not transitionable with the value of the property in the after-change style,
-                // then implementations must cancel the running transition."
-                else if combined_duration <= 0.0 {
-                    transition.state = AnimationState::Canceled;
-                    self.dirty = true;
-                    continue;
-                }
-
-                //Step 4.3, 4.4 have been done in `fn start_transition_if_applicable`
-            }
+            // Step 4 was done in `fn start_transition_if_applicable`
         }
     }
 
     fn start_transition_if_applicable(
         &mut self,
         context: &SharedStyleContext,
-        property_declaration_id: &PropertyDeclarationId,
+        property_declaration: PropertyDeclarationId,
         index: usize,
         old_style: &ComputedValues,
         new_style: &Arc<ComputedValues>,
     ) {
         let style = new_style.get_ui();
         let allow_discrete = style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
-
-        if !property_declaration_id.is_animatable()
-            || (!allow_discrete && property_declaration_id.is_discrete_animatable())
-        {
-            return;
-        }
+        let not_transitionable = !property_declaration.is_animatable() || 
+                                        (!allow_discrete && property_declaration.is_discrete_animatable());
+        
+        let mut start_new_transition = !not_transitionable;
 
         let timing_function = style.transition_timing_function_mod(index);
         let duration = style.transition_duration_mod(index).seconds() as f64;
@@ -1092,72 +1024,103 @@ impl ElementAnimationSet {
         let now = context.current_time_for_animations;
 
         if duration + delay <= 0.0 {
-            return;
+            start_new_transition = false;
         }
 
+        // FIXME(emilio): Handle the case where old_style and new_style's writing mode differ.
+        let Some(from) = AnimationValue::from_computed_values(property_declaration, old_style) else {
+            return;
+        };
+        let Some(to) = AnimationValue::from_computed_values(property_declaration, new_style) else {
+            return;
+        };
+        
         // Only start a new transition if the style actually changes between
         // the old style and the new style.
-        let property_animation = match PropertyAnimation::from_property_declaration(
-            property_declaration_id,
-            timing_function,
-            duration,
-            old_style,
-            new_style,
-        ) {
-            Some(property_animation) => property_animation,
-            None => return,
-        };
+        if from == to {
+            start_new_transition = false;
+        }
 
         // A property may have an animation type different than 'discrete', but still
         // not be able to interpolate some values. In that case we would fall back to
         // discrete interpolation, so we need to abort if `transition-behavior` doesn't
         // allow discrete transitions.
-        if !allow_discrete && !property_animation.from.interpolable_with(&property_animation.to) {
-            return;
+        if !allow_discrete && !from.interpolable_with(&to) {
+            start_new_transition = false;
         }
 
-        // Per [1], don't trigger a new transition if the end state for that
-        // transition is the same as that of a transition that's running or
-        // completed. We don't take into account any canceled animations.
-        // [1]: https://drafts.csswg.org/css-transitions/#starting
-        if self
+        // Step 4 in https://drafts.csswg.org/css-transitions/#starting
+        // "If the element has a running transition for the property, there is a matching transition-property value, 
+        let mut running_transition = None;
+        if let Some(old_transition) = self
             .transitions
-            .iter()
+            .iter_mut()
             .filter(|transition| transition.state != AnimationState::Canceled)
-            .any(|transition| transition.property_animation.to == property_animation.to)
+            .find(|transition| {
+                transition.property_animation.property_id() == property_declaration
+            })
         {
-            return;
+            // and the end value of the running transition is not equal to the value of the property in the after-change style, then:"
+            if to != old_transition.property_animation.to {
+                let current_val = old_transition.calculate_value(now);
+                let not_transitionable = not_transitionable|| 
+                                            (!allow_discrete && !current_val.interpolable_with(&to));
+
+                // Step 4.1
+                //"If the current value of the property in the running transition is equal 
+                // to the value of the property in the after-change style, 
+                // or if these two values are not transitionable, then implementations must cancel the running transition."
+                if current_val == to || not_transitionable {
+                    old_transition.state = AnimationState::Canceled;
+                    self.dirty = true;
+                    start_new_transition = false;
+                }
+                // Step 4.2
+                // "Otherwise, if the combined duration is less than or equal to 0s, or if the current value of the property in the 
+                // running transition is not transitionable with the value of the property in the after-change style,
+                // then implementations must cancel the running transition."
+                else if duration + delay <= 0.0 {
+                    old_transition.state = AnimationState::Canceled;
+                    self.dirty = true;
+                    start_new_transition = false;
+                } 
+            } else{
+                start_new_transition = false;
+            }
+            running_transition = Some(old_transition);
         }
 
         // Step 1 + 4.3 + 4.4 in https://drafts.csswg.org/css-transitions/#starting
         // We are going to start a new transition, but we might have to update
         // it if we are replacing a reversed transition.
-        let reversing_adjusted_start_value = property_animation.from.clone();
-        let mut new_transition = Transition {
-            start_time: now + delay,
-            delay,
-            property_animation,
-            state: AnimationState::Pending,
-            is_new: true,
-            reversing_adjusted_start_value,
-            reversing_shortening_factor: 1.0,
-        };
+        if start_new_transition {
+            let property_animation = PropertyAnimation {
+                from,
+                to,
+                timing_function,
+                duration,
+            };
 
-        if let Some(old_transition) = self
-            .transitions
-            .iter_mut()
-            .filter(|transition| transition.state == AnimationState::Running)
-            .find(|transition| {
-                transition.property_animation.property_id() == *property_declaration_id
-            })
-        {
+            let reversing_adjusted_start_value = property_animation.from.clone();
+            let mut new_transition = Transition {
+                start_time: now + delay,
+                delay,
+                property_animation,
+                state: AnimationState::Pending,
+                is_new: true,
+                reversing_adjusted_start_value,
+                reversing_shortening_factor: 1.0,
+            };
+
             // We always cancel any running transitions for the same property.
-            old_transition.state = AnimationState::Canceled;
-            new_transition.update_for_possibly_reversed_transition(old_transition, delay, now);
-        }
+            if let Some(old_transition) = running_transition {
+                old_transition.state = AnimationState::Canceled;
+                new_transition.update_for_possibly_reversed_transition(old_transition, delay, now);
+            }
 
-        self.transitions.push(new_transition);
-        self.dirty = true;
+            self.transitions.push(new_transition);
+            self.dirty = true;
+        }
     }
 
     /// Generate a `AnimationValueMap` for this `ElementAnimationSet`'s
@@ -1370,7 +1333,7 @@ pub fn start_transitions_if_applicable(
         properties_that_transition.insert(physical_property);
         animation_state.start_transition_if_applicable(
             context,
-            &physical_property,
+            physical_property,
             transition.index,
             old_style,
             new_style,

@@ -1062,27 +1062,30 @@ impl ElementAnimationSet {
         {
             // and the end value of the running transition is not equal to the value of the property in the after-change style, then:"
             if to != old_transition.property_animation.to {
-                let current_val = old_transition.calculate_value(now);
-                let not_transitionable = not_transitionable|| 
-                                            (!allow_discrete && !current_val.interpolable_with(&to));
+                if old_transition.state != AnimationState::Finished {
+                    let current_val = old_transition.calculate_value(now);
+                    let not_transitionable = not_transitionable|| 
+                                                (!allow_discrete && !current_val.interpolable_with(&to));
 
-                // Step 4.1
-                //"If the current value of the property in the running transition is equal 
-                // to the value of the property in the after-change style, 
-                // or if these two values are not transitionable, then implementations must cancel the running transition."
-                if current_val == to || not_transitionable {
-                    old_transition.state = AnimationState::Canceled;
-                    self.dirty = true;
-                    start_new_transition = false;
-                }
-                // Step 4.2
-                // "Otherwise, if the combined duration is less than or equal to 0s, or if the current value of the property in the 
-                // running transition is not transitionable with the value of the property in the after-change style,
-                // then implementations must cancel the running transition."
-                else if duration + delay <= 0.0 {
-                    old_transition.state = AnimationState::Canceled;
-                    self.dirty = true;
-                    start_new_transition = false;
+                    // Step 4.1
+                    //"If the current value of the property in the running transition is equal 
+                    // to the value of the property in the after-change style, 
+                    // or if these two values are not transitionable, then implementations must cancel the running transition."
+                    if current_val == to || not_transitionable {
+                        old_transition.state = AnimationState::Canceled;
+                        self.dirty = true;
+                        start_new_transition = false;
+                    }
+                    // Step 4.2
+                    // "Otherwise, if the combined duration is less than or equal to 0s, or if the current value of the property in the 
+                    // running transition is not transitionable with the value of the property in the after-change style,
+                    // then implementations must cancel the running transition."
+                    else if duration + delay <= 0.0 {
+                        old_transition.state = AnimationState::Canceled;
+                        self.dirty = true;
+                        start_new_transition = false;
+                    }
+                    running_transition = Some(old_transition);
                 } 
             } 
             // Per [1], don't trigger a new transition if the end state for that
@@ -1092,7 +1095,6 @@ impl ElementAnimationSet {
             else {
                 start_new_transition = false;
             }
-            running_transition = Some(old_transition);
         }
 
         // Step 1 + 4.3 + 4.4 in https://drafts.csswg.org/css-transitions/#starting
@@ -1299,7 +1301,7 @@ impl DocumentAnimationSet {
             let block = PropertyDeclarationBlock::from_animation_value_map(&map);
             Arc::new(shared_lock.wrap(block))
         });
-        let transitions = set.get_value_map_for_active_transitions(time).map(|map| {
+        let transitions = set.get_value_map_for_running_transitions(time).map(|map| {
             let block = PropertyDeclarationBlock::from_animation_value_map(&map);
             Arc::new(shared_lock.wrap(block))
         });

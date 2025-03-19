@@ -1084,7 +1084,12 @@ impl ElementAnimationSet {
                     self.dirty = true;
                     start_new_transition = false;
                 } 
-            } else{
+            } 
+            // Per [1], don't trigger a new transition if the end state for that
+            // transition is the same as that of a transition that's running or
+            // completed. We don't take into account any canceled animations.
+            // [1]: https://drafts.csswg.org/css-transitions/#starting
+            else {
                 start_new_transition = false;
             }
             running_transition = Some(old_transition);
@@ -1092,7 +1097,7 @@ impl ElementAnimationSet {
 
         // Step 1 + 4.3 + 4.4 in https://drafts.csswg.org/css-transitions/#starting
         // We are going to start a new transition, but we might have to update
-        // it if we are replacing a reversed transition.
+        // it if we are replacing a reversed transition for step 4.3.
         if start_new_transition {
             let property_animation = PropertyAnimation {
                 from,
@@ -1112,7 +1117,7 @@ impl ElementAnimationSet {
                 reversing_shortening_factor: 1.0,
             };
 
-            // We always cancel any running transitions for the same property.
+            // We always cancel any running transitions for the same property, according to step 4.
             if let Some(old_transition) = running_transition {
                 old_transition.state = AnimationState::Canceled;
                 new_transition.update_for_possibly_reversed_transition(old_transition, delay, now);

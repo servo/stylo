@@ -17,11 +17,11 @@ Assuming your local `servo` and `stylo` directories are siblings, you can build 
 selectors = { path = "../stylo/selectors" }
 servo_arc = { path = "../stylo/servo_arc" }
 stylo_atoms = { path = "../stylo/stylo_atoms" }
-style = { path = "../stylo/style" }
+stylo = { path = "../stylo/style" }
 stylo_config = { path = "../stylo/stylo_config" }
 stylo_dom = { path = "../stylo/stylo_dom" }
-style_malloc_size_of = { path = "../stylo/malloc_size_of", package = "malloc_size_of" }
-style_traits = { path = "../stylo/style_traits" }
+stylo_malloc_size_of = { path = "../stylo/malloc_size_of" }
+stylo_traits = { path = "../stylo/style_traits" }
 ```
 
 ## Syncing `upstream` with mozilla-central

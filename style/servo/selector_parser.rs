@@ -19,7 +19,7 @@ use crate::values::{AtomIdent, AtomString};
 use crate::{Atom, CaseSensitivityExt, LocalName, Namespace, Prefix};
 use cssparser::{serialize_identifier, CowRcStr, Parser as CssParser, SourceLocation, ToCss};
 use dom::{DocumentState, ElementState};
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::parser::SelectorParseErrorKind;
 use selectors::visitor::SelectorVisitor;

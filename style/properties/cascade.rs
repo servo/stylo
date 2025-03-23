@@ -30,7 +30,7 @@ use crate::stylist::Stylist;
 #[cfg(feature = "gecko")]
 use crate::values::specified::length::FontBaseSize;
 use crate::values::{computed, specified};
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::borrow::Cow;

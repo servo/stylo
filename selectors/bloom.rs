@@ -283,9 +283,10 @@ fn hash2(hash: u32) -> u32 {
 
 #[test]
 fn create_and_insert_some_stuff() {
-    use fxhash::FxHasher;
     use std::hash::{Hash, Hasher};
     use std::mem::transmute;
+
+    use rustc_hash::FxHasher;
 
     fn hash_as_str(i: usize) -> u32 {
         let mut hasher = FxHasher::default();

@@ -29,7 +29,7 @@ use app_units::Au;
 use euclid::default::Size2D;
 use euclid::Scale;
 #[cfg(feature = "servo")]
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 use selectors::context::SelectorCaches;
 #[cfg(feature = "gecko")]
 use servo_arc::Arc;

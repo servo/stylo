@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 /// Bloom filter for relative selectors.
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 
 use crate::bloom::BloomFilter;
 use crate::context::QuirksMode;

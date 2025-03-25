@@ -110,6 +110,11 @@ impl AnimationState {
     }
 }
 
+enum IncludedTransitions {
+    Active,
+    Running,
+}
+
 /// This structure represents a keyframes animation current iteration state.
 ///
 /// If the iteration count is infinite, there's no other state, otherwise we
@@ -869,7 +874,7 @@ impl ElementAnimationSet {
             }
         }
 
-        if let Some(map) = self.get_value_map_for_active_transitions(now) {
+        if let Some(map) = self.get_value_map_for_transitions(now, IncludedTransitions::Active) {
             for value in map.values() {
                 value.set_in_style_for_servo(mutable_style);
             }
@@ -991,14 +996,14 @@ impl ElementAnimationSet {
                 continue;
             }
             // Step 3 in https://drafts.csswg.org/css-transitions/#starting
-            // "If the element has a running transition or completed transition for the property, 
-            // and there is not a matching transition-property value, then implementations 
-            // must cancel the running transition or remove the completed transition from the set of completed transitions."
-            let transition_property_id = transition.property_animation.property_id();
-            if !transitioning_properties.contains(transition_property_id) {
-                transition.state = AnimationState::Canceled;
-                self.dirty = true;
+            // "If the element has a running transition or completed transition for the property, and there 
+            // is not a matching transition-property value, then implementations must cancel the running 
+            // transition or remove the completed transition from the set of completed transitions."
+            if transitioning_properties.contains(transition.property_animation.property_id()) {
+                continue;
             }
+            transition.state = AnimationState::Canceled;
+            self.dirty = true;
             // Step 4 was done in `fn start_transition_if_applicable`
         }
     }
@@ -1006,15 +1011,15 @@ impl ElementAnimationSet {
     fn start_transition_if_applicable(
         &mut self,
         context: &SharedStyleContext,
-        property_declaration: PropertyDeclarationId,
+        property_declaration_id: PropertyDeclarationId,
         index: usize,
         old_style: &ComputedValues,
         new_style: &Arc<ComputedValues>,
     ) {
         let style = new_style.get_ui();
         let allow_discrete = style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
-        let not_transitionable = !property_declaration.is_animatable() || 
-                                        (!allow_discrete && property_declaration.is_discrete_animatable());
+        let not_transitionable = !property_declaration_id.is_animatable()
+            || (!allow_discrete && property_declaration_id.is_discrete_animatable());
         
         let mut start_new_transition = !not_transitionable;
 
@@ -1028,10 +1033,10 @@ impl ElementAnimationSet {
         }
 
         // FIXME(emilio): Handle the case where old_style and new_style's writing mode differ.
-        let Some(from) = AnimationValue::from_computed_values(property_declaration, old_style) else {
+        let Some(from) = AnimationValue::from_computed_values(property_declaration_id, old_style) else {
             return;
         };
-        let Some(to) = AnimationValue::from_computed_values(property_declaration, new_style) else {
+        let Some(to) = AnimationValue::from_computed_values(property_declaration_id, new_style) else {
             return;
         };
         
@@ -1050,17 +1055,18 @@ impl ElementAnimationSet {
         }
 
         // Step 4 in https://drafts.csswg.org/css-transitions/#starting
-        // "If the element has a running transition for the property, there is a matching transition-property value, 
+        // "If the element has a running transition for the property, there is a matching 
+        // transition-property value, and the end value of the running transition is not equal 
+        // to the value of the property in the after-change style, then:"
         let mut running_transition = None;
         if let Some(old_transition) = self
             .transitions
             .iter_mut()
             .filter(|transition| transition.state != AnimationState::Canceled)
             .find(|transition| {
-                transition.property_animation.property_id() == property_declaration
+                transition.property_animation.property_id() == property_declaration_id
             })
         {
-            // and the end value of the running transition is not equal to the value of the property in the after-change style, then:"
             if to != old_transition.property_animation.to {
                 if old_transition.state != AnimationState::Finished {
                     let current_val = old_transition.calculate_value(now);
@@ -1068,13 +1074,14 @@ impl ElementAnimationSet {
                                                 (!allow_discrete && !current_val.interpolable_with(&to));
 
                     // Step 4.1
-                    //"If the current value of the property in the running transition is equal 
-                    // to the value of the property in the after-change style, 
-                    // or if these two values are not transitionable, then implementations must cancel the running transition."
+                    // > If the current value of the property in the running transition 
+                    // > is equal to the value of theproperty in the after-change style, 
+                    // > or if these two values are not transitionable, then 
+                    // > implementations must cancel the running transition.
                     if current_val == to || not_transitionable {
                         old_transition.state = AnimationState::Canceled;
                         self.dirty = true;
-                        start_new_transition = false;
+                        return;
                     }
                     // Step 4.2
                     // "Otherwise, if the combined duration is less than or equal to 0s, or if the current value of the property in the 
@@ -1083,7 +1090,7 @@ impl ElementAnimationSet {
                     else if duration + delay <= 0.0 {
                         old_transition.state = AnimationState::Canceled;
                         self.dirty = true;
-                        start_new_transition = false;
+                        return;
                     }
                     running_transition = Some(old_transition);
                 } 
@@ -1093,7 +1100,7 @@ impl ElementAnimationSet {
             // completed. We don't take into account any canceled animations.
             // [1]: https://drafts.csswg.org/css-transitions/#starting
             else {
-                start_new_transition = false;
+                return;
             }
         }
 
@@ -1130,9 +1137,11 @@ impl ElementAnimationSet {
         }
     }
 
+    
+
     /// Generate a `AnimationValueMap` for this `ElementAnimationSet`'s
-    /// active transitions at the given time value.
-    pub fn get_value_map_for_active_transitions(&self, now: f64) -> Option<AnimationValueMap> {
+    ///  transitions that depends on flag.
+    fn get_value_map_for_transitions(&self, now: f64, flag: IncludedTransitions) -> Option<AnimationValueMap> {
         if !self.has_active_transition() {
             return None;
         }
@@ -1140,29 +1149,21 @@ impl ElementAnimationSet {
         let mut map =
             AnimationValueMap::with_capacity_and_hasher(self.transitions.len(), Default::default());
         for transition in &self.transitions {
-            if transition.state == AnimationState::Canceled {
-                continue;
+            match flag {
+                IncludedTransitions::Active => {
+                    if transition.state == AnimationState::Canceled {
+                        continue;
+                    }
+                }
+                IncludedTransitions::Running => {
+                    if transition.state == AnimationState::Canceled
+                        || transition.state == AnimationState::Finished
+                    {
+                        continue;
+                    }
+                }
             }
-            let value = transition.calculate_value(now);
-            map.insert(value.id().to_owned(), value);
-        }
-
-        Some(map)
-    }
-
-    /// Generate a `AnimationValueMap` for this `ElementAnimationSet`'s
-    ///  transitions that are not canceled or finished at the given time value.
-    pub fn get_value_map_for_running_transitions(&self, now: f64) -> Option<AnimationValueMap> {
-        if !self.has_active_transition() {
-            return None;
-        }
-
-        let mut map =
-            AnimationValueMap::with_capacity_and_hasher(self.transitions.len(), Default::default());
-        for transition in &self.transitions {
-            if transition.state == AnimationState::Canceled || transition.state == AnimationState::Finished {
-                continue;
-            }
+            
             let value = transition.calculate_value(now);
             map.insert(value.id().to_owned(), value);
         }
@@ -1276,7 +1277,7 @@ impl DocumentAnimationSet {
         self.sets
             .read()
             .get(key)
-            .and_then(|set| set.get_value_map_for_running_transitions(time))
+            .and_then(|set| set.get_value_map_for_transitions(time, IncludedTransitions::Running))
             .map(|map| {
                 let block = PropertyDeclarationBlock::from_animation_value_map(&map);
                 Arc::new(shared_lock.wrap(block))
@@ -1301,10 +1302,12 @@ impl DocumentAnimationSet {
             let block = PropertyDeclarationBlock::from_animation_value_map(&map);
             Arc::new(shared_lock.wrap(block))
         });
-        let transitions = set.get_value_map_for_running_transitions(time).map(|map| {
-            let block = PropertyDeclarationBlock::from_animation_value_map(&map);
-            Arc::new(shared_lock.wrap(block))
-        });
+        let transitions = set
+            .get_value_map_for_transitions(time, IncludedTransitions::Running)
+            .map(|map| {
+                let block = PropertyDeclarationBlock::from_animation_value_map(&map);
+                Arc::new(shared_lock.wrap(block))
+            });
         AnimationDeclarations {
             animations,
             transitions,

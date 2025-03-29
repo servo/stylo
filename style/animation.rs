@@ -1018,20 +1018,6 @@ impl ElementAnimationSet {
     ) {
         let style = new_style.get_ui();
         let allow_discrete = style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
-        let not_transitionable = !property_declaration_id.is_animatable()
-            || (!allow_discrete && property_declaration_id.is_discrete_animatable());
-        
-        let mut start_new_transition = !not_transitionable;
-
-        let timing_function = style.transition_timing_function_mod(index);
-        let duration = style.transition_duration_mod(index).seconds() as f64;
-        let delay = style.transition_delay_mod(index).seconds() as f64;
-        let now = context.current_time_for_animations;
-
-        if duration + delay <= 0.0 {
-            start_new_transition = false;
-        }
-
         // FIXME(emilio): Handle the case where old_style and new_style's writing mode differ.
         let Some(from) = AnimationValue::from_computed_values(property_declaration_id, old_style) else {
             return;
@@ -1039,27 +1025,17 @@ impl ElementAnimationSet {
         let Some(to) = AnimationValue::from_computed_values(property_declaration_id, new_style) else {
             return;
         };
+        let timing_function = style.transition_timing_function_mod(index);
+        let duration = style.transition_duration_mod(index).seconds() as f64;
+        let delay = style.transition_delay_mod(index).seconds() as f64;
+        let now = context.current_time_for_animations;
+        let transitionable = property_declaration_id.is_animatable()
+            && (allow_discrete || !property_declaration_id.is_discrete_animatable());
+        let mut has_running_transition = false;
+        let mut has_completed_transition = false;
         
-        // Only start a new transition if the style actually changes between
-        // the old style and the new style.
-        if from == to {
-            start_new_transition = false;
-        }
-
-        // A property may have an animation type different than 'discrete', but still
-        // not be able to interpolate some values. In that case we would fall back to
-        // discrete interpolation, so we need to abort if `transition-behavior` doesn't
-        // allow discrete transitions.
-        if !allow_discrete && !from.interpolable_with(&to) {
-            start_new_transition = false;
-        }
-
-        // Step 4 in https://drafts.csswg.org/css-transitions/#starting
-        // "If the element has a running transition for the property, there is a matching 
-        // transition-property value, and the end value of the running transition is not equal 
-        // to the value of the property in the after-change style, then:"
-        let mut running_transition = None;
-        if let Some(old_transition) = self
+        let mut old_transition= None;
+        if let Some(uncanceled_transition) = self
             .transitions
             .iter_mut()
             .filter(|transition| transition.state != AnimationState::Canceled)
@@ -1067,77 +1043,106 @@ impl ElementAnimationSet {
                 transition.property_animation.property_id() == property_declaration_id
             })
         {
-            if to != old_transition.property_animation.to {
-                if old_transition.state != AnimationState::Finished {
-                    let current_val = old_transition.calculate_value(now);
-                    let not_transitionable = not_transitionable|| 
-                                                (!allow_discrete && !current_val.interpolable_with(&to));
+            match uncanceled_transition.state {
+                AnimationState::Finished => has_completed_transition = true,
+                _ => has_running_transition = true,
+            };
+            old_transition = Some(uncanceled_transition);
+        }
 
-                    // Step 4.1
-                    // > If the current value of the property in the running transition 
-                    // > is equal to the value of theproperty in the after-change style, 
-                    // > or if these two values are not transitionable, then 
-                    // > implementations must cancel the running transition.
-                    if current_val == to || not_transitionable {
-                        old_transition.state = AnimationState::Canceled;
-                        self.dirty = true;
-                        return;
-                    }
-                    // Step 4.2
-                    // "Otherwise, if the combined duration is less than or equal to 0s, or if the current value of the property in the 
-                    // running transition is not transitionable with the value of the property in the after-change style,
-                    // then implementations must cancel the running transition."
-                    else if duration + delay <= 0.0 {
-                        old_transition.state = AnimationState::Canceled;
-                        self.dirty = true;
-                        return;
-                    }
-                    running_transition = Some(old_transition);
-                } 
-            } 
-            // Per [1], don't trigger a new transition if the end state for that
-            // transition is the same as that of a transition that's running or
-            // completed. We don't take into account any canceled animations.
-            // [1]: https://drafts.csswg.org/css-transitions/#starting
-            else {
+        // Step 1 in https://drafts.csswg.org/css-transitions/#starting
+        // > If all of the following are true:
+        // > 1. the element does not have a running transition for the property,
+        // > 2. the before-change style is different from the after-change style for that property, 
+        // >    and the values for the property are transitionable,
+        // > 4. there is a matching transition-property value, and
+        // > 5. the combined duration is greater than 0s,
+        if !has_running_transition && (transitionable && from != to) && (duration + delay > 0.0) {
+            // > 3. the element does not have a completed transition for the property or the end value 
+            // >    of the completed transition is different from the after-change style for the property
+            let mut start_new_transition = !has_completed_transition;
+            if has_completed_transition {
+                let completed_transition = old_transition.as_ref().unwrap();
+                start_new_transition = completed_transition.property_animation.to != to;
+            }
+            // > then implementations must remove the completed transition (if present) from 
+            // > the set of completed transitions and start a transition...
+            if start_new_transition {
+                let property_animation = PropertyAnimation {
+                    from: from.clone(),
+                    to,
+                    timing_function,
+                    duration,
+                };
+                let new_transition = Transition {
+                    start_time: now + delay,
+                    delay,
+                    property_animation,
+                    state: AnimationState::Pending,
+                    is_new: true,
+                    reversing_adjusted_start_value: from.clone(),
+                    reversing_shortening_factor: 1.0,
+                };
+                self.transitions.push(new_transition);
+                self.dirty = true;
                 return;
             }
-        }
+        }        
+        // Step 2, 3 will be done later in `fn process_animations_for_style`
 
-        // Step 1 + 4.3 + 4.4 in https://drafts.csswg.org/css-transitions/#starting
-        // We are going to start a new transition, but we might have to update
-        // it if we are replacing a reversed transition for step 4.3.
-        if start_new_transition {
-            let property_animation = PropertyAnimation {
-                from,
-                to,
-                timing_function,
-                duration,
-            };
-
-            let reversing_adjusted_start_value = property_animation.from.clone();
-            let mut new_transition = Transition {
-                start_time: now + delay,
-                delay,
-                property_animation,
-                state: AnimationState::Pending,
-                is_new: true,
-                reversing_adjusted_start_value,
-                reversing_shortening_factor: 1.0,
-            };
-
-            // We always cancel any running transitions for the same property, according to step 4.
-            if let Some(old_transition) = running_transition {
-                old_transition.state = AnimationState::Canceled;
-                new_transition.update_for_possibly_reversed_transition(old_transition, delay, now);
+        // Step 4 in https://drafts.csswg.org/css-transitions/#starting
+        // "If the element has a running transition for the property, there is a matching 
+        // transition-property value, and the end value of the running transition is not equal 
+        // to the value of the property in the after-change style, then:"
+        if has_running_transition {
+            let running_transition = old_transition.unwrap();
+            if running_transition.property_animation.to != to {
+                let current_val = running_transition.calculate_value(now);
+                let transitionable =
+                    transitionable && (allow_discrete || current_val.interpolable_with(&to));
+                // Step 4.1
+                // > If the current value of the property in the running transition
+                // > is equal to the value of theproperty in the after-change style,
+                // > or if these two values are not transitionable, then
+                // > implementations must cancel the running transition.
+                if current_val == to || !transitionable {
+                    running_transition.state = AnimationState::Canceled;
+                    self.dirty = true;
+                }
+                // Step 4.2
+                // "Otherwise, if the combined duration is less than or equal to 0s, 
+                // or if the current value of the property in the running transition is not
+                // transitionable with the value of the property in the after-change style,
+                // then implementations must cancel the running transition."
+                else if duration + delay <= 0.0 {
+                    running_transition.state = AnimationState::Canceled;
+                    self.dirty = true;
+                }
+                //step 4.3 + 4.4. Cancel running transition and start a new one.
+                else {
+                    running_transition.state = AnimationState::Canceled;
+                    let property_animation = PropertyAnimation {
+                        from: from.clone(),
+                        to,
+                        timing_function,
+                        duration,
+                    };
+                    let mut new_transition = Transition {
+                        start_time: now + delay,
+                        delay,
+                        property_animation,
+                        state: AnimationState::Pending,
+                        is_new: true,
+                        reversing_adjusted_start_value: from.clone(),
+                        reversing_shortening_factor: 1.0,
+                    };
+                    new_transition.update_for_possibly_reversed_transition(running_transition, delay, now);
+                    self.transitions.push(new_transition);
+                    self.dirty = true;
+                }
             }
-
-            self.transitions.push(new_transition);
-            self.dirty = true;
         }
     }
-
-    
 
     /// Generate a `AnimationValueMap` for this `ElementAnimationSet`'s
     ///  transitions that depends on flag.

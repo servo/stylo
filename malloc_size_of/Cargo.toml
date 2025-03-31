@@ -4,6 +4,7 @@ version = "0.2.0"
 authors = ["The Servo Project Developers"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/servo/stylo"
+description = "An allocator-agnostic crate for measuring the heap size of a value"
 
 [lib]
 path = "lib.rs"

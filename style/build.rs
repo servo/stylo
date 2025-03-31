@@ -53,6 +53,13 @@ fn generate_properties(engine: &str) {
         }
     }
 
+    // `cargo publish` isn't happy with the `__pycache__` files that are created
+    // when we run the property generator.
+    //
+    // TODO(mrobinson): Is this happening because of how we run this script? It
+    // would be better to ensure are just placed in the output directory.
+    env::set_var("PYTHONDONTWRITEBYTECODE", "1");
+
     let script = Path::new(&env::var_os("CARGO_MANIFEST_DIR").unwrap())
         .join("properties")
         .join("build.py");

@@ -1,7 +1,7 @@
 Stylo
 =====
 
-**High-performance CSS style engine**
+**High-Performance CSS Style Engine**
 
 [![Build Status](https://github.com/servo/stylo/actions/workflows/main.yml/badge.svg)](https://github.com/servo/stylo/actions)
 [![Crates.io](https://img.shields.io/crates/v/stylo.svg)](https://crates.io/crates/stylo)
@@ -16,7 +16,7 @@ Coordination of Stylo development happens:
 - In the [#stylo](https://servo.zulipchat.com/#narrow/channel/417109-stylo) channel of the [Servo Zulip](https://servo.zulipchat.com/)
 - In the [#layout](https://chat.mozilla.org/#/room/#layout:mozilla.org) room of the Mozilla Matrix instance (matrix.mozilla.org)
 
-## High-level Documentation
+## High-Level Documentation
 
 - This [Mozilla Hacks article](https://hacks.mozilla.org/2017/08/inside-a-super-fast-css-engine-quantum-css-aka-stylo) contains a high-level overview of the Stylo architecture.
 - There is a [chapter](https://book.servo.org/architecture/style.html) in the Servo Book (although it is a little out of date).
@@ -51,7 +51,7 @@ These crates are largely implementation details of Stylo, although you may need 
 | stylo_static_prefs | [![Crates.io](https://img.shields.io/crates/v/stylo_static_prefs.svg)](https://crates.io/crates/stylo_static_prefs) | Static configuration for Stylo. Config be overridden by patching in a replacement crate.                          |
 | style_derive       | [![Crates.io](https://img.shields.io/crates/v/stylo_derive.svg)](https://crates.io/crates/stylo_derive)             | Internal derive macro for stylo crate                                                                             |
 
-### Standalone crates
+### Standalone Crates
 
 These crates form part of Stylo but are also be useful standalone.
 
@@ -62,7 +62,7 @@ These crates form part of Stylo but are also be useful standalone.
 
 You may also be interested in the `cssparser` crate which lives in the [servo/rust-cssparser](https://github.com/servo/rust-cssparser) repo.
 
-### Support crates
+### Support Crates
 
 Low-level crates which could technically be used standalone but are unlikely to be generally useful in practice.
 
@@ -72,7 +72,7 @@ Low-level crates which could technically be used standalone but are unlikely to 
 | to_shmem        | [![Crates.io](https://img.shields.io/crates/v/to_shmem.svg)](https://crates.io/crates/to_shmem)                         | Internal utility crate for sharing memory across processes. |
 | to_shmem_derive | [![Crates.io](https://img.shields.io/crates/v/to_shmem_derive.svg)](https://crates.io/crates/to_shmem_derive)           | Internal derive macro for to_shmem crate                    |
 
-## Building Servo against a local copy of Stylo
+## Building Servo Against a Local Copy of Stylo
 
 Assuming your local `servo` and `stylo` directories are siblings, you can build `servo` against `stylo` by adding the following to `servo/Cargo.toml`:
 

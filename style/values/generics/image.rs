@@ -28,7 +28,7 @@ pub enum GenericImage<G, ImageUrl, Color, Percentage, Resolution> {
     /// `none` variant.
     None,
     /// A `<url()>` image.
-    Url(ImageUrl),
+    Url(Box<ImageUrl>),
 
     /// A `<gradient>` image.  Gradients are rather large, and not nearly as
     /// common as urls, so we box them here to keep the size of this enum sane.

@@ -59,7 +59,6 @@ ${helpers.predefined_type(
     initial_specified_value="specified::Image::None",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-lists/#propdef-list-style-image",
-    boxed=engine == "servo",
     servo_restyle_damage="rebuild_and_reflow",
     affects="layout",
 )}

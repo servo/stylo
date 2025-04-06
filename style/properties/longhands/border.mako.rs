@@ -112,7 +112,6 @@ ${helpers.predefined_type(
     spec="https://drafts.csswg.org/css-backgrounds/#the-background-image",
     vector=False,
     animation_type="discrete",
-    boxed=engine == "servo",
     ignored_when_colors_disabled=True,
     affects="paint",
 )}

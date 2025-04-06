@@ -46,7 +46,7 @@ pub type Image = generic::Image<Gradient, SpecifiedUrl, Color, Percentage, Resol
 #[cfg(feature = "gecko")]
 size_of_test!(Image, 16);
 #[cfg(feature = "servo")]
-size_of_test!(Image, 40);
+size_of_test!(Image, 24);
 
 /// Specified values for a CSS gradient.
 /// <https://drafts.csswg.org/css-images/#gradients>
@@ -244,7 +244,7 @@ impl Image {
         input.parse_nested_block(|input| {
             Ok(match_ignore_ascii_case! { &function,
                 #[cfg(feature = "servo")]
-                "paint" => Self::PaintWorklet(PaintWorklet::parse_args(context, input)?),
+                "paint" => Self::PaintWorklet(Box::new(<PaintWorklet>::parse_args(context, input)?)),
                 "cross-fade" if cross_fade_enabled() => Self::CrossFade(Box::new(CrossFade::parse_args(context, input, cors_mode, flags)?)),
                 #[cfg(feature = "gecko")]
                 "-moz-element" => Self::Element(Self::parse_element(input)?),

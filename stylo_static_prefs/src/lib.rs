@@ -36,6 +36,9 @@ macro_rules! pref {
     ("layout.css.transition-behavior.enabled") => {
         true
     };
+    ("layout.css.marker.restricted") => {
+        true
+    };
     ($string:literal) => {
         false
     };

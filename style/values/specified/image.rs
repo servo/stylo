@@ -46,7 +46,7 @@ pub type Image = generic::Image<Gradient, SpecifiedUrl, Color, Percentage, Resol
 #[cfg(feature = "gecko")]
 size_of_test!(Image, 16);
 #[cfg(feature = "servo")]
-size_of_test!(Image, 24);
+size_of_test!(Image, 16);
 
 /// Specified values for a CSS gradient.
 /// <https://drafts.csswg.org/css-images/#gradients>

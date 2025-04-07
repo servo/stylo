@@ -72,7 +72,7 @@ lazy_static = "1"
 log = "0.4"
 malloc_size_of = { version = "0.2", path = "../malloc_size_of", package = "stylo_malloc_size_of" }
 malloc_size_of_derive = "0.1"
-markup5ever = { version = "0.15", optional = true }
+markup5ever = { version = "0.16", optional = true }
 matches = "0.1"
 mime = { version = "0.3.13", optional = true }
 num_cpus = {version = "1.1.0"}

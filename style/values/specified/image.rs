@@ -221,7 +221,7 @@ impl Image {
         if let Ok(url) = input
             .try_parse(|input| SpecifiedUrl::parse_with_cors_mode(context, input, cors_mode))
         {
-            return Ok(generic::Image::Url(Box::new(url)));
+            return Ok(generic::Image::Url(url));
         }
 
         if !flags.contains(ParseImageFlags::FORBID_IMAGE_SET) {
@@ -260,7 +260,7 @@ impl Image {
     #[cfg(feature = "servo")]
     pub fn for_cascade(url: ::servo_arc::Arc<::url::Url>) -> Self {
         use crate::values::CssUrl;
-        generic::Image::Url(Box::new(CssUrl::for_cascade(url)))
+        generic::Image::Url(CssUrl::for_cascade(url))
     }
 
     /// Parses a `-moz-element(# <element-id>)`.
@@ -422,11 +422,11 @@ impl ImageSetItem {
         flags: ParseImageFlags,
     ) -> Result<Self, ParseError<'i>> {
         let image = match input.try_parse(|i| i.expect_url_or_string()) {
-            Ok(url) => Image::Url(Box::new(SpecifiedUrl::parse_from_string(
+            Ok(url) => Image::Url(SpecifiedUrl::parse_from_string(
                 url.as_ref().into(),
                 context,
                 cors_mode,
-            ))),
+            )),
             Err(..) => Image::parse_with_cors_mode(
                 context,
                 input,

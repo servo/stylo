@@ -8,7 +8,6 @@ edition = "2021"
 description = "Types used by the Stylo CSS engine"
 
 [lib]
-name = "style_traits"
 path = "lib.rs"
 
 [features]

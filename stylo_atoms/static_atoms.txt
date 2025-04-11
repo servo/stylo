@@ -19,6 +19,7 @@ animationend
 animationiteration
 animationstart
 aspect-ratio
+beforetoggle
 beforeunload
 block-size
 button

@@ -69,9 +69,9 @@ impl CssUrl {
         let serialization = Arc::new(url);
         let resolved = context.url_data.0.join(&serialization).ok().map(Arc::new);
         CssUrl(Arc::new(CssUrlData {
-             original: Some(serialization),
-             resolved: resolved 
-            }))
+            original: Some(serialization),
+            resolved: resolved,
+        }))
     }
 
     /// Returns true if the URL is definitely invalid. For Servo URLs, we can
@@ -110,9 +110,9 @@ impl CssUrl {
     /// for insertion in the cascade.
     pub fn for_cascade(url: Arc<::url::Url>) -> Self {
         CssUrl(Arc::new(CssUrlData {
-             original:None,
-             resolved: Some(url) 
-            }))
+            original: None,
+            resolved: Some(url),
+        }))
     }
 
     /// Gets a new url from a string for unit tests.

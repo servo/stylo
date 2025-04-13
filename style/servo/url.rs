@@ -10,9 +10,9 @@ use crate::values::computed::{Context, ToComputedValue};
 use cssparser::Parser;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
+use std::ops::Deref;
 use style_traits::{CssWriter, ParseError, ToCss};
 use to_shmem::{SharedMemoryBuilder, ToShmem};
-use std::ops::Deref;
 use url::Url;
 
 /// A CSS url() value for servo.
@@ -26,7 +26,7 @@ use url::Url;
 #[derive(Clone, Debug, Deserialize, MallocSizeOf, Serialize, SpecifiedValueInfo)]
 #[css(function = "url")]
 #[repr(C)]
-pub struct CssUrl(#[ignore_malloc_size_of = "Arc"]pub Arc<CssUrlData>);
+pub struct CssUrl(#[ignore_malloc_size_of = "Arc"] pub Arc<CssUrlData>);
 
 /// Data shared between CssUrls.
 ///
@@ -117,7 +117,7 @@ impl CssUrl {
 
     /// Gets a new url from a string for unit tests.
     pub fn new_for_testing(url: &str) -> Self {
-        CssUrl(Arc::new(CssUrlData { 
+        CssUrl(Arc::new(CssUrlData {
             original: Some(Arc::new(url.into())),
             resolved: ::url::Url::parse(url).ok().map(Arc::new),
         }))

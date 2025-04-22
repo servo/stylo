@@ -1,6 +1,6 @@
 [package]
 name = "servo_arc"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["The Servo Project Developers"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/servo/stylo"
@@ -12,6 +12,7 @@ name = "servo_arc"
 path = "lib.rs"
 
 [features]
+default = ["track_alloc_size"]
 gecko_refcount_logging = []
 servo = ["serde", "track_alloc_size"]
 track_alloc_size = []

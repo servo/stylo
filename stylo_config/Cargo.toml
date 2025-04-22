@@ -10,5 +10,4 @@ license = "MPL-2.0"
 edition = "2021"
 
 [lib]
-name = "stylo_config"
 path = "lib.rs"

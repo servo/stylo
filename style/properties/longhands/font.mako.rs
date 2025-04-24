@@ -230,7 +230,8 @@ ${helpers.single_keyword(
 ${helpers.predefined_type(
     "font-feature-settings",
     "FontFeatureSettings",
-    engines="gecko",
+    engines="gecko servo",
+    servo_pref="layout.unimplemented",
     initial_value="computed::FontFeatureSettings::normal()",
     initial_specified_value="specified::FontFeatureSettings::normal()",
     extra_prefixes="moz:layout.css.prefixes.font-features webkit",

@@ -34,6 +34,7 @@ pub trait TaggedFontValue {
     ToResolvedValue,
     ToShmem,
 )]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct FeatureTagValue<Integer> {
     /// A four-character tag, packed into a u32 (one byte per character).
     pub tag: FontTag,

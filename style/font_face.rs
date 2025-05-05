@@ -30,7 +30,7 @@ use style_traits::{CssWriter, ParseError};
 use style_traits::{StyleParseErrorKind, ToCss};
 
 /// A source for a font-face rule.
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize, MallocSizeOf))]
 #[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
 pub enum Source {
     /// A `url()` source.
@@ -42,6 +42,7 @@ pub enum Source {
 
 /// A list of sources for the font-face src descriptor.
 #[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 #[css(comma)]
 pub struct SourceList(#[css(iterable)] pub Vec<Source>);
 
@@ -74,7 +75,7 @@ impl Parse for SourceList {
 /// Keywords for the font-face src descriptor's format() function.
 /// ('None' and 'Unknown' are for internal use in gfx, not exposed to CSS.)
 #[derive(Clone, Copy, Debug, Eq, Parse, PartialEq, ToCss, ToShmem)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize, MallocSizeOf))]
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum FontFaceSourceFormatKeyword {
@@ -222,7 +223,7 @@ pub enum FontFaceSourceListComponent {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize, MallocSizeOf))]
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum FontFaceSourceFormat {
@@ -234,7 +235,7 @@ pub enum FontFaceSourceFormat {
 /// `url()` function.
 ///
 /// <https://drafts.csswg.org/css-fonts/#src-desc>
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize, MallocSizeOf))]
 #[derive(Clone, Debug, Eq, PartialEq, ToShmem)]
 pub struct UrlSource {
     /// The specified url.
@@ -242,6 +243,7 @@ pub struct UrlSource {
     /// The format hint specified with the `format()` function, if present.
     pub format_hint: Option<FontFaceSourceFormat>,
     /// The font technology flags specified with the `tech()` function, if any.
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "Can't measure bitflags")]
     pub tech_flags: FontFaceSourceTechFlags,
 }
 

@@ -14,7 +14,8 @@ use std::hash::BuildHasherDefault;
 /// A map for a set of custom properties, which implements copy-on-write behavior on insertion with
 /// cheap copying.
 #[derive(Clone, Debug, PartialEq)]
-pub struct CustomPropertiesMap(Arc<Inner>);
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+pub struct CustomPropertiesMap(#[cfg_attr(feature = "servo", conditional_malloc_size_of)] Arc<Inner>);
 
 impl Default for CustomPropertiesMap {
     fn default() -> Self {
@@ -38,8 +39,11 @@ lazy_static! {
 }
 
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 struct Inner {
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "No impl for IndexMap")]
     own_properties: OwnMap,
+    #[cfg_attr(feature = "servo", conditional_malloc_size_of)]
     parent: Option<Arc<Inner>>,
     /// The number of custom properties we store. Note that this is different from the sum of our
     /// own and our parent's length, since we might store duplicate entries.

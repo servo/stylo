@@ -1694,10 +1694,11 @@ pub mod style_structs {
 pub use super::gecko::{ComputedValues, ComputedValuesInner};
 
 #[cfg(feature = "servo")]
-#[cfg_attr(feature = "servo", derive(Clone, Debug))]
+#[cfg_attr(feature = "servo", derive(Clone, Debug, MallocSizeOf))]
 /// Actual data of ComputedValues, to match up with Gecko
 pub struct ComputedValuesInner {
     % for style_struct in data.active_style_structs():
+        #[conditional_malloc_size_of]
         ${style_struct.ident}: Arc<style_structs::${style_struct.name}>,
     % endfor
     custom_properties: crate::custom_properties::ComputedCustomProperties,
@@ -1719,6 +1720,7 @@ pub struct ComputedValuesInner {
     /// The element's computed values if visited, only computed if there's a
     /// relevant link for this element. A element's "relevant link" is the
     /// element being matched if it is a link or the nearest ancestor link.
+    #[conditional_malloc_size_of]
     visited_style: Option<Arc<ComputedValues>>,
 }
 
@@ -1729,7 +1731,7 @@ pub struct ComputedValuesInner {
 ///
 /// When needed, the structs may be copied in order to get mutated.
 #[cfg(feature = "servo")]
-#[cfg_attr(feature = "servo", derive(Clone, Debug))]
+#[cfg_attr(feature = "servo", derive(Clone, Debug, MallocSizeOf))]
 pub struct ComputedValues {
     /// The actual computed values
     ///

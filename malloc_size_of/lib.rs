@@ -255,6 +255,16 @@ where
     }
 }
 
+impl<T: MallocConditionalSizeOf> MallocConditionalSizeOf for Option<T> {
+    fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        if let Some(val) = self.as_ref() {
+            val.conditional_size_of(ops)
+        } else {
+            0
+        }
+    }
+}
+
 impl<T: MallocSizeOf> MallocSizeOf for Option<T> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         if let Some(val) = self.as_ref() {
@@ -301,6 +311,16 @@ where
             std::borrow::Cow::Borrowed(_) => 0,
             std::borrow::Cow::Owned(ref b) => b.size_of(ops),
         }
+    }
+}
+
+impl<T: MallocConditionalSizeOf, const N: usize> MallocConditionalSizeOf for [T; N] {
+    fn conditional_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        let mut n = 0;
+        for elem in self.iter() {
+            n += elem.conditional_size_of(ops);
+        }
+        n
     }
 }
 

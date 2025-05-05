@@ -277,6 +277,7 @@ impl ToCss for SpecifiedValue {
 /// that have the inherit flag set and those with the flag unset.
 #[repr(C)]
 #[derive(Clone, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct ComputedCustomProperties {
     /// Map for custom properties with inherit flag set, including non-registered
     /// ones.

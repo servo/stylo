@@ -58,10 +58,12 @@ bitflags! {
 /// Arc::make_mut(), which is free (i.e. does not require atomic RMU operations)
 /// in servo_arc.
 #[derive(Clone, Debug, Default)]
-pub struct EagerPseudoStyles(Option<Arc<EagerPseudoArray>>);
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+pub struct EagerPseudoStyles(#[cfg_attr(feature = "servo", conditional_malloc_size_of)] Option<Arc<EagerPseudoArray>>);
 
 #[derive(Default)]
-struct EagerPseudoArray(EagerPseudoArrayInner);
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+struct EagerPseudoArray(#[cfg_attr(feature = "servo", conditional_malloc_size_of)] EagerPseudoArrayInner);
 type EagerPseudoArrayInner = [Option<Arc<ComputedValues>>; EAGER_PSEUDO_COUNT];
 
 impl Deref for EagerPseudoArray {
@@ -156,8 +158,10 @@ impl EagerPseudoStyles {
 /// The styles associated with a node, including the styles for any
 /// pseudo-elements.
 #[derive(Clone, Default)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct ElementStyles {
     /// The element's style.
+    #[cfg_attr(feature = "servo", conditional_malloc_size_of)]
     pub primary: Option<Arc<ComputedValues>>,
     /// A list of the styles for the element's eagerly-cascaded pseudo-elements.
     pub pseudos: EagerPseudoStyles,
@@ -249,6 +253,7 @@ impl fmt::Debug for ElementStyles {
 /// inside of layout data, which itself hangs directly off the Element. In
 /// both cases, it is wrapped inside an AtomicRefCell to ensure thread safety.
 #[derive(Debug, Default)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct ElementData {
     /// The styles for the element and its pseudo-elements.
     pub styles: ElementStyles,
@@ -262,6 +267,7 @@ pub struct ElementData {
     pub hint: RestyleHint,
 
     /// Flags.
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "can't derive MallocSizeOf for bitflags")]
     pub flags: ElementDataFlags,
 }
 

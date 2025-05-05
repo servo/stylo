@@ -16,44 +16,13 @@ bitflags! {
     pub struct ServoRestyleDamage: u8 {
         /// Repaint the node itself.
         ///
-        /// Currently unused; need to decide how this propagates.
+        /// Propagates both up and down the flow tree.
         const REPAINT = 0x01;
 
-        /// The stacking-context-relative position of this node or its
-        /// descendants has changed.
+        /// Any other type of damage, which requires rebuilding all layout objects.
         ///
         /// Propagates both up and down the flow tree.
-        const REPOSITION = 0x02;
-
-        /// Recompute the overflow regions (bounding box of object and all descendants).
-        ///
-        /// Propagates down the flow tree because the computation is bottom-up.
-        const STORE_OVERFLOW = 0x04;
-
-        /// Recompute intrinsic inline_sizes (minimum and preferred).
-        ///
-        /// Propagates down the flow tree because the computation is.
-        /// bottom-up.
-        const BUBBLE_ISIZES = 0x08;
-
-        /// Recompute actual inline-sizes and block-sizes, only taking
-        /// out-of-flow children into account.
-        ///
-        /// Propagates up the flow tree because the computation is top-down.
-        const REFLOW_OUT_OF_FLOW = 0x10;
-
-        /// Recompute actual inline_sizes and block_sizes.
-        ///
-        /// Propagates up the flow tree because the computation is top-down.
-        const REFLOW = 0x20;
-
-        /// Re-resolve generated content.
-        ///
-        /// Propagates up the flow tree because the computation is inorder.
-        const RESOLVE_GENERATED_CONTENT = 0x40;
-
-        /// The entire flow needs to be reconstructed.
-        const RECONSTRUCT_FLOW = 0x80;
+        const REBUILD = 0x02;
     }
 }
 
@@ -75,78 +44,9 @@ impl ServoRestyleDamage {
         StyleDifference { damage, change }
     }
 
-    /// Returns a bitmask that represents a flow that needs to be rebuilt and
-    /// reflowed.
-    ///
-    /// FIXME(bholley): Do we ever actually need this? Shouldn't
-    /// RECONSTRUCT_FLOW imply everything else?
-    pub fn rebuild_and_reflow() -> ServoRestyleDamage {
-        ServoRestyleDamage::REPAINT |
-            ServoRestyleDamage::REPOSITION |
-            ServoRestyleDamage::STORE_OVERFLOW |
-            ServoRestyleDamage::BUBBLE_ISIZES |
-            ServoRestyleDamage::REFLOW_OUT_OF_FLOW |
-            ServoRestyleDamage::REFLOW |
-            ServoRestyleDamage::RECONSTRUCT_FLOW
-    }
-
     /// Returns a bitmask indicating that the frame needs to be reconstructed.
     pub fn reconstruct() -> ServoRestyleDamage {
-        ServoRestyleDamage::RECONSTRUCT_FLOW
-    }
-
-    /// Supposing a flow has the given `position` property and this damage,
-    /// returns the damage that we should add to the *parent* of this flow.
-    pub fn damage_for_parent(self, child_is_absolutely_positioned: bool) -> ServoRestyleDamage {
-        if child_is_absolutely_positioned {
-            self & (ServoRestyleDamage::REPAINT |
-                ServoRestyleDamage::REPOSITION |
-                ServoRestyleDamage::STORE_OVERFLOW |
-                ServoRestyleDamage::REFLOW_OUT_OF_FLOW |
-                ServoRestyleDamage::RESOLVE_GENERATED_CONTENT)
-        } else {
-            self & (ServoRestyleDamage::REPAINT |
-                ServoRestyleDamage::REPOSITION |
-                ServoRestyleDamage::STORE_OVERFLOW |
-                ServoRestyleDamage::REFLOW |
-                ServoRestyleDamage::REFLOW_OUT_OF_FLOW |
-                ServoRestyleDamage::RESOLVE_GENERATED_CONTENT)
-        }
-    }
-
-    /// Supposing the *parent* of a flow with the given `position` property has
-    /// this damage, returns the damage that we should add to this flow.
-    pub fn damage_for_child(
-        self,
-        parent_is_absolutely_positioned: bool,
-        child_is_absolutely_positioned: bool,
-    ) -> ServoRestyleDamage {
-        match (
-            parent_is_absolutely_positioned,
-            child_is_absolutely_positioned,
-        ) {
-            (false, true) => {
-                // Absolute children are out-of-flow and therefore insulated from changes.
-                //
-                // FIXME(pcwalton): Au contraire, if the containing block dimensions change!
-                self & (ServoRestyleDamage::REPAINT | ServoRestyleDamage::REPOSITION)
-            },
-            (true, false) => {
-                // Changing the position of an absolutely-positioned block requires us to reflow
-                // its kids.
-                if self.contains(ServoRestyleDamage::REFLOW_OUT_OF_FLOW) {
-                    self | ServoRestyleDamage::REFLOW
-                } else {
-                    self
-                }
-            },
-            _ => {
-                // TODO(pcwalton): Take floatedness into account.
-                self & (ServoRestyleDamage::REPAINT |
-                    ServoRestyleDamage::REPOSITION |
-                    ServoRestyleDamage::REFLOW)
-            },
-        }
+        ServoRestyleDamage::REBUILD
     }
 }
 
@@ -162,16 +62,7 @@ impl fmt::Display for ServoRestyleDamage {
 
         let to_iter = [
             (ServoRestyleDamage::REPAINT, "Repaint"),
-            (ServoRestyleDamage::REPOSITION, "Reposition"),
-            (ServoRestyleDamage::STORE_OVERFLOW, "StoreOverflow"),
-            (ServoRestyleDamage::BUBBLE_ISIZES, "BubbleISizes"),
-            (ServoRestyleDamage::REFLOW_OUT_OF_FLOW, "ReflowOutOfFlow"),
-            (ServoRestyleDamage::REFLOW, "Reflow"),
-            (
-                ServoRestyleDamage::RESOLVE_GENERATED_CONTENT,
-                "ResolveGeneratedContent",
-            ),
-            (ServoRestyleDamage::RECONSTRUCT_FLOW, "ReconstructFlow"),
+            (ServoRestyleDamage::REBUILD, "Rebuild"),
         ];
 
         for &(damage, damage_str) in &to_iter {
@@ -204,13 +95,7 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
         new,
         damage,
         [
-            ServoRestyleDamage::REPAINT,
-            ServoRestyleDamage::REPOSITION,
-            ServoRestyleDamage::STORE_OVERFLOW,
-            ServoRestyleDamage::BUBBLE_ISIZES,
-            ServoRestyleDamage::REFLOW_OUT_OF_FLOW,
-            ServoRestyleDamage::REFLOW,
-            ServoRestyleDamage::RECONSTRUCT_FLOW
+            ServoRestyleDamage::REBUILD
         ],
         old.get_box().original_display != new.get_box().original_display
     ) || (new.get_box().display == Display::Inline &&
@@ -219,13 +104,7 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
             new,
             damage,
             [
-                ServoRestyleDamage::REPAINT,
-                ServoRestyleDamage::REPOSITION,
-                ServoRestyleDamage::STORE_OVERFLOW,
-                ServoRestyleDamage::BUBBLE_ISIZES,
-                ServoRestyleDamage::REFLOW_OUT_OF_FLOW,
-                ServoRestyleDamage::REFLOW,
-                ServoRestyleDamage::RECONSTRUCT_FLOW
+                ServoRestyleDamage::REBUILD
             ]
         )) ||
         restyle_damage_reflow!(
@@ -233,12 +112,7 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
             new,
             damage,
             [
-                ServoRestyleDamage::REPAINT,
-                ServoRestyleDamage::REPOSITION,
-                ServoRestyleDamage::STORE_OVERFLOW,
-                ServoRestyleDamage::BUBBLE_ISIZES,
-                ServoRestyleDamage::REFLOW_OUT_OF_FLOW,
-                ServoRestyleDamage::REFLOW
+                ServoRestyleDamage::REBUILD
             ]
         ) ||
         restyle_damage_reflow_out_of_flow!(
@@ -246,10 +120,7 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
             new,
             damage,
             [
-                ServoRestyleDamage::REPAINT,
-                ServoRestyleDamage::REPOSITION,
-                ServoRestyleDamage::STORE_OVERFLOW,
-                ServoRestyleDamage::REFLOW_OUT_OF_FLOW
+                ServoRestyleDamage::REBUILD
             ]
         ) ||
         restyle_damage_repaint!(old, new, damage, [ServoRestyleDamage::REPAINT]);
@@ -259,12 +130,5 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
     if !old.custom_properties_equal(new) {
         damage.insert(ServoRestyleDamage::REPAINT);
     }
-
-    // If the layer requirements of this flow have changed due to the value
-    // of the transform, then reflow is required to rebuild the layers.
-    if old.transform_requires_layer() != new.transform_requires_layer() {
-        damage.insert(ServoRestyleDamage::rebuild_and_reflow());
-    }
-
     damage
 }

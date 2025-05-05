@@ -223,8 +223,7 @@ impl<'a> Iterator for PropertyDeclarationIdSetIterator<'a> {
 }
 
 /// Overridden declarations are skipped.
-#[cfg_attr(feature = "gecko", derive(MallocSizeOf))]
-#[derive(Clone, ToShmem, Default)]
+#[derive(Clone, ToShmem, Default, MallocSizeOf)]
 pub struct PropertyDeclarationBlock {
     /// The group of declarations, along with their importance.
     ///

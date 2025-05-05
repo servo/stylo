@@ -180,6 +180,7 @@ impl<'a> Drop for SharedRwLockWriteGuard<'a> {
 }
 
 /// Data protect by a shared lock.
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct Locked<T> {
     shared_lock: SharedRwLock,
     data: UnsafeCell<T>,

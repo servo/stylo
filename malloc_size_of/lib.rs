@@ -274,6 +274,12 @@ impl<T: MallocSizeOf, E: MallocSizeOf> MallocSizeOf for Result<T, E> {
     }
 }
 
+impl<T: MallocSizeOf> MallocSizeOf for std::cell::UnsafeCell<T> {
+    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        unsafe { self.get().as_ref().unwrap().size_of(ops) }
+    }
+}
+
 impl<T: MallocSizeOf + Copy> MallocSizeOf for std::cell::Cell<T> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         self.get().size_of(ops)

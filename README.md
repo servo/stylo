@@ -88,6 +88,20 @@ stylo_malloc_size_of = { path = "../stylo/malloc_size_of" }
 stylo_traits = { path = "../stylo/style_traits" }
 ```
 
+## Releases
+
+Releases are made every time this repository rebases its changes on top of the latest version of upstream Stylo. There are a lot of crates here. In order to publish them, they must be done in order. One order that works is:
+
+- selectors
+- stylo_static_prefs
+- stylo_config
+- stylo_atoms
+- stylo_malloc_size_of
+- stylo_dom
+- stylo_derive
+- stylo_traits
+- stylo
+
 ## License
 
 Stylo is licensed under MPL 2.0

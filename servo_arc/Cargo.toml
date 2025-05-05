@@ -6,6 +6,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/servo/stylo"
 description = "A fork of std::sync::Arc with some extra functionality and without weak references"
 edition = "2021"
+readme = "../README.md"
 
 [lib]
 name = "servo_arc"

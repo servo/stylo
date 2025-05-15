@@ -373,7 +373,7 @@ class Longhand(Property):
         ignored_when_colors_disabled=False,
         simple_vector_bindings=False,
         vector=False,
-        servo_restyle_damage="repaint",
+        servo_restyle_damage="rebuild_and_reflow",
         affects=None,
     ):
         Property.__init__(

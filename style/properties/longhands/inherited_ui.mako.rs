@@ -12,6 +12,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::Cursor::auto()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-ui/#cursor",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 

@@ -301,7 +301,6 @@ pub enum GenericLineHeight<N, L> {
     /// `normal`
     Normal,
     /// `-moz-block-height`
-    #[cfg(feature = "gecko")]
     #[parse(condition = "ParserContext::in_ua_sheet")]
     MozBlockHeight,
     /// `<number>`

@@ -11,6 +11,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     ignored_when_colors_disabled="True",
     spec="https://drafts.csswg.org/css-color/#color",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 

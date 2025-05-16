@@ -14,6 +14,7 @@ ${helpers.predefined_type(
     ignored_when_colors_disabled=True,
     allow_quirks="Yes",
     flags="CAN_ANIMATE_ON_COMPOSITOR",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -27,6 +28,7 @@ ${helpers.predefined_type(
     vector="True",
     animation_type="discrete",
     ignored_when_colors_disabled="True",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -40,6 +42,7 @@ ${helpers.predefined_type(
         spec="https://drafts.csswg.org/css-backgrounds-4/#propdef-background-position-" + axis,
         vector=True,
         vector_animation_type="repeatable_list",
+        servo_restyle_damage="repaint",
         affects="paint",
     )}
 % endfor
@@ -53,6 +56,7 @@ ${helpers.predefined_type(
     animation_type="discrete",
     vector=True,
     spec="https://drafts.csswg.org/css-backgrounds/#the-background-repeat",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -64,6 +68,7 @@ ${helpers.single_keyword(
     gecko_enum_prefix="StyleImageLayerAttachment",
     spec="https://drafts.csswg.org/css-backgrounds/#the-background-attachment",
     animation_type="discrete",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -77,6 +82,7 @@ ${helpers.single_keyword(
     gecko_inexhaustive=True,
     spec="https://drafts.csswg.org/css-backgrounds/#the-background-clip",
     animation_type="discrete",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -89,6 +95,7 @@ ${helpers.single_keyword(
     gecko_inexhaustive=True,
     spec="https://drafts.csswg.org/css-backgrounds/#the-background-origin",
     animation_type="discrete",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -102,6 +109,7 @@ ${helpers.predefined_type(
     vector=True,
     vector_animation_type="repeatable_list",
     extra_prefixes="webkit",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 

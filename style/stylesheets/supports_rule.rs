@@ -76,6 +76,7 @@ impl DeepCloneWithLock for SupportsRule {
 ///
 /// <https://drafts.csswg.org/css-conditional-3/#at-supports>
 #[derive(Clone, Debug, ToShmem)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub enum SupportsCondition {
     /// `not (condition)`
     Not(Box<SupportsCondition>),
@@ -92,7 +93,7 @@ pub enum SupportsCondition {
     /// `font-format(<font-format>)`
     FontFormat(FontFaceSourceFormatKeyword),
     /// `font-tech(<font-tech>)`
-    FontTech(FontFaceSourceTechFlags),
+    FontTech(#[cfg_attr(feature = "servo", ignore_malloc_size_of = "can't measure bitflags")] FontFaceSourceTechFlags),
     /// `(any tokens)` or `func(any tokens)`
     FutureSyntax(String),
 }
@@ -316,6 +317,7 @@ impl ToCss for SupportsCondition {
 }
 
 #[derive(Clone, Debug, ToShmem)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 /// A possibly-invalid CSS selector.
 pub struct RawSelector(pub String);
 
@@ -352,6 +354,7 @@ impl RawSelector {
 }
 
 #[derive(Clone, Debug, ToShmem)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 /// A possibly-invalid property declaration
 pub struct Declaration(pub String);
 

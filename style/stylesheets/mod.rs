@@ -324,31 +324,32 @@ fn style_or_page_rule_to_css(
 ///
 /// TODO(emilio): Lots of spec links should be around.
 #[derive(Clone, Debug, ToShmem)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 #[allow(missing_docs)]
 pub enum CssRule {
-    Style(Arc<Locked<StyleRule>>),
+    Style(#[cfg_attr(feature = "servo", conditional_malloc_size_of)] Arc<Locked<StyleRule>>),
     // No Charset here, CSSCharsetRule has been removed from CSSOM
     // https://drafts.csswg.org/cssom/#changes-from-5-december-2013
-    Namespace(Arc<NamespaceRule>),
-    Import(Arc<Locked<ImportRule>>),
-    Media(Arc<MediaRule>),
-    Container(Arc<ContainerRule>),
-    FontFace(Arc<Locked<FontFaceRule>>),
-    FontFeatureValues(Arc<FontFeatureValuesRule>),
-    FontPaletteValues(Arc<FontPaletteValuesRule>),
-    CounterStyle(Arc<Locked<CounterStyleRule>>),
-    Keyframes(Arc<Locked<KeyframesRule>>),
-    Margin(Arc<MarginRule>),
-    Supports(Arc<SupportsRule>),
-    Page(Arc<Locked<PageRule>>),
-    Property(Arc<PropertyRule>),
-    Document(Arc<DocumentRule>),
-    LayerBlock(Arc<LayerBlockRule>),
-    LayerStatement(Arc<LayerStatementRule>),
-    Scope(Arc<ScopeRule>),
-    StartingStyle(Arc<StartingStyleRule>),
-    PositionTry(Arc<Locked<PositionTryRule>>),
-    NestedDeclarations(Arc<Locked<NestedDeclarationsRule>>),
+    Namespace(#[cfg_attr(feature = "servo", conditional_malloc_size_of)] Arc<NamespaceRule>),
+    Import(#[cfg_attr(feature = "servo", conditional_malloc_size_of)] Arc<Locked<ImportRule>>),
+    Media(#[cfg_attr(feature = "servo", conditional_malloc_size_of)] Arc<MediaRule>),
+    Container(#[ignore_malloc_size_of = ""] Arc<ContainerRule>),
+    FontFace(#[ignore_malloc_size_of = ""] Arc<Locked<FontFaceRule>>),
+    FontFeatureValues(#[ignore_malloc_size_of = ""] Arc<FontFeatureValuesRule>),
+    FontPaletteValues(#[ignore_malloc_size_of = ""] Arc<FontPaletteValuesRule>),
+    CounterStyle(#[ignore_malloc_size_of = ""] Arc<Locked<CounterStyleRule>>),
+    Keyframes(#[ignore_malloc_size_of = ""] Arc<Locked<KeyframesRule>>),
+    Margin(#[ignore_malloc_size_of = ""] Arc<MarginRule>),
+    Supports(#[ignore_malloc_size_of = ""] Arc<SupportsRule>),
+    Page(#[ignore_malloc_size_of = ""] Arc<Locked<PageRule>>),
+    Property(#[ignore_malloc_size_of = ""] Arc<PropertyRule>),
+    Document(#[ignore_malloc_size_of = ""] Arc<DocumentRule>),
+    LayerBlock(#[ignore_malloc_size_of = ""] Arc<LayerBlockRule>),
+    LayerStatement(#[ignore_malloc_size_of = ""] Arc<LayerStatementRule>),
+    Scope(#[ignore_malloc_size_of = ""] Arc<ScopeRule>),
+    StartingStyle(#[ignore_malloc_size_of = ""] Arc<StartingStyleRule>),
+    PositionTry(#[ignore_malloc_size_of = ""] Arc<Locked<PositionTryRule>>),
+    NestedDeclarations(#[ignore_malloc_size_of = ""] Arc<Locked<NestedDeclarationsRule>>),
 }
 
 impl CssRule {

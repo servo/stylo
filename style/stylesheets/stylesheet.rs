@@ -49,9 +49,11 @@ pub struct Namespaces {
 /// The contents of a given stylesheet. This effectively maps to a
 /// StyleSheetInner in Gecko.
 #[derive(Debug)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct StylesheetContents {
     /// List of rules in the order they were found (important for
     /// cascading order)
+    #[cfg_attr(feature = "servo", conditional_malloc_size_of)]
     pub rules: Arc<Locked<CssRules>>,
     /// The origin of this stylesheet.
     pub origin: Origin,
@@ -60,6 +62,7 @@ pub struct StylesheetContents {
     /// The namespaces that apply to this stylesheet.
     pub namespaces: RwLock<Namespaces>,
     /// The quirks mode of this stylesheet.
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "defined in selectors")]
     pub quirks_mode: QuirksMode,
     /// This stylesheet's source map URL.
     pub source_map_url: RwLock<Option<String>>,
@@ -196,12 +199,15 @@ impl DeepCloneWithLock for StylesheetContents {
 
 /// The structure servo uses to represent a stylesheet.
 #[derive(Debug)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct Stylesheet {
     /// The contents of this stylesheet.
+    #[cfg_attr(feature = "servo", conditional_malloc_size_of)]
     pub contents: Arc<StylesheetContents>,
     /// The lock used for objects inside this stylesheet
     pub shared_lock: SharedRwLock,
     /// List of media associated with the Stylesheet.
+    #[cfg_attr(feature = "servo", conditional_malloc_size_of)]
     pub media: Arc<Locked<MediaList>>,
     /// Whether this stylesheet should be disabled.
     pub disabled: AtomicBool,

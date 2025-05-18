@@ -594,6 +594,12 @@ impl<T: MallocSizeOf> MallocSizeOf for std::sync::Mutex<T> {
     }
 }
 
+impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
+    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        (*self.read()).size_of(ops)
+    }
+}
+
 impl MallocSizeOf for smallbitvec::SmallBitVec {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         if let Some(ptr) = self.heap_ptr() {

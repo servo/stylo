@@ -20,6 +20,7 @@ use super::CssRuleType;
 
 /// A list of CSS rules.
 #[derive(Debug, ToShmem)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct CssRules(pub Vec<CssRule>);
 
 impl CssRules {

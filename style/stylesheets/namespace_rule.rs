@@ -13,6 +13,7 @@ use style_traits::{CssWriter, ToCss};
 
 /// A `@namespace` rule.
 #[derive(Clone, Debug, PartialEq, ToShmem)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 #[allow(missing_docs)]
 pub struct NamespaceRule {
     /// The namespace prefix, and `None` if it's the default Namespace
@@ -20,6 +21,7 @@ pub struct NamespaceRule {
     /// The actual namespace url.
     pub url: Namespace,
     /// The source location this rule was found at.
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "defined in cssparser")]
     pub source_location: SourceLocation,
 }
 

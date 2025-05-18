@@ -22,10 +22,13 @@ use style_traits::{CssWriter, ToCss};
 ///
 /// [media]: https://drafts.csswg.org/css-conditional/#at-ruledef-media
 #[derive(Debug, ToShmem)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct MediaRule {
     /// The list of media queries used by this media rule.
+    #[cfg_attr(feature = "servo", conditional_malloc_size_of)]
     pub media_queries: Arc<Locked<MediaList>>,
     /// The nested rules to this media rule.
+    #[cfg_attr(feature = "servo", conditional_malloc_size_of)]
     pub rules: Arc<Locked<CssRules>>,
     /// The source position where this media rule was found.
     pub source_location: SourceLocation,

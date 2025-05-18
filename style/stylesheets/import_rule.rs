@@ -107,10 +107,10 @@ impl DeepCloneWithLock for ImportSheet {
 
 /// A sheet that is held from an import rule.
 #[cfg(feature = "servo")]
-#[derive(Debug)]
+#[derive(Debug, MallocSizeOf)]
 pub enum ImportSheet {
     /// A bonafide stylesheet.
-    Sheet(::servo_arc::Arc<crate::stylesheets::Stylesheet>),
+    Sheet(#[conditional_malloc_size_of] ::servo_arc::Arc<crate::stylesheets::Stylesheet>),
 
     /// An @import created with a false <supports-condition>, so will never be fetched.
     Refused,
@@ -169,6 +169,7 @@ impl DeepCloneWithLock for ImportSheet {
 
 /// The layer specified in an import rule (can be none, anonymous, or named).
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub enum ImportLayer {
     /// No layer specified
     None,
@@ -182,6 +183,7 @@ pub enum ImportLayer {
 
 /// The supports condition in an import rule.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct ImportSupportsCondition {
     /// The supports condition.
     pub condition: SupportsCondition,
@@ -211,6 +213,7 @@ impl ToCss for ImportLayer {
 ///
 /// [import]: https://drafts.csswg.org/css-cascade-3/#at-import
 #[derive(Debug)]
+#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct ImportRule {
     /// The `<url>` this `@import` rule is loading.
     pub url: CssUrl,
@@ -227,6 +230,7 @@ pub struct ImportRule {
     pub layer: ImportLayer,
 
     /// The line and column of the rule's source code.
+    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "defined in cssparser")]
     pub source_location: SourceLocation,
 }
 

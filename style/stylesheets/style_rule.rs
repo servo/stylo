@@ -54,7 +54,6 @@ impl DeepCloneWithLock for StyleRule {
 
 impl StyleRule {
     /// Measure heap usage.
-    #[cfg(feature = "gecko")]
     pub fn size_of(&self, guard: &SharedRwLockReadGuard, ops: &mut MallocSizeOfOps) -> usize {
         let mut n = 0;
         n += self.selectors.unconditional_size_of(ops);

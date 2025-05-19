@@ -82,7 +82,6 @@ ${helpers.predefined_type(
     engines="gecko servo",
     extra_prefixes="webkit",
     spec="https://drafts.fxtf.org/css-masking-1/#propdef-clip-path",
-    servo_restyle_damage="repaint",
     affects="paint",
 )}
 

@@ -5,9 +5,11 @@
 //! The restyle damage is a hint that tells layout which kind of operations may
 //! be needed in presence of incremental style changes.
 
-use crate::computed_values::display::T as Display;
+use crate::computed_values::isolation::T as Isolation;
+use crate::computed_values::mix_blend_mode::T as MixBlendMode;
 use crate::matching::{StyleChange, StyleDifference};
 use crate::properties::ComputedValues;
+use crate::values::computed::basic_shape::ClipPath;
 use std::fmt;
 
 bitflags! {
@@ -17,12 +19,17 @@ bitflags! {
         /// Repaint the node itself.
         ///
         /// Propagates both up and down the flow tree.
-        const REPAINT = 0x01;
+        const REPAINT = 0b001;
+
+        /// Rebuilds the stacking contexts.
+        ///
+        /// Propagates both up and down the flow tree.
+        const REBUILD_STACKING_CONTEXT = 0b011;
 
         /// Any other type of damage, which requires rebuilding all layout objects.
         ///
         /// Propagates both up and down the flow tree.
-        const REBUILD = 0x02;
+        const REBUILD_BOX = 0b111;
     }
 }
 
@@ -46,7 +53,7 @@ impl ServoRestyleDamage {
 
     /// Returns a bitmask indicating that the frame needs to be reconstructed.
     pub fn reconstruct() -> ServoRestyleDamage {
-        ServoRestyleDamage::REBUILD
+        ServoRestyleDamage::REBUILD_BOX
     }
 }
 
@@ -62,7 +69,11 @@ impl fmt::Display for ServoRestyleDamage {
 
         let to_iter = [
             (ServoRestyleDamage::REPAINT, "Repaint"),
-            (ServoRestyleDamage::REBUILD, "Rebuild"),
+            (
+                ServoRestyleDamage::REBUILD_STACKING_CONTEXT,
+                "Rebuild stacking context",
+            ),
+            (ServoRestyleDamage::REBUILD_BOX, "Rebuild box"),
         ];
 
         for &(damage, damage_str) in &to_iter {
@@ -89,41 +100,33 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
     // This should check every CSS property, as enumerated in the fields of
     // https://doc.servo.org/style/properties/struct.ComputedValues.html
 
+    // Some properties establish a stacking context when they are set to a non-initial value.
+    // In that case, the damage is only set to `ServoRestyleDamage::REPAINT` because we don't
+    // need to rebuild stacking contexts when the style changes between different non-initial
+    // values. This function checks whether any of these properties is set to a value that
+    // guarantees a stacking context, so that we only do the work when this changes.
+    // Note that it's still possible to establish a stacking context when this returns false.
+    let guarantees_stacking_context = |style: &ComputedValues| {
+        style.get_effects().opacity != 1.0 ||
+            old.get_effects().mix_blend_mode != MixBlendMode::Normal ||
+            old.get_svg().clip_path != ClipPath::None ||
+            style.get_box().isolation == Isolation::Isolate
+    };
+
     // This uses short-circuiting boolean OR for its side effects and ignores the result.
-    let _ = restyle_damage_rebuild_and_reflow!(
+    let _ = restyle_damage_rebuild_box!(
         old,
         new,
         damage,
-        [
-            ServoRestyleDamage::REBUILD
-        ],
+        [ServoRestyleDamage::REBUILD_BOX],
         old.get_box().original_display != new.get_box().original_display
-    ) || (new.get_box().display == Display::Inline &&
-        restyle_damage_rebuild_and_reflow_inline!(
-            old,
-            new,
-            damage,
-            [
-                ServoRestyleDamage::REBUILD
-            ]
-        )) ||
-        restyle_damage_reflow!(
-            old,
-            new,
-            damage,
-            [
-                ServoRestyleDamage::REBUILD
-            ]
-        ) ||
-        restyle_damage_reflow_out_of_flow!(
-            old,
-            new,
-            damage,
-            [
-                ServoRestyleDamage::REBUILD
-            ]
-        ) ||
-        restyle_damage_repaint!(old, new, damage, [ServoRestyleDamage::REPAINT]);
+    ) || restyle_damage_rebuild_stacking_context!(
+        old,
+        new,
+        damage,
+        [ServoRestyleDamage::REBUILD_STACKING_CONTEXT],
+        guarantees_stacking_context(old) != guarantees_stacking_context(new)
+    ) || restyle_damage_repaint!(old, new, damage, [ServoRestyleDamage::REPAINT]);
 
     // Paint worklets may depend on custom properties,
     // so if they have changed we should repaint.

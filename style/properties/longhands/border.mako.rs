@@ -52,7 +52,7 @@
         logical=is_logical,
         logical_group="border-width",
         allow_quirks="No" if is_logical else "Yes",
-        servo_restyle_damage="reflow rebuild_and_reflow_inline",
+        servo_restyle_damage="rebuild_box",
         affects="layout",
     )}
 % endfor

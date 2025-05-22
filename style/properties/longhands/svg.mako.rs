@@ -83,6 +83,7 @@ ${helpers.predefined_type(
     extra_prefixes="webkit",
     spec="https://drafts.fxtf.org/css-masking-1/#propdef-clip-path",
     affects="paint",
+    servo_restyle_damage="repaint",
 )}
 
 ${helpers.single_keyword(

@@ -16,7 +16,7 @@
         allow_quirks="Yes",
         rule_types_allowed=DEFAULT_RULES_AND_POSITION_TRY,
         gecko_ffi_name="mOffset.{}".format(index),
-        servo_restyle_damage="reflow_out_of_flow",
+        servo_restyle_damage="rebuild_box",
         logical_group="inset",
         affects="layout",
     )}
@@ -43,6 +43,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     spec="https://www.w3.org/TR/CSS2/visuren.html#z-index",
     affects="paint",
+    servo_restyle_damage="rebuild_stacking_context",
 )}
 
 // CSS Flexible Box Layout Module Level 1
@@ -57,7 +58,7 @@ ${helpers.single_keyword(
     spec="https://drafts.csswg.org/css-flexbox/#flex-direction-property",
     extra_prefixes="webkit",
     animation_type="discrete",
-    servo_restyle_damage = "reflow",
+    servo_restyle_damage = "rebuild_box",
     gecko_enum_prefix = "StyleFlexDirection",
     affects="layout",
 )}
@@ -70,7 +71,7 @@ ${helpers.single_keyword(
     spec="https://drafts.csswg.org/css-flexbox/#flex-wrap-property",
     extra_prefixes="webkit",
     animation_type="discrete",
-    servo_restyle_damage = "reflow",
+    servo_restyle_damage = "rebuild_box",
     gecko_enum_prefix = "StyleFlexWrap",
     affects="layout",
 )}
@@ -83,7 +84,7 @@ ${helpers.predefined_type(
     spec="https://drafts.csswg.org/css-align/#propdef-justify-content",
     extra_prefixes="webkit",
     animation_type="discrete",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -95,7 +96,7 @@ ${helpers.predefined_type(
     spec="https://drafts.csswg.org/css-align/#propdef-align-content",
     extra_prefixes="webkit",
     animation_type="discrete",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -107,7 +108,7 @@ ${helpers.predefined_type(
     spec="https://drafts.csswg.org/css-align/#propdef-align-items",
     extra_prefixes="webkit",
     animation_type="discrete",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -129,7 +130,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-flexbox/#flex-grow-property",
     extra_prefixes="webkit",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -141,7 +142,7 @@ ${helpers.predefined_type(
     servo_pref="layout.flexbox.enabled",
     spec="https://drafts.csswg.org/css-flexbox/#flex-shrink-property",
     extra_prefixes="webkit",
-    servo_restyle_damage = "reflow",
+    servo_restyle_damage = "rebuild_box",
     affects="layout",
 )}
 
@@ -177,7 +178,7 @@ ${helpers.predefined_type(
     servo_pref="layout.flexbox.enabled",
     extra_prefixes="webkit",
     spec="https://drafts.csswg.org/css-flexbox/#order-property",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -189,7 +190,7 @@ ${helpers.predefined_type(
     servo_pref="layout.flexbox.enabled",
     spec="https://drafts.csswg.org/css-flexbox/#flex-basis-property",
     extra_prefixes="webkit",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     boxed=True,
     affects="layout",
 )}
@@ -211,7 +212,7 @@ ${helpers.predefined_type(
         allow_quirks="No" if logical else "Yes",
         spec=spec % size,
         rule_types_allowed=DEFAULT_RULES_AND_POSITION_TRY,
-        servo_restyle_damage="reflow",
+        servo_restyle_damage="rebuild_box",
         affects="layout",
     )}
     // min-width, min-height, min-block-size, min-inline-size
@@ -225,7 +226,7 @@ ${helpers.predefined_type(
         allow_quirks="No" if logical else "Yes",
         spec=spec % size,
         rule_types_allowed=DEFAULT_RULES_AND_POSITION_TRY,
-        servo_restyle_damage="reflow",
+        servo_restyle_damage="rebuild_box",
         affects="layout",
     )}
     ${helpers.predefined_type(
@@ -238,7 +239,7 @@ ${helpers.predefined_type(
         allow_quirks="No" if logical else "Yes",
         spec=spec % size,
         rule_types_allowed=DEFAULT_RULES_AND_POSITION_TRY,
-        servo_restyle_damage="reflow",
+        servo_restyle_damage="rebuild_box",
         affects="layout",
     )}
 % endfor
@@ -313,7 +314,7 @@ ${helpers.single_keyword(
     gecko_enum_prefix="StyleBoxSizing",
     custom_consts={ "content-box": "Content", "border-box": "Border" },
     animation_type="discrete",
-    servo_restyle_damage = "reflow",
+    servo_restyle_damage = "rebuild_box",
     affects="layout",
 )}
 
@@ -415,7 +416,7 @@ ${helpers.predefined_type(
     aliases="grid-column-gap",
     servo_pref="layout.flexbox.enabled",
     spec="https://drafts.csswg.org/css-align-3/#propdef-column-gap",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -428,7 +429,7 @@ ${helpers.predefined_type(
     aliases="grid-row-gap",
     servo_pref="layout.flexbox.enabled",
     spec="https://drafts.csswg.org/css-align-3/#propdef-row-gap",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -438,7 +439,7 @@ ${helpers.predefined_type(
     "computed::AspectRatio::auto()",
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-sizing-4/#aspect-ratio",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 

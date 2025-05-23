@@ -11,7 +11,7 @@ ${helpers.single_keyword(
     gecko_enum_prefix="StyleBorderCollapse",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-tables/#propdef-border-collapse",
-    servo_restyle_damage = "reflow",
+    servo_restyle_damage = "rebuild_box",
     affects="layout",
 )}
 
@@ -22,7 +22,7 @@ ${helpers.single_keyword(
     gecko_enum_prefix="StyleEmptyCells",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-tables/#propdef-empty-cells",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="paint",
 )}
 
@@ -33,7 +33,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-tables/#propdef-caption-side",
-    servo_restyle_damage="rebuild_and_reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 
@@ -44,6 +44,6 @@ ${helpers.predefined_type(
     engines="gecko servo",
     boxed=True,
     spec="https://drafts.csswg.org/css-tables/#propdef-border-spacing",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}

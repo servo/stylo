@@ -19,10 +19,19 @@ bitflags! {
         /// Propagates both up and down the flow tree.
         const REPAINT = 0x01;
 
-        /// Any other type of damage, which requires rebuilding all layout objects.
+        /// Just a placeholdeer for various kind of reflow damage.
         ///
         /// Propagates both up and down the flow tree.
-        const REBUILD = 0x02;
+        const REFLOW = 0x02;
+
+        /// Repair the node's layout object sub-tree due to that the descendants
+        /// has `REBUILD` damage or some descendants are removed.
+        ///
+        /// Propagates up the flow tree.
+        const REPAIR = 0x04;
+
+        /// Any other type of damage, which requires rebuilding all layout objects.
+        const REBUILD = 0x08;
     }
 }
 
@@ -44,6 +53,37 @@ impl ServoRestyleDamage {
         StyleDifference { damage, change }
     }
 
+    fn change_box_subtree() -> ServoRestyleDamage {
+        ServoRestyleDamage::REPAIR | ServoRestyleDamage::REBUILD
+    }
+
+    /// Returns whether the node's box subtree will be changed.
+    pub fn will_change_box_subtree(&self) -> bool {
+        self.intersects(ServoRestyleDamage::change_box_subtree())
+    }
+
+    /// Returns a new `RestyleDamage` appropriate for parent of current element.
+    pub fn propagate_up_damage(&self) -> ServoRestyleDamage {
+        let mut propagated_damage = self.clone();
+        if self.contains(ServoRestyleDamage::REBUILD) {
+            propagated_damage.remove(ServoRestyleDamage::REBUILD);
+            propagated_damage.insert(ServoRestyleDamage::REPAIR);
+        }
+        propagated_damage
+    }
+
+    /// Returns a new `RestyleDamage` appropriate for children of current element.
+    pub fn propagate_down_damage(&self) -> ServoRestyleDamage {
+        let mut propagated_damage = self.clone();
+        propagated_damage.remove(ServoRestyleDamage::change_box_subtree());
+        propagated_damage
+    }
+
+    /// Returns a bitmask indicating that the node's box subtree needs to be repaired.
+    pub fn repair() -> ServoRestyleDamage {
+        ServoRestyleDamage::REPAIR
+    }
+
     /// Returns a bitmask indicating that the frame needs to be reconstructed.
     pub fn reconstruct() -> ServoRestyleDamage {
         ServoRestyleDamage::REBUILD
@@ -62,6 +102,8 @@ impl fmt::Display for ServoRestyleDamage {
 
         let to_iter = [
             (ServoRestyleDamage::REPAINT, "Repaint"),
+            (ServoRestyleDamage::REFLOW, "Reflow"),
+            (ServoRestyleDamage::REPAIR, "Repair"),
             (ServoRestyleDamage::REBUILD, "Rebuild"),
         ];
 
@@ -112,7 +154,7 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
             new,
             damage,
             [
-                ServoRestyleDamage::REBUILD
+                ServoRestyleDamage::REFLOW
             ]
         ) ||
         restyle_damage_reflow_out_of_flow!(
@@ -120,7 +162,7 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
             new,
             damage,
             [
-                ServoRestyleDamage::REBUILD
+                ServoRestyleDamage::REFLOW
             ]
         ) ||
         restyle_damage_repaint!(old, new, damage, [ServoRestyleDamage::REPAINT]);

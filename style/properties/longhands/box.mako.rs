@@ -436,6 +436,7 @@ ${helpers.single_keyword(
     spec="https://drafts.csswg.org/css-transforms/#backface-visibility-property",
     extra_prefixes=transform_extra_prefixes,
     animation_type="discrete",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 

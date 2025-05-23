@@ -119,7 +119,8 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
         new,
         damage,
         [ServoRestyleDamage::REBUILD_BOX],
-        old.get_box().original_display != new.get_box().original_display
+        old.get_box().original_display != new.get_box().original_display ||
+            old.get_effects().filter.0.is_empty() != new.get_effects().filter.0.is_empty()
     ) || restyle_damage_rebuild_stacking_context!(
         old,
         new,

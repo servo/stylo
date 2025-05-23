@@ -53,6 +53,7 @@ ${helpers.predefined_type(
     extra_prefixes="webkit",
     spec="https://drafts.fxtf.org/filters/#propdef-filter",
     affects="overflow",
+    servo_restyle_damage="repaint",
 )}
 
 ${helpers.predefined_type(

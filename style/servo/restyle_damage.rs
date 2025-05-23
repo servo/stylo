@@ -7,9 +7,12 @@
 
 use crate::computed_values::isolation::T as Isolation;
 use crate::computed_values::mix_blend_mode::T as MixBlendMode;
+use crate::computed_values::transform_style::T as TransformStyle;
 use crate::matching::{StyleChange, StyleDifference};
-use crate::properties::ComputedValues;
+use crate::properties::{style_structs, ComputedValues};
 use crate::values::computed::basic_shape::ClipPath;
+use crate::values::computed::Perspective;
+use crate::values::generics::transform::{GenericRotate, GenericScale, GenericTranslate};
 use std::fmt;
 
 bitflags! {
@@ -106,6 +109,24 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
     // This should check every CSS property, as enumerated in the fields of
     // https://doc.servo.org/style/properties/struct.ComputedValues.html
 
+    let has_transform_or_perspective_style = |style_box: &style_structs::Box| {
+        !style_box.transform.0.is_empty() ||
+            style_box.scale != GenericScale::None ||
+            style_box.rotate != GenericRotate::None ||
+            style_box.translate != GenericTranslate::None ||
+            style_box.perspective != Perspective::None ||
+            style_box.transform_style == TransformStyle::Preserve3d
+    };
+
+    let rebuild_box_extra = || {
+        let old_box = old.get_box();
+        let new_box = new.get_box();
+        old_box.original_display != new_box.original_display ||
+            has_transform_or_perspective_style(old_box) !=
+                has_transform_or_perspective_style(new_box) ||
+            old.get_effects().filter.0.is_empty() != new.get_effects().filter.0.is_empty()
+    };
+
     // Some properties establish a stacking context when they are set to a non-initial value.
     // In that case, the damage is only set to `ServoRestyleDamage::REPAINT` because we don't
     // need to rebuild stacking contexts when the style changes between different non-initial
@@ -125,8 +146,7 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
         new,
         damage,
         [ServoRestyleDamage::REBUILD_BOX],
-        old.get_box().original_display != new.get_box().original_display ||
-            old.get_effects().filter.0.is_empty() != new.get_effects().filter.0.is_empty()
+        rebuild_box_extra()
     ) || restyle_damage_recalculate_overflow!(
         old,
         new,

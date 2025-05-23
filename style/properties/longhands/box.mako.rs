@@ -188,7 +188,7 @@ ${helpers.predefined_type(
     extra_prefixes=transform_extra_prefixes,
     flags="CAN_ANIMATE_ON_COMPOSITOR",
     spec="https://drafts.csswg.org/css-transforms/#propdef-transform",
-    servo_restyle_damage="rebuild_box",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 
@@ -200,7 +200,7 @@ ${helpers.predefined_type(
     boxed=True,
     flags="CAN_ANIMATE_ON_COMPOSITOR",
     spec="https://drafts.csswg.org/css-transforms-2/#individual-transforms",
-    servo_restyle_damage = "rebuild_box",
+    servo_restyle_damage = "recalculate_overflow",
     affects="overflow",
 )}
 
@@ -212,7 +212,7 @@ ${helpers.predefined_type(
     boxed=True,
     flags="CAN_ANIMATE_ON_COMPOSITOR",
     spec="https://drafts.csswg.org/css-transforms-2/#individual-transforms",
-    servo_restyle_damage = "rebuild_box",
+    servo_restyle_damage = "recalculate_overflow",
     affects="overflow",
 )}
 
@@ -224,7 +224,7 @@ ${helpers.predefined_type(
     boxed=True,
     flags="CAN_ANIMATE_ON_COMPOSITOR",
     spec="https://drafts.csswg.org/css-transforms-2/#individual-transforms",
-    servo_restyle_damage="rebuild_box",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 
@@ -412,7 +412,7 @@ ${helpers.predefined_type(
     gecko_ffi_name="mChildPerspective",
     spec="https://drafts.csswg.org/css-transforms/#perspective",
     extra_prefixes=transform_extra_prefixes,
-    servo_restyle_damage = "rebuild_box",
+    servo_restyle_damage = "recalculate_overflow",
     affects="overflow",
 )}
 
@@ -424,7 +424,7 @@ ${helpers.predefined_type(
     boxed=True,
     extra_prefixes=transform_extra_prefixes,
     spec="https://drafts.csswg.org/css-transforms-2/#perspective-origin-property",
-    servo_restyle_damage="rebuild_box",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 
@@ -458,7 +458,7 @@ ${helpers.predefined_type(
     spec="https://drafts.csswg.org/css-transforms-2/#transform-style-property",
     extra_prefixes=transform_extra_prefixes,
     animation_type="discrete",
-    servo_restyle_damage = "rebuild_box",
+    servo_restyle_damage = "recalculate_overflow",
     affects="overflow",
 )}
 
@@ -471,7 +471,7 @@ ${helpers.predefined_type(
     gecko_ffi_name="mTransformOrigin",
     boxed=True,
     spec="https://drafts.csswg.org/css-transforms/#transform-origin-property",
-    servo_restyle_damage="rebuild_box",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 

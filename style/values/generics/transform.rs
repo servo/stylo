@@ -562,6 +562,77 @@ where
     }
 }
 
+impl<Angle, Number, Length, Integer, LoP> TransformOperation<Angle, Number, Length, Integer, LoP>
+where
+    Angle: Zero + ToRadians,
+    Number: PartialEq + Copy + Into<f64> + Zero,
+    for<'a> &'a Number: std::ops::Mul<&'a Number, Output = Number>,
+    LoP: Zero + ZeroNoPercent,
+{
+    #[inline]
+    fn is_invertible(&self) -> bool {
+        match self {
+            // The matrix has determinant a*d - b*c. It's invertible when that isn't zero.
+            TransformOperation::Matrix(Matrix { a, b, c, d, .. }) => a * d != b * c,
+
+            // Here the determinant is more complex, so defer to `Transform3D::is_invertible()`.
+            TransformOperation::Matrix3D(m) => Transform3D::<f64>::from(*m).is_invertible(),
+
+            // The determinant is 1 - tan(alpha)*tan(beta).
+            TransformOperation::Skew(alpha, beta) => {
+                alpha.radians64().tan() * beta.radians64().tan() != 1.0
+            },
+
+            // Scales can only be inverted when the factors aren't zero.
+            TransformOperation::Scale(x, y) => !x.is_zero() && !y.is_zero(),
+            TransformOperation::ScaleX(x) => !x.is_zero(),
+            TransformOperation::ScaleY(y) => !y.is_zero(),
+            TransformOperation::ScaleZ(z) => !z.is_zero(),
+            TransformOperation::Scale3D(x, y, z) => !x.is_zero() && !y.is_zero() && !z.is_zero(),
+
+            // TODO: `to_3d_matrix()` isn't implemented for InterpolateMatrix/AccumulateMatrix.
+            // Currently returns the identity, which is invertible, so here we return true.
+            TransformOperation::InterpolateMatrix { .. } |
+            TransformOperation::AccumulateMatrix { .. } |
+
+            // The inverse matrix of a perspective is the same matrix but negating the term outside
+            // of the diagonal.
+            TransformOperation::Perspective(_) |
+
+            // Rotations can be inverted by another rotation with the angle negated.
+            TransformOperation::Rotate(_) |
+            TransformOperation::RotateX(_) |
+            TransformOperation::RotateY(_) |
+            TransformOperation::RotateZ(_) |
+            TransformOperation::Rotate3D(..) |
+
+            // Skews along the X or Y axis can be inverted by another skew with the angle negated.
+            TransformOperation::SkewX(_) |
+            TransformOperation::SkewY(_) |
+
+            // Translations can be inverted by another translation with the distance negated.
+            TransformOperation::Translate(..) |
+            TransformOperation::TranslateX(_) |
+            TransformOperation::TranslateY(_) |
+            TransformOperation::TranslateZ(_) |
+            TransformOperation::Translate3D(..) => true,
+        }
+    }
+}
+
+impl<Angle, Number, Length, Integer, LoP>
+    Transform<TransformOperation<Angle, Number, Length, Integer, LoP>>
+where
+    Angle: Zero + ToRadians,
+    Number: PartialEq + Copy + Into<f64> + Zero,
+    for<'a> &'a Number: std::ops::Mul<&'a Number, Output = Number>,
+    LoP: Zero + ZeroNoPercent,
+{
+    pub(crate) fn is_invertible(&self) -> bool {
+        self.0.iter().all(|operation| operation.is_invertible())
+    }
+}
+
 impl<T> Transform<T> {
     /// `none`
     pub fn none() -> Self {
@@ -786,6 +857,15 @@ pub enum GenericScale<Number> {
 }
 
 pub use self::GenericScale as Scale;
+
+impl<Number: Zero> Scale<Number> {
+    pub(crate) fn is_invertible(&self) -> bool {
+        match *self {
+            Scale::None => true,
+            Scale::Scale(ref x, ref y, ref z) => !x.is_zero() && !y.is_zero() && !z.is_zero(),
+        }
+    }
+}
 
 impl<Number> ToCss for Scale<Number>
 where

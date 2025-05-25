@@ -46,7 +46,7 @@ impl ::selectors::parser::PseudoElement for PseudoElement {
 
     #[inline]
     fn accepts_state_pseudo_classes(&self) -> bool {
-        // Note: if the pseudo element is a descendants of a pseudo element, `only-child` should be
+        // Note: if the pseudo element is a descendant of a pseudo element, `only-child` should be
         // allowed after it.
         self.supports_user_action_state() || self.is_in_pseudo_element_tree()
     }

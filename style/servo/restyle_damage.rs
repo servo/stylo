@@ -19,17 +19,22 @@ bitflags! {
         /// Repaint the node itself.
         ///
         /// Propagates both up and down the flow tree.
-        const REPAINT = 0b001;
+        const REPAINT = 0b0001;
 
         /// Rebuilds the stacking contexts.
         ///
         /// Propagates both up and down the flow tree.
-        const REBUILD_STACKING_CONTEXT = 0b011;
+        const REBUILD_STACKING_CONTEXT = 0b0011;
+
+        /// Recalculates the scrollable overflow.
+        ///
+        /// Propagates both up and down the flow tree.
+        const RECALCULATE_OVERFLOW = 0b0111;
 
         /// Any other type of damage, which requires rebuilding all layout objects.
         ///
         /// Propagates both up and down the flow tree.
-        const REBUILD_BOX = 0b111;
+        const REBUILD_BOX = 0b1111;
     }
 }
 
@@ -73,6 +78,7 @@ impl fmt::Display for ServoRestyleDamage {
                 ServoRestyleDamage::REBUILD_STACKING_CONTEXT,
                 "Rebuild stacking context",
             ),
+            (ServoRestyleDamage::RECALCULATE_OVERFLOW, "Recalculate overflow"),
             (ServoRestyleDamage::REBUILD_BOX, "Rebuild box"),
         ];
 
@@ -121,6 +127,11 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
         [ServoRestyleDamage::REBUILD_BOX],
         old.get_box().original_display != new.get_box().original_display ||
             old.get_effects().filter.0.is_empty() != new.get_effects().filter.0.is_empty()
+    ) || restyle_damage_recalculate_overflow!(
+        old,
+        new,
+        damage,
+        [ServoRestyleDamage::RECALCULATE_OVERFLOW]
     ) || restyle_damage_rebuild_stacking_context!(
         old,
         new,

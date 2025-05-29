@@ -1427,7 +1427,16 @@ pub fn start_transitions_if_applicable(
     animation_state: &mut ElementAnimationSet,
 ) -> PropertyDeclarationIdSet {
     let mut properties_that_transition = PropertyDeclarationIdSet::default();
-    for transition in new_style.transition_properties() {
+    
+    // Reverse is needed
+    // See Example 3 of <https://www.w3.org/TR/css-transitions-1/#transitions>
+    let declared_transitions = {
+        let mut temp = new_style.transition_properties().collect::<Vec<_>>();
+        temp.reverse();
+        temp
+    };
+
+    for transition in declared_transitions {
         let physical_property = transition
             .property
             .as_borrowed()

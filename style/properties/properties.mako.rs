@@ -2946,7 +2946,7 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 % endfor
 
 % if engine == "servo":
-% for effect_name in ["repaint", "rebuild_stacking_context", "rebuild_box"]:
+% for effect_name in ["repaint", "recalculate_overflow", "rebuild_stacking_context", "rebuild_box"]:
     macro_rules! restyle_damage_${effect_name} {
         ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ]) => ({
             restyle_damage_${effect_name}!($old, $new, $damage, [$($effect),*], false)

@@ -177,7 +177,7 @@ impl Device {
     ) -> NonNegativeLength {
         (match font.line_height {
             // TODO: compute `normal` from the font metrics
-            LineHeight::Normal => CSSPixelLength::new(0.),
+            LineHeight::Normal | LineHeight::MozBlockHeight => CSSPixelLength::new(0.),
             LineHeight::Number(number) => font.font_size.computed_size() * number.0,
             LineHeight::Length(length) => length.0,
         }).into()

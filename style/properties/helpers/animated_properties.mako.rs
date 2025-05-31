@@ -718,11 +718,19 @@ impl ToAnimatedZero for AnimatedFilter {
     }
 }
 
+#[cfg(feature = "servo")]
+enum LonghandIteratorSource {
+    Front,
+    Back
+}
+
 /// An iterator over all the properties that transition on a given style.
 pub struct TransitionPropertyIterator<'a> {
     style: &'a ComputedValues,
     index_range: core::ops::Range<usize>,
     longhand_iterator: Option<NonCustomPropertyIterator<LonghandId>>,
+    #[cfg(feature = "servo")]
+    longhand_iterator_source: Option<LonghandIteratorSource>,
 }
 
 impl<'a> TransitionPropertyIterator<'a> {
@@ -732,6 +740,8 @@ impl<'a> TransitionPropertyIterator<'a> {
             style,
             index_range: 0..style.get_ui().transition_property_count(),
             longhand_iterator: None,
+            #[cfg(feature = "servo")]
+            longhand_iterator_source: None,
         }
     }
 }
@@ -756,10 +766,23 @@ impl<'a> Iterator for TransitionPropertyIterator<'a> {
                 if let Some(longhand_id) = longhand_iterator.next() {
                     return Some(TransitionPropertyIteration {
                         property: OwnedPropertyDeclarationId::Longhand(longhand_id),
-                        index: self.index_range.start - 1,
-                    });
+                        // the shorthand index that was consumed last
+                        index: if cfg!(feature = "gecko") {
+                                self.index_range.start - 1
+                            } else {
+                                match self.longhand_iterator_source {
+                                    Some(LonghandIteratorSource::Front) => self.index_range.start - 1,
+                                    Some(LonghandIteratorSource::Back) => self.index_range.end,
+                                    None => panic!("Expected a longhand iterator source"),
+                                }
+                            }
+                        },
+                    );
                 }
                 self.longhand_iterator = None;
+                #[cfg(feature = "servo")] {
+                    self.longhand_iterator_source = None;
+                }
             }
 
             let index = self.index_range.next()?;
@@ -777,6 +800,60 @@ impl<'a> Iterator for TransitionPropertyIterator<'a> {
                             // compute the next value of the iterator and then loop (equivalent
                             // to calling self.next()).
                             self.longhand_iterator = Some(shorthand_id.longhands());
+                            #[cfg(feature = "servo")] {
+                                self.longhand_iterator_source = Some(LonghandIteratorSource::Front);
+                            }
+                        },
+                    }
+                }
+                TransitionProperty::Custom(name) => {
+                    return Some(TransitionPropertyIteration {
+                        property: OwnedPropertyDeclarationId::Custom(name),
+                        index,
+                    })
+                },
+                TransitionProperty::Unsupported(..) => {},
+            }
+        }
+    }
+}
+
+#[cfg(feature = "servo")]
+impl<'a> DoubleEndedIterator for TransitionPropertyIterator<'a> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        use crate::values::computed::TransitionProperty;
+        loop {
+            if let Some(ref mut longhand_iterator) = self.longhand_iterator {
+                if let Some(longhand_id) = longhand_iterator.next() {
+                    return Some(TransitionPropertyIteration {
+                        property: OwnedPropertyDeclarationId::Longhand(longhand_id),
+                        // the shorthand index that was consumed last
+                        index: match self.longhand_iterator_source {
+                            Some(LonghandIteratorSource::Front) => self.index_range.start - 1,
+                            Some(LonghandIteratorSource::Back) => self.index_range.end,
+                            None => panic!("Expected a longhand iterator source"),
+                        },
+                    });
+                }
+                self.longhand_iterator = None;
+                self.longhand_iterator_source = None;
+            }
+
+            let index = self.index_range.next_back()?;
+            match self.style.get_ui().transition_property_at(index) {
+                TransitionProperty::NonCustom(id) => {
+                    match id.longhand_or_shorthand() {
+                        Ok(longhand_id) => {
+                            return Some(TransitionPropertyIteration {
+                                property: OwnedPropertyDeclarationId::Longhand(longhand_id),
+                                index,
+                            });
+                        },
+                        Err(shorthand_id) => {
+                            // In the other cases, we set up our state so that we are ready to
+                            // compute the next/next_back value of the iterator and then loop
+                            self.longhand_iterator = Some(shorthand_id.longhands());
+                            self.longhand_iterator_source = Some(LonghandIteratorSource::Back);
                         },
                     }
                 }

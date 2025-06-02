@@ -19,22 +19,28 @@ bitflags! {
         /// Repaint the node itself.
         ///
         /// Propagates both up and down the flow tree.
-        const REPAINT = 0b0001;
+        const REPAINT = 0b00001;
 
         /// Rebuilds the stacking contexts.
         ///
         /// Propagates both up and down the flow tree.
-        const REBUILD_STACKING_CONTEXT = 0b0011;
+        const REBUILD_STACKING_CONTEXT = 0b00011;
 
         /// Recalculates the scrollable overflow.
         ///
         /// Propagates both up and down the flow tree.
-        const RECALCULATE_OVERFLOW = 0b0111;
+        const RECALCULATE_OVERFLOW = 0b00111;
+
+        /// Repair the node's layout object sub-tree due to that the descendants
+        /// has `REBUILD_BOX` damage or some descendants are removed.
+        ///
+        /// Propagates up the flow tree.
+        const REPAIR_BOX = 0b01111;
 
         /// Any other type of damage, which requires rebuilding all layout objects.
         ///
         /// Propagates both up and down the flow tree.
-        const REBUILD_BOX = 0b1111;
+        const REBUILD_BOX = 0b11111;
     }
 }
 
@@ -54,6 +60,34 @@ impl ServoRestyleDamage {
             StyleChange::Changed { reset_only: false }
         };
         StyleDifference { damage, change }
+    }
+
+    /// Returns whether the node's box subtree will be changed.
+    pub fn will_change_box_subtree(&self) -> bool {
+        self.contains(ServoRestyleDamage::REPAIR_BOX)
+    }
+
+    /// Returns a new `RestyleDamage` appropriate for parent of current element.
+    pub fn propagate_up_damage(&self) -> ServoRestyleDamage {
+        if self.contains(ServoRestyleDamage::REBUILD_BOX) {
+            return ServoRestyleDamage::REPAIR_BOX;
+        }
+
+        self.clone()
+    }
+
+    /// Returns a new `RestyleDamage` appropriate for children of current element.
+    pub fn propagate_down_damage(&self) -> ServoRestyleDamage {
+        if self.will_change_box_subtree() {
+            return ServoRestyleDamage::RECALCULATE_OVERFLOW;
+        }
+
+        self.clone()
+    }
+
+    /// Returns a bitmask indicating that the node's box subtree needs to be repaired.
+    pub fn repair() -> ServoRestyleDamage {
+        ServoRestyleDamage::REPAIR_BOX
     }
 
     /// Returns a bitmask indicating that the frame needs to be reconstructed.
@@ -79,6 +113,7 @@ impl fmt::Display for ServoRestyleDamage {
                 "Rebuild stacking context",
             ),
             (ServoRestyleDamage::RECALCULATE_OVERFLOW, "Recalculate overflow"),
+            (ServoRestyleDamage::REPAIR_BOX, "Repair box"),
             (ServoRestyleDamage::REBUILD_BOX, "Rebuild box"),
         ];
 

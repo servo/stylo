@@ -73,10 +73,11 @@ pub enum PseudoElement {
     ServoTextControlInnerEditor,
     ServoTextControlInnerContainer,
     ServoTextControlPlaceholder,
+    ServoInputColorSwatch,
 }
 
 /// The count of all pseudo-elements.
-pub const PSEUDO_COUNT: usize = PseudoElement::ServoTextControlPlaceholder as usize + 1;
+pub const PSEUDO_COUNT: usize = PseudoElement::ServoInputColorSwatch as usize + 1;
 
 impl ToCss for PseudoElement {
     fn to_css<W>(&self, dest: &mut W) -> fmt::Result
@@ -108,6 +109,7 @@ impl ToCss for PseudoElement {
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlPlaceholder => "::-servo-text-control-placeholder",
+            ServoInputColorSwatch => "::-servo-input-color-swatch",
         })
     }
 }
@@ -198,7 +200,7 @@ impl PseudoElement {
     /// Whether this pseudo-element is the ::-moz-color-swatch pseudo.
     #[inline]
     pub fn is_color_swatch(&self) -> bool {
-        false
+        *self == PseudoElement::ServoInputColorSwatch
     }
 
     /// Whether this pseudo-element is eagerly-cascaded.
@@ -242,28 +244,29 @@ impl PseudoElement {
     pub fn cascade_type(&self) -> PseudoElementCascadeType {
         match *self {
             PseudoElement::After | PseudoElement::Before | PseudoElement::Selection => {
-                        PseudoElementCascadeType::Eager
-                    },
+                PseudoElementCascadeType::Eager
+            },
             PseudoElement::Backdrop |
-                    PseudoElement::DetailsSummary |
-                    PseudoElement::Marker |
-                    PseudoElement::ServoTextControlInnerEditor |
-                    PseudoElement::ServoTextControlInnerContainer |
-                    PseudoElement::ServoTextControlPlaceholder => PseudoElementCascadeType::Lazy,
+            PseudoElement::DetailsSummary |
+            PseudoElement::Marker |
+            PseudoElement::ServoTextControlInnerEditor |
+            PseudoElement::ServoTextControlInnerContainer |
+            PseudoElement::ServoTextControlPlaceholder |
+            PseudoElement::ServoInputColorSwatch => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
-                    PseudoElement::ServoAnonymousBox |
-                    PseudoElement::ServoAnonymousTable |
-                    PseudoElement::ServoAnonymousTableCell |
-                    PseudoElement::ServoAnonymousTableRow |
-                    PseudoElement::ServoLegacyInputText |
-                    PseudoElement::ServoLegacyTableWrapper |
-                    PseudoElement::ServoLegacyAnonymousTableWrapper |
-                    PseudoElement::ServoLegacyAnonymousTable |
-                    PseudoElement::ServoLegacyAnonymousBlock |
-                    PseudoElement::ServoLegacyInlineBlockWrapper |
-                    PseudoElement::ServoLegacyInlineAbsolute |
-                    PseudoElement::ServoTableGrid |
-                    PseudoElement::ServoTableWrapper => PseudoElementCascadeType::Precomputed,
+            PseudoElement::ServoAnonymousBox |
+            PseudoElement::ServoAnonymousTable |
+            PseudoElement::ServoAnonymousTableCell |
+            PseudoElement::ServoAnonymousTableRow |
+            PseudoElement::ServoLegacyInputText |
+            PseudoElement::ServoLegacyTableWrapper |
+            PseudoElement::ServoLegacyAnonymousTableWrapper |
+            PseudoElement::ServoLegacyAnonymousTable |
+            PseudoElement::ServoLegacyAnonymousBlock |
+            PseudoElement::ServoLegacyInlineBlockWrapper |
+            PseudoElement::ServoLegacyInlineAbsolute |
+            PseudoElement::ServoTableGrid |
+            PseudoElement::ServoTableWrapper => PseudoElementCascadeType::Precomputed,
         }
     }
 
@@ -736,6 +739,12 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 ServoTextControlPlaceholder
+            },
+            "-servo-input-color-swatch" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoInputColorSwatch
             },
             _ => return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
 

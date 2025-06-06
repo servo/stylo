@@ -529,6 +529,11 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     }
 
     #[inline]
+    fn parse_part(&self) -> bool {
+        true
+    }
+
+    #[inline]
     fn allow_forgiving_selectors(&self) -> bool {
         !self.for_supports_rule
     }

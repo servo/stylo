@@ -165,6 +165,8 @@ pub type Namespace = crate::values::GenericAtomIdent<web_atoms::NamespaceStaticS
 #[cfg(feature = "servo")]
 #[allow(missing_docs)]
 pub type Prefix = crate::values::GenericAtomIdent<web_atoms::PrefixStaticSet>;
+#[cfg(feature = "servo")]
+mod shadow_parts;
 
 pub use style_traits::arc_slice::ArcSlice;
 pub use style_traits::owned_slice::OwnedSlice;

@@ -249,7 +249,7 @@ impl From<SelectorMatchingResult> for KleeneValue {
 /// partial selectors (indexed from the right). We use this API design, rather
 /// than having the callers pass a SelectorIter, because creating a SelectorIter
 /// requires dereferencing the selector to get the length, which adds an
-/// unncessary cache miss for cases when we can fast-reject with AncestorHashes
+/// unnecessary cache miss for cases when we can fast-reject with AncestorHashes
 /// (which the caller can store inline with the selector pointer).
 #[inline(always)]
 pub fn matches_selector<E>(

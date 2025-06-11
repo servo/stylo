@@ -100,7 +100,6 @@ to_shmem = { version = "0.2", path = "../to_shmem" }
 to_shmem_derive = { version = "0.1", path = "../to_shmem_derive" }
 thin-vec = "0.2.1"
 uluru = "3.0"
-unicode-bidi = { version = "0.3", default-features = false }
 void = "1.0.2"
 url = { version = "2.5", optional = true, features = ["serde"] }
 

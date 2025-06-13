@@ -1,6 +1,6 @@
 [package]
 name = "stylo_dom"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["The Servo Project Developers"]
 documentation = "https://docs.rs/stylo_dom/"
 description = "DOM state types for Stylo"
@@ -15,4 +15,4 @@ path = "lib.rs"
 
 [dependencies]
 bitflags = "2"
-malloc_size_of = { version = "0.3", path = "../malloc_size_of", package = "stylo_malloc_size_of" }
+malloc_size_of = { version = "0.4", path = "../malloc_size_of", package = "stylo_malloc_size_of" }

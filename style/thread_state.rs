@@ -27,25 +27,21 @@ bitflags! {
     }
 }
 
-macro_rules! thread_types ( ( $( $fun:ident = $flag:path ; )* ) => (
-    impl ThreadState {
-        /// Whether the current thread is a worker thread.
-        pub fn is_worker(self) -> bool {
-            self.contains(ThreadState::IN_WORKER)
-        }
-
-        $(
-            #[allow(missing_docs)]
-            pub fn $fun(self) -> bool {
-                self.contains($flag)
-            }
-        )*
+impl ThreadState {
+    /// Whether the current thread is a worker thread.
+    pub fn is_worker(self) -> bool {
+        self.contains(ThreadState::IN_WORKER)
     }
-));
 
-thread_types! {
-    is_script = ThreadState::SCRIPT;
-    is_layout = ThreadState::LAYOUT;
+    /// Whether the current thread is a script thread.
+    pub fn is_script(self) -> bool {
+        self.contains(ThreadState::SCRIPT)
+    }
+
+    /// Whether the current thread is a layout thread.
+    pub fn is_layout(self) -> bool {
+        self.contains(ThreadState::LAYOUT)
+    }
 }
 
 thread_local!(static STATE: Cell<Option<ThreadState>> = Cell::new(None));

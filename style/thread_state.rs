@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-//! Supports dynamic assertions in about what sort of thread is running and
+//! Supports dynamic assertions about what sort of thread is running and
 //! what state it's in.
 
 #![deny(missing_docs)]
@@ -44,7 +44,7 @@ impl ThreadState {
     }
 }
 
-thread_local!(static STATE: Cell<Option<ThreadState>> = Cell::new(None));
+thread_local!(static STATE: Cell<Option<ThreadState>> = const { Cell::new(None) });
 
 /// Initializes the current thread state.
 pub fn initialize(initialize_to: ThreadState) {

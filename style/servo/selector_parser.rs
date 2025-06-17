@@ -185,7 +185,7 @@ impl PseudoElement {
         false
     }
 
-    /// Whether this pseudo-element is the ::-moz-color-swatch pseudo.
+    /// Whether this pseudo-element is the ::-servo-input-color-swatch pseudo.
     #[inline]
     pub fn is_color_swatch(&self) -> bool {
         *self == PseudoElement::ServoInputColorSwatch

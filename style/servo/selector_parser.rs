@@ -61,10 +61,22 @@ pub enum PseudoElement {
     ServoAnonymousTableRow,
     ServoTableGrid,
     ServoTableWrapper,
+
+    // Implemented pseudos. These pseudo elements are representing the
+    // elements within an UA shadow DOM, and matching the elements with
+    // their appropriate styles.
+    Placeholder,
+    ColorSwatch,
+
+    // Private implemented pseudos. Only matchable in UA stylesheet.
+    ServoTextControlInnerEditor,
+    ServoTextControlInnerContainer,
+    ServoTextControlPlaceholder,
+    ServoInputColorSwatch,
 }
 
 /// The count of all pseudo-elements.
-pub const PSEUDO_COUNT: usize = PseudoElement::ServoTableWrapper as usize + 1;
+pub const PSEUDO_COUNT: usize = PseudoElement::ServoInputColorSwatch as usize + 1;
 
 impl ToCss for PseudoElement {
     fn to_css<W>(&self, dest: &mut W) -> fmt::Result
@@ -86,6 +98,12 @@ impl ToCss for PseudoElement {
             ServoAnonymousTableRow => "::-servo-anonymous-table-row",
             ServoTableGrid => "::-servo-table-grid",
             ServoTableWrapper => "::-servo-table-wrapper",
+            Placeholder => "::placeholder",
+            ColorSwatch => "::color-swatch",
+            ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
+            ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
+            ServoTextControlPlaceholder => "::-servo-text-control-placeholder",
+            ServoInputColorSwatch => "::-servo-input-color-swatch",
         })
     }
 }
@@ -173,10 +191,11 @@ impl PseudoElement {
         false
     }
 
-    /// Whether this pseudo-element is the ::-moz-color-swatch pseudo.
+    /// Whether this pseudo-element is the pseudo element representing
+    /// the color swatch inside an `<input>` element.
     #[inline]
     pub fn is_color_swatch(&self) -> bool {
-        false
+        matches!(*self, PseudoElement::ColorSwatch | PseudoElement::ServoInputColorSwatch)
     }
 
     /// Whether this pseudo-element is eagerly-cascaded.
@@ -224,7 +243,13 @@ impl PseudoElement {
             },
             PseudoElement::Backdrop |
             PseudoElement::DetailsSummary |
-            PseudoElement::Marker  => PseudoElementCascadeType::Lazy,
+            PseudoElement::Marker |
+            PseudoElement::Placeholder |
+            PseudoElement::ColorSwatch |
+            PseudoElement::ServoTextControlInnerEditor |
+            PseudoElement::ServoTextControlInnerContainer |
+            PseudoElement::ServoTextControlPlaceholder |
+            PseudoElement::ServoInputColorSwatch => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
             PseudoElement::ServoAnonymousBox |
             PseudoElement::ServoAnonymousTable |
@@ -644,6 +669,32 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 ServoTableWrapper
+            },
+            "placeholder" => Placeholder,
+            "color-swatch" => ColorSwatch,
+            "-servo-text-control-inner-editor" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTextControlInnerEditor
+            },
+            "-servo-text-control-inner-container" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTextControlInnerContainer
+            },
+            "-servo-text-control-placeholder" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTextControlPlaceholder
+            },
+            "-servo-input-color-swatch" => {
+                if !self.in_user_agent_stylesheet() {
+                        return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoInputColorSwatch
             },
             _ => return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
 

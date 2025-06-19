@@ -19,7 +19,7 @@ $ rm -Rf _filtered
 Now overwrite our `upstream` with those commits and push:
 
 ```sh
-$ git fetch -f --progress ./_filtered master:upstream
+$ git fetch -f --progress ./_filtered main:upstream
 $ git push -fu --progress origin upstream
 ```
 

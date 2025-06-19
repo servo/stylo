@@ -62,9 +62,13 @@ pub enum PseudoElement {
     ServoTableGrid,
     ServoTableWrapper,
 
-    // Private implemented pseudos. These pseudo elements are representing the
-    // elements within an UA shadow DOM, and matching the elements with their
-    // appropriate styles.
+    // Implemented pseudos. These pseudo elements are representing the
+    // elements within an UA shadow DOM, and matching the elements with
+    // their appropriate styles.
+    Placeholder,
+    ColorSwatch,
+
+    // Private implemented pseudos. Only matchable in UA stylesheet.
     ServoTextControlInnerEditor,
     ServoTextControlInnerContainer,
     ServoTextControlPlaceholder,
@@ -94,6 +98,8 @@ impl ToCss for PseudoElement {
             ServoAnonymousTableRow => "::-servo-anonymous-table-row",
             ServoTableGrid => "::-servo-table-grid",
             ServoTableWrapper => "::-servo-table-wrapper",
+            Placeholder => "::placeholder",
+            ColorSwatch => "::color-swatch",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlPlaceholder => "::-servo-text-control-placeholder",
@@ -185,10 +191,11 @@ impl PseudoElement {
         false
     }
 
-    /// Whether this pseudo-element is the ::-servo-input-color-swatch pseudo.
+    /// Whether this pseudo-element is the pseudo element representing
+    /// the color swatch inside an `<input>` element.
     #[inline]
     pub fn is_color_swatch(&self) -> bool {
-        *self == PseudoElement::ServoInputColorSwatch
+        matches!(*self, PseudoElement::ColorSwatch | PseudoElement::ServoInputColorSwatch)
     }
 
     /// Whether this pseudo-element is eagerly-cascaded.
@@ -237,6 +244,8 @@ impl PseudoElement {
             PseudoElement::Backdrop |
             PseudoElement::DetailsSummary |
             PseudoElement::Marker |
+            PseudoElement::Placeholder |
+            PseudoElement::ColorSwatch |
             PseudoElement::ServoTextControlInnerEditor |
             PseudoElement::ServoTextControlInnerContainer |
             PseudoElement::ServoTextControlPlaceholder |
@@ -661,6 +670,8 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 ServoTableWrapper
             },
+            "placeholder" => Placeholder,
+            "color-swatch" => ColorSwatch,
             "-servo-text-control-inner-editor" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))

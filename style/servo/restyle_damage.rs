@@ -5,9 +5,12 @@
 //! The restyle damage is a hint that tells layout which kind of operations may
 //! be needed in presence of incremental style changes.
 
+use bitflags::Flags;
+
 use crate::computed_values::isolation::T as Isolation;
 use crate::computed_values::mix_blend_mode::T as MixBlendMode;
 use crate::computed_values::transform_style::T as TransformStyle;
+use crate::dom::TElement;
 use crate::matching::{StyleChange, StyleDifference};
 use crate::properties::{style_structs, ComputedValues};
 use crate::values::computed::basic_shape::ClipPath;
@@ -16,9 +19,12 @@ use crate::values::generics::transform::{GenericRotate, GenericScale, GenericTra
 use std::fmt;
 
 bitflags! {
-    /// Individual layout actions that may be necessary after restyling.
+    /// Major phases of layout that need to be run due to the damage to a node during restyling. In
+    /// addition to the 4 bytes used for that, the rest of the `u16` is exposed as an extension point
+    /// for users of the crate to add their own custom types of damage that correspond to the
+    /// layout system they are implementing.
     #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-    pub struct ServoRestyleDamage: u8 {
+    pub struct ServoRestyleDamage: u16 {
         /// Repaint the node itself.
         ///
         /// Propagates both up and down the flow tree.
@@ -34,10 +40,10 @@ bitflags! {
         /// Propagates both up and down the flow tree.
         const RECALCULATE_OVERFLOW = 0b0111;
 
-        /// Any other type of damage, which requires rebuilding all layout objects.
+        /// Any other type of damage, which requires running layout again.
         ///
         /// Propagates both up and down the flow tree.
-        const REBUILD_BOX = 0b1111;
+        const RELAYOUT = 0b1111;
     }
 }
 
@@ -46,22 +52,35 @@ malloc_size_of_is_0!(ServoRestyleDamage);
 impl ServoRestyleDamage {
     /// Compute the `StyleDifference` (including the appropriate restyle damage)
     /// for a given style change between `old` and `new`.
-    pub fn compute_style_difference(old: &ComputedValues, new: &ComputedValues) -> StyleDifference {
-        let damage = compute_damage(old, new);
-        let change = if damage.is_empty() {
-            StyleChange::Unchanged
-        } else {
-            // FIXME(emilio): Differentiate between reset and inherited
-            // properties here, and set `reset_only` appropriately so the
-            // optimization to skip the cascade in those cases applies.
-            StyleChange::Changed { reset_only: false }
-        };
+    pub fn compute_style_difference<E: TElement>(
+        old: &ComputedValues,
+        new: &ComputedValues,
+    ) -> StyleDifference {
+        let mut damage = compute_damage(old, new);
+        if damage.is_empty() {
+            return StyleDifference {
+                damage,
+                change: StyleChange::Unchanged,
+            };
+        }
+
+        if damage.contains(ServoRestyleDamage::RELAYOUT) {
+            damage |= E::compute_layout_damage(old, new);
+        }
+
+        // FIXME(emilio): Differentiate between reset and inherited
+        // properties here, and set `reset_only` appropriately so the
+        // optimization to skip the cascade in those cases applies.
+        let change = StyleChange::Changed { reset_only: false };
+
         StyleDifference { damage, change }
     }
 
     /// Returns a bitmask indicating that the frame needs to be reconstructed.
     pub fn reconstruct() -> ServoRestyleDamage {
-        ServoRestyleDamage::REBUILD_BOX
+        // There's no way of knowing what kind of damage system the embedder will use, but part of
+        // this interface is that a fully saturated restyle damage means to rebuild everything.
+        ServoRestyleDamage::from_bits_retain(<ServoRestyleDamage as Flags>::Bits::MAX)
     }
 }
 
@@ -81,8 +100,11 @@ impl fmt::Display for ServoRestyleDamage {
                 ServoRestyleDamage::REBUILD_STACKING_CONTEXT,
                 "Rebuild stacking context",
             ),
-            (ServoRestyleDamage::RECALCULATE_OVERFLOW, "Recalculate overflow"),
-            (ServoRestyleDamage::REBUILD_BOX, "Rebuild box"),
+            (
+                ServoRestyleDamage::RECALCULATE_OVERFLOW,
+                "Recalculate overflow",
+            ),
+            (ServoRestyleDamage::RELAYOUT, "Relayout"),
         ];
 
         for &(damage, damage_str) in &to_iter {
@@ -105,9 +127,6 @@ impl fmt::Display for ServoRestyleDamage {
 
 fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDamage {
     let mut damage = ServoRestyleDamage::empty();
-
-    // This should check every CSS property, as enumerated in the fields of
-    // https://doc.servo.org/style/properties/struct.ComputedValues.html
 
     let has_transform_or_perspective_style = |style_box: &style_structs::Box| {
         !style_box.transform.0.is_empty() ||
@@ -145,7 +164,7 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
         old,
         new,
         damage,
-        [ServoRestyleDamage::REBUILD_BOX],
+        [ServoRestyleDamage::RELAYOUT],
         rebuild_box_extra()
     ) || restyle_damage_recalculate_overflow!(
         old,

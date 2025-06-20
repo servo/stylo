@@ -1164,7 +1164,7 @@ pub trait MatchMethods: TElement {
         pseudo: Option<&PseudoElement>,
     ) -> StyleDifference {
         debug_assert!(pseudo.map_or(true, |p| p.is_eager()));
-        RestyleDamage::compute_style_difference(old_values, new_values)
+        RestyleDamage::compute_style_difference::<Self>(old_values, new_values)
     }
 }
 

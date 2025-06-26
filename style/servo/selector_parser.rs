@@ -61,10 +61,15 @@ pub enum PseudoElement {
     ServoAnonymousTableRow,
     ServoTableGrid,
     ServoTableWrapper,
+
+    // Implemented pseudos. These pseudo elements are representing the
+    // elements within an UA shadow DOM, and matching the elements with
+    // their appropriate styles.
+    ColorSwatch,
 }
 
 /// The count of all pseudo-elements.
-pub const PSEUDO_COUNT: usize = PseudoElement::ServoTableWrapper as usize + 1;
+pub const PSEUDO_COUNT: usize = PseudoElement::ColorSwatch as usize + 1;
 
 impl ToCss for PseudoElement {
     fn to_css<W>(&self, dest: &mut W) -> fmt::Result
@@ -86,6 +91,7 @@ impl ToCss for PseudoElement {
             ServoAnonymousTableRow => "::-servo-anonymous-table-row",
             ServoTableGrid => "::-servo-table-grid",
             ServoTableWrapper => "::-servo-table-wrapper",
+            ColorSwatch => "::color-swatch",
         })
     }
 }
@@ -173,10 +179,11 @@ impl PseudoElement {
         false
     }
 
-    /// Whether this pseudo-element is the ::-moz-color-swatch pseudo.
+    /// Whether this pseudo-element is the pseudo element representing
+    /// the color swatch inside an `<input>` element.
     #[inline]
     pub fn is_color_swatch(&self) -> bool {
-        false
+        *self == PseudoElement::ColorSwatch
     }
 
     /// Whether this pseudo-element is eagerly-cascaded.
@@ -224,7 +231,8 @@ impl PseudoElement {
             },
             PseudoElement::Backdrop |
             PseudoElement::DetailsSummary |
-            PseudoElement::Marker  => PseudoElementCascadeType::Lazy,
+            PseudoElement::Marker |
+            PseudoElement::ColorSwatch => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
             PseudoElement::ServoAnonymousBox |
             PseudoElement::ServoAnonymousTable |
@@ -645,6 +653,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 ServoTableWrapper
             },
+            "color-swatch" => ColorSwatch,
             _ => return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
 
         };

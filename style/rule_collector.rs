@@ -104,12 +104,6 @@ where
 
         let matches_user_and_content_rules = rule_hash_target.matches_user_and_content_rules();
 
-        // Gecko definitely has pseudo-elements with style attributes, like
-        // ::-moz-color-swatch.
-        debug_assert!(
-            cfg!(feature = "gecko") || style_attribute.is_none() || pseudo_element.is_none(),
-            "Style attributes do not apply to pseudo-elements"
-        );
         debug_assert!(pseudo_element.map_or(true, |p| !p.is_precomputed()));
 
         Self {

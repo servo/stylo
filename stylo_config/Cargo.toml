@@ -11,5 +11,4 @@ edition = "2021"
 readme = "../README.md"
 
 [lib]
-name = "stylo_config"
 path = "lib.rs"

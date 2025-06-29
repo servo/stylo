@@ -9,7 +9,6 @@ description = "Types used by the Stylo CSS engine"
 readme = "../README.md"
 
 [lib]
-name = "style_traits"
 path = "lib.rs"
 
 [features]

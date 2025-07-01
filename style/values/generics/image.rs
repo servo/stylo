@@ -41,6 +41,7 @@ pub enum GenericImage<G, ImageUrl, Color, Percentage, Resolution> {
     /// A `-moz-symbolic-icon(<icon-id>)`
     /// NOTE(emilio): #[css(skip)] only really affects SpecifiedValueInfo, which we want because
     /// this is chrome-only.
+    #[cfg(feature = "gecko")]
     #[css(function, skip)]
     MozSymbolicIcon(Atom),
 
@@ -434,6 +435,7 @@ where
                 serialize_atom_identifier(selector, dest)?;
                 dest.write_char(')')
             },
+            #[cfg(feature = "gecko")]
             Image::MozSymbolicIcon(ref id) => {
                 dest.write_str("-moz-symbolic-icon(")?;
                 serialize_atom_identifier(id, dest)?;

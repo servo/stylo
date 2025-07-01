@@ -62,6 +62,7 @@ formdata
 fullscreenchange
 fullscreenerror
 gattserverdisconnected
+hairline
 hashchange
 height
 hidden

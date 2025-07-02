@@ -225,6 +225,7 @@ where
             },
 
             // :heading should match against snapshot before element
+            #[cfg(feature = "gecko")]
             NonTSPseudoClass::Heading(ref levels) => {
                 return levels.matches_state(
                     self.snapshot()

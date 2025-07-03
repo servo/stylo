@@ -1427,7 +1427,14 @@ pub fn start_transitions_if_applicable(
     animation_state: &mut ElementAnimationSet,
 ) -> PropertyDeclarationIdSet {
     let mut properties_that_transition = PropertyDeclarationIdSet::default();
-    for transition in new_style.transition_properties() {
+    // Reverse is needed
+    // See <https://www.w3.org/TR/css-transitions-1/#transitions>
+    // "If a property is specified multiple times in the value of transition-property 
+    // (either on its own, via a shorthand that contains it, or via the all value), 
+    // then the transition that starts uses the duration, delay, and timing function 
+    // at the index corresponding to the last item in the value of transition-property 
+    // that calls for animating that property."
+    for transition in new_style.transition_properties().rev() {
         let physical_property = transition
             .property
             .as_borrowed()

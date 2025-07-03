@@ -1426,8 +1426,25 @@ pub fn start_transitions_if_applicable(
     new_style: &Arc<ComputedValues>,
     animation_state: &mut ElementAnimationSet,
 ) -> PropertyDeclarationIdSet {
+    // See <https://www.w3.org/TR/css-transitions-1/#transitions>
+    // "If a property is specified multiple times in the value of transition-property
+    // (either on its own, via a shorthand that contains it, or via the all value),
+    // then the transition that starts uses the duration, delay, and timing function
+    // at the index corresponding to the last item in the value of transition-property
+    // that calls for animating that property."
+    // See Example 3 of <https://www.w3.org/TR/css-transitions-1/#transitions>
+    //
+    // Reversing the transition order here means that transitions defined later in the list
+    // have preference, in accordance with the specification.
+    //
+    // TODO: It would be better to be able to do this without having to allocate an array.
+    // We should restructure the code or make `transition_properties()` return a reversible
+    // iterator in order to avoid the allocation.
+    let mut transition_properties = new_style.transition_properties().collect::<Vec<_>>();
+    transition_properties.reverse();
+
     let mut properties_that_transition = PropertyDeclarationIdSet::default();
-    for transition in new_style.transition_properties() {
+    for transition in transition_properties {
         let physical_property = transition
             .property
             .as_borrowed()

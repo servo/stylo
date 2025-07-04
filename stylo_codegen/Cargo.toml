@@ -9,3 +9,8 @@ keywords = ["css", "style"]
 license = "MPL-2.0"
 edition = "2021"
 publish = false
+
+[dependencies]
+bitflags = "2.9.1"
+heck = "0.5.0"
+foldhash = "0.1.5"

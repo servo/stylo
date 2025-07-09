@@ -55,6 +55,13 @@ pub enum PseudoElement {
     DetailsSummary,
     DetailsContent,
     Marker,
+
+    // Implemented pseudos. These pseudo elements are representing the
+    // elements within an UA shadow DOM, and matching the elements with
+    // their appropriate styles.
+    ColorSwatch,
+
+    // Servo-specific pseudos
     ServoAnonymousBox,
     ServoAnonymousTable,
     ServoAnonymousTableCell,
@@ -80,6 +87,7 @@ impl ToCss for PseudoElement {
             DetailsSummary => "::-servo-details-summary",
             DetailsContent => "::-servo-details-content",
             Marker => "::marker",
+            ColorSwatch => "::color-swatch",
             ServoAnonymousBox => "::-servo-anonymous-box",
             ServoAnonymousTable => "::-servo-anonymous-table",
             ServoAnonymousTableCell => "::-servo-anonymous-table-cell",
@@ -173,10 +181,11 @@ impl PseudoElement {
         false
     }
 
-    /// Whether this pseudo-element is the ::-moz-color-swatch pseudo.
+    /// Whether this pseudo-element is representing the color swatch
+    /// inside an `<input>` element.
     #[inline]
     pub fn is_color_swatch(&self) -> bool {
-        false
+        *self == PseudoElement::ColorSwatch
     }
 
     /// Whether this pseudo-element is eagerly-cascaded.
@@ -223,8 +232,9 @@ impl PseudoElement {
                 PseudoElementCascadeType::Eager
             },
             PseudoElement::Backdrop |
+            PseudoElement::ColorSwatch |
             PseudoElement::DetailsSummary |
-            PseudoElement::Marker  => PseudoElementCascadeType::Lazy,
+            PseudoElement::Marker => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
             PseudoElement::ServoAnonymousBox |
             PseudoElement::ServoAnonymousTable |
@@ -609,6 +619,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 DetailsContent
             },
+            "color-swatch" => ColorSwatch,
             "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))

@@ -749,13 +749,15 @@ trait PrivateMatchMethods: TElement {
             after_change_style.as_ref().unwrap_or(new_values),
         );
 
-        // We clear away any finished transitions, but retain animations, because they
-        // might still be used for proper calculation of `animation-fill-mode`. This
-        // should change the computed values in the style, so we don't need to mark
-        // this set as dirty.
+        // This should change the computed values in the style, so we don't need 
+        // to mark this set as dirty.
         animation_set
             .transitions
             .retain(|transition| transition.state != AnimationState::Finished);
+
+        animation_set
+            .animations
+            .retain(|animation| animation.state != AnimationState::Finished);
 
         // If the ElementAnimationSet is empty, and don't store it in order to
         // save memory and to avoid extra processing later.

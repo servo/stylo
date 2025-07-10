@@ -20,7 +20,7 @@ use selectors::parser::{
 };
 use selectors::parser::{Selector, SelectorIter};
 use selectors::visitor::{SelectorListKind, SelectorVisitor};
-use servo_arc::Arc;
+use servo_arc::ThinArc;
 use smallvec::SmallVec;
 
 /// Mapping between (partial) CompoundSelectors (and the combinator to their
@@ -65,8 +65,11 @@ pub struct Dependency {
     ///    * One dependency from .bar pointing to C (next: None)
     ///    * One dependency from .foo pointing to A (next: None)
     ///
+    /// Scope blocks can add multiple next entries: e.g. With
+    /// @scope (.a) { .b {/*...*/ } .c { /*...*/ }}
+    /// .a's Dependency would have two entries, for .b and .c.
     #[ignore_malloc_size_of = "Arc"]
-    pub next: Option<Arc<Dependency>>,
+    pub next: Option<ThinArc<(), Dependency>>,
 
     /// What kind of relative selector invalidation this generates.
     /// None if this dependency is not within a relative selector.
@@ -500,11 +503,11 @@ impl PerCompoundState {
 struct NextDependencyEntry {
     selector: Selector<SelectorImpl>,
     offset: usize,
-    cached_dependency: Option<Arc<Dependency>>,
+    cached_dependency: Option<ThinArc<(), Dependency>>,
 }
 
 struct RelativeSelectorInnerCollectorState<'a> {
-    next_dependency: &'a Arc<Dependency>,
+    next_dependency: &'a ThinArc<(), Dependency>,
     relative_compound_state: RelativeSelectorCompoundStateAttributes,
 }
 
@@ -668,7 +671,8 @@ type NextSelectors = SmallVec<[NextDependencyEntry; 5]>;
 struct SelectorDependencyCollector<'a, 'b> {
     map: &'a mut InvalidationMap,
     relative_selector_invalidation_map: &'a mut InvalidationMap,
-    additional_relative_selector_invalidation_map: &'a mut AdditionalRelativeSelectorInvalidationMap,
+    additional_relative_selector_invalidation_map:
+        &'a mut AdditionalRelativeSelectorInvalidationMap,
 
     /// The document this _complex_ selector is affected by.
     ///
@@ -702,16 +706,16 @@ struct SelectorDependencyCollector<'a, 'b> {
 
 fn next_dependency(
     next_selector: &mut NextSelectors,
-    next_outer_dependency: Option<&Arc<Dependency>>,
-) -> Option<Arc<Dependency>> {
+    next_outer_dependency: Option<&ThinArc<(), Dependency>>,
+) -> Option<ThinArc<(), Dependency>> {
     if next_selector.is_empty() {
         return next_outer_dependency.cloned();
     }
 
     fn dependencies_from(
         entries: &mut [NextDependencyEntry],
-        next_outer_dependency: &Option<&Arc<Dependency>>,
-    ) -> Option<Arc<Dependency>> {
+        next_outer_dependency: &Option<&ThinArc<(), Dependency>>,
+    ) -> Option<ThinArc<(), Dependency>> {
         if entries.is_empty() {
             return None;
         }
@@ -721,16 +725,17 @@ fn next_dependency(
         let last = &mut last[0];
         let selector = &last.selector;
         let selector_offset = last.offset;
+
+        let dependency = Dependency {
+            selector: selector.clone(),
+            selector_offset,
+            next: dependencies_from(previous, next_outer_dependency),
+            relative_kind: None,
+        };
+
         Some(
             last.cached_dependency
-                .get_or_insert_with(|| {
-                    Arc::new(Dependency {
-                        selector: selector.clone(),
-                        selector_offset,
-                        next: dependencies_from(previous, next_outer_dependency),
-                        relative_kind: None,
-                    })
-                })
+                .get_or_insert_with(|| ThinArc::from_header_and_iter((), [dependency].into_iter()))
                 .clone(),
         )
     }
@@ -812,7 +817,9 @@ impl<'a, 'b> Collector for SelectorDependencyCollector<'a, 'b> {
             self.relative_inner_collector.is_some(),
             "Asking for relative selector invalidation outside of relative selector"
         );
-        &mut self.additional_relative_selector_invalidation_map.type_to_selector
+        &mut self
+            .additional_relative_selector_invalidation_map
+            .type_to_selector
     }
 
     fn ts_state_map(&mut self) -> &mut TSStateDependencyMap {
@@ -830,7 +837,9 @@ impl<'a, 'b> Collector for SelectorDependencyCollector<'a, 'b> {
             self.relative_inner_collector.is_some(),
             "Asking for relative selector invalidation outside of relative selector"
         );
-        &mut self.additional_relative_selector_invalidation_map.any_to_selector
+        &mut self
+            .additional_relative_selector_invalidation_map
+            .any_to_selector
     }
 }
 
@@ -910,7 +919,7 @@ impl<'a, 'b> SelectorVisitor for SelectorDependencyCollector<'a, 'b> {
         _list_kind: SelectorListKind,
         list: &[Selector<SelectorImpl>],
     ) -> bool {
-        let next_dependency = Arc::new(self.dependency());
+        let next_dependency = ThinArc::from_header_and_iter((), [self.dependency()].into_iter());
         for selector in list {
             // Here we cheat a bit: We can visit the rightmost compound with
             // the "outer" visitor, and it'd be fine. This reduces the amount of
@@ -1073,7 +1082,8 @@ impl RelativeSelectorCompoundStateAttributes {
 struct RelativeSelectorDependencyCollector<'a> {
     map: &'a mut InvalidationMap,
     relative_selector_invalidation_map: &'a mut InvalidationMap,
-    additional_relative_selector_invalidation_map: &'a mut AdditionalRelativeSelectorInvalidationMap,
+    additional_relative_selector_invalidation_map:
+        &'a mut AdditionalRelativeSelectorInvalidationMap,
 
     /// The document this _complex_ selector is affected by.
     ///
@@ -1229,6 +1239,16 @@ impl<'a> RelativeSelectorDependencyCollector<'a> {
 impl<'a> Collector for RelativeSelectorDependencyCollector<'a> {
     fn dependency(&mut self) -> Dependency {
         let next = next_dependency(self.next_selectors, None);
+        debug_assert!(
+            next.as_ref()
+                .is_some_and(|d| d.slice()[0].relative_kind.is_none()),
+            "Duplicate relative dependency?"
+        );
+        debug_assert!(
+            next.as_ref().is_some_and(|d| !d.slice().is_empty()),
+            "Empty dependency?"
+        );
+
         Dependency {
             selector: self.selector.selector.clone(),
             selector_offset: self.compound_state.offset,
@@ -1286,7 +1306,9 @@ impl<'a> Collector for RelativeSelectorDependencyCollector<'a> {
     }
 
     fn type_map(&mut self) -> &mut LocalNameDependencyMap {
-        &mut self.additional_relative_selector_invalidation_map.type_to_selector
+        &mut self
+            .additional_relative_selector_invalidation_map
+            .type_to_selector
     }
 
     fn ts_state_map(&mut self) -> &mut TSStateDependencyMap {
@@ -1296,7 +1318,9 @@ impl<'a> Collector for RelativeSelectorDependencyCollector<'a> {
     }
 
     fn any_vec(&mut self) -> &mut AnyDependencyMap {
-        &mut self.additional_relative_selector_invalidation_map.any_to_selector
+        &mut self
+            .additional_relative_selector_invalidation_map
+            .any_to_selector
     }
 }
 
@@ -1354,7 +1378,7 @@ impl<'a> SelectorVisitor for RelativeSelectorDependencyCollector<'a> {
         list: &[Selector<SelectorImpl>],
     ) -> bool {
         let mut next_stack = NextSelectors::new();
-        let next_dependency = Arc::new(self.dependency());
+        let next_dependency = ThinArc::from_header_and_iter((), [self.dependency()].into_iter());
         for selector in list {
             let mut iter = selector.iter();
             let saved_added_entry = self.compound_state_attributes.added_entry;
@@ -1381,7 +1405,8 @@ impl<'a> SelectorVisitor for RelativeSelectorDependencyCollector<'a> {
             let mut nested = SelectorDependencyCollector {
                 map: &mut *self.map,
                 relative_selector_invalidation_map: &mut *self.relative_selector_invalidation_map,
-                additional_relative_selector_invalidation_map: self.additional_relative_selector_invalidation_map,
+                additional_relative_selector_invalidation_map: self
+                    .additional_relative_selector_invalidation_map,
                 document_state: &mut *self.document_state,
                 selector,
                 next_selectors: &mut next_stack,

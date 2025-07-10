@@ -933,15 +933,16 @@ where
                                 matched: true,
                             }
                         },
-                        Some(ref p) => {
-                            let invalidation_kind = p.invalidation_kind();
+                        Some(ref deps) => {
+                            let n = &deps.as_ref().slice()[0];
+                            let invalidation_kind = n.invalidation_kind();
                             match invalidation_kind {
-                                DependencyInvalidationKind::Normal(_) => &**p,
+                                DependencyInvalidationKind::Normal(_) => n,
                                 DependencyInvalidationKind::Relative(kind) => {
                                     self.processor.found_relative_selector_invalidation(
                                         self.element,
                                         kind,
-                                        &**p,
+                                        n,
                                     );
                                     return SingleInvalidationResult {
                                         invalidated_self: false,

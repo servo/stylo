@@ -189,12 +189,13 @@ impl<'a, E: TElement> OptimizationContext<'a, E> {
                 dependency.next.is_some(),
                 "No relative selector outer dependency?"
             );
-            return dependency.next.as_ref().map_or(false, |par| {
+            return dependency.next.as_ref().map_or(false, |deps| {
                 // ... However, if the standin sibling can be the anchor, we can't skip it, since
                 // that sibling should be invlidated to become the anchor.
+                let next = &deps.as_ref().slice()[0];
                 !matches_selector(
-                    &par.selector,
-                    par.selector_offset,
+                    &next.selector,
+                    next.selector_offset,
                     None,
                     &sibling,
                     &mut matching_context,
@@ -368,11 +369,13 @@ fn invalidation_can_collapse(a: &Dependency, b: &Dependency, invalidations_in_su
     // TODO(dshin): @scope probably brings more subtleties...
     let mut a_next = a.next.as_ref();
     let mut b_next = b.next.as_ref();
-    while let (Some(a_n), Some(b_n)) = (a_next, b_next) {
+    while let (Some(a_deps), Some(b_deps)) = (a_next, b_next) {
         // This is a bit subtle - but we don't need to do the checks we do at higher levels.
         // Cases like `:is(.item .foo) :is(.item .foo)` where `.item` invalidates would
         // point to different dependencies, pointing to the same outer selector, but
         // differing in selector offset.
+        let a_n = &a_deps.as_ref().slice()[0];
+        let b_n = &b_deps.as_ref().slice()[0];
         if SelectorKey::new(&a_n.selector) != SelectorKey::new(&b_n.selector) {
             return false;
         }
@@ -499,7 +502,7 @@ where
                             continue;
                         }
                     }
-                    let dependency = invalidation.dependency.next.as_ref().unwrap();
+                    let dependency = &invalidation.dependency.next.as_ref().unwrap().slice()[0];
                     result.invalidations.push(RelativeSelectorInvalidation {
                         kind,
                         host: invalidation.host,
@@ -984,7 +987,7 @@ where
         );
 
         if let Some(x) = outer_dependency.next.as_ref() {
-            if !Self::is_subject(x.as_ref()) {
+            if !Self::is_subject(&x.as_ref().slice()[0]) {
                 // Not subject in outer selector.
                 return false;
             }
@@ -1075,8 +1078,8 @@ where
                 }
                 let invalidation_kind = d.normal_invalidation_kind();
                 if matches!(invalidation_kind, NormalDependencyInvalidationKind::Element) {
-                    if let Some(ref next) = d.next {
-                        d = next;
+                    if let Some(ref deps) = d.next {
+                        d = &deps.as_ref().slice()[0];
                         continue;
                     }
                     break true;
@@ -1204,7 +1207,7 @@ where
                 self.note_dependency(
                     element,
                     scope,
-                    next,
+                    &next.as_ref().slice()[0],
                     descendant_invalidations,
                     sibling_invalidations,
                 );
@@ -1297,7 +1300,7 @@ where
             RelativeSelectorInvalidation {
                 host: self.matching_context.current_host,
                 kind,
-                dependency: dep.next.as_ref().unwrap(),
+                dependency: &dep.next.as_ref().unwrap().as_ref().slice()[0],
             },
         ));
     }

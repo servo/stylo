@@ -60,8 +60,13 @@ pub enum PseudoElement {
     // elements within an UA shadow DOM, and matching the elements with
     // their appropriate styles.
     ColorSwatch,
+    Placeholder,
 
-    // Servo-specific pseudos
+    // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
+    ServoTextControlInnerContainer,
+    ServoTextControlInnerEditor,
+
+    // Other Servo-specific pseudos.
     ServoAnonymousBox,
     ServoAnonymousTable,
     ServoAnonymousTableCell,
@@ -88,6 +93,9 @@ impl ToCss for PseudoElement {
             DetailsContent => "::-servo-details-content",
             Marker => "::marker",
             ColorSwatch => "::color-swatch",
+            Placeholder => "::placeholder",
+            ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
+            ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoAnonymousBox => "::-servo-anonymous-box",
             ServoAnonymousTable => "::-servo-anonymous-table",
             ServoAnonymousTableCell => "::-servo-anonymous-table-cell",
@@ -234,7 +242,10 @@ impl PseudoElement {
             PseudoElement::Backdrop |
             PseudoElement::ColorSwatch |
             PseudoElement::DetailsSummary |
-            PseudoElement::Marker => PseudoElementCascadeType::Lazy,
+            PseudoElement::Marker |
+            PseudoElement::Placeholder |
+            PseudoElement::ServoTextControlInnerContainer |
+            PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent |
             PseudoElement::ServoAnonymousBox |
             PseudoElement::ServoAnonymousTable |
@@ -620,6 +631,24 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 DetailsContent
             },
             "color-swatch" => ColorSwatch,
+            "placeholder" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                Placeholder
+            },
+            "-servo-text-control-inner-container" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTextControlInnerContainer
+            },
+            "-servo-text-control-inner-editor" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTextControlInnerEditor
+            },
             "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))

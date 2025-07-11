@@ -784,19 +784,6 @@ impl<'le> GeckoElement<'le> {
     }
 
     #[inline]
-    fn before_or_after_pseudo(&self, is_before: bool) -> Option<Self> {
-        if !self.has_properties() {
-            return None;
-        }
-
-        unsafe {
-            bindings::Gecko_GetBeforeOrAfterPseudo(self.0, is_before)
-                .as_ref()
-                .map(GeckoElement)
-        }
-    }
-
-    #[inline]
     fn may_have_style_attribute(&self) -> bool {
         self.as_node()
             .get_bool_flag(nsINode_BooleanFlag::ElementMayHaveStyle)
@@ -1081,26 +1068,6 @@ impl<'le> TElement for GeckoElement<'le> {
         LayoutIterator(GeckoChildrenIterator::Current(self.as_node().first_child()))
     }
 
-    fn before_pseudo_element(&self) -> Option<Self> {
-        self.before_or_after_pseudo(/* is_before = */ true)
-    }
-
-    fn after_pseudo_element(&self) -> Option<Self> {
-        self.before_or_after_pseudo(/* is_before = */ false)
-    }
-
-    fn marker_pseudo_element(&self) -> Option<Self> {
-        if !self.has_properties() {
-            return None;
-        }
-
-        unsafe {
-            bindings::Gecko_GetMarkerPseudo(self.0)
-                .as_ref()
-                .map(GeckoElement)
-        }
-    }
-
     #[inline]
     fn is_html_element(&self) -> bool {
         self.namespace_id() == structs::kNameSpaceID_XHTML as i32
@@ -1218,14 +1185,11 @@ impl<'le> TElement for GeckoElement<'le> {
             return;
         }
 
-        let array: *mut structs::nsTArray<*mut nsIContent> =
-            unsafe { bindings::Gecko_GetAnonymousContentForElement(self.0) };
+        let mut array = thin_vec::ThinVec::<*mut nsIContent>::new();
 
-        if array.is_null() {
-            return;
-        }
+        unsafe { bindings::Gecko_GetAnonymousContentForElement(self.0, &mut array) };
 
-        for content in unsafe { &**array } {
+        for content in &array {
             let node = GeckoNode::from_content(unsafe { &**content });
             let element = match node.as_element() {
                 Some(e) => e,
@@ -1234,8 +1198,6 @@ impl<'le> TElement for GeckoElement<'le> {
 
             f(element);
         }
-
-        unsafe { bindings::Gecko_DestroyAnonymousContentList(array) };
     }
 
     #[inline]

@@ -434,21 +434,6 @@ pub trait TElement:
         self.parent_element()
     }
 
-    /// The ::before pseudo-element of this element, if it exists.
-    fn before_pseudo_element(&self) -> Option<Self> {
-        None
-    }
-
-    /// The ::after pseudo-element of this element, if it exists.
-    fn after_pseudo_element(&self) -> Option<Self> {
-        None
-    }
-
-    /// The ::marker pseudo-element of this element, if it exists.
-    fn marker_pseudo_element(&self) -> Option<Self> {
-        None
-    }
-
     /// Execute `f` for each anonymous content child (apart from ::before and
     /// ::after) whose originating element is `self`.
     fn each_anonymous_content_child<F>(&self, _f: F)

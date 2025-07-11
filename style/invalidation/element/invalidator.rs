@@ -749,20 +749,7 @@ where
             any_descendant |= self.invalidate_dom_descendants_of(root.as_node(), invalidations);
         }
 
-        if let Some(marker) = self.element.marker_pseudo_element() {
-            any_descendant |= self.invalidate_pseudo_element_or_nac(marker, invalidations);
-        }
-
-        if let Some(before) = self.element.before_pseudo_element() {
-            any_descendant |= self.invalidate_pseudo_element_or_nac(before, invalidations);
-        }
-
-        let node = self.element.as_node();
-        any_descendant |= self.invalidate_dom_descendants_of(node, invalidations);
-
-        if let Some(after) = self.element.after_pseudo_element() {
-            any_descendant |= self.invalidate_pseudo_element_or_nac(after, invalidations);
-        }
+        any_descendant |= self.invalidate_dom_descendants_of(self.element.as_node(), invalidations);
 
         any_descendant |= self.invalidate_nac(invalidations);
 

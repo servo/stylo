@@ -452,7 +452,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
 
     #[inline]
     fn parse_has(&self) -> bool {
-        static_prefs::pref!("layout.css.has-selector.enabled")
+        true
     }
 
     #[inline]

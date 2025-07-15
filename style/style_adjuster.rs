@@ -206,7 +206,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             return pseudo.skip_item_display_fixup();
         }
 
-        element.map_or(false, |e| e.skip_item_display_fixup())
+        element.is_some_and(|e| e.skip_item_display_fixup())
     }
 
     /// Apply the blockification rules based on the table in CSS 2.2 section 9.7.
@@ -969,9 +969,6 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         #[cfg(feature = "gecko")]
         {
             self.adjust_for_ruby(layout_parent_style, element);
-        }
-        #[cfg(feature = "gecko")]
-        {
             self.adjust_for_appearance(element);
             self.adjust_for_marker_pseudo();
         }

@@ -393,8 +393,6 @@ ${helpers.predefined_type(
     "HyphenateLimitChars",
     "computed::HyphenateLimitChars::auto()",
     engines="gecko",
-    gecko_pref="layout.css.hyphenate-limit-chars.enabled",
-    has_effect_on_gecko_scrollbars=False,
     spec="https://drafts.csswg.org/css-text-4/#hyphenate-char-limits",
     affects="layout",
     boxed=True,

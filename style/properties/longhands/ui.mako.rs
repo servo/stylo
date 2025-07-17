@@ -308,7 +308,6 @@ ${helpers.predefined_type(
     vector=True,
     need_index=True,
     animation_type="none",
-    gecko_pref="layout.css.animation-composition.enabled",
     servo_pref="layout.unimplemented",
     spec="https://drafts.csswg.org/css-animations-2/#animation-composition",
     affects="",

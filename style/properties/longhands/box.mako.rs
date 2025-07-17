@@ -519,7 +519,7 @@ ${helpers.predefined_type(
     "Appearance",
     "computed::Appearance::None",
     engines="gecko",
-    extra_prefixes="moz:layout.css.moz-appearance.enabled webkit",
+    aliases="-moz-appearance -webkit-appearance",
     spec="https://drafts.csswg.org/css-ui-4/#propdef-appearance",
     animation_type="discrete",
     gecko_ffi_name="mAppearance",

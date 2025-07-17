@@ -341,7 +341,6 @@ ${helpers.predefined_type(
         engines="gecko",
         logical_group="overscroll-behavior",
         logical=logical,
-        gecko_pref="layout.css.overscroll-behavior.enabled",
         spec="https://wicg.github.io/overscroll-behavior/#overscroll-behavior-properties",
         animation_type="discrete",
         affects="paint",

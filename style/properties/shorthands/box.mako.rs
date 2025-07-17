@@ -28,7 +28,6 @@ ${helpers.two_properties_shorthand(
     "overscroll-behavior-x",
     "overscroll-behavior-y",
     engines="gecko",
-    gecko_pref="layout.css.overscroll-behavior.enabled",
     spec="https://wicg.github.io/overscroll-behavior/#overscroll-behavior-properties",
 )}
 

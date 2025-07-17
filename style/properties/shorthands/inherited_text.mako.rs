@@ -91,7 +91,7 @@
             use text_wrap_mode::computed_value::T as Mode;
             use text_wrap_style::computed_value::T as Style;
 
-            if matches!(self.text_wrap_style, None | Some(&Style::Auto)) {
+            if matches!(self.text_wrap_style, &Style::Auto) {
                 return self.text_wrap_mode.to_css(dest);
             }
 

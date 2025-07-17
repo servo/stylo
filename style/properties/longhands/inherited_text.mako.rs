@@ -402,8 +402,6 @@ ${helpers.single_keyword(
     "text-wrap-style",
     "auto stable balance",
     engines="gecko",
-    gecko_pref="layout.css.text-wrap-balance.enabled",
-    has_effect_on_gecko_scrollbars=False,
     gecko_enum_prefix="StyleTextWrapStyle",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text-4/#text-wrap-style",

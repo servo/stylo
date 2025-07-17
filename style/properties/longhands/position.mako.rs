@@ -443,7 +443,6 @@ ${helpers.predefined_type(
         engines="gecko",
         logical_group="contain-intrinsic-size",
         logical=logical,
-        gecko_pref="layout.css.contain-intrinsic-size.enabled",
         spec="https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override",
         affects="layout",
     )}

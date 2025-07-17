@@ -925,6 +925,5 @@ ${helpers.two_properties_shorthand(
     "contain-intrinsic-width",
     "contain-intrinsic-height",
     engines="gecko",
-    gecko_pref="layout.css.contain-intrinsic-size.enabled",
     spec="https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override",
 )}

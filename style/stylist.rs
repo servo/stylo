@@ -2731,19 +2731,15 @@ pub struct CascadeData {
     num_declarations: usize,
 }
 
-fn parent_selector_for_scope(parent: Option<&SelectorList<SelectorImpl>>) -> &SelectorList<SelectorImpl> {
-    lazy_static! {
-        static ref SCOPE: SelectorList<SelectorImpl> = {
-            // Implicit scope, as per https://github.com/w3c/csswg-drafts/issues/10196
-            let list = SelectorList::implicit_scope();
-            list.mark_as_intentionally_leaked();
-            list
-        };
+lazy_static! {
+    static ref IMPLICIT_SCOPE: SelectorList<SelectorImpl> = {
+        // Implicit scope, as per https://github.com/w3c/csswg-drafts/issues/10196
+        // Also, `&` is `:where(:scope)`, as per https://github.com/w3c/csswg-drafts/issues/9740
+        // ``:where(:scope)` effectively behaves the same as the implicit scope.
+        let list = SelectorList::implicit_scope();
+        list.mark_as_intentionally_leaked();
+        list
     };
-    match parent {
-        Some(l) => l,
-        None => &SCOPE,
-    }
 }
 
 fn scope_start_matches_shadow_host(start: &SelectorList<SelectorImpl>) -> bool {
@@ -3469,13 +3465,6 @@ impl CascadeData {
                     }
                 },
                 CssRule::NestedDeclarations(ref rule) => {
-                    lazy_static! {
-                        static ref IMPLICIT_SCOPE: SelectorList<SelectorImpl> = {
-                            let list = SelectorList::implicit_scope();
-                            list.mark_as_intentionally_leaked();
-                            list
-                        };
-                    };
                     if let Some(ref ancestor_selectors) = containing_rule_state.ancestor_selector_lists.last() {
                         let decls = &rule.read_with(guard).block;
                         let selectors = match containing_rule_state.nested_declarations_context {
@@ -3739,12 +3728,12 @@ impl CascadeData {
                                 None => selector.clone(),
                             }
                         });
-                        let parent = parent_selector_for_scope(start.as_ref());
+                        let implicit_scope_selector = &*IMPLICIT_SCOPE;
                         let end = rule.bounds
                             .end
                             .as_ref()
-                            .map(|selector| selector.replace_parent_selector(parent));
-                        containing_rule_state.ancestor_selector_lists.push(parent.clone());
+                            .map(|selector| selector.replace_parent_selector(implicit_scope_selector));
+                        containing_rule_state.ancestor_selector_lists.push(implicit_scope_selector.clone());
                         ScopeBoundsWithHashes::new(quirks_mode, start, end)
                     };
 

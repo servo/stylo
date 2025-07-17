@@ -967,18 +967,11 @@ impl Parse for TextIndent {
                 }
             }
 
-            if static_prefs::pref!("layout.css.text-indent-keywords.enabled") {
-                // Check for the keywords (boolean flags).
-                try_match_ident_ignore_ascii_case! { input,
-                    "hanging" if !hanging => hanging = true,
-                    "each-line" if !each_line => each_line = true,
-                }
-                continue;
+            // Check for the keywords (boolean flags).
+            try_match_ident_ignore_ascii_case! { input,
+                "hanging" if !hanging => hanging = true,
+                "each-line" if !each_line => each_line = true,
             }
-
-            // If we reach here, there must be something that we failed to parse;
-            // just break and let the caller deal with it.
-            break;
         }
 
         // The length-percentage value is required for the declaration to be valid.

@@ -1006,7 +1006,7 @@ fn get_animation_rule(
 pub unsafe fn namespace_id_to_atom(id: i32) -> *mut nsAtom {
     unsafe {
         let namespace_manager = structs::nsNameSpaceManager_sInstance.mRawPtr;
-        (*namespace_manager).mURIArray[id as usize].mRawPtr
+        (&(*namespace_manager).mURIArray)[id as usize].mRawPtr
     }
 }
 

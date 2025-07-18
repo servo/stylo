@@ -919,7 +919,12 @@ impl<'a, 'b> SelectorVisitor for SelectorDependencyCollector<'a, 'b> {
         _list_kind: SelectorListKind,
         list: &[Selector<SelectorImpl>],
     ) -> bool {
-        let next_dependency = ThinArc::from_header_and_iter((), [self.dependency()].into_iter());
+        let next_relative_dependency = self.relative_inner_collector.is_some().then(||
+            ThinArc::from_header_and_iter(
+                (),
+                std::iter::once(self.dependency()),
+            )
+        );
         for selector in list {
             // Here we cheat a bit: We can visit the rightmost compound with
             // the "outer" visitor, and it'd be fine. This reduces the amount of
@@ -957,6 +962,10 @@ impl<'a, 'b> SelectorVisitor for SelectorDependencyCollector<'a, 'b> {
                     cached_dependency: None,
                 });
             }
+            debug_assert!(
+                next_relative_dependency.is_some() == self.relative_inner_collector.is_some(),
+                "Next relative dependency and relative inner collector must be Some/None at the same time!"
+            );
             let mut nested = SelectorDependencyCollector {
                 map: &mut *self.map,
                 relative_selector_invalidation_map: &mut *self.relative_selector_invalidation_map,
@@ -967,14 +976,12 @@ impl<'a, 'b> SelectorVisitor for SelectorDependencyCollector<'a, 'b> {
                 next_selectors: &mut *self.next_selectors,
                 quirks_mode: self.quirks_mode,
                 compound_state: PerCompoundState::new(index),
-                relative_inner_collector: if self.relative_inner_collector.is_some() {
-                    Some(RelativeSelectorInnerCollectorState {
-                        next_dependency: &next_dependency,
+                relative_inner_collector: next_relative_dependency.as_ref().map(|next_dependency| {
+                    RelativeSelectorInnerCollectorState {
+                        next_dependency,
                         relative_compound_state: RelativeSelectorCompoundStateAttributes::new(),
-                    })
-                } else {
-                    None
-                },
+                    }
+                }),
                 alloc_error: &mut *self.alloc_error,
             };
             if !nested.visit_whole_selector_from(iter, index) {

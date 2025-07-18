@@ -260,18 +260,14 @@ impl ImportRule {
                 .unwrap_or(ImportLayer::None)
         };
 
-        let supports = if !static_prefs::pref!("layout.css.import-supports.enabled") {
-            None
-        } else {
-            input
-                .try_parse(SupportsCondition::parse_for_import)
-                .map(|condition| {
-                    let enabled = context
-                        .nest_for_rule(CssRuleType::Style, |context| condition.eval(context));
-                    ImportSupportsCondition { condition, enabled }
-                })
-                .ok()
-        };
+        let supports = input
+            .try_parse(SupportsCondition::parse_for_import)
+            .map(|condition| {
+                let enabled =
+                    context.nest_for_rule(CssRuleType::Style, |context| condition.eval(context));
+                ImportSupportsCondition { condition, enabled }
+            })
+            .ok();
 
         (layer, supports)
     }

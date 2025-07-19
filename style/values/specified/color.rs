@@ -529,7 +529,7 @@ impl ToCss for Color {
             #[cfg(feature = "gecko")]
             Color::System(system) => system.to_css(dest),
             #[cfg(feature = "gecko")]
-            Color::InheritFromBodyQuirk => Ok(()),
+            Color::InheritFromBodyQuirk => dest.write_str("-moz-inherit-from-body-quirk"),
         }
     }
 }

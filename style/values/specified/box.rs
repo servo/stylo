@@ -1274,27 +1274,52 @@ pub enum ContentVisibility {
     ToResolvedValue,
     ToShmem,
 )]
-#[repr(u8)]
-#[allow(missing_docs)]
+#[css(bitflags(
+    single = "normal",
+    mixed = "size,inline-size,scroll-state",
+    validate_mixed = "Self::validate_mixed_flags",
+))]
+#[repr(C)]
+/// Specified keyword values for the container-type property.
+/// Spec: normal | [ [ size | inline-size ] || scroll-state ]
+///
+/// Container Queries are moved from css-contain-3 to css-conditional-5 in August 2022:
 /// https://drafts.csswg.org/css-contain-3/#container-type
-pub enum ContainerType {
-    /// The `normal` variant.
-    Normal,
-    /// The `inline-size` variant.
-    InlineSize,
-    /// The `size` variant.
-    Size,
+/// https://drafts.csswg.org/css-conditional-5/#container-type
+pub struct ContainerType(u8);
+bitflags! {
+    impl ContainerType: u8 {
+        /// The `normal` variant.
+        const NORMAL = 0;
+        /// The `inline-size` variant.
+        const INLINE_SIZE = 1 << 0;
+        /// The `size` variant.
+        const SIZE = 1 << 1;
+        /// The `scroll-state` variant.
+        const SCROLL_STATE = 1 << 2;
+    }
 }
 
 impl ContainerType {
+    fn validate_mixed_flags(&self) -> bool {
+        // size and inline-size can't be mixed together.
+        if self.contains(Self::SIZE | Self::INLINE_SIZE) {
+            return false;
+        }
+        if self.contains(Self::SCROLL_STATE) && !static_prefs::pref!("layout.css.scroll-state.enabled") {
+            return false;
+        }
+        true
+    }
+
     /// Is this container-type: normal?
     pub fn is_normal(self) -> bool {
-        self == Self::Normal
+        self == Self::NORMAL
     }
 
     /// Is this type containing size in any way?
     pub fn is_size_container_type(self) -> bool {
-        !self.is_normal()
+        self.intersects(Self::SIZE | Self::INLINE_SIZE)
     }
 }
 

@@ -495,7 +495,7 @@ ${helpers.predefined_type(
 ${helpers.predefined_type(
     "container-type",
     "ContainerType",
-    "computed::ContainerType::Normal",
+    "computed::ContainerType::NORMAL",
     engines="gecko servo",
     animation_type="none",
     servo_pref="layout.container-queries.enabled",

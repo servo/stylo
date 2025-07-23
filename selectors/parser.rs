@@ -2384,7 +2384,16 @@ impl<Impl: SelectorImpl> ToCss for Selector<Impl> {
                     compound.len() == 1,
                     "RelativeSelectorAnchor/ImplicitScope should only be a simple selector"
                 );
-                combinators.next().unwrap().to_css_relative(dest)?;
+                if let Some(c) = combinators.next() {
+                    c.to_css_relative(dest)?;
+                } else {
+                    // Direct property declarations in `@scope` does not have
+                    // combinators, since its selector is `:implicit-scope`.
+                    debug_assert!(
+                        matches!(first_compound, Component::ImplicitScope),
+                        "Only implicit :scope may not have any combinator"
+                    );
+                }
                 continue;
             }
 

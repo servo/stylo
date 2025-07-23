@@ -548,8 +548,9 @@ impl NonCustomPropertyId {
             rule_types.contains(CssRuleType::Keyframe) ||
             rule_types.contains(CssRuleType::Page) ||
             rule_types.contains(CssRuleType::Style) ||
+            rule_types.contains(CssRuleType::Scope) ||
             rule_types.contains(CssRuleType::PositionTry),
-            "Declarations are only expected inside a keyframe, page, or style rule."
+            "Given rule type does not allow declarations."
         );
 
         static MAP: [u32; property_counts::NON_CUSTOM] = [

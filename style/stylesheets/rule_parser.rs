@@ -146,7 +146,11 @@ impl<'a, 'i> TopLevelRuleParser<'a, 'i> {
         // We also have to check for page rules here because we currently don't
         // have a bespoke parser for page rules, and parse them as though they
         // are style rules.
-        self.in_style_or_page_rule()
+        // Scope rules can have direct declarations, behaving as if `:where(:scope)`.
+        // See https://drafts.csswg.org/css-cascade-6/#scoped-declarations
+        self.in_specified_rule(
+            CssRuleType::Style.bit() | CssRuleType::Page.bit() | CssRuleType::Scope.bit(),
+        )
     }
 
     #[inline]
@@ -166,9 +170,14 @@ impl<'a, 'i> TopLevelRuleParser<'a, 'i> {
     }
 
     #[inline]
-    fn in_style_or_page_rule(&self) -> bool {
-        let types = CssRuleTypes::from_bits(CssRuleType::Style.bit() | CssRuleType::Page.bit());
+    fn in_specified_rule(&self, bits: u32) -> bool {
+        let types = CssRuleTypes::from_bits(bits);
         self.context.nesting_context.rule_types.intersects(types)
+    }
+
+    #[inline]
+    fn in_style_or_page_rule(&self) -> bool {
+        self.in_specified_rule(CssRuleType::Style.bit() | CssRuleType::Page.bit())
     }
 
     /// Checks whether we can parse a rule that would transition us to

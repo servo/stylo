@@ -8,7 +8,8 @@ import re
 import sys
 
 BASE = os.path.dirname(__file__.replace("\\", "/"))
-sys.path.insert(0, os.path.join(BASE, "mako-1.3.10-py3-none-any.whl"))
+sys.path.insert(0, os.path.join(BASE, "vendored_python", "mako-1.3.10-py3-none-any.whl"))
+sys.path.insert(0, os.path.join(BASE, "vendored_python")) # For importing markupsafe
 sys.path.insert(0, BASE)  # For importing `data.py`
 
 from mako import exceptions
@@ -114,7 +115,7 @@ def write(directory, filename, content):
     if not os.path.exists(directory):
         os.makedirs(directory)
     full_path = os.path.join(directory, filename)
-    open(full_path, "w", encoding="utf-8").write(content)
+    open(full_path, "w", encoding="utf-8", newline="").write(content)
 
     python_addr = RE_PYTHON_ADDR.search(content)
     if python_addr:

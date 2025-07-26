@@ -576,9 +576,6 @@ macro_rules! is_descriptor_enabled {
     ("font-variation-settings") => {
         static_prefs::pref!("layout.css.font-variations.enabled")
     };
-    ("size-adjust") => {
-        static_prefs::pref!("layout.css.size-adjust.enabled")
-    };
     ($name:tt) => {
         true
     };

@@ -39,7 +39,6 @@ ${helpers.predefined_type(
     affects="",
 )}
 
-// TODO(emilio): This probably should be hidden from content.
 ${helpers.single_keyword(
     "-moz-window-dragging",
     "default drag no-drag",
@@ -47,6 +46,7 @@ ${helpers.single_keyword(
     gecko_ffi_name="mWindowDragging",
     gecko_enum_prefix="StyleWindowDragging",
     animation_type="discrete",
+    enabled_in="chrome",
     spec="None (Nonstandard Firefox-only property)",
     affects="paint",
 )}

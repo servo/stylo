@@ -14,7 +14,8 @@ use crate::dom::TElement;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{ServoStyleSetSizes, StyleRuleInclusion};
 use crate::invalidation::element::invalidation_map::{
-    note_selector_for_invalidation, InvalidationMap, AdditionalRelativeSelectorInvalidationMap,
+    note_selector_for_invalidation, AdditionalRelativeSelectorInvalidationMap, Dependency,
+    InvalidationMap,
 };
 use crate::invalidation::media_queries::{
     EffectiveMediaQueryResults, MediaListKey, ToMediaListKey,
@@ -72,7 +73,7 @@ use selectors::parser::{
     SelectorList,
 };
 use selectors::visitor::{SelectorListKind, SelectorVisitor};
-use servo_arc::{Arc, ArcBorrow};
+use servo_arc::{Arc, ArcBorrow, ThinArc};
 use smallvec::SmallVec;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
@@ -2573,8 +2574,22 @@ impl ScopeBoundsWithHashes {
                 quirks_mode, selectors)),
         }
     }
-}
 
+    fn selectors_for<'a>(
+        bound_with_hashes: Option<&'a ScopeBoundWithHashes>,
+    ) -> impl Iterator<Item = &'a Selector<SelectorImpl>> {
+        bound_with_hashes
+            .map(|b| b.selectors.slice().iter())
+            .into_iter()
+            .flatten()
+    }
+
+    fn iter_selectors<'a>(&'a self) -> impl Iterator<Item = &'a Selector<SelectorImpl>> {
+        let start_selectors = Self::selectors_for(self.start.as_ref());
+        let end_selectors = Self::selectors_for(self.end.as_ref());
+        start_selectors.chain(end_selectors)
+    }
+}
 
 /// Implicit scope root, which may or may not be cached (i.e. For shadow DOM author
 /// styles that are cached and shared).
@@ -3098,33 +3113,33 @@ impl CascadeData {
         }
 
         let candidates = if let Some(end) = bounds.end.as_ref() {
-            let mut result = vec![];
-            // If any scope-end selector matches, we're not in scope.
-            for scope_root in potential_scope_roots {
+                let mut result = vec![];
+                // If any scope-end selector matches, we're not in scope.
+                for scope_root in potential_scope_roots {
                 if end.selectors.slice().iter().zip(end.hashes.iter()).all(|(selector, hashes)| {
-                    // Like checking for scope-start, use the bloom filter here.
-                    if let Some(filter) = context.bloom_filter {
-                        if !selector_may_match(hashes, filter) {
-                            // Selector this hash belongs to won't cause us to be out of this scope.
-                            return true;
-                        }
-                    }
+                            // Like checking for scope-start, use the bloom filter here.
+                            if let Some(filter) = context.bloom_filter {
+                                if !selector_may_match(hashes, filter) {
+                                    // Selector this hash belongs to won't cause us to be out of this scope.
+                                    return true;
+                                }
+                            }
 
-                    !element_is_outside_of_scope(
-                        selector,
-                        element,
-                        scope_root.root,
-                        context,
-                        matches_shadow_host,
-                    )
+                            !element_is_outside_of_scope(
+                                selector,
+                                element,
+                                scope_root.root,
+                                context,
+                                matches_shadow_host,
+                            )
                 }) {
-                    result.push(scope_root);
+                        result.push(scope_root);
+                    }
                 }
-            }
-            result
-        } else {
-            potential_scope_roots
-        };
+                result
+            } else {
+                potential_scope_roots
+            };
 
         ScopeRootCandidates {
             candidates,
@@ -3320,12 +3335,43 @@ impl CascadeData {
             }
 
             if rebuild_kind.should_rebuild_invalidation() {
+                let mut scope_idx = containing_rule_state.scope_condition_id;
+                let mut inner_scope_dependencies: Option<ThinArc<(), Dependency>> = None;
+                while scope_idx != ScopeConditionId::none() {
+                    let cur_scope = &self.scope_conditions[scope_idx.0 as usize];
+
+                    if let Some(cond) = cur_scope.condition.as_ref() {
+                        let mut dependency_vector: Vec<Dependency> = Vec::new();
+
+                        for s in cond.iter_selectors() {
+                            let mut new_inner_dependencies = note_selector_for_invalidation(
+                                &s.clone(),
+                                quirks_mode,
+                                &mut self.invalidation_map,
+                                &mut self.relative_selector_invalidation_map,
+                                &mut self.additional_relative_selector_invalidation_map,
+                                inner_scope_dependencies.as_ref(),
+                            )?;
+
+                            new_inner_dependencies.as_mut().map(|dep| {
+                                dependency_vector.append(dep);
+                            });
+                        }
+                        inner_scope_dependencies = Some(ThinArc::from_header_and_iter(
+                            (),
+                            dependency_vector.into_iter(),
+                        ));
+                    }
+                    scope_idx = cur_scope.parent;
+                }
+
                 note_selector_for_invalidation(
                     &rule.selector,
                     quirks_mode,
                     &mut self.invalidation_map,
                     &mut self.relative_selector_invalidation_map,
                     &mut self.additional_relative_selector_invalidation_map,
+                    None,
                 )?;
                 let mut needs_revalidation = false;
                 let mut visitor = StylistSelectorVisitor {
@@ -3722,20 +3768,20 @@ impl CascadeData {
                     };
 
                     let replaced = {
-                        let start = rule.bounds.start.as_ref().map(|selector| {
-                            match containing_rule_state.ancestor_selector_lists.last() {
-                                Some(s) => selector.replace_parent_selector(s),
-                                None => selector.clone(),
-                            }
-                        });
-                        let implicit_scope_selector = &*IMPLICIT_SCOPE;
+                            let start = rule.bounds.start.as_ref().map(|selector| {
+                                match containing_rule_state.ancestor_selector_lists.last() {
+                                    Some(s) => selector.replace_parent_selector(s),
+                                    None => selector.clone(),
+                                }
+                            });
+                            let implicit_scope_selector = &*IMPLICIT_SCOPE;
                         let end = rule.bounds
                             .end
                             .as_ref()
                             .map(|selector| selector.replace_parent_selector(implicit_scope_selector));
                         containing_rule_state.ancestor_selector_lists.push(implicit_scope_selector.clone());
-                        ScopeBoundsWithHashes::new(quirks_mode, start, end)
-                    };
+                            ScopeBoundsWithHashes::new(quirks_mode, start, end)
+                        };
 
                     if let Some(selectors) = replaced.start.as_ref() {
                         self.scope_subject_map.add_bound_start(&selectors.selectors, quirks_mode);

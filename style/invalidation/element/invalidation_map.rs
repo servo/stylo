@@ -445,11 +445,15 @@ pub fn note_selector_for_invalidation(
     map: &mut InvalidationMap,
     relative_selector_invalidation_map: &mut InvalidationMap,
     additional_relative_selector_invalidation_map: &mut AdditionalRelativeSelectorInvalidationMap,
-) -> Result<(), AllocErr> {
-    debug!("note_selector_for_invalidation({:?})", selector);
-
+    inner_scope_dependencies: Option<&ThinArc<(), Dependency>>,
+) -> Result<Option<Vec<Dependency>>, AllocErr> {
     let next_dependency = Dependency::for_full_selector_invalidation(selector.clone());
     let mut document_state = DocumentState::empty();
+    let mut scope_dependencies = ScopeSelectorCollectorState {
+        inner_dependencies: &inner_scope_dependencies.cloned(),
+        this_dependencies: None,
+    };
+
     {
         let mut next_stack = NextSelectors::new();
         let mut alloc_error = None;
@@ -463,10 +467,12 @@ pub fn note_selector_for_invalidation(
             quirks_mode,
             compound_state: PerCompoundState::new(0),
             relative_inner_collector: None,
+            scope_dependencies: &mut scope_dependencies,
             alloc_error: &mut alloc_error,
         };
 
         let visit_result = collector.visit_whole_selector();
+
         debug_assert_eq!(!visit_result, alloc_error.is_some());
         if let Some(alloc_error) = alloc_error {
             return Err(alloc_error);
@@ -481,8 +487,9 @@ pub fn note_selector_for_invalidation(
         map.document_state_selectors.try_reserve(1)?;
         map.document_state_selectors.push(dep);
     }
-    Ok(())
+    Ok(scope_dependencies.this_dependencies)
 }
+
 struct PerCompoundState {
     /// The offset at which our compound starts.
     offset: usize,
@@ -510,6 +517,12 @@ struct RelativeSelectorInnerCollectorState<'a> {
     next_dependency: &'a ThinArc<(), Dependency>,
     relative_compound_state: RelativeSelectorCompoundStateAttributes,
 }
+struct ScopeSelectorCollectorState<'a> {
+    // Inner scope dependencies this scope selector need to point to
+    inner_dependencies: &'a Option<ThinArc<(), Dependency>>,
+    // Scope dependencies added by this scope selector
+    this_dependencies: Option<Vec<Dependency>>,
+}
 
 trait Collector {
     fn dependency(&mut self) -> Dependency;
@@ -518,6 +531,8 @@ trait Collector {
     fn state_map(&mut self) -> &mut StateDependencyMap;
     fn attribute_map(&mut self) -> &mut LocalNameDependencyMap;
     fn custom_state_map(&mut self) -> &mut CustomStateDependencyMap;
+    fn inner_scope_dependencies(&self) -> Option<ThinArc<(), Dependency>>;
+    fn this_scope_dependencies(&mut self) -> &mut Option<Vec<Dependency>>;
     fn update_states(&mut self, element_state: ElementState, document_state: DocumentState);
 
     // In normal invalidations, type-based dependencies don't need to be explicitly tracked;
@@ -571,6 +586,17 @@ fn on_id_or_class<C: Collector>(
     let vec = entry.or_insert_with(SmallVec::new);
     vec.try_reserve(1)?;
     vec.push(dependency);
+    Ok(())
+}
+
+fn on_scope<C: Collector>(collector: &mut C) -> Result<(), AllocErr> {
+    let new_dependency = collector.dependency();
+    let this_scope_dependencies = collector.this_scope_dependencies();
+
+    this_scope_dependencies
+        .get_or_insert(Vec::new())
+        .push(new_dependency);
+
     Ok(())
 }
 
@@ -668,7 +694,7 @@ fn visit_all_in_iter_compound<T: SelectorVisitor<Impl = SelectorImpl>>(
 type NextSelectors = SmallVec<[NextDependencyEntry; 5]>;
 
 /// A struct that collects invalidations for a given compound selector.
-struct SelectorDependencyCollector<'a, 'b> {
+struct SelectorDependencyCollector<'a, 'b, 'c> {
     map: &'a mut InvalidationMap,
     relative_selector_invalidation_map: &'a mut InvalidationMap,
     additional_relative_selector_invalidation_map:
@@ -700,6 +726,8 @@ struct SelectorDependencyCollector<'a, 'b> {
     /// Holds the next relative selector dependency and the state given to a relative selector.
     relative_inner_collector: Option<RelativeSelectorInnerCollectorState<'b>>,
 
+    scope_dependencies: &'a mut ScopeSelectorCollectorState<'c>,
+
     /// The allocation error, if we OOM.
     alloc_error: &'a mut Option<AllocErr>,
 }
@@ -707,17 +735,22 @@ struct SelectorDependencyCollector<'a, 'b> {
 fn next_dependency(
     next_selector: &mut NextSelectors,
     next_outer_dependency: Option<&ThinArc<(), Dependency>>,
+    next_scope_dependencies: Option<&ThinArc<(), Dependency>>,
 ) -> Option<ThinArc<(), Dependency>> {
     if next_selector.is_empty() {
-        return next_outer_dependency.cloned();
+        return match next_outer_dependency {
+            Some(..) => next_outer_dependency.cloned(),
+            None => next_scope_dependencies.cloned(),
+        };
     }
 
     fn dependencies_from(
         entries: &mut [NextDependencyEntry],
         next_outer_dependency: &Option<&ThinArc<(), Dependency>>,
+        next_scope_dependencies: &Option<&ThinArc<(), Dependency>>,
     ) -> Option<ThinArc<(), Dependency>> {
         if entries.is_empty() {
-            return None;
+            return next_scope_dependencies.cloned();
         }
 
         let last_index = entries.len() - 1;
@@ -729,7 +762,7 @@ fn next_dependency(
         let dependency = Dependency {
             selector: selector.clone(),
             selector_offset,
-            next: dependencies_from(previous, next_outer_dependency),
+            next: dependencies_from(previous, next_outer_dependency, next_scope_dependencies),
             relative_kind: None,
         };
 
@@ -740,10 +773,14 @@ fn next_dependency(
         )
     }
 
-    dependencies_from(next_selector, &next_outer_dependency)
+    dependencies_from(
+        next_selector,
+        &next_outer_dependency,
+        &next_scope_dependencies,
+    )
 }
 
-impl<'a, 'b> Collector for SelectorDependencyCollector<'a, 'b> {
+impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
     fn dependency(&mut self) -> Dependency {
         let optional_dependency = self
             .relative_inner_collector
@@ -752,7 +789,12 @@ impl<'a, 'b> Collector for SelectorDependencyCollector<'a, 'b> {
 
         let offset = self.compound_state.offset;
 
-        let next = next_dependency(self.next_selectors, optional_dependency);
+        let next = next_dependency(
+            self.next_selectors,
+            optional_dependency,
+            self.inner_scope_dependencies().as_ref(),
+        );
+
         Dependency {
             selector: self.selector.clone(),
             selector_offset: offset,
@@ -795,6 +837,14 @@ impl<'a, 'b> Collector for SelectorDependencyCollector<'a, 'b> {
                 .relative_selector_invalidation_map
                 .other_attribute_affecting_selectors
         }
+    }
+
+    fn inner_scope_dependencies(&self) -> Option<ThinArc<(), Dependency>> {
+        self.scope_dependencies.inner_dependencies.clone()
+    }
+
+    fn this_scope_dependencies(&mut self) -> &mut Option<Vec<Dependency>> {
+        &mut self.scope_dependencies.this_dependencies
     }
 
     fn update_states(&mut self, element_state: ElementState, document_state: DocumentState) {
@@ -843,7 +893,7 @@ impl<'a, 'b> Collector for SelectorDependencyCollector<'a, 'b> {
     }
 }
 
-impl<'a, 'b> SelectorDependencyCollector<'a, 'b> {
+impl<'a, 'b, 'c> SelectorDependencyCollector<'a, 'b, 'c> {
     fn visit_whole_selector(&mut self) -> bool {
         let iter = self.selector.iter();
         self.visit_whole_selector_from(iter, 0)
@@ -911,7 +961,7 @@ impl<'a, 'b> SelectorDependencyCollector<'a, 'b> {
     }
 }
 
-impl<'a, 'b> SelectorVisitor for SelectorDependencyCollector<'a, 'b> {
+impl<'a, 'b, 'c> SelectorVisitor for SelectorDependencyCollector<'a, 'b, 'c> {
     type Impl = SelectorImpl;
 
     fn visit_selector_list(
@@ -919,12 +969,10 @@ impl<'a, 'b> SelectorVisitor for SelectorDependencyCollector<'a, 'b> {
         _list_kind: SelectorListKind,
         list: &[Selector<SelectorImpl>],
     ) -> bool {
-        let next_relative_dependency = self.relative_inner_collector.is_some().then(||
-            ThinArc::from_header_and_iter(
-                (),
-                std::iter::once(self.dependency()),
-            )
-        );
+        let next_relative_dependency = self
+            .relative_inner_collector
+            .is_some()
+            .then(|| ThinArc::from_header_and_iter((), std::iter::once(self.dependency())));
         for selector in list {
             // Here we cheat a bit: We can visit the rightmost compound with
             // the "outer" visitor, and it'd be fine. This reduces the amount of
@@ -976,12 +1024,13 @@ impl<'a, 'b> SelectorVisitor for SelectorDependencyCollector<'a, 'b> {
                 next_selectors: &mut *self.next_selectors,
                 quirks_mode: self.quirks_mode,
                 compound_state: PerCompoundState::new(index),
-                relative_inner_collector: next_relative_dependency.as_ref().map(|next_dependency| {
-                    RelativeSelectorInnerCollectorState {
+                relative_inner_collector: next_relative_dependency.as_ref().map(
+                    |next_dependency| RelativeSelectorInnerCollectorState {
                         next_dependency,
                         relative_compound_state: RelativeSelectorCompoundStateAttributes::new(),
-                    }
-                }),
+                    },
+                ),
+                scope_dependencies: &mut self.scope_dependencies,
                 alloc_error: &mut *self.alloc_error,
             };
             if !nested.visit_whole_selector_from(iter, index) {
@@ -1022,6 +1071,7 @@ impl<'a, 'b> SelectorVisitor for SelectorDependencyCollector<'a, 'b> {
                 quirks_mode: self.quirks_mode,
                 compound_state: PerCompoundState::new(0),
                 compound_state_attributes: RelativeSelectorCompoundStateAttributes::new(),
+                scope_dependencies: &mut self.scope_dependencies,
                 alloc_error: &mut *self.alloc_error,
             };
             if !nested.visit_whole_selector() {
@@ -1086,7 +1136,7 @@ impl RelativeSelectorCompoundStateAttributes {
 }
 
 /// A struct that collects invalidations for a given compound selector.
-struct RelativeSelectorDependencyCollector<'a> {
+struct RelativeSelectorDependencyCollector<'a, 'b> {
     map: &'a mut InvalidationMap,
     relative_selector_invalidation_map: &'a mut InvalidationMap,
     additional_relative_selector_invalidation_map:
@@ -1118,6 +1168,8 @@ struct RelativeSelectorDependencyCollector<'a> {
 
     /// Attributes relevant to the relative compound selector state.
     compound_state_attributes: RelativeSelectorCompoundStateAttributes,
+
+    scope_dependencies: &'a mut ScopeSelectorCollectorState<'b>,
 
     /// The allocation error, if we OOM.
     alloc_error: &'a mut Option<AllocErr>,
@@ -1172,7 +1224,7 @@ fn add_ts_pseudo_class_dependency<C: Collector>(
     )
 }
 
-impl<'a> RelativeSelectorDependencyCollector<'a> {
+impl<'a, 'b> RelativeSelectorDependencyCollector<'a, 'b> {
     fn visit_whole_selector(&mut self) -> bool {
         let mut iter = self.selector.selector.iter_skip_relative_selector_anchor();
         let mut index = 0;
@@ -1243,9 +1295,13 @@ impl<'a> RelativeSelectorDependencyCollector<'a> {
     }
 }
 
-impl<'a> Collector for RelativeSelectorDependencyCollector<'a> {
+impl<'a, 'b> Collector for RelativeSelectorDependencyCollector<'a, 'b> {
     fn dependency(&mut self) -> Dependency {
-        let next = next_dependency(self.next_selectors, None);
+        let next = next_dependency(
+            self.next_selectors,
+            None,
+            self.inner_scope_dependencies().as_ref(),
+        );
         debug_assert!(
             next.as_ref()
                 .is_some_and(|d| d.slice()[0].relative_kind.is_none()),
@@ -1307,6 +1363,14 @@ impl<'a> Collector for RelativeSelectorDependencyCollector<'a> {
             .custom_state_affecting_selectors
     }
 
+    fn inner_scope_dependencies(&self) -> Option<ThinArc<(), Dependency>> {
+        self.scope_dependencies.inner_dependencies.clone()
+    }
+
+    fn this_scope_dependencies(&mut self) -> &mut Option<Vec<Dependency>> {
+        &mut self.scope_dependencies.this_dependencies
+    }
+
     fn update_states(&mut self, element_state: ElementState, document_state: DocumentState) {
         self.compound_state.element_state |= element_state;
         *self.document_state |= document_state;
@@ -1352,6 +1416,12 @@ fn on_simple_selector<C: Collector>(
                 TSStateForInvalidation::empty(),
             ))
         },
+        Component::ImplicitScope | Component::Scope => {
+            on_scope(collector)?;
+            Ok(ComponentVisitResult::Handled(
+                TSStateForInvalidation::empty(),
+            ))
+        },
         Component::NonTSPseudoClass(ref pc) => {
             on_pseudo_class(pc, collector)?;
             Ok(ComponentVisitResult::Handled(
@@ -1376,7 +1446,7 @@ fn on_simple_selector<C: Collector>(
     }
 }
 
-impl<'a> SelectorVisitor for RelativeSelectorDependencyCollector<'a> {
+impl<'a, 'b> SelectorVisitor for RelativeSelectorDependencyCollector<'a, 'b> {
     type Impl = SelectorImpl;
 
     fn visit_selector_list(
@@ -1423,6 +1493,7 @@ impl<'a> SelectorVisitor for RelativeSelectorDependencyCollector<'a> {
                     next_dependency: &next_dependency,
                     relative_compound_state: RelativeSelectorCompoundStateAttributes::new(),
                 }),
+                scope_dependencies: &mut self.scope_dependencies,
                 alloc_error: &mut *self.alloc_error,
             };
             if !nested.visit_whole_selector_from(iter, index) {

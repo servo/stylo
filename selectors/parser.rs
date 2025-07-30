@@ -928,32 +928,6 @@ impl<Impl: SelectorImpl> Selector<Impl> {
         None
     }
 
-    #[inline]
-    pub fn pseudo_elements(&self) -> SmallVec<[&Impl::PseudoElement; 3]> {
-        let mut pseudos = SmallVec::new();
-
-        if !self.has_pseudo_element() {
-            return pseudos;
-        }
-
-        let mut iter = self.iter();
-        loop {
-            for component in &mut iter {
-                if let Component::PseudoElement(ref pseudo) = *component {
-                    pseudos.push(pseudo);
-                }
-            }
-            match iter.next_sequence() {
-                Some(Combinator::PseudoElement) => {},
-                _ => break,
-            }
-        }
-
-        debug_assert!(!pseudos.is_empty(), "has_pseudo_element lied!");
-
-        pseudos
-    }
-
     /// Whether this selector (pseudo-element part excluded) matches every element.
     ///
     /// Used for "pre-computed" pseudo-elements in components/style/stylist.rs
@@ -3714,7 +3688,6 @@ pub mod tests {
     pub enum PseudoElement {
         Before,
         After,
-        DetailsContent,
         Highlight(String),
     }
 
@@ -3730,7 +3703,7 @@ pub mod tests {
         }
 
         fn is_element_backed(&self) -> bool {
-            matches!(self, Self::DetailsContent)
+            true
         }
     }
 
@@ -3773,7 +3746,6 @@ pub mod tests {
             match *self {
                 PseudoElement::Before => dest.write_str("::before"),
                 PseudoElement::After => dest.write_str("::after"),
-                PseudoElement::DetailsContent => dest.write_str("::details-content"),
                 PseudoElement::Highlight(ref name) => {
                     dest.write_str("::highlight(")?;
                     serialize_identifier(&name, dest)?;
@@ -3943,7 +3915,6 @@ pub mod tests {
             match_ignore_ascii_case! { &name,
                 "before" => return Ok(PseudoElement::Before),
                 "after" => return Ok(PseudoElement::After),
-                "details-content" => return Ok(PseudoElement::DetailsContent),
                 _ => {}
             }
             Err(
@@ -4606,31 +4577,6 @@ pub mod tests {
         assert!(matches!(iter.next(), Some(&Component::LocalName(..))));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next_sequence(), None);
-    }
-
-    #[test]
-    fn test_pseudo_on_element_backed_pseudo() {
-        let list = parse("::details-content::before").unwrap();
-        let selector = &list.slice()[0];
-        let mut iter = selector.iter();
-        assert_eq!(
-            iter.next(),
-            Some(&Component::PseudoElement(PseudoElement::Before))
-        );
-        assert_eq!(iter.next(), None);
-        let combinator = iter.next_sequence();
-        assert_eq!(combinator, Some(Combinator::PseudoElement));
-        assert!(matches!(iter.next(), Some(&Component::PseudoElement(PseudoElement::DetailsContent))));
-        assert_eq!(iter.next(), None);
-        let combinator = iter.next_sequence();
-        assert_eq!(combinator, Some(Combinator::PseudoElement));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.next_sequence(), None);
-    }
-
-    #[test]
-    fn test_pseudo_on_non_element_backed_pseudo() {
-        assert!(parse("::before::before").is_err());
     }
 
     #[test]

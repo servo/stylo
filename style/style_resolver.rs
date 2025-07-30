@@ -20,6 +20,7 @@ use selectors::matching::{
     IncludeStartingStyle, MatchingContext, MatchingForInvalidation, MatchingMode,
     NeedsSelectorFlags, VisitedHandlingMode,
 };
+use selectors::parser::PseudoElement as PseudoElementTrait;
 use servo_arc::Arc;
 
 /// Whether pseudo-elements should be resolved or not.
@@ -296,8 +297,7 @@ where
 
         let mut pseudo_styles = EagerPseudoStyles::default();
 
-        // FIXME(bug 1954142): This should account for element-backed pseudo elements.
-        if !self.element.is_pseudo_element() {
+        if !self.element.implemented_pseudo_element().is_some_and(|p| !PseudoElementTrait::is_element_backed(&p)) {
             let layout_parent_style_for_pseudo =
                 layout_parent_style_for_pseudo(&primary_style, layout_parent_style);
             SelectorImpl::each_eagerly_cascaded_pseudo_element(|pseudo| {
@@ -375,9 +375,6 @@ where
         pseudo: Option<&PseudoElement>,
     ) -> ResolvedStyle {
         debug_assert!(pseudo.map_or(true, |p| p.is_eager()));
-
-        let implemented_pseudo = self.element.implemented_pseudo_element();
-        let pseudo = pseudo.or(implemented_pseudo.as_ref());
 
         let mut conditions = Default::default();
         let values = self.context.shared.stylist.cascade_style_and_visited(
@@ -522,11 +519,10 @@ where
         );
 
         let stylist = &self.context.shared.stylist;
-        let implemented_pseudo = self.element.implemented_pseudo_element();
         // Compute the primary rule node.
         stylist.push_applicable_declarations(
             self.element,
-            implemented_pseudo.as_ref(),
+            None,
             self.element.style_attribute(),
             self.element.smil_override(),
             self.element.animation_declarations(self.context.shared),
@@ -570,10 +566,6 @@ where
             self.element, pseudo_element, visited_handling
         );
         debug_assert!(pseudo_element.is_eager());
-        debug_assert!(
-            !self.element.is_pseudo_element(),
-            "Element pseudos can't have any other eager pseudo."
-        );
 
         let mut applicable_declarations = ApplicableDeclarationList::new();
 

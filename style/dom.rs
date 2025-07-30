@@ -751,12 +751,12 @@ pub trait TElement:
     /// element-backed pseudo-element, in which case we return the originating
     /// element.
     fn rule_hash_target(&self) -> Self {
-        if self.is_pseudo_element() {
-            self.pseudo_element_originating_element()
+        let mut cur = *self;
+        while cur.is_pseudo_element() {
+            cur = cur.pseudo_element_originating_element()
                 .expect("Trying to collect rules for a detached pseudo-element")
-        } else {
-            *self
         }
+        cur
     }
 
     /// Executes the callback for each applicable style rule data which isn't

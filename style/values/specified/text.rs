@@ -967,6 +967,11 @@ impl Parse for TextIndent {
                 }
             }
 
+            // Servo doesn't support the keywords, so just break and let the caller deal with it.
+            if cfg!(feature = "servo") {
+                break;
+            }
+
             // Check for the keywords (boolean flags).
             try_match_ident_ignore_ascii_case! { input,
                 "hanging" if !hanging => hanging = true,

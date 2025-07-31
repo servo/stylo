@@ -17,7 +17,6 @@ use crate::string_cache::Atom;
 use crate::values::serialize_atom_identifier;
 use crate::values::AtomIdent;
 use cssparser::{ToCss, Parser};
-use selectors::parser::PseudoElement as PseudoElementTrait;
 use static_prefs::pref;
 use std::fmt;
 use style_traits::ParseError;
@@ -171,7 +170,7 @@ impl ToCss for PtNameAndClassSelector {
     }
 }
 
-impl PseudoElementTrait for PseudoElement {
+impl ::selectors::parser::PseudoElement for PseudoElement {
     type Impl = SelectorImpl;
 
     // ::slotted() should support all tree-abiding pseudo-elements, see
@@ -188,13 +187,6 @@ impl PseudoElementTrait for PseudoElement {
                 Self::FileSelectorButton |
                 Self::DetailsContent
         )
-    }
-
-    // ::before/::after should support ::marker, but no others.
-    // https://drafts.csswg.org/css-pseudo-4/#marker-pseudo
-    #[inline]
-    fn valid_after_before_or_after(&self) -> bool {
-        matches!(*self, Self::Marker)
     }
 
     #[inline]
@@ -223,12 +215,6 @@ impl PseudoElementTrait for PseudoElement {
         // Note: We doen't include ::view-transition here because it inherits from the originating
         // element, instead of the snapshot containing block.
         self.is_named_view_transition() || *self == PseudoElement::DetailsContent
-    }
-
-    /// Whether the current pseudo element is ::before or ::after.
-    #[inline]
-    fn is_before_or_after(&self) -> bool {
-        matches!(*self, PseudoElement::Before | PseudoElement::After)
     }
 }
 
@@ -273,6 +259,12 @@ impl PseudoElement {
     #[inline]
     pub fn animations_stored_in_parent(&self) -> bool {
         matches!(*self, Self::Before | Self::After | Self::Marker)
+    }
+
+    /// Whether the current pseudo element is ::before or ::after.
+    #[inline]
+    pub fn is_before_or_after(&self) -> bool {
+        matches!(*self, Self::Before | Self::After)
     }
 
     /// Whether this pseudo-element is the ::before pseudo.

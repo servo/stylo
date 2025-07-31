@@ -20,6 +20,7 @@ use selectors::matching::{
     IncludeStartingStyle, MatchingContext, MatchingForInvalidation, MatchingMode,
     NeedsSelectorFlags, VisitedHandlingMode,
 };
+use selectors::parser::PseudoElement as PseudoElementTrait;
 use servo_arc::Arc;
 
 /// Whether pseudo-elements should be resolved or not.

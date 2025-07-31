@@ -15,6 +15,7 @@ use crate::style_resolver::{PseudoElementResolution, StyleResolverForElement};
 use crate::stylist::RuleInclusion;
 use crate::traversal_flags::TraversalFlags;
 use selectors::matching::SelectorCaches;
+use selectors::parser::PseudoElement as PseudoElementTrait;
 use smallvec::SmallVec;
 use std::collections::HashMap;
 

@@ -17,13 +17,13 @@ const BITS_PER_ENTRY: usize = 32;
 #[derive(Debug, Default)]
 pub struct CountedUnknownPropertyUseCounters {
     storage:
-        [AtomicUsize; (property_counts::COUNTED_UNKNOWN - 1 + BITS_PER_ENTRY) / BITS_PER_ENTRY],
+        [AtomicUsize; (property_counts::COUNTED_UNKNOWN + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY],
 }
 
 /// One bit per each non-custom CSS property.
 #[derive(Debug, Default)]
 pub struct NonCustomPropertyUseCounters {
-    storage: [AtomicUsize; (property_counts::NON_CUSTOM - 1 + BITS_PER_ENTRY) / BITS_PER_ENTRY],
+    storage: [AtomicUsize; (property_counts::NON_CUSTOM + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY],
 }
 
 /// A custom style use counter that we may want to record.
@@ -49,7 +49,7 @@ impl CustomUseCounter {
 #[derive(Debug, Default)]
 pub struct CustomUseCounters {
     storage:
-        [AtomicUsize; ((CustomUseCounter::Last as usize) - 1 + BITS_PER_ENTRY) / BITS_PER_ENTRY],
+        [AtomicUsize; ((CustomUseCounter::Last as usize) + BITS_PER_ENTRY - 1) / BITS_PER_ENTRY],
 }
 
 macro_rules! use_counters_methods {

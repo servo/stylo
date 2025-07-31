@@ -26,8 +26,8 @@
 
 use super::{Context, Length, Percentage, ToComputedValue, position::AnchorSide};
 #[cfg(feature = "gecko")]
-use crate::gecko_bindings::structs::GeckoFontMetrics;
-use crate::logical_geometry::PhysicalAxis;
+use crate::gecko_bindings::structs::{AnchorPosOffsetResolutionParams, GeckoFontMetrics};
+use crate::logical_geometry::{PhysicalAxis, PhysicalSide};
 use crate::values::animated::{Animate, Context as AnimatedContext, Procedure, ToAnimatedValue, ToAnimatedZero};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::calc::{CalcUnits, PositivePercentageBasis};
@@ -955,6 +955,7 @@ pub enum AllowAnchorPosResolutionInCalcPercentage {
 }
 
 impl AllowAnchorPosResolutionInCalcPercentage {
+    #[cfg(feature="gecko")]
     fn to_axis(&self) -> PhysicalAxis {
         match self {
             Self::AnchorSizeOnly(axis) => *axis,
@@ -966,12 +967,6 @@ impl AllowAnchorPosResolutionInCalcPercentage {
         }
     }
 }
-
-#[cfg(feature="gecko")]
-use crate::{
-    gecko_bindings::structs::AnchorPosOffsetResolutionParams,
-    logical_geometry::PhysicalSide,
-};
 
 impl From<&CalcAnchorSide> for AnchorSide {
     fn from(value: &CalcAnchorSide) -> Self {

@@ -2969,7 +2969,7 @@ macro_rules! longhand_properties_idents {
 #[cfg(feature = "gecko")]
 size_of_test!(ComputedValues, 248);
 #[cfg(feature = "servo")]
-size_of_test!(ComputedValues, 208);
+size_of_test!(ComputedValues, 216);
 
 // FFI relies on this.
 size_of_test!(Option<Arc<ComputedValues>>, 8);

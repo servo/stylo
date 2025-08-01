@@ -13,7 +13,7 @@ use crate::selector_parser::PseudoElement;
 use crate::shared_lock::Locked;
 use crate::stylesheets::{layer_rule::LayerOrder, Origin};
 use crate::stylist::{AuthorStylesEnabled, CascadeData, Rule, RuleInclusion, Stylist};
-use selectors::matching::{MatchingContext, MatchingMode};
+use selectors::matching::MatchingContext;
 use servo_arc::ArcBorrow;
 use smallvec::SmallVec;
 
@@ -66,7 +66,7 @@ where
     element: E,
     rule_hash_target: E,
     stylist: &'a Stylist,
-    pseudo_element: Option<&'a PseudoElement>,
+    pseudo_elements: SmallVec<[PseudoElement; 1]>,
     style_attribute: Option<ArcBorrow<'a, Locked<PropertyDeclarationBlock>>>,
     smil_override: Option<ArcBorrow<'a, Locked<PropertyDeclarationBlock>>>,
     animation_declarations: AnimationDeclarations,
@@ -86,7 +86,7 @@ where
     pub fn new(
         stylist: &'a Stylist,
         element: E,
-        pseudo_element: Option<&'a PseudoElement>,
+        pseudo_elements: SmallVec<[PseudoElement; 1]>,
         style_attribute: Option<ArcBorrow<'a, Locked<PropertyDeclarationBlock>>>,
         smil_override: Option<ArcBorrow<'a, Locked<PropertyDeclarationBlock>>>,
         animation_declarations: AnimationDeclarations,
@@ -94,29 +94,22 @@ where
         rules: &'a mut ApplicableDeclarationList,
         context: &'a mut MatchingContext<'b, E::Impl>,
     ) -> Self {
-        // When we're matching with matching_mode =
-        // `ForStatelessPseudoeElement`, the "target" for the rule hash is the
-        // element itself, since it's what's generating the pseudo-element.
-        let rule_hash_target = match context.matching_mode() {
-            MatchingMode::ForStatelessPseudoElement => element,
-            MatchingMode::Normal => element.rule_hash_target(),
-        };
-
+        let rule_hash_target = element.rule_hash_target();
         let matches_user_and_content_rules = rule_hash_target.matches_user_and_content_rules();
 
         // Gecko definitely has pseudo-elements with style attributes, like
         // ::-moz-color-swatch.
         debug_assert!(
-            cfg!(feature = "gecko") || style_attribute.is_none() || pseudo_element.is_none(),
+            cfg!(feature = "gecko") || style_attribute.is_none() || pseudo_elements.is_empty(),
             "Style attributes do not apply to pseudo-elements"
         );
-        debug_assert!(pseudo_element.map_or(true, |p| !p.is_precomputed()));
+        debug_assert!(pseudo_elements.iter().all(|p| !p.is_precomputed()));
 
         Self {
             element,
             rule_hash_target,
             stylist,
-            pseudo_element,
+            pseudo_elements,
             style_attribute,
             smil_override,
             animation_declarations,
@@ -162,7 +155,7 @@ where
         };
 
         let cascade_data = self.stylist.cascade_data().borrow_for_origin(origin);
-        let map = match cascade_data.normal_rules(self.pseudo_element) {
+        let map = match cascade_data.normal_rules(&self.pseudo_elements) {
             Some(m) => m,
             None => return,
         };
@@ -180,7 +173,7 @@ where
 
     #[cfg(feature = "gecko")]
     fn collect_view_transition_dynamic_rules(&mut self) {
-        if !self.pseudo_element.is_some_and(|p| p.is_named_view_transition()) {
+        if !self.pseudo_elements.first().is_some_and(|p| p.is_named_view_transition()) {
             return;
         }
         let len_before_vt_rules = self.rules.len();
@@ -205,7 +198,7 @@ where
     /// These go before author rules, but after user rules, see:
     /// https://drafts.csswg.org/css-cascade/#preshint
     fn collect_presentational_hints(&mut self) {
-        if self.pseudo_element.is_some() {
+        if !self.pseudo_elements.is_empty() {
             return;
         }
 
@@ -289,7 +282,7 @@ where
                 Some(d) => d,
                 None => continue,
             };
-            let slotted_rules = match data.slotted_rules(self.pseudo_element) {
+            let slotted_rules = match data.slotted_rules(&self.pseudo_elements) {
                 Some(r) => r,
                 None => continue,
             };
@@ -323,7 +316,7 @@ where
 
         let cascade_level = CascadeLevel::same_tree_author_normal();
         self.in_shadow_tree(containing_shadow.host(), |collector| {
-            if let Some(map) = cascade_data.normal_rules(collector.pseudo_element) {
+            if let Some(map) = cascade_data.normal_rules(&collector.pseudo_elements) {
                 collector.collect_rules_in_map(map, cascade_level, cascade_data);
             }
 
@@ -333,7 +326,7 @@ where
                 return;
             }
 
-            let part_rules = match cascade_data.part_rules(collector.pseudo_element) {
+            let part_rules = match cascade_data.part_rules(&collector.pseudo_elements) {
                 Some(p) => p,
                 None => return,
             };
@@ -358,7 +351,7 @@ where
             None => return,
         };
 
-        let host_rules = match style_data.featureless_host_rules(self.pseudo_element) {
+        let host_rules = match style_data.featureless_host_rules(&self.pseudo_elements) {
             Some(rules) => rules,
             None => return,
         };
@@ -415,7 +408,7 @@ where
             };
 
             if let Some(cascade_data) = cascade_data {
-                if let Some(part_rules) = cascade_data.part_rules(self.pseudo_element) {
+                if let Some(part_rules) = cascade_data.part_rules(&self.pseudo_elements) {
                     let containing_host = outer_shadow.map(|s| s.host());
                     let cascade_level = CascadeLevel::AuthorNormal {
                         shadow_cascade_order,

@@ -47,21 +47,9 @@ pub trait PseudoElement: Sized + ToCss {
         false
     }
 
-    /// Whether this pseudo-element is valid when directly after a ::before/::after pseudo.
-    fn valid_after_before_or_after(&self) -> bool {
-        false
-    }
-
     /// Whether this pseudo-element is element-backed.
     /// https://drafts.csswg.org/css-pseudo-4/#element-like
     fn is_element_backed(&self) -> bool {
-        false
-    }
-
-    /// Whether this pseudo-element is ::before or ::after pseudo element,
-    /// which are treated specially when deciding what can come after them.
-    /// https://drafts.csswg.org/css-pseudo-4/#generated-content
-    fn is_before_or_after(&self) -> bool {
         false
     }
 
@@ -141,30 +129,32 @@ bitflags! {
         /// disallowed. If this flag is set, `AFTER_NON_ELEMENT_BACKED_PSEUDO` must be set
         /// as well.
         const AFTER_NON_STATEFUL_PSEUDO_ELEMENT = 1 << 4;
-        // Whether we've parsed a generated pseudo-element (as in ::before, ::after).
-        // If so then some other pseudo elements are disallowed (e.g. another generated pseudo)
-        // while others allowed (e.g. ::marker).
-        const AFTER_BEFORE_OR_AFTER_PSEUDO = 1 << 5;
 
         /// Whether we are after any of the pseudo-like things.
-        const AFTER_PSEUDO = Self::AFTER_PART_LIKE.bits() | Self::AFTER_SLOTTED.bits() | Self::AFTER_NON_ELEMENT_BACKED_PSEUDO.bits() | Self::AFTER_BEFORE_OR_AFTER_PSEUDO.bits();
+        const AFTER_PSEUDO = Self::AFTER_PART_LIKE.bits() | Self::AFTER_SLOTTED.bits() | Self::AFTER_NON_ELEMENT_BACKED_PSEUDO.bits();
 
         /// Whether we explicitly disallow combinators.
-        const DISALLOW_COMBINATORS = 1 << 6;
+        const DISALLOW_COMBINATORS = 1 << 5;
 
         /// Whether we explicitly disallow pseudo-element-like things.
-        const DISALLOW_PSEUDOS = 1 << 7;
+        const DISALLOW_PSEUDOS = 1 << 6;
 
         /// Whether we explicitly disallow relative selectors (i.e. `:has()`).
-        const DISALLOW_RELATIVE_SELECTOR = 1 << 8;
+        const DISALLOW_RELATIVE_SELECTOR = 1 << 7;
 
         /// Whether we've parsed a pseudo-element which is in a pseudo-element tree (i.e. it is a
         /// descendant pseudo of a pseudo-element root).
-        const IN_PSEUDO_ELEMENT_TREE = 1 << 9;
+        const IN_PSEUDO_ELEMENT_TREE = 1 << 8;
     }
 }
 
 impl SelectorParsingState {
+    #[inline]
+    fn allows_pseudos(self) -> bool {
+        // NOTE(emilio): We allow pseudos after ::part and such.
+        !self.intersects(Self::AFTER_NON_ELEMENT_BACKED_PSEUDO | Self::DISALLOW_PSEUDOS)
+    }
+
     #[inline]
     fn allows_slotted(self) -> bool {
         !self.intersects(Self::AFTER_PSEUDO | Self::DISALLOW_PSEUDOS)
@@ -936,32 +926,6 @@ impl<Impl: SelectorImpl> Selector<Impl> {
 
         debug_assert!(false, "has_pseudo_element lied!");
         None
-    }
-
-    #[inline]
-    pub fn pseudo_elements(&self) -> SmallVec<[&Impl::PseudoElement; 3]> {
-        let mut pseudos = SmallVec::new();
-
-        if !self.has_pseudo_element() {
-            return pseudos;
-        }
-
-        let mut iter = self.iter();
-        loop {
-            for component in &mut iter {
-                if let Component::PseudoElement(ref pseudo) = *component {
-                    pseudos.push(pseudo);
-                }
-            }
-            match iter.next_sequence() {
-                Some(Combinator::PseudoElement) => {},
-                _ => break,
-            }
-        }
-
-        debug_assert!(!pseudos.is_empty(), "has_pseudo_element lied!");
-
-        pseudos
     }
 
     /// Whether this selector (pseudo-element part excluded) matches every element.
@@ -2808,7 +2772,6 @@ where
         if state.intersects(SelectorParsingState::AFTER_PSEUDO) {
             debug_assert!(state.intersects(
                 SelectorParsingState::AFTER_NON_ELEMENT_BACKED_PSEUDO |
-                SelectorParsingState::AFTER_BEFORE_OR_AFTER_PSEUDO |
                     SelectorParsingState::AFTER_SLOTTED |
                     SelectorParsingState::AFTER_PART_LIKE
             ));
@@ -3347,9 +3310,6 @@ where
                     state.insert(SelectorParsingState::AFTER_PART_LIKE);
                 } else {
                     state.insert(SelectorParsingState::AFTER_NON_ELEMENT_BACKED_PSEUDO);
-                    if p.is_before_or_after() {
-                        state.insert(SelectorParsingState::AFTER_BEFORE_OR_AFTER_PSEUDO);
-                    }
                 }
                 if !p.accepts_state_pseudo_classes() {
                     state.insert(SelectorParsingState::AFTER_NON_STATEFUL_PSEUDO_ELEMENT);
@@ -3592,15 +3552,7 @@ where
             };
             let is_pseudo_element = !is_single_colon || is_css2_pseudo_element(&name);
             if is_pseudo_element {
-                // Pseudos after pseudo elements are not allowed in some cases:
-                // - Some states will disallow pseudos, such as the interiors of
-                // :has/:is/:where/:not (DISALLOW_PSEUDOS).
-                // - Non-element backed pseudos do not allow other pseudos to follow (AFTER_NON_ELEMENT_BACKED_PSEUDO)...
-                // - ... except ::before and ::after, which allow _some_ pseudos.
-                if state.intersects(SelectorParsingState::DISALLOW_PSEUDOS)
-                    || (state.intersects(SelectorParsingState::AFTER_NON_ELEMENT_BACKED_PSEUDO)
-                        && !state.intersects(SelectorParsingState::AFTER_BEFORE_OR_AFTER_PSEUDO))
-                {
+                if !state.allows_pseudos() {
                     return Err(input.new_custom_error(SelectorParseErrorKind::InvalidState));
                 }
                 let pseudo_element = if is_functional {
@@ -3637,12 +3589,6 @@ where
                 } else {
                     P::parse_pseudo_element(parser, location, name)?
                 };
-
-                if state.intersects(SelectorParsingState::AFTER_BEFORE_OR_AFTER_PSEUDO) &&
-                    !pseudo_element.valid_after_before_or_after()
-                {
-                    return Err(input.new_custom_error(SelectorParseErrorKind::InvalidState));
-                }
 
                 if state.intersects(SelectorParsingState::AFTER_SLOTTED) &&
                     !pseudo_element.valid_after_slotted()
@@ -3742,8 +3688,6 @@ pub mod tests {
     pub enum PseudoElement {
         Before,
         After,
-        Marker,
-        DetailsContent,
         Highlight(String),
     }
 
@@ -3758,16 +3702,8 @@ pub mod tests {
             true
         }
 
-        fn valid_after_before_or_after(&self) -> bool {
-           matches!(self, Self::Marker)
-        }
-
-        fn is_before_or_after(&self) -> bool {
-            matches!(self, Self::Before | Self::After)
-        }
-
         fn is_element_backed(&self) -> bool {
-            matches!(self, Self::DetailsContent)
+            true
         }
     }
 
@@ -3810,8 +3746,6 @@ pub mod tests {
             match *self {
                 PseudoElement::Before => dest.write_str("::before"),
                 PseudoElement::After => dest.write_str("::after"),
-                PseudoElement::Marker => dest.write_str("::marker"),
-                PseudoElement::DetailsContent => dest.write_str("::details-content"),
                 PseudoElement::Highlight(ref name) => {
                     dest.write_str("::highlight(")?;
                     serialize_identifier(&name, dest)?;
@@ -3981,8 +3915,6 @@ pub mod tests {
             match_ignore_ascii_case! { &name,
                 "before" => return Ok(PseudoElement::Before),
                 "after" => return Ok(PseudoElement::After),
-                "marker" => return Ok(PseudoElement::Marker),
-                "details-content" => return Ok(PseudoElement::DetailsContent),
                 _ => {}
             }
             Err(
@@ -4643,53 +4575,6 @@ pub mod tests {
         let combinator = iter.next_sequence();
         assert_eq!(combinator, Some(Combinator::PseudoElement));
         assert!(matches!(iter.next(), Some(&Component::LocalName(..))));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.next_sequence(), None);
-    }
-
-    #[test]
-    fn test_pseudo_before_marker() {
-        let list = parse("::before::marker").unwrap();
-        let selector = &list.slice()[0];
-        let mut iter = selector.iter();
-        assert_eq!(
-            iter.next(),
-            Some(&Component::PseudoElement(PseudoElement::Marker))
-        );
-        assert_eq!(iter.next(), None);
-        let combinator = iter.next_sequence();
-        assert_eq!(combinator, Some(Combinator::PseudoElement));
-        assert!(matches!(iter.next(), Some(&Component::PseudoElement(PseudoElement::Before))));
-        assert_eq!(iter.next(), None);
-        let combinator = iter.next_sequence();
-        assert_eq!(combinator, Some(Combinator::PseudoElement));
-        assert_eq!(iter.next(), None);
-        assert_eq!(iter.next_sequence(), None);
-    }
-
-    #[test]
-    fn test_pseudo_duplicate_before_after_or_marker() {
-        assert!(parse("::before::before").is_err());
-        assert!(parse("::after::after").is_err());
-        assert!(parse("::marker::marker").is_err());
-    }
-
-    #[test]
-    fn test_pseudo_on_element_backed_pseudo() {
-        let list = parse("::details-content::before").unwrap();
-        let selector = &list.slice()[0];
-        let mut iter = selector.iter();
-        assert_eq!(
-            iter.next(),
-            Some(&Component::PseudoElement(PseudoElement::Before))
-        );
-        assert_eq!(iter.next(), None);
-        let combinator = iter.next_sequence();
-        assert_eq!(combinator, Some(Combinator::PseudoElement));
-        assert!(matches!(iter.next(), Some(&Component::PseudoElement(PseudoElement::DetailsContent))));
-        assert_eq!(iter.next(), None);
-        let combinator = iter.next_sequence();
-        assert_eq!(combinator, Some(Combinator::PseudoElement));
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next_sequence(), None);
     }

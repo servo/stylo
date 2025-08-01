@@ -527,7 +527,7 @@ where
                 dependency.invalidation_kind(),
                 DependencyInvalidationKind::Normal(_)
             ),
-            "Found relative selector dependency"
+            "Found unexpected dependency invalidation kind"
         );
         debug!(
             "TreeStyleInvalidator::scan_dependency({:?}, {:?})",

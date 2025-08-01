@@ -466,6 +466,7 @@ where
         host: Option<OpaqueElement>,
     ) {
         match dependency.invalidation_kind() {
+            DependencyInvalidationKind::FullSelector => unreachable!(),
             DependencyInvalidationKind::Normal(..) => {
                 self.dependencies
                     .entry(element)
@@ -498,6 +499,7 @@ where
         let mut result = ToInvalidate::default();
         for invalidation in self.invalidations {
             match invalidation.dependency.invalidation_kind() {
+                DependencyInvalidationKind::FullSelector => unreachable!(),
                 DependencyInvalidationKind::Normal(_) => {
                     unreachable!("Inner selector in invalidation?")
                 },
@@ -1073,7 +1075,7 @@ where
             loop {
                 debug_assert!(
                     matches!(d.invalidation_kind(), DependencyInvalidationKind::Normal(_)),
-                    "Unexpected outer relative dependency"
+                    "Unexpected dependency kind"
                 );
                 if !dependency_may_be_relevant(d, &element, false) {
                     break false;
@@ -1199,6 +1201,7 @@ where
         sibling_invalidations: &mut InvalidationVector<'a>,
     ) {
         match dependency.invalidation_kind() {
+            DependencyInvalidationKind::FullSelector => unreachable!(),
             DependencyInvalidationKind::Normal(_) => (),
             DependencyInvalidationKind::Relative(kind) => {
                 self.found_relative_selector_invalidation(element, kind, dependency);

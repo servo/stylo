@@ -924,6 +924,7 @@ where
                             let n = &deps.as_ref().slice()[0];
                             let invalidation_kind = n.invalidation_kind();
                             match invalidation_kind {
+                                DependencyInvalidationKind::FullSelector => unreachable!(),
                                 DependencyInvalidationKind::Normal(_) => n,
                                 DependencyInvalidationKind::Relative(kind) => {
                                     self.processor.found_relative_selector_invalidation(

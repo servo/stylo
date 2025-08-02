@@ -1,6 +1,6 @@
 [package]
 name = "stylo_config"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["The Servo Project Developers"]
 documentation = "https://docs.rs/stylo_config/"
 description = "Runtime configuration for Stylo"

@@ -5,6 +5,7 @@
 //! Resolved values for counter properties
 
 use super::{Context, ToResolvedValue};
+#[cfg(feature = "gecko")]
 use selectors::parser::PseudoElement;
 use crate::values::computed;
 

@@ -2964,28 +2964,15 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 
 % if engine == "servo":
 % for effect_name in ["repaint", "recalculate_overflow", "rebuild_stacking_context", "rebuild_box"]:
-    macro_rules! restyle_damage_${effect_name} {
-        ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ]) => ({
-            restyle_damage_${effect_name}!($old, $new, $damage, [$($effect),*], false)
-        });
-        ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ], $extra:expr) => ({
-            if
-                % for style_struct in data.active_style_structs():
-                    % for longhand in style_struct.longhands:
-                        % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:
-                            $old.get_${style_struct.name_lower}().${longhand.ident} !=
-                            $new.get_${style_struct.name_lower}().${longhand.ident} ||
-                        % endif
-                    % endfor
-                % endfor
-
-                $extra || false {
-                    $damage.insert($($effect)|*);
-                    true
-            } else {
-                false
-            }
-        });
-    }
+pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &ComputedValues) -> bool {
+    % for style_struct in data.active_style_structs():
+        % for longhand in style_struct.longhands:
+            % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:
+                old.get_${style_struct.name_lower}().${longhand.ident} != new.get_${style_struct.name_lower}().${longhand.ident} ||
+            % endif
+        % endfor
+    % endfor
+    false
+}
 % endfor
 % endif

@@ -1800,6 +1800,34 @@ impl ComputedValues {
       self.custom_properties() == other.custom_properties()
     }
 
+    /// Runs cheap ptr_eq checks to determine whether the styles may differ:
+    ///
+    /// - If this function returns false, then all styles are definitely equal
+    /// - If this function returns true, then styles may or may not be equal
+    ///   and further checks (e.g. full deep equals) is necessary.
+    ///
+    /// Checks by:
+    ///   - Doing a pointer comparison on the top-level pointer. If the pointers
+    ///     point to the exact same struct then they must be equal.
+    ///   - Doing a pointer comparison on each "style struct"
+    ///   - A regular Eq compare on writing_mode and effective_zoom
+    pub fn styles_may_differ(&self, other: &Self) -> bool  {
+        use servo_arc::Arc;
+
+        if std::ptr::eq(self, other) {
+            return false;
+        }
+
+        let all_ptrs_eq = 
+        % for style_struct in data.active_style_structs():
+            Arc::ptr_eq(&self.${style_struct.ident}, &other.${style_struct.ident}) &&
+        % endfor
+        self.writing_mode == other.writing_mode &&
+        self.effective_zoom == other.effective_zoom;
+
+        !all_ptrs_eq
+    }
+
 % for prop in data.longhands:
 % if not prop.logical:
     /// Gets the computed value of a given property.

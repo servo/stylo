@@ -33,9 +33,6 @@ macro_rules! pref {
     ("layout.css.stretch-size-keyword.enabled") => {
         true
     };
-    ("layout.css.transition-behavior.enabled") => {
-        true
-    };
     ("layout.css.marker.restricted") => {
         true
     };

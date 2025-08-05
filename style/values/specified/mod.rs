@@ -59,7 +59,8 @@ pub use self::flex::FlexBasis;
 pub use self::font::{FontFamily, FontLanguageOverride, FontPalette, FontStyle};
 pub use self::font::{FontFeatureSettings, FontVariantLigatures, FontVariantNumeric};
 pub use self::font::{
-    FontSize, FontSizeAdjust, FontSizeAdjustFactor, FontSizeKeyword, FontStretch, FontSynthesis, FontSynthesisStyle,
+    FontSize, FontSizeAdjust, FontSizeAdjustFactor, FontSizeKeyword, FontStretch, FontSynthesis,
+    FontSynthesisStyle,
 };
 pub use self::font::{FontVariantAlternates, FontWeight};
 pub use self::font::{FontVariantEastAsian, FontVariationSettings, LineHeight};
@@ -100,10 +101,10 @@ pub use self::svg::{DProperty, MozContextProperties};
 pub use self::svg::{SVGLength, SVGOpacity, SVGPaint};
 pub use self::svg::{SVGPaintOrder, SVGStrokeDashArray, SVGWidth, VectorEffect};
 pub use self::svg_path::SVGPathData;
-pub use self::text::{HyphenateCharacter, HyphenateLimitChars};
 pub use self::text::RubyPosition;
 pub use self::text::TextAlignLast;
 pub use self::text::TextUnderlinePosition;
+pub use self::text::{HyphenateCharacter, HyphenateLimitChars};
 pub use self::text::{InitialLetter, LetterSpacing, LineBreak, TextAlign, TextIndent};
 pub use self::text::{OverflowWrap, TextEmphasisPosition, TextEmphasisStyle, WordBreak};
 pub use self::text::{TextAlignKeyword, TextDecorationLine, TextOverflow, WordSpacing};
@@ -114,8 +115,7 @@ pub use self::transform::{TransformBox, TransformOrigin, TransformStyle, Transla
 #[cfg(feature = "gecko")]
 pub use self::ui::CursorImage;
 pub use self::ui::{
-    BoolInteger, Cursor, Inert, MozTheme, PointerEvents, ScrollbarColor, UserFocus, UserInput,
-    UserSelect,
+    BoolInteger, Cursor, Inert, MozTheme, PointerEvents, ScrollbarColor, UserFocus, UserSelect,
 };
 pub use super::generics::grid::GridTemplateComponent as GenericGridTemplateComponent;
 
@@ -734,7 +734,7 @@ impl ToCss for Integer {
                 dest.write_str("calc(")?;
                 n.to_css(dest)?;
                 dest.write_char(')')
-            }
+            },
         }
     }
 }

@@ -69,14 +69,16 @@ pub use self::effects::{BoxShadow, Filter, SimpleShadow};
 pub use self::flex::FlexBasis;
 pub use self::font::{FontFamily, FontLanguageOverride, FontPalette, FontStyle};
 pub use self::font::{FontFeatureSettings, FontVariantLigatures, FontVariantNumeric};
-pub use self::font::{FontSize, FontSizeAdjust, FontStretch, FontSynthesis, FontSynthesisStyle, LineHeight};
+pub use self::font::{
+    FontSize, FontSizeAdjust, FontStretch, FontSynthesis, FontSynthesisStyle, LineHeight,
+};
 pub use self::font::{FontVariantAlternates, FontWeight};
 pub use self::font::{FontVariantEastAsian, FontVariationSettings};
 pub use self::font::{MathDepth, MozScriptMinSize, MozScriptSizeMultiplier, XLang, XTextScale};
 pub use self::image::{Gradient, Image, ImageRendering, LineDirection};
 pub use self::length::{AnchorSizeFunction, CSSPixelLength, NonNegativeLength};
 pub use self::length::{Length, LengthOrNumber, LengthPercentage, NonNegativeLengthOrNumber};
-pub use self::length::{LengthOrAuto, LengthPercentageOrAuto, MaxSize, Margin, Size};
+pub use self::length::{LengthOrAuto, LengthPercentageOrAuto, Margin, MaxSize, Size};
 pub use self::length::{NonNegativeLengthPercentage, NonNegativeLengthPercentageOrAuto};
 #[cfg(feature = "gecko")]
 pub use self::list::ListStyleType;
@@ -105,8 +107,8 @@ pub use self::resolution::Resolution;
 pub use self::svg::{DProperty, MozContextProperties};
 pub use self::svg::{SVGLength, SVGOpacity, SVGPaint, SVGPaintKind};
 pub use self::svg::{SVGPaintOrder, SVGStrokeDashArray, SVGWidth, VectorEffect};
-pub use self::text::{HyphenateCharacter, HyphenateLimitChars};
 pub use self::text::TextUnderlinePosition;
+pub use self::text::{HyphenateCharacter, HyphenateLimitChars};
 pub use self::text::{InitialLetter, LetterSpacing, LineBreak, TextIndent};
 pub use self::text::{OverflowWrap, RubyPosition, TextOverflow, WordBreak, WordSpacing};
 pub use self::text::{TextAlign, TextAlignLast, TextEmphasisPosition, TextEmphasisStyle};
@@ -117,8 +119,7 @@ pub use self::transform::{TransformOrigin, TransformStyle, Translate};
 #[cfg(feature = "gecko")]
 pub use self::ui::CursorImage;
 pub use self::ui::{
-    BoolInteger, Cursor, Inert, MozTheme, PointerEvents, ScrollbarColor, UserFocus, UserInput,
-    UserSelect,
+    BoolInteger, Cursor, Inert, MozTheme, PointerEvents, ScrollbarColor, UserFocus, UserSelect,
 };
 pub use super::specified::TextTransform;
 pub use super::specified::ViewportVariant;
@@ -395,12 +396,8 @@ impl<'a> Context<'a> {
         if !self.in_media_query {
             flags |= QueryFontMetricsFlags::USE_USER_FONT_SET
         }
-        self.device().query_font_metrics(
-            vertical,
-            font,
-            size,
-            flags,
-        )
+        self.device()
+            .query_font_metrics(vertical, font, size, flags)
     }
 
     /// The current viewport size, used to resolve viewport units.
@@ -625,7 +622,9 @@ where
 
     #[inline]
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
-        self.iter().map(|item| item.to_computed_value(context)).collect()
+        self.iter()
+            .map(|item| item.to_computed_value(context))
+            .collect()
     }
 
     #[inline]

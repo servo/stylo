@@ -319,30 +319,6 @@ pub enum Inert {
     Inert,
 }
 
-/// Non-standard user-input property.
-/// https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-user-input
-#[allow(missing_docs)]
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    FromPrimitive,
-    MallocSizeOf,
-    Parse,
-    PartialEq,
-    SpecifiedValueInfo,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-)]
-#[repr(u8)]
-pub enum UserInput {
-    Auto,
-    None,
-}
-
 /// Internal -moz-user-focus property.
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-user-focus
 #[allow(missing_docs)]

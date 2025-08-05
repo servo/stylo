@@ -2,133 +2,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-//! The restyle damage is a hint that tells layout which kind of operations may
-//! be needed in presence of incremental style changes.
-
-use bitflags::Flags;
+//! Helpers for computing restyle damage
 
 use crate::computed_values::isolation::T as Isolation;
 use crate::computed_values::mix_blend_mode::T as MixBlendMode;
 use crate::computed_values::transform_style::T as TransformStyle;
-use crate::dom::TElement;
-use crate::matching::{StyleChange, StyleDifference};
 use crate::properties::{
-    restyle_damage_rebuild_box, restyle_damage_rebuild_stacking_context,
-    restyle_damage_recalculate_overflow, restyle_damage_repaint, style_structs, ComputedValues,
+    restyle_damage_rebuild_box, restyle_damage_rebuild_stacking_context, style_structs,
+    ComputedValues,
 };
 use crate::values::computed::basic_shape::ClipPath;
 use crate::values::computed::Perspective;
 use crate::values::generics::transform::{GenericRotate, GenericScale, GenericTranslate};
-use std::fmt;
 
-bitflags! {
-    /// Major phases of layout that need to be run due to the damage to a node during restyling. In
-    /// addition to the 4 bytes used for that, the rest of the `u16` is exposed as an extension point
-    /// for users of the crate to add their own custom types of damage that correspond to the
-    /// layout system they are implementing.
-    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-    pub struct ServoRestyleDamage: u16 {
-        /// Repaint the node itself.
-        ///
-        /// Propagates both up and down the flow tree.
-        const REPAINT = 0b0001;
-
-        /// Rebuilds the stacking contexts.
-        ///
-        /// Propagates both up and down the flow tree.
-        const REBUILD_STACKING_CONTEXT = 0b0011;
-
-        /// Recalculates the scrollable overflow.
-        ///
-        /// Propagates both up and down the flow tree.
-        const RECALCULATE_OVERFLOW = 0b0111;
-
-        /// Any other type of damage, which requires running layout again.
-        ///
-        /// Propagates both up and down the flow tree.
-        const RELAYOUT = 0b1111;
-    }
-}
-
-malloc_size_of_is_0!(ServoRestyleDamage);
-
-impl ServoRestyleDamage {
-    /// Compute the `StyleDifference` (including the appropriate restyle damage)
-    /// for a given style change between `old` and `new`.
-    pub fn compute_style_difference<E: TElement>(
-        old: &ComputedValues,
-        new: &ComputedValues,
-    ) -> StyleDifference {
-        let mut damage = compute_damage(old, new);
-        if damage.is_empty() {
-            return StyleDifference {
-                damage,
-                change: StyleChange::Unchanged,
-            };
-        }
-
-        if damage.contains(ServoRestyleDamage::RELAYOUT) {
-            damage |= E::compute_layout_damage(old, new);
-        }
-
-        // FIXME(emilio): Differentiate between reset and inherited
-        // properties here, and set `reset_only` appropriately so the
-        // optimization to skip the cascade in those cases applies.
-        let change = StyleChange::Changed { reset_only: false };
-
-        StyleDifference { damage, change }
-    }
-
-    /// Returns a bitmask indicating that the frame needs to be reconstructed.
-    pub fn reconstruct() -> ServoRestyleDamage {
-        // There's no way of knowing what kind of damage system the embedder will use, but part of
-        // this interface is that a fully saturated restyle damage means to rebuild everything.
-        ServoRestyleDamage::from_bits_retain(<ServoRestyleDamage as Flags>::Bits::MAX)
-    }
-}
-
-impl Default for ServoRestyleDamage {
-    fn default() -> Self {
-        Self::empty()
-    }
-}
-
-impl fmt::Display for ServoRestyleDamage {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let mut first_elem = true;
-
-        let to_iter = [
-            (ServoRestyleDamage::REPAINT, "Repaint"),
-            (
-                ServoRestyleDamage::REBUILD_STACKING_CONTEXT,
-                "Rebuild stacking context",
-            ),
-            (
-                ServoRestyleDamage::RECALCULATE_OVERFLOW,
-                "Recalculate overflow",
-            ),
-            (ServoRestyleDamage::RELAYOUT, "Relayout"),
-        ];
-
-        for &(damage, damage_str) in &to_iter {
-            if self.contains(damage) {
-                if !first_elem {
-                    write!(f, " | ")?;
-                }
-                write!(f, "{}", damage_str)?;
-                first_elem = false;
-            }
-        }
-
-        if first_elem {
-            write!(f, "NoDamage")?;
-        }
-
-        Ok(())
-    }
-}
-
-fn augmented_restyle_damage_rebuild_box(old: &ComputedValues, new: &ComputedValues) -> bool {
+/// Returns true if "relayout" damage should be applied
+pub fn restyle_damage_layout(old: &ComputedValues, new: &ComputedValues) -> bool {
     let old_box = old.get_box();
     let new_box = new.get_box();
     restyle_damage_rebuild_box(old, new)
@@ -137,33 +25,13 @@ fn augmented_restyle_damage_rebuild_box(old: &ComputedValues, new: &ComputedValu
         || old.get_effects().filter.0.is_empty() != new.get_effects().filter.0.is_empty()
 }
 
-fn augmented_restyle_damage_rebuild_stacking_context(
+/// Returns true if "rebuild_stacking_context" damage should be applied
+pub fn augmented_restyle_damage_rebuild_stacking_context(
     old: &ComputedValues,
     new: &ComputedValues,
 ) -> bool {
     restyle_damage_rebuild_stacking_context(old, new)
         || old.guarantees_stacking_context() != new.guarantees_stacking_context()
-}
-fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDamage {
-    let mut damage = ServoRestyleDamage::empty();
-
-    // Damage flags higher up the if-else chain imply damage flags lower down the if-else chain,
-    // so we can skip the diffing process for later flags if an earlier flag is true
-    if augmented_restyle_damage_rebuild_box(old, new) {
-        damage.insert(ServoRestyleDamage::RELAYOUT)
-    } else if restyle_damage_recalculate_overflow(old, new) {
-        damage.insert(ServoRestyleDamage::RECALCULATE_OVERFLOW)
-    } else if augmented_restyle_damage_rebuild_stacking_context(old, new) {
-        damage.insert(ServoRestyleDamage::REBUILD_STACKING_CONTEXT);
-    } else if restyle_damage_repaint(old, new) {
-        damage.insert(ServoRestyleDamage::REPAINT);
-    }
-    // Paint worklets may depend on custom properties, so if they have changed we should repaint.
-    else if !old.custom_properties_equal(new) {
-        damage.insert(ServoRestyleDamage::REPAINT);
-    }
-
-    damage
 }
 
 impl ComputedValues {

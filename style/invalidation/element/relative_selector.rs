@@ -1020,7 +1020,7 @@ pub struct RelativeSelectorOuterInvalidationProcessor<'a, 'b, E: TElement> {
     /// The current shadow host, if any.
     pub host: Option<OpaqueElement>,
     /// Data for the element being invalidated.
-    pub data: &'a mut ElementData,
+    pub data: &'a mut ElementData<E::RestyleDamage>,
     /// Dependency to be processed.
     pub dependency: &'b Dependency,
     /// Matching context to use for invalidation.

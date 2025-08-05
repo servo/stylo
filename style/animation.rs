@@ -97,9 +97,7 @@ impl PropertyAnimation {
     /// Update the given animation at a given point of progress.
     fn calculate_value(&self, progress: f64) -> AnimationValue {
         let progress = self.timing_function_output(progress);
-        let procedure = Procedure::Interpolate {
-            progress,
-        };
+        let procedure = Procedure::Interpolate { progress };
         self.from.animate(&self.to, procedure).unwrap_or_else(|()| {
             // Fall back to discrete interpolation
             if progress < 0.5 {
@@ -842,7 +840,8 @@ impl Transition {
     /// Update the given animation at a given point of progress.
     pub fn calculate_value(&self, time: f64) -> AnimationValue {
         let progress = (time - self.start_time) / (self.property_animation.duration);
-        self.property_animation.calculate_value(progress.clamp(0.0, 1.0))
+        self.property_animation
+            .calculate_value(progress.clamp(0.0, 1.0))
     }
 }
 
@@ -1032,10 +1031,11 @@ impl ElementAnimationSet {
         new_style: &Arc<ComputedValues>,
     ) {
         let style = new_style.get_ui();
-        let allow_discrete = style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
+        let allow_discrete =
+            style.transition_behavior_mod(index) == TransitionBehavior::AllowDiscrete;
 
-        if !property_declaration_id.is_animatable()
-            || (!allow_discrete && property_declaration_id.is_discrete_animatable())
+        if !property_declaration_id.is_animatable() ||
+            (!allow_discrete && property_declaration_id.is_discrete_animatable())
         {
             return;
         }
@@ -1062,7 +1062,11 @@ impl ElementAnimationSet {
         // not be able to interpolate some values. In that case we would fall back to
         // discrete interpolation, so we need to abort if `transition-behavior` doesn't
         // allow discrete transitions.
-        if !allow_discrete && !property_animation.from.interpolable_with(&property_animation.to) {
+        if !allow_discrete &&
+            !property_animation
+                .from
+                .interpolable_with(&property_animation.to)
+        {
             return;
         }
 

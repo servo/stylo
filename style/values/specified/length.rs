@@ -252,11 +252,7 @@ impl FontRelativeLength {
             orientation: FontMetricsOrientation,
             flags: QueryFontMetricsFlags,
         ) -> FontMetrics {
-            context.query_font_metrics(
-                base_size,
-                orientation,
-                flags,
-            )
+            context.query_font_metrics(base_size, orientation, flags)
         }
 
         let reference_font_size = base_size.resolve(context);
@@ -423,7 +419,8 @@ impl FontRelativeLength {
                 //     to the initial values of font and line-height properties.
                 //
                 let reference_size = if context.builder.is_root_element {
-                    context.builder
+                    context
+                        .builder
                         .calc_line_height(
                             context.device(),
                             line_height_base,

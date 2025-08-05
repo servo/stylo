@@ -334,8 +334,10 @@ impl SelectorMap<Rule> {
     {
         use selectors::matching::IncludeStartingStyle;
 
-        let include_starting_style =
-            matches!(matching_context.include_starting_style, IncludeStartingStyle::Yes);
+        let include_starting_style = matches!(
+            matching_context.include_starting_style,
+            IncludeStartingStyle::Yes
+        );
         for rule in rules {
             let scope_proximity = if rule.scope_condition_id == ScopeConditionId::none() {
                 if !matches_selector(
@@ -349,7 +351,12 @@ impl SelectorMap<Rule> {
                 }
                 ScopeProximity::infinity()
             } else {
-                let result = cascade_data.find_scope_proximity_if_matching(rule, stylist, element, matching_context);
+                let result = cascade_data.find_scope_proximity_if_matching(
+                    rule,
+                    stylist,
+                    element,
+                    matching_context,
+                );
                 if result == ScopeProximity::infinity() {
                     continue;
                 }

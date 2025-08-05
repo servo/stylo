@@ -10,7 +10,7 @@ use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
 use crate::str::CssStringWriter;
-use crate::stylesheets::{CssRules, style_or_page_rule_to_css};
+use crate::stylesheets::{style_or_page_rule_to_css, CssRules};
 use cssparser::SourceLocation;
 #[cfg(feature = "gecko")]
 use malloc_size_of::{

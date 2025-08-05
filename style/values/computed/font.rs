@@ -844,19 +844,54 @@ impl ToComputedValue for specified::FontSizeAdjust {
         match *self {
             Self::None => FontSizeAdjust::None,
             Self::ExHeight(val) => {
-                resolve!(ExHeight, val, false, x_height, 0.5, QueryFontMetricsFlags::empty())
+                resolve!(
+                    ExHeight,
+                    val,
+                    false,
+                    x_height,
+                    0.5,
+                    QueryFontMetricsFlags::empty()
+                )
             },
             Self::CapHeight(val) => {
-                resolve!(CapHeight, val, false, cap_height, -1.0 /* fall back to ascent */, QueryFontMetricsFlags::empty())
+                resolve!(
+                    CapHeight,
+                    val,
+                    false,
+                    cap_height,
+                    -1.0, /* fall back to ascent */
+                    QueryFontMetricsFlags::empty()
+                )
             },
             Self::ChWidth(val) => {
-                resolve!(ChWidth, val, false, zero_advance_measure, 0.5, QueryFontMetricsFlags::NEEDS_CH)
+                resolve!(
+                    ChWidth,
+                    val,
+                    false,
+                    zero_advance_measure,
+                    0.5,
+                    QueryFontMetricsFlags::NEEDS_CH
+                )
             },
             Self::IcWidth(val) => {
-                resolve!(IcWidth, val, false, ic_width, 1.0, QueryFontMetricsFlags::NEEDS_IC)
+                resolve!(
+                    IcWidth,
+                    val,
+                    false,
+                    ic_width,
+                    1.0,
+                    QueryFontMetricsFlags::NEEDS_IC
+                )
             },
             Self::IcHeight(val) => {
-                resolve!(IcHeight, val, true, ic_width, 1.0, QueryFontMetricsFlags::NEEDS_IC)
+                resolve!(
+                    IcHeight,
+                    val,
+                    true,
+                    ic_width,
+                    1.0,
+                    QueryFontMetricsFlags::NEEDS_IC
+                )
             },
         }
     }
@@ -925,13 +960,7 @@ where
     }
 
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
-        Self(
-            computed
-                .0
-                .iter()
-                .map(T::from_computed_value)
-                .collect()
-        )
+        Self(computed.0.iter().map(T::from_computed_value).collect())
     }
 }
 

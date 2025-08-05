@@ -299,7 +299,11 @@ where
     }
 
     fn find_sheet_index(&self, sheet: &S) -> Option<usize> {
-        let rev_pos = self.entries.iter().rev().position(|entry| entry.sheet == *sheet);
+        let rev_pos = self
+            .entries
+            .iter()
+            .rev()
+            .position(|entry| entry.sheet == *sheet);
         rev_pos.map(|i| self.entries.len() - i - 1)
     }
 
@@ -343,7 +347,8 @@ where
     fn insert_before(&mut self, sheet: S, before_sheet: &S) {
         debug_assert!(!self.contains(&sheet));
 
-        let index = self.find_sheet_index(before_sheet)
+        let index = self
+            .find_sheet_index(before_sheet)
             .expect("`before_sheet` stylesheet not found");
 
         // Inserting stylesheets somewhere but at the end changes the validity

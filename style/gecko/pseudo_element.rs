@@ -16,7 +16,7 @@ use crate::str::{starts_with_ignore_ascii_case, string_as_ascii_lowercase};
 use crate::string_cache::Atom;
 use crate::values::serialize_atom_identifier;
 use crate::values::AtomIdent;
-use cssparser::{ToCss, Parser};
+use cssparser::{Parser, ToCss};
 use selectors::parser::PseudoElement as PseudoElementTrait;
 use static_prefs::pref;
 use std::fmt;
@@ -137,7 +137,7 @@ impl PtNameAndClassSelector {
         // If we don't have `<pt-name-selector>`, we must have `<pt-class-selector>`, per the
         // syntax: `<pt-name-selector> <pt-class-selector>? | <pt-class-selector>`.
         if name.is_err() && classes.is_empty() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
 
         // Use the universal symbol as the first element to present the part of
@@ -480,7 +480,7 @@ impl PseudoElement {
             };
             return PseudoElement::from_slice(&name, false).ok_or(location.new_custom_error(
                 SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name.clone()),
-            ))
+            ));
         }
 
         // Now we have double colons, so check the following tokens.

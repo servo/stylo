@@ -235,7 +235,9 @@ impl ToComputedValue for specified::Image {
             #[cfg(feature = "gecko")]
             Image::Element(e) => Self::Element(ToComputedValue::from_computed_value(e)),
             #[cfg(feature = "gecko")]
-            Image::MozSymbolicIcon(e) => Self::MozSymbolicIcon(ToComputedValue::from_computed_value(e)),
+            Image::MozSymbolicIcon(e) => {
+                Self::MozSymbolicIcon(ToComputedValue::from_computed_value(e))
+            },
             #[cfg(feature = "servo")]
             Image::PaintWorklet(w) => Self::PaintWorklet(ToComputedValue::from_computed_value(w)),
             Image::CrossFade(f) => Self::CrossFade(ToComputedValue::from_computed_value(f)),

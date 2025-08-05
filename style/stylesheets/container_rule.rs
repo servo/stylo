@@ -64,11 +64,7 @@ impl ContainerRule {
 }
 
 impl DeepCloneWithLock for ContainerRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         let rules = self.rules.read_with(guard);
         Self {
             condition: self.condition.clone(),

@@ -80,21 +80,13 @@ impl KeyframesRule {
 }
 
 impl DeepCloneWithLock for KeyframesRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         KeyframesRule {
             name: self.name.clone(),
             keyframes: self
                 .keyframes
                 .iter()
-                .map(|x| {
-                    Arc::new(
-                        lock.wrap(x.read_with(guard).deep_clone_with_lock(lock, guard)),
-                    )
-                })
+                .map(|x| Arc::new(lock.wrap(x.read_with(guard).deep_clone_with_lock(lock, guard))))
                 .collect(),
             vendor_prefix: self.vendor_prefix.clone(),
             source_location: self.source_location.clone(),
@@ -236,11 +228,7 @@ impl Keyframe {
 
 impl DeepCloneWithLock for Keyframe {
     /// Deep clones this Keyframe.
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Keyframe {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Keyframe {
         Keyframe {
             selector: self.selector.clone(),
             block: Arc::new(lock.wrap(self.block.read_with(guard).clone())),

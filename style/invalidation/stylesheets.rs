@@ -14,9 +14,9 @@ use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::media_queries::Device;
 use crate::selector_parser::{SelectorImpl, Snapshot, SnapshotMap};
 use crate::shared_lock::SharedRwLockReadGuard;
+use crate::simple_buckets_map::SimpleBucketsMap;
 use crate::stylesheets::{CssRule, StylesheetInDocument};
 use crate::stylesheets::{EffectiveRules, EffectiveRulesIterator};
-use crate::simple_buckets_map::SimpleBucketsMap;
 use crate::values::AtomIdent;
 use crate::LocalName as SelectorLocalName;
 use selectors::parser::{Component, LocalName, Selector};
@@ -161,7 +161,10 @@ impl StylesheetInvalidationSet {
 
         self.shrink_if_needed();
 
-        debug!(" > resulting class invalidations: {:?}", self.buckets.classes);
+        debug!(
+            " > resulting class invalidations: {:?}",
+            self.buckets.classes
+        );
         debug!(" > resulting id invalidations: {:?}", self.buckets.ids);
         debug!(
             " > resulting local name invalidations: {:?}",
@@ -193,8 +196,7 @@ impl StylesheetInvalidationSet {
 
     /// Returns whether there's no invalidation to process.
     pub fn is_empty(&self) -> bool {
-        !self.fully_invalid &&
-            self.buckets.is_empty()
+        !self.fully_invalid && self.buckets.is_empty()
     }
 
     fn invalidation_kind_for<E>(

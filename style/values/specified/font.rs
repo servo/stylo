@@ -105,7 +105,7 @@ pub enum SystemFont {
 // we have a dummy system font module that does nothing
 
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem
+    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
 )]
 #[allow(missing_docs)]
 #[cfg(feature = "servo")]
@@ -591,11 +591,12 @@ impl KeywordInfo {
     /// text-zoom.
     fn to_computed_value(&self, context: &Context) -> CSSPixelLength {
         debug_assert_ne!(self.kw, FontSizeKeyword::None);
-        #[cfg(feature="gecko")]
+        #[cfg(feature = "gecko")]
         debug_assert_ne!(self.kw, FontSizeKeyword::Math);
         let base = context.maybe_zoom_text(self.kw.to_length(context).0);
         let zoom_factor = context.style().effective_zoom.value();
-        CSSPixelLength::new(base.px() * self.factor * zoom_factor) + context.maybe_zoom_text(self.offset)
+        CSSPixelLength::new(base.px() * self.factor * zoom_factor) +
+            context.maybe_zoom_text(self.offset)
     }
 
     /// Given a parent keyword info (self), apply an additional factor/offset to

@@ -233,7 +233,7 @@ pub trait DomTraversal<E: TElement>: Sync {
             // In case of animation-only traversal we need to traverse the element if the element
             // has animation only dirty descendants bit, or animation-only restyle hint.
             return el.has_animation_only_dirty_descendants() ||
-                   data.hint.has_animation_hint_or_recascade();
+                data.hint.has_animation_hint_or_recascade();
         }
 
         // If the dirty descendants bit is set, we need to traverse no matter

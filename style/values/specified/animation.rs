@@ -158,8 +158,8 @@ impl Parse for AnimationDuration {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        if static_prefs::pref!("layout.css.scroll-driven-animations.enabled")
-            && input.try_parse(|i| i.expect_ident_matching("auto")).is_ok()
+        if static_prefs::pref!("layout.css.scroll-driven-animations.enabled") &&
+            input.try_parse(|i| i.expect_ident_matching("auto")).is_ok()
         {
             return Ok(Self::auto());
         }

@@ -24,11 +24,13 @@
 //! The assertions in the constructor methods ensure that the tag getter matches
 //! our expectations.
 
-use super::{Context, Length, Percentage, ToComputedValue, position::AnchorSide};
+use super::{position::AnchorSide, Context, Length, Percentage, ToComputedValue};
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{AnchorPosOffsetResolutionParams, GeckoFontMetrics};
 use crate::logical_geometry::{PhysicalAxis, PhysicalSide};
-use crate::values::animated::{Animate, Context as AnimatedContext, Procedure, ToAnimatedValue, ToAnimatedZero};
+use crate::values::animated::{
+    Animate, Context as AnimatedContext, Procedure, ToAnimatedValue, ToAnimatedZero,
+};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::calc::{CalcUnits, PositivePercentageBasis};
 use crate::values::generics::length::AnchorResolutionResult;
@@ -918,10 +920,12 @@ impl CalcAnchorSide {
     pub fn keyword_and_percentage(&self) -> (AnchorSideKeyword, f32) {
         let p = match self {
             Self::Percentage(p) => p,
-            Self::Keyword(k) => return if matches!(k, AnchorSideKeyword::Center) {
-                (AnchorSideKeyword::Start, 0.5)
-            } else {
-                (*k, 1.0)
+            Self::Keyword(k) => {
+                return if matches!(k, AnchorSideKeyword::Center) {
+                    (AnchorSideKeyword::Start, 0.5)
+                } else {
+                    (*k, 1.0)
+                }
             },
         };
 
@@ -955,15 +959,17 @@ pub enum AllowAnchorPosResolutionInCalcPercentage {
 }
 
 impl AllowAnchorPosResolutionInCalcPercentage {
-    #[cfg(feature="gecko")]
+    #[cfg(feature = "gecko")]
     fn to_axis(&self) -> PhysicalAxis {
         match self {
             Self::AnchorSizeOnly(axis) => *axis,
-            Self::Both(side) => if matches!(side, PhysicalSide::Top | PhysicalSide::Bottom) {
-                PhysicalAxis::Vertical
-            } else {
-                PhysicalAxis::Horizontal
-            }
+            Self::Both(side) => {
+                if matches!(side, PhysicalSide::Top | PhysicalSide::Bottom) {
+                    PhysicalAxis::Vertical
+                } else {
+                    PhysicalAxis::Horizontal
+                }
+            },
         }
     }
 }
@@ -978,7 +984,7 @@ impl From<&CalcAnchorSide> for AnchorSide {
                 } else {
                     unreachable!("Should have parsed simplified percentage.");
                 }
-            }
+            },
         }
     }
 }
@@ -1008,7 +1014,7 @@ impl CalcLengthPercentage {
     /// Return a clone of this node with all anchor functions computed and replaced with
     /// corresponding values, returning error if the resolution is invalid.
     #[inline]
-    #[cfg(feature="gecko")]
+    #[cfg(feature = "gecko")]
     pub fn resolve_anchor(
         &self,
         allowed: AllowAnchorPosResolutionInCalcPercentage,
@@ -1016,7 +1022,10 @@ impl CalcLengthPercentage {
     ) -> Result<(CalcNode, AllowedNumericType), ()> {
         use crate::{
             gecko_bindings::structs::AnchorPosResolutionParams,
-            values::{computed::{AnchorFunction, AnchorSizeFunction}, generics::{length::GenericAnchorSizeFunction, position::GenericAnchorFunction}}
+            values::{
+                computed::{AnchorFunction, AnchorSizeFunction},
+                generics::{length::GenericAnchorSizeFunction, position::GenericAnchorFunction},
+            },
         };
 
         fn resolve_anchor_function<'a>(
@@ -1026,12 +1035,7 @@ impl CalcLengthPercentage {
         ) -> AnchorResolutionResult<'a, Box<CalcNode>> {
             let anchor_side: &CalcAnchorSide = &f.side;
             let resolved = if f.valid_for(side, params.mBaseParams.mPosition) {
-                AnchorFunction::resolve(
-                    &f.target_element,
-                    &anchor_side.into(),
-                    side,
-                    params,
-                ).ok()
+                AnchorFunction::resolve(&f.target_element, &anchor_side.into(), side, params).ok()
             } else {
                 None
             };
@@ -1044,7 +1048,11 @@ impl CalcLengthPercentage {
                         AnchorResolutionResult::Invalid
                     }
                 },
-                |v| AnchorResolutionResult::Resolved(Box::new(CalcNode::Leaf(CalcLengthPercentageLeaf::Length(v))))
+                |v| {
+                    AnchorResolutionResult::Resolved(Box::new(CalcNode::Leaf(
+                        CalcLengthPercentageLeaf::Length(v),
+                    )))
+                },
             )
         }
 
@@ -1067,7 +1075,11 @@ impl CalcLengthPercentage {
                         AnchorResolutionResult::Invalid
                     }
                 },
-                |v| AnchorResolutionResult::Resolved(Box::new(CalcNode::Leaf(CalcLengthPercentageLeaf::Length(v))))
+                |v| {
+                    AnchorResolutionResult::Resolved(Box::new(CalcNode::Leaf(
+                        CalcLengthPercentageLeaf::Length(v),
+                    )))
+                },
             )
         }
 
@@ -1080,11 +1092,15 @@ impl CalcLengthPercentage {
                 CalcNode::Anchor(f) => {
                     let prop_side = match allowed {
                         AllowAnchorPosResolutionInCalcPercentage::Both(side) => side,
-                        AllowAnchorPosResolutionInCalcPercentage::AnchorSizeOnly(_) => unreachable!("anchor() found where disallowed"),
+                        AllowAnchorPosResolutionInCalcPercentage::AnchorSizeOnly(_) => {
+                            unreachable!("anchor() found where disallowed")
+                        },
                     };
                     resolve_anchor_function(f, prop_side, params)
                 },
-                CalcNode::AnchorSize(f) => resolve_anchor_size_function(f, allowed.to_axis(), &params.mBaseParams),
+                CalcNode::AnchorSize(f) => {
+                    resolve_anchor_size_function(f, allowed.to_axis(), &params.mBaseParams)
+                },
                 _ => return Ok(None),
             };
 

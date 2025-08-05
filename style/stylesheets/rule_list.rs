@@ -30,11 +30,7 @@ impl CssRules {
 }
 
 impl DeepCloneWithLock for CssRules {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         CssRules(
             self.0
                 .iter()

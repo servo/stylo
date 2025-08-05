@@ -753,7 +753,8 @@ pub trait TElement:
     fn rule_hash_target(&self) -> Self {
         let mut cur = *self;
         while cur.is_pseudo_element() {
-            cur = cur.pseudo_element_originating_element()
+            cur = cur
+                .pseudo_element_originating_element()
                 .expect("Trying to collect rules for a detached pseudo-element")
         }
         cur
@@ -879,8 +880,9 @@ pub trait TElement:
     /// https://drafts.csswg.org/css-view-transitions-1/#document-dynamic-view-transition-style-sheet
     fn synthesize_view_transition_dynamic_rules<V>(&self, _rules: &mut V)
     where
-        V: Push<ApplicableDeclarationBlock>
-    {}
+        V: Push<ApplicableDeclarationBlock>,
+    {
+    }
 
     /// Returns element's local name.
     fn local_name(&self) -> &<SelectorImpl as selectors::parser::SelectorImpl>::BorrowedLocalName;

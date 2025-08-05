@@ -19,7 +19,7 @@ use crate::values::computed::font::GenericFontFamily;
 use crate::values::computed::{ColorScheme, Length, NonNegativeLength};
 use crate::values::specified::color::{ColorSchemeFlags, ForcedColors, SystemColor};
 use crate::values::specified::font::{
-    FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX, QueryFontMetricsFlags,
+    QueryFontMetricsFlags, FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX,
 };
 use crate::values::specified::ViewportVariant;
 use crate::values::{CustomIdent, KeyframesName};
@@ -236,15 +236,8 @@ impl Device {
             Some(pc) => pc,
             None => return Default::default(),
         };
-        let gecko_metrics = unsafe {
-            bindings::Gecko_GetFontMetrics(
-                pc,
-                vertical,
-                &**font,
-                base_size,
-                flags,
-            )
-        };
+        let gecko_metrics =
+            unsafe { bindings::Gecko_GetFontMetrics(pc, vertical, &**font, base_size, flags) };
         FontMetrics {
             x_height: Some(gecko_metrics.mXSize),
             zero_advance_measure: if gecko_metrics.mChSize.px() >= 0. {
@@ -511,7 +504,8 @@ impl Device {
     /// Returns whether document colors are enabled.
     #[inline]
     pub fn forced_colors(&self) -> ForcedColors {
-        self.pres_context().map_or(ForcedColors::None, |pc| pc.mForcedColors)
+        self.pres_context()
+            .map_or(ForcedColors::None, |pc| pc.mForcedColors)
     }
 
     /// Computes a system color and returns it as an nscolor.
@@ -533,14 +527,18 @@ impl Device {
     /// This is only for forced-colors/high-contrast, so looking at light colors
     /// is ok.
     pub fn default_background_color(&self) -> AbsoluteColor {
-        convert_nscolor_to_absolute_color(self.system_nscolor(SystemColor::Canvas, ColorScheme::normal().bits))
+        convert_nscolor_to_absolute_color(
+            self.system_nscolor(SystemColor::Canvas, ColorScheme::normal().bits),
+        )
     }
 
     /// Returns the default foreground color.
     ///
     /// See above for looking at light colors only.
     pub fn default_color(&self) -> AbsoluteColor {
-        convert_nscolor_to_absolute_color(self.system_nscolor(SystemColor::Canvastext, ColorScheme::normal().bits))
+        convert_nscolor_to_absolute_color(
+            self.system_nscolor(SystemColor::Canvastext, ColorScheme::normal().bits),
+        )
     }
 
     /// Returns the current effective text zoom.

@@ -326,11 +326,7 @@ pub trait ToCssWithGuard {
 /// guard, in order to be able to read and clone nested structures.
 pub trait DeepCloneWithLock: Sized {
     /// Deep clones this object.
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self;
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self;
 }
 
 /// Guards for a document

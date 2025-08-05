@@ -7,7 +7,7 @@
 //! [calc]: https://drafts.csswg.org/css-values/#calc-notation
 
 use crate::values::generics::length::GenericAnchorSizeFunction;
-use crate::values::generics::position::{GenericAnchorSide, GenericAnchorFunction};
+use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
 use num_traits::Zero;
 use smallvec::SmallVec;
 use std::fmt::{self, Write};
@@ -556,9 +556,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 let _ = child.unit()?;
                 CalcUnits::empty()
             },
-            CalcNode::Anchor(..) | CalcNode::AnchorSize(..) => {
-                CalcUnits::LENGTH_PERCENTAGE
-            }
+            CalcNode::Anchor(..) | CalcNode::AnchorSize(..) => CalcUnits::LENGTH_PERCENTAGE,
         })
     }
 
@@ -788,7 +786,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 CalcNode::Abs(child) | CalcNode::Sign(child) => map_internal(child, op),
                 // It is invalid to treat inner `CalcNode`s here - `anchor(--foo 50%) / 2` != `anchor(--foo 25%)`.
                 // Same applies to fallback, as we don't know if it will be used. Similar reasoning applies to `anchor-size()`.
-                CalcNode::Anchor(_) | CalcNode::AnchorSize(_) => Err(())
+                CalcNode::Anchor(_) | CalcNode::AnchorSize(_) => Err(()),
             }
         }
 
@@ -870,23 +868,29 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             Self::Hypot(ref c) => CalcNode::Hypot(map_children(c, map)),
             Self::Abs(ref c) => CalcNode::Abs(Box::new(c.map_leaves_internal(map))),
             Self::Sign(ref c) => CalcNode::Sign(Box::new(c.map_leaves_internal(map))),
-            Self::Anchor(ref f) => CalcNode::Anchor(Box::new(
-                GenericAnchorFunction {
-                    target_element: f.target_element.clone(),
-                    side: match &f.side {
-                        GenericAnchorSide::Keyword(k) => GenericAnchorSide::Keyword(*k),
-                        GenericAnchorSide::Percentage(p) => GenericAnchorSide::Percentage(Box::new(p.map_leaves_internal(map))),
+            Self::Anchor(ref f) => CalcNode::Anchor(Box::new(GenericAnchorFunction {
+                target_element: f.target_element.clone(),
+                side: match &f.side {
+                    GenericAnchorSide::Keyword(k) => GenericAnchorSide::Keyword(*k),
+                    GenericAnchorSide::Percentage(p) => {
+                        GenericAnchorSide::Percentage(Box::new(p.map_leaves_internal(map)))
                     },
-                    fallback: f.fallback.as_ref().map(|fb| Box::new(fb.map_leaves_internal(map))).into(),
-                }
-            )),
-            Self::AnchorSize(ref f) => CalcNode::AnchorSize(Box::new(
-                GenericAnchorSizeFunction {
-                    target_element: f.target_element.clone(),
-                    size: f.size,
-                    fallback: f.fallback.as_ref().map(|fb| Box::new(fb.map_leaves_internal(map))).into(),
-                }
-            )),
+                },
+                fallback: f
+                    .fallback
+                    .as_ref()
+                    .map(|fb| Box::new(fb.map_leaves_internal(map)))
+                    .into(),
+            })),
+            Self::AnchorSize(ref f) => CalcNode::AnchorSize(Box::new(GenericAnchorSizeFunction {
+                target_element: f.target_element.clone(),
+                size: f.size,
+                fallback: f
+                    .fallback
+                    .as_ref()
+                    .map(|fb| Box::new(fb.map_leaves_internal(map)))
+                    .into(),
+            })),
         }
     }
 
@@ -1183,7 +1187,10 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             Self::Negate(child) | Self::Invert(child) | Self::Abs(child) | Self::Sign(child) => {
                 child.map_node_internal(mapping_fn)?;
             },
-            Self::Sum(children) | Self::Product(children) | Self::Hypot(children) | Self::MinMax(children, _) => {
+            Self::Sum(children) |
+            Self::Product(children) |
+            Self::Hypot(children) |
+            Self::MinMax(children, _) => {
                 for child in children.iter_mut() {
                     child.map_node_internal(mapping_fn)?;
                 }
@@ -1710,7 +1717,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 l.simplify();
             },
             Self::Anchor(ref mut f) => {
-                if let GenericAnchorSide::Percentage(ref mut n) =  f.side {
+                if let GenericAnchorSide::Percentage(ref mut n) = f.side {
                     n.simplify_and_sort();
                 }
                 if let Some(fallback) = f.fallback.as_mut() {
@@ -1721,7 +1728,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 if let Some(fallback) = f.fallback.as_mut() {
                     fallback.simplify_and_sort();
                 }
-            }
+            },
         }
     }
 

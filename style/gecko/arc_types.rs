@@ -16,8 +16,8 @@ use crate::stylesheets::keyframes_rule::Keyframe;
 use crate::stylesheets::{
     ContainerRule, CounterStyleRule, CssRules, DocumentRule, FontFaceRule, FontFeatureValuesRule,
     FontPaletteValuesRule, ImportRule, KeyframesRule, LayerBlockRule, LayerStatementRule,
-    MarginRule, MediaRule, NamespaceRule, PageRule, PositionTryRule, PropertyRule, ScopeRule,
-    StartingStyleRule, StyleRule, StylesheetContents, SupportsRule, NestedDeclarationsRule,
+    MarginRule, MediaRule, NamespaceRule, NestedDeclarationsRule, PageRule, PositionTryRule,
+    PropertyRule, ScopeRule, StartingStyleRule, StyleRule, StylesheetContents, SupportsRule,
 };
 use servo_arc::Arc;
 

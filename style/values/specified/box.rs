@@ -4,6 +4,7 @@
 
 //! Specified types for box properties.
 
+pub use crate::logical_geometry::WritingModeProperty;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::{LonghandId, PropertyDeclarationId, PropertyId};
 use crate::values::generics::box_::{
@@ -13,7 +14,6 @@ use crate::values::generics::box_::{
 use crate::values::specified::length::{LengthPercentage, NonNegativeLength};
 use crate::values::specified::{AllowQuirks, Integer, NonNegativeNumberOrPercentage};
 use crate::values::CustomIdent;
-pub use crate::logical_geometry::WritingModeProperty;
 use cssparser::Parser;
 use num_traits::FromPrimitive;
 use std::fmt::{self, Write};
@@ -1007,9 +1007,7 @@ bitflags! {
 
 fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits {
     match longhand {
-        LonghandId::Opacity => {
-            WillChangeBits::OPACITY | WillChangeBits::BACKDROP_ROOT
-        },
+        LonghandId::Opacity => WillChangeBits::OPACITY | WillChangeBits::BACKDROP_ROOT,
         LonghandId::Contain => WillChangeBits::CONTAIN,
         LonghandId::Perspective => WillChangeBits::PERSPECTIVE,
         LonghandId::Position => {
@@ -1024,22 +1022,20 @@ fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits {
         LonghandId::OffsetPath => WillChangeBits::TRANSFORM,
         LonghandId::Filter | LonghandId::BackdropFilter => {
             WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL |
-            WillChangeBits::BACKDROP_ROOT |
-            WillChangeBits::FIXPOS_CB_NON_SVG
+                WillChangeBits::BACKDROP_ROOT |
+                WillChangeBits::FIXPOS_CB_NON_SVG
         },
         LonghandId::ViewTransitionName => {
-            WillChangeBits::VIEW_TRANSITION_NAME |
-            WillChangeBits::BACKDROP_ROOT
+            WillChangeBits::VIEW_TRANSITION_NAME | WillChangeBits::BACKDROP_ROOT
         },
         LonghandId::MixBlendMode => {
-            WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL |
-            WillChangeBits::BACKDROP_ROOT
+            WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL | WillChangeBits::BACKDROP_ROOT
         },
-        LonghandId::Isolation |
-        LonghandId::MaskImage => WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL,
+        LonghandId::Isolation | LonghandId::MaskImage => {
+            WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL
+        },
         LonghandId::ClipPath => {
-            WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL |
-            WillChangeBits::BACKDROP_ROOT
+            WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL | WillChangeBits::BACKDROP_ROOT
         },
         _ => WillChangeBits::empty(),
     }
@@ -1306,7 +1302,9 @@ impl ContainerType {
         if self.contains(Self::SIZE | Self::INLINE_SIZE) {
             return false;
         }
-        if self.contains(Self::SCROLL_STATE) && !static_prefs::pref!("layout.css.scroll-state.enabled") {
+        if self.contains(Self::SCROLL_STATE) &&
+            !static_prefs::pref!("layout.css.scroll-state.enabled")
+        {
             return false;
         }
         true

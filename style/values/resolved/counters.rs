@@ -5,8 +5,8 @@
 //! Resolved values for counter properties
 
 use super::{Context, ToResolvedValue};
-use selectors::parser::PseudoElement;
 use crate::values::computed;
+use selectors::parser::PseudoElement;
 
 /// https://drafts.csswg.org/css-content/#content-property
 ///

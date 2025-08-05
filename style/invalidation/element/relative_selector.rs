@@ -10,7 +10,9 @@ use crate::dom::{TElement, TNode};
 use crate::gecko_bindings::structs::ServoElementSnapshotTable;
 use crate::invalidation::element::element_wrapper::ElementWrapper;
 use crate::invalidation::element::invalidation_map::{
-    Dependency, DependencyInvalidationKind, InvalidationMap, NormalDependencyInvalidationKind, RelativeDependencyInvalidationKind, AdditionalRelativeSelectorInvalidationMap, TSStateForInvalidation
+    AdditionalRelativeSelectorInvalidationMap, Dependency, DependencyInvalidationKind,
+    InvalidationMap, NormalDependencyInvalidationKind, RelativeDependencyInvalidationKind,
+    TSStateForInvalidation,
 };
 use crate::invalidation::element::invalidator::{
     DescendantInvalidationLists, Invalidation, InvalidationProcessor, InvalidationResult,
@@ -157,7 +159,9 @@ impl<'a, E: TElement> OptimizationContext<'a, E> {
         // that would generate more work than it saves.
         if dependency_is_rightmost &&
             leftmost_collapse_offset != dependency.selector_offset &&
-            self.sibling_traversal_map.next_sibling_for(&element).is_some()
+            self.sibling_traversal_map
+                .next_sibling_for(&element)
+                .is_some()
         {
             return false;
         }
@@ -409,7 +413,9 @@ fn invalidation_can_collapse(
         if a_component != b_component {
             return false;
         }
-        let Some(component) = a_component else { return true };
+        let Some(component) = a_component else {
+            return true;
+        };
         if !allow_indexed_selectors && component.has_indexed_selector_in_subject() {
             // The element's positioning matters, so can't collapse.
             return false;
@@ -598,19 +604,17 @@ where
             },
             None => (),
         });
-        element.each_attr_name(
-            |v| match map.other_attribute_affecting_selectors.get(v) {
-                Some(v) => {
-                    for dependency in v {
-                        if !operation.accept(dependency, element) {
-                            continue;
-                        }
-                        self.add_dependency(dependency, element, scope);
+        element.each_attr_name(|v| match map.other_attribute_affecting_selectors.get(v) {
+            Some(v) => {
+                for dependency in v {
+                    if !operation.accept(dependency, element) {
+                        continue;
                     }
-                },
-                None => (),
+                    self.add_dependency(dependency, element, scope);
+                }
             },
-        );
+            None => (),
+        });
         let state = element.state();
         map.state_affecting_selectors.lookup_with_additional(
             element,
@@ -630,61 +634,66 @@ where
             },
         );
 
-        additional_relative_selector_invalidation_map.ts_state_to_selector.lookup_with_additional(
-            element,
-            quirks_mode,
-            None,
-            &[],
-            ElementState::empty(),
-            |dependency| {
-                if !operation.accept(&dependency.dep, element) {
-                    return true;
-                }
-                // This section contain potential optimization for not running full invalidation -
-                // consult documentation in `TSStateForInvalidation`.
-                if dependency.state.may_be_optimized() {
-                    if operation.is_side_effect() {
-                        // Side effect operations act on element not being mutated, so they can't
-                        // change the match outcome of these optimizable pseudoclasses.
+        additional_relative_selector_invalidation_map
+            .ts_state_to_selector
+            .lookup_with_additional(
+                element,
+                quirks_mode,
+                None,
+                &[],
+                ElementState::empty(),
+                |dependency| {
+                    if !operation.accept(&dependency.dep, element) {
                         return true;
                     }
-                    debug_assert!(
-                        self.optimization_context.is_some(),
-                        "Optimization context not available for DOM mutation?"
-                    );
-                    if dependency.state.contains(TSStateForInvalidation::EMPTY) &&
-                        element.first_element_child().is_some()
-                    {
-                        return true;
-                    }
+                    // This section contain potential optimization for not running full invalidation -
+                    // consult documentation in `TSStateForInvalidation`.
+                    if dependency.state.may_be_optimized() {
+                        if operation.is_side_effect() {
+                            // Side effect operations act on element not being mutated, so they can't
+                            // change the match outcome of these optimizable pseudoclasses.
+                            return true;
+                        }
+                        debug_assert!(
+                            self.optimization_context.is_some(),
+                            "Optimization context not available for DOM mutation?"
+                        );
+                        if dependency.state.contains(TSStateForInvalidation::EMPTY) &&
+                            element.first_element_child().is_some()
+                        {
+                            return true;
+                        }
 
-                    let sibling_traversal_map = self
-                        .optimization_context
-                        .as_ref()
-                        .unwrap()
-                        .sibling_traversal_map;
-                    if dependency
-                        .state
-                        .contains(TSStateForInvalidation::NTH_EDGE_FIRST) &&
-                        sibling_traversal_map.prev_sibling_for(&element).is_some()
-                    {
-                        return true;
-                    }
+                        let sibling_traversal_map = self
+                            .optimization_context
+                            .as_ref()
+                            .unwrap()
+                            .sibling_traversal_map;
+                        if dependency
+                            .state
+                            .contains(TSStateForInvalidation::NTH_EDGE_FIRST) &&
+                            sibling_traversal_map.prev_sibling_for(&element).is_some()
+                        {
+                            return true;
+                        }
 
-                    if dependency
-                        .state
-                        .contains(TSStateForInvalidation::NTH_EDGE_LAST) &&
-                        sibling_traversal_map.next_sibling_for(&element).is_some()
-                    {
-                        return true;
+                        if dependency
+                            .state
+                            .contains(TSStateForInvalidation::NTH_EDGE_LAST) &&
+                            sibling_traversal_map.next_sibling_for(&element).is_some()
+                        {
+                            return true;
+                        }
                     }
-                }
-                self.add_dependency(&dependency.dep, element, scope);
-                true
-            },
-        );
+                    self.add_dependency(&dependency.dep, element, scope);
+                    true
+                },
+            );
 
-        if let Some(v) = additional_relative_selector_invalidation_map.type_to_selector.get(element.local_name()) {
+        if let Some(v) = additional_relative_selector_invalidation_map
+            .type_to_selector
+            .get(element.local_name())
+        {
             for dependency in v {
                 if !operation.accept(dependency, element) {
                     continue;

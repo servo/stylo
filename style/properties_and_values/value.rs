@@ -91,7 +91,7 @@ impl<L, N, P, LP, C, Image, U, Integer, A, T, R, Transform>
 
 /// A generic enum used for both specified value components and computed value components.
 #[derive(
-    Animate, Clone, ToCss, ToComputedValue, ToResolvedValue, Debug, MallocSizeOf, PartialEq, ToShmem
+    Animate, Clone, ToCss, ToComputedValue, ToResolvedValue, Debug, MallocSizeOf, PartialEq, ToShmem,
 )]
 #[animation(no_bound(Image, Url))]
 pub enum GenericValueComponent<
@@ -200,7 +200,9 @@ impl<Component: ToCss> ToCss for ComponentList<Component> {
 
 /// A struct for a single specified registered custom property value that includes its original URL
 // data so the value can be uncomputed later.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToComputedValue, ToResolvedValue, ToShmem)]
+#[derive(
+    Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToComputedValue, ToResolvedValue, ToShmem,
+)]
 pub struct Value<Component> {
     /// The registered custom property value.
     pub(crate) v: ValueInner<Component>,
@@ -331,7 +333,9 @@ impl ComputedValue {
         if let ValueInner::Universal(ref var) = self.v {
             return properties::CustomDeclarationValue::Unparsed(Arc::clone(var));
         }
-        properties::CustomDeclarationValue::Parsed(Arc::new(ToComputedValue::from_computed_value(self)))
+        properties::CustomDeclarationValue::Parsed(Arc::new(ToComputedValue::from_computed_value(
+            self,
+        )))
     }
 
     /// Returns the contained variable value if it exists, otherwise `None`.
@@ -637,14 +641,13 @@ impl CustomAnimatedValue {
                         &value.url_data,
                         context,
                         AllowComputationallyDependent::Yes,
-                    ).unwrap_or_else(|_| {
-                        ComputedValue {
-                            v: ValueInner::Universal(Arc::clone(value)),
-                            url_data: value.url_data.clone(),
-                        }
+                    )
+                    .unwrap_or_else(|_| ComputedValue {
+                        v: ValueInner::Universal(Arc::clone(value)),
+                        url_data: value.url_data.clone(),
                     })
                 }
-            }
+            },
             properties::CustomDeclarationValue::Parsed(ref v) => v.to_computed_value(context),
             // FIXME: This should be made to work to the extent possible like for non-custom
             // properties (using `initial` at least to handle unset / inherit).

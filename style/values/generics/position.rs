@@ -389,11 +389,7 @@ where
 
 impl<Percentage, LengthPercentage> GenericAnchorFunction<Percentage, LengthPercentage> {
     /// Is the anchor valid for given property?
-    pub fn valid_for(
-        &self,
-        side: PhysicalSide,
-        position_property: PositionProperty,
-    ) -> bool {
+    pub fn valid_for(&self, side: PhysicalSide, position_property: PositionProperty) -> bool {
         position_property.is_absolutely_positioned() && self.side.valid_for(side)
     }
 }

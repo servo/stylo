@@ -164,11 +164,7 @@ impl StylesheetContents {
 }
 
 impl DeepCloneWithLock for StylesheetContents {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         // Make a deep clone of the rules, using the new lock.
         let rules = self
             .rules

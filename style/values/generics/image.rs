@@ -8,7 +8,7 @@
 
 use crate::color::mix::ColorInterpolationMethod;
 use crate::custom_properties;
-use crate::values::generics::{position::PositionComponent, color::GenericLightDark, Optional};
+use crate::values::generics::{color::GenericLightDark, position::PositionComponent, Optional};
 use crate::values::serialize_atom_identifier;
 use crate::Atom;
 use crate::Zero;
@@ -18,9 +18,7 @@ use style_traits::{CssWriter, ToCss};
 /// An `<image> | none` value.
 ///
 /// https://drafts.csswg.org/css-images/#image-values
-#[derive(
-    Clone, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToResolvedValue, ToShmem,
-)]
+#[derive(Clone, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToResolvedValue, ToShmem)]
 #[repr(C, u8)]
 pub enum GenericImage<G, ImageUrl, Color, Percentage, Resolution> {
     /// `none` variant.

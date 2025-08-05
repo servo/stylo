@@ -12,7 +12,7 @@ use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
 use crate::str::CssStringWriter;
-use crate::stylesheets::{CssRules, style_or_page_rule_to_css};
+use crate::stylesheets::{style_or_page_rule_to_css, CssRules};
 use crate::values::{AtomIdent, CustomIdent};
 use cssparser::{Parser, SourceLocation, Token};
 #[cfg(feature = "gecko")]
@@ -150,11 +150,7 @@ pub struct PageSelector {
 fn selector_specificity(g: usize, h: usize, f: bool) -> u32 {
     let h = h.min(0xFFFF) as u32;
     let g = (g.min(0x7FFF) as u32) << 16;
-    let f = if f {
-        0x80000000
-    } else {
-        0
-    };
+    let f = if f { 0x80000000 } else { 0 };
     h + g + f
 }
 
@@ -353,11 +349,7 @@ impl ToCssWithGuard for PageRule {
 }
 
 impl DeepCloneWithLock for PageRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         let rules = self.rules.read_with(&guard);
         PageRule {
             selectors: self.selectors.clone(),

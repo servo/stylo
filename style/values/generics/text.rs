@@ -67,7 +67,8 @@ impl<Integer: ToCss + PartialEq> ToCss for GenericHyphenateLimitChars<Integer> {
         self.total_word_length.to_css(dest)?;
 
         if self.pre_hyphen_length != NumberOrAuto::Auto ||
-           self.post_hyphen_length != self.pre_hyphen_length {
+            self.post_hyphen_length != self.pre_hyphen_length
+        {
             dest.write_char(' ')?;
             self.pre_hyphen_length.to_css(dest)?;
             if self.post_hyphen_length != self.pre_hyphen_length {

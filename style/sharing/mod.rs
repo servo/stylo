@@ -698,7 +698,10 @@ impl<E: TElement> StyleSharingCache<E> {
         self.cache_mut().insert(
             *element,
             validation_data_holder,
-            style.style().flags.intersects(ComputedValueFlags::CONSIDERED_NONTRIVIAL_SCOPED_STYLE),
+            style
+                .style()
+                .flags
+                .intersects(ComputedValueFlags::CONSIDERED_NONTRIVIAL_SCOPED_STYLE),
         );
     }
 
@@ -819,7 +822,9 @@ impl<E: TElement> StyleSharingCache<E> {
             return None;
         }
 
-        if target.element.has_animations(shared_context) || candidate.element.has_animations(shared_context) {
+        if target.element.has_animations(shared_context) ||
+            candidate.element.has_animations(shared_context)
+        {
             trace!("Miss: Has Animations");
             return None;
         }
@@ -869,7 +874,9 @@ impl<E: TElement> StyleSharingCache<E> {
 
         // While the scoped style rules may be different (e.g. `@scope { .foo + .foo { /* .. */} }`),
         // we rely on revalidation to handle that.
-        if candidate.considered_nontrivial_scoped_style && !checks::revalidate_scope(target, candidate, shared, selector_caches) {
+        if candidate.considered_nontrivial_scoped_style &&
+            !checks::revalidate_scope(target, candidate, shared, selector_caches)
+        {
             trace!("Miss: Active Scopes");
             return None;
         }

@@ -8,9 +8,7 @@
 
 use crate::media_queries::MediaList;
 use crate::parser::{Parse, ParserContext};
-use crate::shared_lock::{
-    DeepCloneWithLock, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
-};
+use crate::shared_lock::{DeepCloneWithLock, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
 use crate::str::CssStringWriter;
 use crate::stylesheets::{
     layer_rule::LayerName, supports_rule::SupportsCondition, CssRule, CssRuleType,
@@ -85,18 +83,12 @@ impl ImportSheet {
 
 #[cfg(feature = "gecko")]
 impl DeepCloneWithLock for ImportSheet {
-    fn deep_clone_with_lock(
-        &self,
-        _lock: &SharedRwLock,
-        _guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, _lock: &SharedRwLock, _guard: &SharedRwLockReadGuard) -> Self {
         use crate::gecko::data::GeckoStyleSheet;
         use crate::gecko_bindings::bindings;
         match *self {
             ImportSheet::Sheet(ref s) => {
-                let clone = unsafe {
-                    bindings::Gecko_StyleSheet_Clone(s.raw() as *const _)
-                };
+                let clone = unsafe { bindings::Gecko_StyleSheet_Clone(s.raw() as *const _) };
                 ImportSheet::Sheet(unsafe { GeckoStyleSheet::from_addrefed(clone) })
             },
             ImportSheet::Pending => ImportSheet::Pending,
@@ -152,11 +144,7 @@ impl ImportSheet {
 
 #[cfg(feature = "servo")]
 impl DeepCloneWithLock for ImportSheet {
-    fn deep_clone_with_lock(
-        &self,
-        _lock: &SharedRwLock,
-        _guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, _lock: &SharedRwLock, _guard: &SharedRwLockReadGuard) -> Self {
         match *self {
             ImportSheet::Sheet(ref s) => {
                 use servo_arc::Arc;
@@ -282,11 +270,7 @@ impl ToShmem for ImportRule {
 }
 
 impl DeepCloneWithLock for ImportRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         ImportRule {
             url: self.url.clone(),
             stylesheet: self.stylesheet.deep_clone_with_lock(lock, guard),

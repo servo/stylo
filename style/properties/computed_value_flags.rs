@@ -164,8 +164,7 @@ impl ComputedValueFlags {
     /// Flags that are an input to the cascade.
     #[inline]
     fn cascade_input_flags() -> Self {
-        Self::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES |
-        Self::CONSIDERED_NONTRIVIAL_SCOPED_STYLE
+        Self::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES | Self::CONSIDERED_NONTRIVIAL_SCOPED_STYLE
     }
 
     /// Returns the flags that are always propagated to descendants.

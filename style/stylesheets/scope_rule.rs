@@ -13,9 +13,9 @@ use crate::selector_parser::{SelectorImpl, SelectorParser};
 use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
+use crate::simple_buckets_map::SimpleBucketsMap;
 use crate::str::CssStringWriter;
 use crate::stylesheets::CssRules;
-use crate::simple_buckets_map::SimpleBucketsMap;
 use cssparser::{Parser, SourceLocation, ToCss};
 #[cfg(feature = "gecko")]
 use malloc_size_of::{
@@ -41,11 +41,7 @@ pub struct ScopeRule {
 }
 
 impl DeepCloneWithLock for ScopeRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         let rules = self.rules.read_with(guard);
         Self {
             bounds: self.bounds.clone(),
@@ -116,45 +112,44 @@ fn parse_scope<'a>(
     parse_relative: ParseRelative,
     for_end: bool,
 ) -> Result<Option<SelectorList<SelectorImpl>>, ParseError<'a>> {
-    input
-        .try_parse(|input| {
-            if for_end {
-                // scope-end not existing is valid.
-                if input.try_parse(|i| i.expect_ident_matching("to")).is_err() {
-                    return Ok(None);
-                }
-            }
-            let parens = input.try_parse(|i| i.expect_parenthesis_block());
-            if for_end {
-                // `@scope to {}` is NOT valid.
-                parens?;
-            } else if parens.is_err() {
-                // `@scope {}` is valid.
+    input.try_parse(|input| {
+        if for_end {
+            // scope-end not existing is valid.
+            if input.try_parse(|i| i.expect_ident_matching("to")).is_err() {
                 return Ok(None);
             }
-            input.parse_nested_block(|input| {
-                if input.is_exhausted() {
-                    // `@scope () {}` is valid.
-                    return Ok(None);
-                }
-                let selector_parser = SelectorParser {
-                    stylesheet_origin: context.stylesheet_origin,
-                    namespaces: &context.namespaces,
-                    url_data: context.url_data,
-                    for_supports_rule: false,
-                };
-                let parse_relative = if for_end {
-                    ParseRelative::ForScope
-                } else {
-                    parse_relative
-                };
-                Ok(Some(SelectorList::parse_disallow_pseudo(
-                    &selector_parser,
-                    input,
-                    parse_relative,
-                )?))
-            })
+        }
+        let parens = input.try_parse(|i| i.expect_parenthesis_block());
+        if for_end {
+            // `@scope to {}` is NOT valid.
+            parens?;
+        } else if parens.is_err() {
+            // `@scope {}` is valid.
+            return Ok(None);
+        }
+        input.parse_nested_block(|input| {
+            if input.is_exhausted() {
+                // `@scope () {}` is valid.
+                return Ok(None);
+            }
+            let selector_parser = SelectorParser {
+                stylesheet_origin: context.stylesheet_origin,
+                namespaces: &context.namespaces,
+                url_data: context.url_data,
+                for_supports_rule: false,
+            };
+            let parse_relative = if for_end {
+                ParseRelative::ForScope
+            } else {
+                parse_relative
+            };
+            Ok(Some(SelectorList::parse_disallow_pseudo(
+                &selector_parser,
+                input,
+                parse_relative,
+            )?))
         })
+    })
 }
 
 impl ScopeBounds {
@@ -359,13 +354,21 @@ pub struct ScopeSubjectMap {
 
 impl ScopeSubjectMap {
     /// Add the `<scope-start>` of a scope.
-    pub fn add_bound_start(&mut self, selectors: &SelectorList<SelectorImpl>, quirks_mode: QuirksMode) {
+    pub fn add_bound_start(
+        &mut self,
+        selectors: &SelectorList<SelectorImpl>,
+        quirks_mode: QuirksMode,
+    ) {
         if self.add_selector_list(selectors, quirks_mode) {
             self.any = true;
         }
     }
 
-    fn add_selector_list(&mut self, selectors: &SelectorList<SelectorImpl>, quirks_mode: QuirksMode) -> bool {
+    fn add_selector_list(
+        &mut self,
+        selectors: &SelectorList<SelectorImpl>,
+        quirks_mode: QuirksMode,
+    ) -> bool {
         let mut is_any = false;
         for selector in selectors.slice().iter() {
             is_any = is_any || self.add_selector(selector, quirks_mode);
@@ -387,17 +390,17 @@ impl ScopeSubjectMap {
                         Err(_) => true,
                     }
                 },
-                Component::ID(id) => {
-                    match self.buckets.ids.try_entry(id.0.clone(), quirks_mode) {
-                        Ok(e) => {
-                            e.or_insert(());
-                            false
-                        },
-                        Err(_) => true,
-                    }
+                Component::ID(id) => match self.buckets.ids.try_entry(id.0.clone(), quirks_mode) {
+                    Ok(e) => {
+                        e.or_insert(());
+                        false
+                    },
+                    Err(_) => true,
                 },
                 Component::LocalName(local_name) => {
-                    self.buckets.local_names.insert(local_name.lower_name.clone(), ());
+                    self.buckets
+                        .local_names
+                        .insert(local_name.lower_name.clone(), ());
                     false
                 },
                 Component::Is(ref list) | Component::Where(ref list) => {
@@ -465,18 +468,26 @@ pub fn scope_selector_list_is_trivial(list: &SelectorList<SelectorImpl>) -> bool
         loop {
             while let Some(c) = iter.next() {
                 match c {
-                    Component::ID(_) | Component::Nth(_) | Component::NthOf(_) | Component::Has(_) => return false,
-                    Component::Is(ref list) | Component::Where(ref list) | Component::Negation(ref list) =>
+                    Component::ID(_) |
+                    Component::Nth(_) |
+                    Component::NthOf(_) |
+                    Component::Has(_) => return false,
+                    Component::Is(ref list) |
+                    Component::Where(ref list) |
+                    Component::Negation(ref list) => {
                         if !scope_selector_list_is_trivial(list) {
                             return false;
                         }
+                    },
                     _ => (),
                 }
             }
 
             match iter.next_sequence() {
-                Some(c) => if c.is_sibling() {
-                    return false;
+                Some(c) => {
+                    if c.is_sibling() {
+                        return false;
+                    }
                 },
                 None => return true,
             }

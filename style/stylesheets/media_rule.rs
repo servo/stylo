@@ -54,11 +54,7 @@ impl ToCssWithGuard for MediaRule {
 }
 
 impl DeepCloneWithLock for MediaRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         let media_queries = self.media_queries.read_with(guard);
         let rules = self.rules.read_with(guard);
         MediaRule {

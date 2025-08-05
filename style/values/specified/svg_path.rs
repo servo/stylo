@@ -89,7 +89,7 @@ impl SVGPathData {
         let path_string = input.expect_string()?.as_ref();
         let (path, ok) = Self::parse_bytes(path_string.as_bytes());
         if !ok || (allow_empty == AllowEmpty::No && path.0.is_empty()) {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
         return Ok(path);
     }
@@ -252,7 +252,10 @@ impl PathCommand {
                 state.pos.x = x;
                 if reduce {
                     state.last_command = *self;
-                    PathCommand::Line { by_to: ByTo::To, point: state.pos }
+                    PathCommand::Line {
+                        by_to: ByTo::To,
+                        point: state.pos,
+                    }
                 } else {
                     HLine { by_to: ByTo::To, x }
                 }
@@ -264,7 +267,10 @@ impl PathCommand {
                 state.pos.y = y;
                 if reduce {
                     state.last_command = *self;
-                    PathCommand::Line { by_to: ByTo::To, point: state.pos }
+                    PathCommand::Line {
+                        by_to: ByTo::To,
+                        point: state.pos,
+                    }
                 } else {
                     VLine { by_to: ByTo::To, y }
                 }
@@ -333,9 +339,18 @@ impl PathCommand {
                 }
                 if reduce {
                     let control1 = match state.last_command {
-                         PathCommand::CubicCurve { by_to: _, point: _, control1: _, control2: _ } | PathCommand::SmoothCubic { by_to: _, point: _, control2: _ } =>
-                           state.pos + state.pos - state.last_control,
-                         _ => state.pos
+                        PathCommand::CubicCurve {
+                            by_to: _,
+                            point: _,
+                            control1: _,
+                            control2: _,
+                        } |
+                        PathCommand::SmoothCubic {
+                            by_to: _,
+                            point: _,
+                            control2: _,
+                        } => state.pos + state.pos - state.last_control,
+                        _ => state.pos,
                     };
                     state.pos = point;
                     state.last_control = control2;
@@ -361,9 +376,15 @@ impl PathCommand {
                 }
                 if reduce {
                     let control = match state.last_command {
-                         PathCommand::QuadCurve { by_to: _, point: _, control1: _ } | PathCommand::SmoothQuad { by_to: _, point: _ } =>
-                           state.pos + state.pos - state.last_control,
-                         _ => state.pos
+                        PathCommand::QuadCurve {
+                            by_to: _,
+                            point: _,
+                            control1: _,
+                        } |
+                        PathCommand::SmoothQuad { by_to: _, point: _ } => {
+                            state.pos + state.pos - state.last_control
+                        },
+                        _ => state.pos,
                     };
                     let control1 = state.pos + 2. * (control - state.pos) / 3.;
                     let control2 = point + 2. * (control - point) / 3.;
@@ -529,10 +550,10 @@ impl ops::Add<CoordPair> for CoordPair {
     type Output = CoordPair;
 
     fn add(self, rhs: CoordPair) -> CoordPair {
-      Self {
-        x: self.x + rhs.x,
-        y: self.y + rhs.y,
-      }
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
     }
 }
 
@@ -540,10 +561,10 @@ impl ops::Sub<CoordPair> for CoordPair {
     type Output = CoordPair;
 
     fn sub(self, rhs: CoordPair) -> CoordPair {
-      Self {
-        x: self.x - rhs.x,
-        y: self.y - rhs.y,
-      }
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
     }
 }
 
@@ -562,7 +583,7 @@ impl ops::Mul<CoordPair> for CSSFloat {
     type Output = CoordPair;
 
     fn mul(self, rhs: CoordPair) -> CoordPair {
-      rhs * self
+        rhs * self
     }
 }
 

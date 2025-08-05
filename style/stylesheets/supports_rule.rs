@@ -57,11 +57,7 @@ impl ToCssWithGuard for SupportsRule {
 }
 
 impl DeepCloneWithLock for SupportsRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         let rules = self.rules.read_with(guard);
         SupportsRule {
             condition: self.condition.clone(),

@@ -40,11 +40,7 @@ impl PositionTryRule {
 }
 
 impl DeepCloneWithLock for PositionTryRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         PositionTryRule {
             name: self.name.clone(),
             block: Arc::new(lock.wrap(self.block.read_with(&guard).clone())),

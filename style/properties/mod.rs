@@ -490,7 +490,12 @@ impl PropertyId {
     fn allowed_in(&self, context: &ParserContext) -> bool {
         let id = match self.non_custom_id() {
             // Custom properties are allowed everywhere, except `position-try`.
-            None => return !context.nesting_context.rule_types.contains(CssRuleType::PositionTry),
+            None => {
+                return !context
+                    .nesting_context
+                    .rule_types
+                    .contains(CssRuleType::PositionTry)
+            },
             Some(id) => id,
         };
         id.allowed_in(context)
@@ -1102,7 +1107,7 @@ impl<'a> PropertyDeclarationId<'a> {
         match self {
             Self::Longhand(longhand) => longhand.is_discrete_animatable(),
             // TODO(bug 1885995): Refine this.
-            Self::Custom(_) => cfg!(feature = "gecko")
+            Self::Custom(_) => cfg!(feature = "gecko"),
         }
     }
 

@@ -16,7 +16,7 @@ use crate::values::generics::position::Position as GenericPosition;
 use crate::values::generics::position::PositionComponent as GenericPositionComponent;
 use crate::values::generics::position::PositionOrAuto as GenericPositionOrAuto;
 use crate::values::generics::position::ZIndex as GenericZIndex;
-use crate::values::generics::position::{GenericAnchorSide, AspectRatio as GenericAspectRatio};
+use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericAnchorSide};
 use crate::values::generics::position::{GenericAnchorFunction, GenericInset};
 use crate::values::specified;
 use crate::values::specified::{AllowQuirks, Integer, LengthPercentage, NonNegativeNumber};

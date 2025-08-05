@@ -142,8 +142,7 @@ impl RuleCache {
         while let Some(node) = rule_node {
             let priority = node.cascade_priority();
             let cascade_level = priority.cascade_level();
-            let should_try_to_skip =
-                cascade_level.is_animation() ||
+            let should_try_to_skip = cascade_level.is_animation() ||
                 matches!(cascade_level, CascadeLevel::PresHints) ||
                 priority.layer_order().is_style_attribute_layer();
             if !should_try_to_skip {

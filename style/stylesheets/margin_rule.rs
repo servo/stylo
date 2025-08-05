@@ -179,11 +179,7 @@ impl ToCssWithGuard for MarginRule {
 }
 
 impl DeepCloneWithLock for MarginRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         MarginRule {
             rule_type: self.rule_type,
             block: Arc::new(lock.wrap(self.block.read_with(&guard).clone())),

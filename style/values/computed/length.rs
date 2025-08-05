@@ -533,19 +533,17 @@ pub type MaxSize = GenericMaxSize<NonNegativeLengthPercentage>;
 /// A computed value for `anchor-size` runction.
 pub type AnchorSizeFunction = GenericAnchorSizeFunction<LengthPercentage>;
 
-#[cfg(feature="gecko")]
+#[cfg(feature = "gecko")]
 use crate::{
-    gecko_bindings::structs::AnchorPosResolutionParams,
-    logical_geometry::PhysicalAxis,
-    values::DashedIdent,
-    values::generics::length::AnchorSizeKeyword,
+    gecko_bindings::structs::AnchorPosResolutionParams, logical_geometry::PhysicalAxis,
+    values::generics::length::AnchorSizeKeyword, values::DashedIdent,
 };
 
 impl AnchorSizeFunction {
     /// Resolve the anchor function with the given resolver. Returns `Err()` if no anchor is found.
     /// `prop_axis`, axis of the property (e.g. `margin-left` -> Horizontal axis), is used if the
     /// anchor size keyword is not specified.
-    #[cfg(feature="gecko")]
+    #[cfg(feature = "gecko")]
     pub fn resolve(
         anchor_name: &DashedIdent,
         prop_axis: PhysicalAxis,

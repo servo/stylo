@@ -125,6 +125,7 @@ pub mod selector_map;
 pub mod selector_parser;
 pub mod shared_lock;
 pub mod sharing;
+mod simple_buckets_map;
 pub mod str;
 pub mod style_adjuster;
 pub mod style_resolver;
@@ -135,7 +136,6 @@ pub mod thread_state;
 pub mod traversal;
 pub mod traversal_flags;
 pub mod use_counters;
-mod simple_buckets_map;
 
 #[macro_use]
 #[allow(non_camel_case_types)]

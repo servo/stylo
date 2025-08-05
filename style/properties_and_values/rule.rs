@@ -22,9 +22,11 @@ use crate::str::CssStringWriter;
 use crate::values::{computed, serialize_atom_name};
 use cssparser::{
     AtRuleParser, BasicParseErrorKind, CowRcStr, DeclarationParser, ParseErrorKind, Parser,
-    ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourceLocation,
+    ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser,
+    SourceLocation,
 };
-#[cfg(feature = "gecko")] use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
+#[cfg(feature = "gecko")]
+use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use selectors::parser::SelectorParseErrorKind;
 use servo_arc::Arc;
 use std::fmt::{self, Write};

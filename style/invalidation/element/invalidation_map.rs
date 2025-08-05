@@ -134,44 +134,35 @@ pub enum DependencyInvalidationKind {
 }
 
 /// Return the type of normal invalidation given a selector & an offset.
-fn get_normal_invalidation_kind(selector: &Selector<SelectorImpl>, selector_offset: usize) -> DependencyInvalidationKind {
-    if selector_offset == 0 || selector.len() <= selector_offset{
+fn get_normal_invalidation_kind(
+    selector: &Selector<SelectorImpl>,
+    selector_offset: usize,
+) -> DependencyInvalidationKind {
+    if selector_offset == 0 || selector.len() <= selector_offset {
         return DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element);
     }
-    let combinator = Some(selector
-        .combinator_at_match_order(selector_offset - 1)
-    );
-    DependencyInvalidationKind::Normal(
-        match combinator {
-            None => NormalDependencyInvalidationKind::Element,
-            Some(Combinator::Child) | Some(Combinator::Descendant) => {
-                NormalDependencyInvalidationKind::Descendants
-            },
-            Some(Combinator::LaterSibling) | Some(Combinator::NextSibling) => {
-                NormalDependencyInvalidationKind::Siblings
-            },
-            Some(Combinator::PseudoElement) => {
-                NormalDependencyInvalidationKind::ElementAndDescendants
-            },
-            Some(Combinator::SlotAssignment) => NormalDependencyInvalidationKind::SlottedElements,
-            Some(Combinator::Part) => NormalDependencyInvalidationKind::Parts,
-        }
-    )
+    let combinator = Some(selector.combinator_at_match_order(selector_offset - 1));
+    DependencyInvalidationKind::Normal(match combinator {
+        None => NormalDependencyInvalidationKind::Element,
+        Some(Combinator::Child) | Some(Combinator::Descendant) => {
+            NormalDependencyInvalidationKind::Descendants
+        },
+        Some(Combinator::LaterSibling) | Some(Combinator::NextSibling) => {
+            NormalDependencyInvalidationKind::Siblings
+        },
+        Some(Combinator::PseudoElement) => NormalDependencyInvalidationKind::ElementAndDescendants,
+        Some(Combinator::SlotAssignment) => NormalDependencyInvalidationKind::SlottedElements,
+        Some(Combinator::Part) => NormalDependencyInvalidationKind::Parts,
+    })
 }
 
 /// Return the relative invalidation kind given a match hint
-fn get_relative_kind(match_hint: RelativeSelectorMatchHint) -> RelativeDependencyInvalidationKind{
+fn get_relative_kind(match_hint: RelativeSelectorMatchHint) -> RelativeDependencyInvalidationKind {
     match match_hint {
         RelativeSelectorMatchHint::InChild => RelativeDependencyInvalidationKind::Parent,
-        RelativeSelectorMatchHint::InSubtree => {
-            RelativeDependencyInvalidationKind::Ancestors
-        },
-        RelativeSelectorMatchHint::InNextSibling => {
-            RelativeDependencyInvalidationKind::PrevSibling
-        },
-        RelativeSelectorMatchHint::InSibling => {
-            RelativeDependencyInvalidationKind::EarlierSibling
-        },
+        RelativeSelectorMatchHint::InSubtree => RelativeDependencyInvalidationKind::Ancestors,
+        RelativeSelectorMatchHint::InNextSibling => RelativeDependencyInvalidationKind::PrevSibling,
+        RelativeSelectorMatchHint::InSibling => RelativeDependencyInvalidationKind::EarlierSibling,
         RelativeSelectorMatchHint::InNextSiblingSubtree => {
             RelativeDependencyInvalidationKind::AncestorPrevSibling
         },
@@ -180,7 +171,6 @@ fn get_relative_kind(match_hint: RelativeSelectorMatchHint) -> RelativeDependenc
         },
     }
 }
-
 
 impl Dependency {
     /// Creates a dummy dependency to invalidate the whole selector.
@@ -1320,8 +1310,10 @@ impl<'a, 'b> Collector for RelativeSelectorDependencyCollector<'a, 'b> {
             self.inner_scope_dependencies().as_ref(),
         );
         debug_assert!(
-            next.as_ref()
-                .is_some_and(|d| !matches!(d.slice()[0].kind, DependencyInvalidationKind::Relative(_))),
+            next.as_ref().is_some_and(|d| !matches!(
+                d.slice()[0].kind,
+                DependencyInvalidationKind::Relative(_)
+            )),
             "Duplicate relative dependency?"
         );
         debug_assert!(
@@ -1332,7 +1324,9 @@ impl<'a, 'b> Collector for RelativeSelectorDependencyCollector<'a, 'b> {
         Dependency {
             selector: self.selector.selector.clone(),
             selector_offset: self.compound_state.offset,
-            kind: DependencyInvalidationKind::Relative(get_relative_kind(self.combinator_count.get_match_hint())),
+            kind: DependencyInvalidationKind::Relative(get_relative_kind(
+                self.combinator_count.get_match_hint(),
+            )),
             next: next,
         }
     }

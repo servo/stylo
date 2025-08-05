@@ -76,9 +76,9 @@ use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstrain
 use selectors::bloom::{BloomFilter, BLOOM_HASH_MASK};
 use selectors::matching::VisitedHandlingMode;
 use selectors::matching::{ElementSelectorFlags, MatchingContext};
+use selectors::parser::PseudoElement as ParserPseudoElement;
 use selectors::sink::Push;
 use selectors::{Element, OpaqueElement};
-use selectors::parser::PseudoElement as ParserPseudoElement;
 use servo_arc::{Arc, ArcBorrow};
 use std::cell::Cell;
 use std::fmt;
@@ -1188,7 +1188,8 @@ impl<'le> TElement for GeckoElement<'le> {
         unsafe {
             const STACK_BUFFER_CAP: usize = 8;
             // We should virtually never have more than 8 NAC roots for a single element.
-            let mut stack_buffer = [mem::MaybeUninit::<*mut nsIContent>::uninit(); STACK_BUFFER_CAP];
+            let mut stack_buffer =
+                [mem::MaybeUninit::<*mut nsIContent>::uninit(); STACK_BUFFER_CAP];
             let stack_buffer_ptr = stack_buffer.as_mut_ptr() as *mut *mut nsIContent;
             let mut stack_buffer_len = 0;
             // If we end up with more, they will end up on the heap, here.
@@ -1198,7 +1199,7 @@ impl<'le> TElement for GeckoElement<'le> {
                 stack_buffer_ptr,
                 STACK_BUFFER_CAP,
                 &mut stack_buffer_len,
-                &mut array
+                &mut array,
             );
             let stack_els = std::slice::from_raw_parts(stack_buffer_ptr, stack_buffer_len);
             for content in stack_els.iter().chain(array.iter()) {
@@ -1647,8 +1648,7 @@ impl<'le> TElement for GeckoElement<'le> {
         V: Push<ApplicableDeclarationBlock>,
     {
         use crate::stylesheets::layer_rule::LayerOrder;
-        let declarations =
-            unsafe { bindings::Gecko_GetViewTransitionDynamicRule(self.0).as_ref() };
+        let declarations = unsafe { bindings::Gecko_GetViewTransitionDynamicRule(self.0).as_ref() };
         if let Some(decl) = declarations {
             rules.push(ApplicableDeclarationBlock::from_declarations(
                 unsafe { Arc::from_raw_addrefed(decl) },
@@ -2074,7 +2074,9 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             NonTSPseudoClass::MozRevealed |
             NonTSPseudoClass::ActiveViewTransition |
             NonTSPseudoClass::MozValueEmpty |
-            NonTSPseudoClass::MozSuppressForPrintSelection => self.state().intersects(pseudo_class.state_flag()),
+            NonTSPseudoClass::MozSuppressForPrintSelection => {
+                self.state().intersects(pseudo_class.state_flag())
+            },
             NonTSPseudoClass::Dir(ref dir) => self.state().intersects(dir.element_state()),
             NonTSPseudoClass::AnyLink => self.is_link(),
             NonTSPseudoClass::Link => {

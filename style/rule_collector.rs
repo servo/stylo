@@ -173,11 +173,16 @@ where
 
     #[cfg(feature = "gecko")]
     fn collect_view_transition_dynamic_rules(&mut self) {
-        if !self.pseudo_elements.first().is_some_and(|p| p.is_named_view_transition()) {
+        if !self
+            .pseudo_elements
+            .first()
+            .is_some_and(|p| p.is_named_view_transition())
+        {
             return;
         }
         let len_before_vt_rules = self.rules.len();
-        self.element.synthesize_view_transition_dynamic_rules(self.rules);
+        self.element
+            .synthesize_view_transition_dynamic_rules(self.rules);
         if cfg!(debug_assertions) && self.rules.len() != len_before_vt_rules {
             for declaration in &self.rules[len_before_vt_rules..] {
                 assert_eq!(declaration.level(), CascadeLevel::UANormal);

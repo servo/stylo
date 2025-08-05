@@ -297,7 +297,11 @@ where
 
         let mut pseudo_styles = EagerPseudoStyles::default();
 
-        if !self.element.implemented_pseudo_element().is_some_and(|p| !PseudoElementTrait::is_element_backed(&p)) {
+        if !self
+            .element
+            .implemented_pseudo_element()
+            .is_some_and(|p| !PseudoElementTrait::is_element_backed(&p))
+        {
             let layout_parent_style_for_pseudo =
                 layout_parent_style_for_pseudo(&primary_style, layout_parent_style);
             SelectorImpl::each_eagerly_cascaded_pseudo_element(|pseudo| {
@@ -629,8 +633,7 @@ where
         let parent_el = self.element.inheritance_parent();
         let parent_data = parent_el.as_ref().and_then(|e| e.borrow_data());
         let parent_style = parent_data.as_ref().map(|d| d.styles.primary());
-        let parent_after_change_style =
-            parent_style.and_then(|s| self.after_change_style(s));
+        let parent_after_change_style = parent_style.and_then(|s| self.after_change_style(s));
         let parent_values = parent_after_change_style
             .as_ref()
             .or(parent_style)
@@ -666,7 +669,8 @@ where
         primary_style: &Arc<ComputedValues>,
     ) -> Option<Arc<ComputedValues>> {
         let rule_node = primary_style.rules();
-        let without_transition_rules = self.context
+        let without_transition_rules = self
+            .context
             .shared
             .stylist
             .rule_tree()

@@ -86,11 +86,7 @@ fn likely_base_uri_dependency(specified: &str) -> LikelyBaseUriDependency {
         // Local refs and absolute paths are fair game.
         return LikelyBaseUriDependency::No;
     }
-    const COMMON_PROTOCOLS: [&str; 3] = [
-        "http:",
-        "https:",
-        "data:",
-    ];
+    const COMMON_PROTOCOLS: [&str; 3] = ["http:", "https:", "data:"];
     for protocol in COMMON_PROTOCOLS {
         if specified.starts_with(protocol) {
             // Common absolute URIs.
@@ -124,15 +120,24 @@ impl CssUrl {
     pub fn parse_from_string(url: String, context: &ParserContext, cors_mode: CorsMode) -> Self {
         use crate::use_counters::CustomUseCounter;
         if let Some(counters) = context.use_counters {
-            if !counters.custom.recorded(CustomUseCounter::MaybeHasFullBaseUriDependency) {
+            if !counters
+                .custom
+                .recorded(CustomUseCounter::MaybeHasFullBaseUriDependency)
+            {
                 match likely_base_uri_dependency(&url) {
                     LikelyBaseUriDependency::No => {},
                     LikelyBaseUriDependency::Path => {
-                        counters.custom.record(CustomUseCounter::MaybeHasPathBaseUriDependency);
+                        counters
+                            .custom
+                            .record(CustomUseCounter::MaybeHasPathBaseUriDependency);
                     },
                     LikelyBaseUriDependency::Full => {
-                        counters.custom.record(CustomUseCounter::MaybeHasPathBaseUriDependency);
-                        counters.custom.record(CustomUseCounter::MaybeHasFullBaseUriDependency);
+                        counters
+                            .custom
+                            .record(CustomUseCounter::MaybeHasPathBaseUriDependency);
+                        counters
+                            .custom
+                            .record(CustomUseCounter::MaybeHasFullBaseUriDependency);
                     },
                 }
             }

@@ -24,4 +24,5 @@ pub type AnimatedFilter =
 
 /// An animated value for a single `filter`.
 #[cfg(not(feature = "gecko"))]
-pub type AnimatedFilter = GenericFilter<Angle, Number, Number, Length, AnimatedSimpleShadow, Impossible>;
+pub type AnimatedFilter =
+    GenericFilter<Angle, Number, Number, Length, AnimatedSimpleShadow, Impossible>;

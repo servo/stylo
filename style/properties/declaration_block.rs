@@ -31,7 +31,8 @@ use crate::stylist::Stylist;
 use crate::values::computed::Context;
 use cssparser::{
     parse_important, AtRuleParser, CowRcStr, DeclarationParser, Delimiter, ParseErrorKind, Parser,
-    ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourceLocation,
+    ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser,
+    SourceLocation,
 };
 use itertools::Itertools;
 use selectors::SelectorList;
@@ -334,8 +335,12 @@ impl<'a, 'cx, 'cx_a: 'cx> Iterator for AnimationValueIterator<'a, 'cx, 'cx_a> {
                 continue;
             }
 
-            let animation =
-                AnimationValue::from_declaration(decl, &mut self.context, self.style, self.default_values);
+            let animation = AnimationValue::from_declaration(
+                decl,
+                &mut self.context,
+                self.style,
+                self.default_values,
+            );
 
             if let Some(anim) = animation {
                 return Some(anim);
@@ -1465,7 +1470,9 @@ impl<'i> DeclarationParserState<'i> {
         self.importance = match input.try_parse(parse_important) {
             Ok(()) => {
                 if !context.allows_important_declarations() {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedImportantDeclaration));
+                    return Err(
+                        input.new_custom_error(StyleParseErrorKind::UnexpectedImportantDeclaration)
+                    );
                 }
                 Importance::Important
             },
@@ -1560,7 +1567,8 @@ impl<'a, 'b, 'i> DeclarationParser<'i> for PropertyDeclarationParser<'a, 'b, 'i>
         input: &mut Parser<'i, 't>,
         declaration_start: &ParserState,
     ) -> Result<(), ParseError<'i>> {
-        self.state.parse_value(self.context, name, input, declaration_start)
+        self.state
+            .parse_value(self.context, name, input, declaration_start)
     }
 }
 
@@ -1640,7 +1648,10 @@ fn report_one_css_error<'i>(
                 PropertyId::Custom(ref c) => {
                     StyleParseErrorKind::new_invalid(format!("--{}", c), error)
                 },
-                _ => StyleParseErrorKind::new_invalid(property.non_custom_id().unwrap().name(), error),
+                _ => StyleParseErrorKind::new_invalid(
+                    property.non_custom_id().unwrap().name(),
+                    error,
+                ),
             };
         }
     }

@@ -1283,14 +1283,19 @@ impl<T> generic::ColorStop<Color, T> {
 
 impl PaintWorklet {
     #[cfg(feature = "servo")]
-    fn parse_args<'i>(context: &ParserContext, input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        use servo_arc::Arc;
+    fn parse_args<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
         use crate::custom_properties::SpecifiedValue;
+        use servo_arc::Arc;
         let name = Atom::from(&**input.expect_ident()?);
         let arguments = input
             .try_parse(|input| {
                 input.expect_comma()?;
-                input.parse_comma_separated(|input| SpecifiedValue::parse(input, &context.url_data).map(Arc::new))
+                input.parse_comma_separated(|input| {
+                    SpecifiedValue::parse(input, &context.url_data).map(Arc::new)
+                })
             })
             .unwrap_or_default();
         Ok(Self { name, arguments })

@@ -618,22 +618,6 @@ fn get_lnf_int_as_bool(int_id: i32) -> bool {
     get_lnf_int(int_id) != 0
 }
 
-fn get_scrollbar_start_backward(int_id: i32) -> bool {
-    (get_lnf_int(int_id) & bindings::LookAndFeel_eScrollArrow_StartBackward as i32) != 0
-}
-
-fn get_scrollbar_start_forward(int_id: i32) -> bool {
-    (get_lnf_int(int_id) & bindings::LookAndFeel_eScrollArrow_StartForward as i32) != 0
-}
-
-fn get_scrollbar_end_backward(int_id: i32) -> bool {
-    (get_lnf_int(int_id) & bindings::LookAndFeel_eScrollArrow_EndBackward as i32) != 0
-}
-
-fn get_scrollbar_end_forward(int_id: i32) -> bool {
-    (get_lnf_int(int_id) & bindings::LookAndFeel_eScrollArrow_EndForward as i32) != 0
-}
-
 macro_rules! lnf_int_feature {
     ($feature_name:expr, $int_id:ident, $get_value:ident) => {{
         fn __eval(_: &Context) -> bool {
@@ -657,7 +641,7 @@ macro_rules! lnf_int_feature {
 /// to support new types in these entries and (2) ensuring that either
 /// nsPresContext::MediaFeatureValuesChanged is called when the value that
 /// would be returned by the evaluator function could change.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 62] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 58] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -927,26 +911,6 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 62] = [
         AllowsRanges::No,
         Evaluator::BoolInteger(eval_moz_overlay_scrollbars),
         FeatureFlags::CHROME_AND_UA_ONLY,
-    ),
-    lnf_int_feature!(
-        atom!("-moz-scrollbar-start-backward"),
-        ScrollArrowStyle,
-        get_scrollbar_start_backward
-    ),
-    lnf_int_feature!(
-        atom!("-moz-scrollbar-start-forward"),
-        ScrollArrowStyle,
-        get_scrollbar_start_forward
-    ),
-    lnf_int_feature!(
-        atom!("-moz-scrollbar-end-backward"),
-        ScrollArrowStyle,
-        get_scrollbar_end_backward
-    ),
-    lnf_int_feature!(
-        atom!("-moz-scrollbar-end-forward"),
-        ScrollArrowStyle,
-        get_scrollbar_end_forward
     ),
     lnf_int_feature!(atom!("-moz-menubar-drag"), MenuBarDrag),
     lnf_int_feature!(atom!("-moz-mac-big-sur-theme"), MacBigSurTheme),

@@ -351,12 +351,8 @@ impl SelectorMap<Rule> {
                 }
                 ScopeProximity::infinity()
             } else {
-                let result = cascade_data.find_scope_proximity_if_matching(
-                    rule,
-                    stylist,
-                    element,
-                    matching_context,
-                );
+                let result =
+                    cascade_data.find_scope_proximity_if_matching(rule, element, matching_context);
                 if result == ScopeProximity::infinity() {
                     continue;
                 }

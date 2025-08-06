@@ -1641,7 +1641,7 @@ impl Stylist {
         let matches_document_rules =
             element.each_applicable_non_document_style_rule_data(|data, host| {
                 matching_context.with_shadow_host(Some(host), |matching_context| {
-                    data.revalidate_scopes(self, element, matching_context, &mut result);
+                    data.revalidate_scopes(element, matching_context, &mut result);
                 })
             });
 
@@ -1650,7 +1650,7 @@ impl Stylist {
                 continue;
             }
 
-            data.revalidate_scopes(self, element, &mut matching_context, &mut result);
+            data.revalidate_scopes(element, &mut matching_context, &mut result);
         }
 
         result
@@ -3000,7 +3000,6 @@ impl CascadeData {
     pub(crate) fn find_scope_proximity_if_matching<E: TElement>(
         &self,
         rule: &Rule,
-        stylist: &Stylist,
         element: E,
         context: &mut MatchingContext<E::Impl>,
     ) -> ScopeProximity {
@@ -3014,7 +3013,6 @@ impl CascadeData {
         // matching crosses the shadow boundary.
         let result = self.scope_condition_matches(
             rule.scope_condition_id,
-            stylist,
             element,
             rule.selector.is_part(),
             context,
@@ -3032,7 +3030,6 @@ impl CascadeData {
     fn scope_condition_matches<E>(
         &self,
         id: ScopeConditionId,
-        stylist: &Stylist,
         element: E,
         override_matches_shadow_host_for_part: bool,
         context: &mut MatchingContext<E::Impl>,
@@ -3050,7 +3047,6 @@ impl CascadeData {
         // to traverse through descendants (i.e. Avoids tree traversal vs linear traversal).
         let outer_result = self.scope_condition_matches(
             condition_ref.parent,
-            stylist,
             element,
             override_matches_shadow_host_for_part,
             context,
@@ -4023,7 +4019,6 @@ impl CascadeData {
 
     fn revalidate_scopes<E: TElement>(
         &self,
-        stylist: &Stylist,
         element: &E,
         matching_context: &mut MatchingContext<E::Impl>,
         result: &mut ScopeRevalidationResult,
@@ -4043,7 +4038,6 @@ impl CascadeData {
             } else {
                 let result = self.scope_condition_matches(
                     ScopeConditionId(condition_id as u16),
-                    stylist,
                     *element,
                     // This should be ok since we aren't sharing styles across shadow boundaries.
                     false,

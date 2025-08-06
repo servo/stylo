@@ -108,7 +108,9 @@ pub use self::text::{HyphenateCharacter, HyphenateLimitChars};
 pub use self::text::{InitialLetter, LetterSpacing, LineBreak, TextAlign, TextIndent};
 pub use self::text::{OverflowWrap, TextEmphasisPosition, TextEmphasisStyle, WordBreak};
 pub use self::text::{TextAlignKeyword, TextDecorationLine, TextOverflow, WordSpacing};
-pub use self::text::{TextDecorationLength, TextDecorationSkipInk, TextJustify, TextTransform};
+pub use self::text::{
+    TextDecorationLength, TextDecorationSkipInk, TextDecorationTrim, TextJustify, TextTransform
+};
 pub use self::time::Time;
 pub use self::transform::{Rotate, Scale, Transform};
 pub use self::transform::{TransformBox, TransformOrigin, TransformStyle, Translate};

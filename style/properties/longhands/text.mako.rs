@@ -51,6 +51,18 @@ ${helpers.single_keyword(
 )}
 
 ${helpers.predefined_type(
+    "text-decoration-trim",
+    "TextDecorationTrim",
+    "generics::text::GenericTextDecorationTrim::Auto",
+    engines="gecko servo",
+    initial_specified_value="generics::text::GenericTextDecorationTrim::Auto",
+    boxed=True,
+    gecko_pref="layout.css.text-decoration-trim.enabled",
+    spec="https://drafts.csswg.org/css-text-decor-4/#text-decoration-skip-inset-property",
+    affects="overflow",
+)}
+
+${helpers.predefined_type(
     "text-decoration-color",
     "Color",
     "computed_value::T::currentcolor()",

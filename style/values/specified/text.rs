@@ -11,10 +11,10 @@ use crate::values::computed::text::TextEmphasisStyle as ComputedTextEmphasisStyl
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::text::{
     GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationLength,
-    GenericTextIndent,
+    GenericTextDecorationTrim, GenericTextIndent,
 };
 use crate::values::generics::NumberOrAuto;
-use crate::values::specified::length::LengthPercentage;
+use crate::values::specified::length::{Length, LengthPercentage};
 use crate::values::specified::{AllowQuirks, Integer, Number};
 use crate::Zero;
 use cssparser::Parser;
@@ -1049,6 +1049,38 @@ impl TextDecorationLength {
     #[inline]
     pub fn is_auto(&self) -> bool {
         matches!(*self, GenericTextDecorationLength::Auto)
+    }
+}
+
+/// Implements type for `text-decoration-trim` property
+pub type TextDecorationTrim = GenericTextDecorationTrim<Length>;
+
+impl TextDecorationTrim {
+    /// `Auto` value.
+    #[inline]
+    pub fn auto() -> Self {
+        GenericTextDecorationTrim::Auto
+    }
+
+    /// Whether this is the `Auto` value.
+    #[inline]
+    pub fn is_auto(&self) -> bool {
+        matches!(*self, GenericTextDecorationTrim::Auto)
+    }
+}
+
+impl Parse for TextDecorationTrim {
+    fn parse<'i, 't>(
+        ctx: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        if let Ok(start) = input.try_parse(|i| Length::parse(ctx, i)) {
+            let end = input.try_parse(|i| Length::parse(ctx, i));
+            let end = end.unwrap_or_else(|_| start.clone());
+            return Ok(TextDecorationTrim::Length{start, end});
+        }
+        input.expect_ident_matching("auto")?;
+        Ok(TextDecorationTrim::Auto)
     }
 }
 

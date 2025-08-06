@@ -112,7 +112,7 @@ pub use self::text::{HyphenateCharacter, HyphenateLimitChars};
 pub use self::text::{InitialLetter, LetterSpacing, LineBreak, TextIndent};
 pub use self::text::{OverflowWrap, RubyPosition, TextOverflow, WordBreak, WordSpacing};
 pub use self::text::{TextAlign, TextAlignLast, TextEmphasisPosition, TextEmphasisStyle};
-pub use self::text::{TextDecorationLength, TextDecorationSkipInk, TextJustify};
+pub use self::text::{TextDecorationLength, TextDecorationSkipInk, TextDecorationTrim, TextJustify};
 pub use self::time::Time;
 pub use self::transform::{Rotate, Scale, Transform, TransformBox, TransformOperation};
 pub use self::transform::{TransformOrigin, TransformStyle, Translate};

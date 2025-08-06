@@ -4,10 +4,10 @@
 
 //! Computed types for text properties.
 
-use crate::values::computed::length::LengthPercentage;
+use crate::values::computed::length::{Length, LengthPercentage};
 use crate::values::generics::text::{
     GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationLength,
-    GenericTextIndent,
+    GenericTextDecorationTrim, GenericTextIndent,
 };
 use crate::values::generics::NumberOrAuto;
 use crate::values::specified::text as specified;
@@ -28,6 +28,9 @@ pub type InitialLetter = GenericInitialLetter<CSSFloat, CSSInteger>;
 
 /// Implements type for `text-decoration-thickness` property.
 pub type TextDecorationLength = GenericTextDecorationLength<LengthPercentage>;
+
+/// Implements type for `text-decoration-trim` property.
+pub type TextDecorationTrim = GenericTextDecorationTrim<Length>;
 
 /// The computed value of `text-align`.
 pub type TextAlign = specified::TextAlignKeyword;

@@ -551,6 +551,7 @@ class Longhand(Property):
             "SVGStrokeDashArray",
             "SVGWidth",
             "TextDecorationLength",
+            "TextDecorationTrim",
             "TextIndent",
             "WordSpacing",
         }

@@ -19,8 +19,8 @@ use style_traits::{CssWriter, ToCss};
 
 pub use crate::values::specified::text::{
     HyphenateCharacter, LineBreak, MozControlCharacterVisibility, OverflowWrap, RubyPosition,
-    TextAlignLast, TextDecorationLine, TextDecorationSkipInk, TextEmphasisPosition, TextJustify,
-    TextOverflow, TextTransform, TextUnderlinePosition, WordBreak,
+    TextAlignLast, TextAutospace, TextDecorationLine, TextDecorationSkipInk, TextEmphasisPosition,
+    TextJustify, TextOverflow, TextTransform, TextUnderlinePosition, WordBreak,
 };
 
 /// A computed value for the `initial-letter` property.

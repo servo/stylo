@@ -653,6 +653,7 @@ class Longhand(Property):
                 "ScrollSnapType",
                 "TextAlign",
                 "TextAlignLast",
+                "TextAutospace",
                 "TextDecorationLine",
                 "TextEmphasisPosition",
                 "TextJustify",

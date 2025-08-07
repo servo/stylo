@@ -154,6 +154,18 @@ ${helpers.single_keyword(
 )}
 
 ${helpers.predefined_type(
+    "text-autospace",
+    "TextAutospace",
+    "computed::text::TextAutospace::NORMAL",
+    engines="gecko",
+    animation_type="discrete",
+    gecko_pref="layout.css.text-autospace.enabled",
+    has_effect_on_gecko_scrollbars=False,
+    spec="https://drafts.csswg.org/css-text-4/#text-autospace-property",
+    affects="layout",
+)}
+
+${helpers.predefined_type(
     "text-shadow",
     "SimpleShadow",
     None,

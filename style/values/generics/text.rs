@@ -188,6 +188,13 @@ pub enum GenericTextDecorationTrim<L> {
     Length { start: L, end: L },
 }
 
+impl<L: Zero> GenericTextDecorationTrim<L>{
+    /// Gets the initial value (zero)
+    #[inline]
+    pub fn get_initial_value() -> Self {
+        GenericTextDecorationTrim::Length{ start: L::zero(), end: L::zero() }
+    }
+}
 
 impl<L: ToCss + PartialEq> ToCss for GenericTextDecorationTrim<L> {
     fn to_css<W>(&self, dst: &mut CssWriter<W>) -> fmt::Result

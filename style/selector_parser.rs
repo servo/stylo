@@ -31,12 +31,6 @@ pub use crate::servo::selector_parser::ServoElementSnapshot as Snapshot;
 #[cfg(feature = "gecko")]
 pub use crate::gecko::snapshot::GeckoElementSnapshot as Snapshot;
 
-#[cfg(feature = "servo")]
-pub use crate::servo::restyle_damage::ServoRestyleDamage as RestyleDamage;
-
-#[cfg(feature = "gecko")]
-pub use crate::gecko::restyle_damage::GeckoRestyleDamage as RestyleDamage;
-
 /// Servo's selector parser.
 #[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct SelectorParser<'a> {

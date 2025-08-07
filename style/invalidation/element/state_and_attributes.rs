@@ -7,7 +7,7 @@
 
 use crate::context::SharedStyleContext;
 use crate::data::ElementData;
-use crate::dom::{TElement, TNode};
+use crate::dom::{TElement, TNode, TRestyleDamage};
 use crate::invalidation::element::element_wrapper::{ElementSnapshot, ElementWrapper};
 use crate::invalidation::element::invalidation_map::*;
 use crate::invalidation::element::invalidator::{
@@ -56,7 +56,7 @@ where
 pub struct StateAndAttrInvalidationProcessor<'a, 'b: 'a, E: TElement> {
     shared_context: &'a SharedStyleContext<'b>,
     element: E,
-    data: &'a mut ElementData,
+    data: &'a mut ElementData<E::RestyleDamage>,
     matching_context: MatchingContext<'a, E::Impl>,
     traversal_map: SiblingTraversalMap<E>,
 }
@@ -66,7 +66,7 @@ impl<'a, 'b: 'a, E: TElement + 'b> StateAndAttrInvalidationProcessor<'a, 'b, E> 
     pub fn new(
         shared_context: &'a SharedStyleContext<'b>,
         element: E,
-        data: &'a mut ElementData,
+        data: &'a mut ElementData<E::RestyleDamage>,
         selector_caches: &'a mut SelectorCaches,
     ) -> Self {
         let matching_context = MatchingContext::new_for_visited(
@@ -125,7 +125,7 @@ where
 
 /// Whether we should process the descendants of a given element for style
 /// invalidation.
-pub fn should_process_descendants(data: &ElementData) -> bool {
+pub fn should_process_descendants<D: TRestyleDamage>(data: &ElementData<D>) -> bool {
     !data.styles.is_display_none() && !data.hint.contains(RestyleHint::RESTYLE_DESCENDANTS)
 }
 

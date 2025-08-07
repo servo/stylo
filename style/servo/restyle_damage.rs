@@ -12,7 +12,10 @@ use crate::computed_values::mix_blend_mode::T as MixBlendMode;
 use crate::computed_values::transform_style::T as TransformStyle;
 use crate::dom::TElement;
 use crate::matching::{StyleChange, StyleDifference};
-use crate::properties::{style_structs, ComputedValues};
+use crate::properties::{
+    restyle_damage_rebuild_box, restyle_damage_rebuild_stacking_context,
+    restyle_damage_recalculate_overflow, restyle_damage_repaint, style_structs, ComputedValues,
+};
 use crate::values::computed::basic_shape::ClipPath;
 use crate::values::computed::Perspective;
 use crate::values::generics::transform::{GenericRotate, GenericScale, GenericTranslate};
@@ -125,64 +128,67 @@ impl fmt::Display for ServoRestyleDamage {
     }
 }
 
+fn augmented_restyle_damage_rebuild_box(old: &ComputedValues, new: &ComputedValues) -> bool {
+    let old_box = old.get_box();
+    let new_box = new.get_box();
+    restyle_damage_rebuild_box(old, new)
+        || old_box.original_display != new_box.original_display
+        || old_box.has_transform_or_perspective() != new_box.has_transform_or_perspective()
+        || old.get_effects().filter.0.is_empty() != new.get_effects().filter.0.is_empty()
+}
+
+fn augmented_restyle_damage_rebuild_stacking_context(
+    old: &ComputedValues,
+    new: &ComputedValues,
+) -> bool {
+    restyle_damage_rebuild_stacking_context(old, new)
+        || old.guarantees_stacking_context() != new.guarantees_stacking_context()
+}
 fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDamage {
     let mut damage = ServoRestyleDamage::empty();
 
-    let has_transform_or_perspective_style = |style_box: &style_structs::Box| {
-        !style_box.transform.0.is_empty() ||
-            style_box.scale != GenericScale::None ||
-            style_box.rotate != GenericRotate::None ||
-            style_box.translate != GenericTranslate::None ||
-            style_box.perspective != Perspective::None ||
-            style_box.transform_style == TransformStyle::Preserve3d
-    };
-
-    let rebuild_box_extra = || {
-        let old_box = old.get_box();
-        let new_box = new.get_box();
-        old_box.original_display != new_box.original_display ||
-            has_transform_or_perspective_style(old_box) !=
-                has_transform_or_perspective_style(new_box) ||
-            old.get_effects().filter.0.is_empty() != new.get_effects().filter.0.is_empty()
-    };
-
-    // Some properties establish a stacking context when they are set to a non-initial value.
-    // In that case, the damage is only set to `ServoRestyleDamage::REPAINT` because we don't
-    // need to rebuild stacking contexts when the style changes between different non-initial
-    // values. This function checks whether any of these properties is set to a value that
-    // guarantees a stacking context, so that we only do the work when this changes.
-    // Note that it's still possible to establish a stacking context when this returns false.
-    let guarantees_stacking_context = |style: &ComputedValues| {
-        style.get_effects().opacity != 1.0 ||
-            old.get_effects().mix_blend_mode != MixBlendMode::Normal ||
-            old.get_svg().clip_path != ClipPath::None ||
-            style.get_box().isolation == Isolation::Isolate
-    };
-
-    // This uses short-circuiting boolean OR for its side effects and ignores the result.
-    let _ = restyle_damage_rebuild_box!(
-        old,
-        new,
-        damage,
-        [ServoRestyleDamage::RELAYOUT],
-        rebuild_box_extra()
-    ) || restyle_damage_recalculate_overflow!(
-        old,
-        new,
-        damage,
-        [ServoRestyleDamage::RECALCULATE_OVERFLOW]
-    ) || restyle_damage_rebuild_stacking_context!(
-        old,
-        new,
-        damage,
-        [ServoRestyleDamage::REBUILD_STACKING_CONTEXT],
-        guarantees_stacking_context(old) != guarantees_stacking_context(new)
-    ) || restyle_damage_repaint!(old, new, damage, [ServoRestyleDamage::REPAINT]);
-
-    // Paint worklets may depend on custom properties,
-    // so if they have changed we should repaint.
-    if !old.custom_properties_equal(new) {
+    // Damage flags higher up the if-else chain imply damage flags lower down the if-else chain,
+    // so we can skip the diffing process for later flags if an earlier flag is true
+    if augmented_restyle_damage_rebuild_box(old, new) {
+        damage.insert(ServoRestyleDamage::RELAYOUT)
+    } else if restyle_damage_recalculate_overflow(old, new) {
+        damage.insert(ServoRestyleDamage::RECALCULATE_OVERFLOW)
+    } else if augmented_restyle_damage_rebuild_stacking_context(old, new) {
+        damage.insert(ServoRestyleDamage::REBUILD_STACKING_CONTEXT);
+    } else if restyle_damage_repaint(old, new) {
         damage.insert(ServoRestyleDamage::REPAINT);
     }
+    // Paint worklets may depend on custom properties, so if they have changed we should repaint.
+    else if !old.custom_properties_equal(new) {
+        damage.insert(ServoRestyleDamage::REPAINT);
+    }
+
     damage
+}
+
+impl ComputedValues {
+    /// Some properties establish a stacking context when they are set to a non-initial value.
+    /// In that case, the damage is only set to `ServoRestyleDamage::REPAINT` because we don't
+    /// need to rebuild stacking contexts when the style changes between different non-initial
+    /// values. This function checks whether any of these properties is set to a value that
+    /// guarantees a stacking context, so that we only do the work when this changes.
+    /// Note that it's still possible to establish a stacking context when this returns false.
+    pub fn guarantees_stacking_context(&self) -> bool {
+        self.get_effects().opacity != 1.0
+            || self.get_effects().mix_blend_mode != MixBlendMode::Normal
+            || self.get_svg().clip_path != ClipPath::None
+            || self.get_box().isolation == Isolation::Isolate
+    }
+}
+
+impl style_structs::Box {
+    /// Whether there is a non-default transform or perspective style set
+    pub fn has_transform_or_perspective(&self) -> bool {
+        !self.transform.0.is_empty()
+            || self.scale != GenericScale::None
+            || self.rotate != GenericRotate::None
+            || self.translate != GenericTranslate::None
+            || self.perspective != Perspective::None
+            || self.transform_style == TransformStyle::Preserve3d
+    }
 }

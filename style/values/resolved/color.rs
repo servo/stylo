@@ -6,29 +6,33 @@
 
 use super::{Context, ToResolvedValue};
 
-use crate::color::AbsoluteColor;
 use crate::values::computed::color as computed;
 use crate::values::generics::color as generics;
 
 impl ToResolvedValue for computed::Color {
-    // A resolved color value is an rgba color, with currentcolor resolved.
-    type ResolvedValue = AbsoluteColor;
+    // A resolved color value is (almost always) a rgba color, with currentcolor resolved.
+    type ResolvedValue = Self;
 
     #[inline]
     fn to_resolved_value(self, context: &Context) -> Self::ResolvedValue {
-        context.style.resolve_color(&self)
+        if context.for_property == crate::properties::ShorthandId::TextDecoration.into() &&
+            matches!(self, Self::CurrentColor)
+        {
+            return self;
+        }
+        generics::Color::Absolute(context.style.resolve_color(&self))
     }
 
     #[inline]
     fn from_resolved_value(resolved: Self::ResolvedValue) -> Self {
-        generics::Color::Absolute(resolved)
+        resolved
     }
 }
 
 impl ToResolvedValue for computed::CaretColor {
     // A resolved caret-color value is an rgba color, with auto resolving to
     // currentcolor.
-    type ResolvedValue = AbsoluteColor;
+    type ResolvedValue = computed::Color;
 
     #[inline]
     fn to_resolved_value(self, context: &Context) -> Self::ResolvedValue {

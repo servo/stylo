@@ -335,7 +335,22 @@ impl AttrValue {
         }
     }
 
-    /// Return the AttrValue as its integer representation, if any.
+    /// Return the AttrValue as its signed integer representation, if any.
+    /// This corresponds to attribute values returned as `AttrValue::Int(_)`
+    /// by `VirtualMethods::parse_plain_attribute()`.
+    ///
+    /// ## Panics
+    ///
+    /// Panics if the `AttrValue` is not a `Int`
+    pub fn as_int(&self) -> i32 {
+        if let AttrValue::Int(_, value) = *self {
+            value
+        } else {
+            panic!("Int not found");
+        }
+    }
+
+    /// Return the AttrValue as its unsigned integer representation, if any.
     /// This corresponds to attribute values returned as `AttrValue::UInt(_)`
     /// by `VirtualMethods::parse_plain_attribute()`.
     ///
@@ -350,7 +365,7 @@ impl AttrValue {
         }
     }
 
-    /// Return the AttrValue as a dimension computed from its integer
+    /// Return the AttrValue as a dimension computed from its unsigned integer
     /// representation, assuming that integer representation specifies pixels.
     ///
     /// This corresponds to attribute values returned as `AttrValue::UInt(_)`

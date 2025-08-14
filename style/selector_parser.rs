@@ -113,13 +113,15 @@ pub enum PseudoElementCascadeType {
 /// A per-pseudo map, from a given pseudo to a `T`.
 #[derive(Clone, MallocSizeOf)]
 pub struct PerPseudoElementMap<T> {
-    entries: [Option<T>; PSEUDO_COUNT],
+    sparse: [i8; PSEUDO_COUNT],
+    dense: Vec<T>,
 }
 
 impl<T> Default for PerPseudoElementMap<T> {
     fn default() -> Self {
         Self {
-            entries: PseudoElement::pseudo_none_array(),
+            dense: Vec::new(),
+            sparse: [const { -1 }; PSEUDO_COUNT],
         }
     }
 }
@@ -130,13 +132,17 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_char('[')?;
-        let mut first = true;
-        for entry in self.entries.iter() {
-            if !first {
+        for idx in 0..=PSEUDO_COUNT {
+            if idx > 0 {
                 f.write_str(", ")?;
             }
-            first = false;
-            entry.fmt(f)?;
+            debug_assert!(self.sparse.get(idx).is_some());
+            let i = self.sparse[idx];
+            if i < 0 {
+                None::<T>.fmt(f)?;
+            } else {
+                Some(&self.dense[i as usize]).fmt(f)?;
+            }
         }
         f.write_char(']')
     }
@@ -145,19 +151,35 @@ where
 impl<T> PerPseudoElementMap<T> {
     /// Get an entry in the map.
     pub fn get(&self, pseudo: &PseudoElement) -> Option<&T> {
-        self.entries[pseudo.index()].as_ref()
+        let idx = pseudo.index();
+        debug_assert!(self.sparse.get(idx).is_some());
+        let i = self.sparse[idx];
+        if i < 0 {
+            None
+        } else {
+            Some(&self.dense[i as usize])
+        }
     }
 
     /// Clear this enumerated array.
     pub fn clear(&mut self) {
-        *self = Self::default();
+        self.dense.clear();
+        self.sparse.fill(-1);
     }
 
     /// Set an entry value.
     ///
     /// Returns an error if the element is not a simple pseudo.
     pub fn set(&mut self, pseudo: &PseudoElement, value: T) {
-        self.entries[pseudo.index()] = Some(value);
+        let idx = pseudo.index();
+        let i = self.sparse[idx];
+        if i < 0 {
+            let i = self.dense.len() as i8;
+            self.dense.push(value);
+            self.sparse[idx] = i
+        } else {
+            self.dense[i as usize] = value
+        }
     }
 
     /// Get an entry for `pseudo`, or create it with calling `f`.
@@ -165,21 +187,26 @@ impl<T> PerPseudoElementMap<T> {
     where
         F: FnOnce() -> T,
     {
-        let index = pseudo.index();
-        if self.entries[index].is_none() {
-            self.entries[index] = Some(f());
+        let idx = pseudo.index();
+        let mut i = self.sparse[idx];
+        if i < 0 {
+            i = self.dense.len() as i8;
+            debug_assert!(self.dense.len() < PSEUDO_COUNT);
+            self.dense.push(f());
+            self.sparse[idx] = i;
         }
-        self.entries[index].as_mut().unwrap()
+        debug_assert!(self.dense.get(i as usize).is_some());
+        &mut self.dense[i as usize]
     }
 
     /// Get an iterator for the entries.
-    pub fn iter(&self) -> std::slice::Iter<Option<T>> {
-        self.entries.iter()
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.dense.iter()
     }
 
     /// Get a mutable iterator for the entries.
-    pub fn iter_mut(&mut self) -> std::slice::IterMut<Option<T>> {
-        self.entries.iter_mut()
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
+        self.dense.iter_mut()
     }
 }
 
@@ -236,5 +263,43 @@ impl ToCss for Direction {
         W: Write,
     {
         serialize_atom_identifier(&self.0, dest)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_build_and_set_arbitrary_index() {
+        let mut map = <PerPseudoElementMap<i32>>::default();
+        assert_eq!(map.get(&PseudoElement::After), None);
+        map.set(&PseudoElement::After, 3);
+        assert_eq!(map.get(&PseudoElement::After), Some(3).as_ref());
+
+        assert_eq!(map.get(&PseudoElement::RubyText), None);
+        map.set(&PseudoElement::RubyText, 8);
+        assert_eq!(map.get(&PseudoElement::RubyText), Some(8).as_ref());
+
+        assert_eq!(
+            map.get_or_insert_with(&PseudoElement::RubyText, || { 10 }),
+            &8
+        );
+        map.set(&PseudoElement::RubyText, 9);
+        assert_eq!(map.get(&PseudoElement::RubyText), Some(9).as_ref());
+
+        assert_eq!(
+            map.get_or_insert_with(&PseudoElement::FirstLine, || { 10 }),
+            &10
+        );
+        assert_eq!(map.get(&PseudoElement::FirstLine), Some(10).as_ref());
+    }
+
+    #[test]
+    fn can_iter() {
+        let mut map = <PerPseudoElementMap<i32>>::default();
+        map.set(&PseudoElement::After, 3);
+        map.set(&PseudoElement::RubyText, 8);
+        assert_eq!(map.iter().cloned().collect::<Vec<_>>(), vec![3, 8]);
     }
 }

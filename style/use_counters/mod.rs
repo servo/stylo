@@ -30,8 +30,10 @@ pub struct NonCustomPropertyUseCounters {
 #[derive(Copy, Clone, Debug)]
 #[repr(u32)]
 pub enum CustomUseCounter {
+    /// Whether we reference a non-local uri at all.
+    HasNonLocalUriDependency = 0,
     /// Whether we are likely to be using relative URIs that depend on our path depth.
-    MaybeHasPathBaseUriDependency = 0,
+    MaybeHasPathBaseUriDependency,
     /// Whether we are likely to be using relative URIs that depend on our full URI.
     MaybeHasFullBaseUriDependency,
     /// Dummy value, used for indexing purposes.

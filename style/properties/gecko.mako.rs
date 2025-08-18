@@ -280,23 +280,8 @@ impl ComputedValuesInner {
     }
 
     #[inline]
-    pub fn clone_${style_struct.name_lower}(&self) -> Arc<style_structs::${style_struct.name}> {
-        unsafe { Arc::from_raw_addrefed(self.${style_struct.name_lower}_ptr()) }
-    }
-    #[inline]
     pub fn get_${style_struct.name_lower}(&self) -> &style_structs::${style_struct.name} {
         unsafe { &*self.${style_struct.name_lower}_ptr() }
-    }
-
-    #[inline]
-    pub fn mutate_${style_struct.name_lower}(&mut self) -> &mut style_structs::${style_struct.name} {
-        unsafe {
-            let mut arc = Arc::from_raw(self.${style_struct.name_lower}_ptr());
-            let ptr = Arc::make_mut(&mut arc) as *mut _;
-            // Sound for the same reason _ptr() is sound.
-            self.${style_struct.gecko_name} = Arc::into_raw(arc) as *const _;
-            &mut *ptr
-        }
     }
     % endfor
 }

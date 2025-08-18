@@ -162,27 +162,6 @@ impl Clone for ComputedValues {
     }
 }
 
-impl Clone for ComputedValuesInner {
-    fn clone(&self) -> Self {
-        ComputedValuesInner {
-            % for style_struct in data.style_structs:
-            ${style_struct.gecko_name}: Arc::into_raw(unsafe { Arc::from_raw_addrefed(self.${style_struct.name_lower}_ptr()) }) as *const _,
-            % endfor
-            custom_properties: self.custom_properties.clone(),
-            writing_mode: self.writing_mode.clone(),
-            flags: self.flags.clone(),
-            effective_zoom: self.effective_zoom,
-            rules: self.rules.clone(),
-            visited_style: if self.visited_style.is_null() {
-                ptr::null()
-            } else {
-                Arc::into_raw(unsafe { Arc::from_raw_addrefed(self.visited_style_ptr()) }) as *const _
-            },
-        }
-    }
-}
-
-
 impl Drop for ComputedValuesInner {
     fn drop(&mut self) {
         % for style_struct in data.style_structs:

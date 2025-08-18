@@ -1077,7 +1077,7 @@ impl Parse for TextDecorationTrim {
         if let Ok(start) = input.try_parse(|i| Length::parse(ctx, i)) {
             let end = input.try_parse(|i| Length::parse(ctx, i));
             let end = end.unwrap_or_else(|_| start.clone());
-            return Ok(TextDecorationTrim::Length{start, end});
+            return Ok(TextDecorationTrim::Length { start, end });
         }
         input.expect_ident_matching("auto")?;
         Ok(TextDecorationTrim::Auto)

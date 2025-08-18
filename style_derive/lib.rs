@@ -16,8 +16,8 @@ extern crate synstructure;
 
 use proc_macro::TokenStream;
 
-mod cg;
 mod animate;
+mod cg;
 mod compute_squared_distance;
 mod parse;
 mod specified_value_info;

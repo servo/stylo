@@ -188,11 +188,14 @@ pub enum GenericTextDecorationTrim<L> {
     Length { start: L, end: L },
 }
 
-impl<L: Zero> GenericTextDecorationTrim<L>{
+impl<L: Zero> GenericTextDecorationTrim<L> {
     /// Gets the initial value (zero)
     #[inline]
     pub fn get_initial_value() -> Self {
-        GenericTextDecorationTrim::Length{ start: L::zero(), end: L::zero() }
+        GenericTextDecorationTrim::Length {
+            start: L::zero(),
+            end: L::zero(),
+        }
     }
 }
 

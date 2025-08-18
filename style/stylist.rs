@@ -2573,9 +2573,13 @@ impl ScopeBoundWithHashes {
     }
 
     fn new_no_hash(selectors: SelectorList<SelectorImpl>) -> Self {
-        let hashes = selectors.slice().iter().map(|_| {
-            AncestorHashes{ packed_hashes: [0, 0, 0] }
-        }).collect();
+        let hashes = selectors
+            .slice()
+            .iter()
+            .map(|_| AncestorHashes {
+                packed_hashes: [0, 0, 0],
+            })
+            .collect();
         Self { selectors, hashes }
     }
 }
@@ -3457,8 +3461,10 @@ impl CascadeData {
                                 nth_of_mapped_ids: &mut self.nth_of_mapped_ids,
                                 attribute_dependencies: &mut self.attribute_dependencies,
                                 nth_of_class_dependencies: &mut self.nth_of_class_dependencies,
-                                nth_of_attribute_dependencies: &mut self.nth_of_attribute_dependencies,
-                                nth_of_custom_state_dependencies: &mut self.nth_of_custom_state_dependencies,
+                                nth_of_attribute_dependencies: &mut self
+                                    .nth_of_attribute_dependencies,
+                                nth_of_custom_state_dependencies: &mut self
+                                    .nth_of_custom_state_dependencies,
                                 state_dependencies: &mut self.state_dependencies,
                                 nth_of_state_dependencies: &mut self.nth_of_state_dependencies,
                                 document_state_dependencies: &mut self.document_state_dependencies,

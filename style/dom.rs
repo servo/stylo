@@ -14,7 +14,7 @@ use crate::context::UpdateAnimationsTasks;
 use crate::data::ElementData;
 use crate::media_queries::Device;
 use crate::properties::{AnimationDeclarations, ComputedValues, PropertyDeclarationBlock};
-use crate::selector_parser::{AttrValue, Lang, PseudoElement, RestyleDamage, SelectorImpl};
+use crate::selector_parser::{AttrValue, Lang, PseudoElement, SelectorImpl};
 use crate::shared_lock::{Locked, SharedRwLock};
 use crate::stylesheets::scope_rule::ImplicitScopeRoot;
 use crate::stylist::CascadeData;
@@ -30,7 +30,7 @@ use servo_arc::{Arc, ArcBorrow};
 use std::fmt;
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::ops::Deref;
+use std::ops::{BitOrAssign, Deref};
 
 pub use style_traits::dom::OpaqueNode;
 
@@ -383,12 +383,50 @@ pub trait TShadowRoot: Sized + Copy + Clone + Debug + PartialEq {
     }
 }
 
+/// Represents restyle damage (whether to repaint, relayout, etc based on changed styles)
+///
+/// Stylo is mostly agnostic to this type which is used by the embedder. This trait represents the
+/// minimal interface that Stylo does need to the type.
+pub trait TRestyleDamage: Copy + Clone + Default + Debug + BitOrAssign {
+    /// Clear/reset all damage flags
+    fn clear(&mut self);
+    /// Whether the damage is empty ("no styles changed")
+    fn is_empty(&self) -> bool;
+    /// Mark the element as needing it's (eager) pseudo-elements rebuilt
+    fn set_rebuild_pseudos(&mut self);
+}
+
+/// Represents the result of comparing an element's old and new style.
+#[derive(Debug)]
+pub struct StyleDifference<RestyleDamage: TRestyleDamage> {
+    /// The resulting damage.
+    pub damage: RestyleDamage,
+
+    /// Whether any styles changed.
+    pub change: StyleChange,
+}
+
+/// Represents whether or not the style of an element has changed.
+#[derive(Clone, Copy, Debug)]
+pub enum StyleChange {
+    /// The style hasn't changed.
+    Unchanged,
+    /// The style has changed.
+    Changed {
+        /// Whether only reset structs changed.
+        reset_only: bool,
+    },
+}
+
 /// The element trait, the main abstraction the style crate acts over.
 pub trait TElement:
     Eq + PartialEq + Debug + Hash + Sized + Copy + Clone + SelectorsElement<Impl = SelectorImpl>
 {
     /// The concrete node type.
     type ConcreteNode: TNode<ConcreteElement = Self>;
+
+    /// The type representing restyle damage flags
+    type RestyleDamage: TRestyleDamage;
 
     /// A concrete children iterator type in order to iterate over the `Node`s.
     ///
@@ -583,7 +621,7 @@ pub trait TElement:
 
     /// Returns whether the element's styles are up-to-date after traversal
     /// (i.e. in post traversal).
-    fn has_current_styles(&self, data: &ElementData) -> bool {
+    fn has_current_styles(&self, data: &ElementData<Self::RestyleDamage>) -> bool {
         if self.has_snapshot() && !self.handled_snapshot() {
             return false;
         }
@@ -670,7 +708,7 @@ pub trait TElement:
     ///
     /// Unsafe because it can race to allocate and leak if not used with
     /// exclusive access to the element.
-    unsafe fn ensure_data(&self) -> AtomicRefMut<ElementData>;
+    unsafe fn ensure_data(&self) -> AtomicRefMut<ElementData<Self::RestyleDamage>>;
 
     /// Clears the element data reference, if any.
     ///
@@ -681,10 +719,10 @@ pub trait TElement:
     fn has_data(&self) -> bool;
 
     /// Immutably borrows the ElementData.
-    fn borrow_data(&self) -> Option<AtomicRef<ElementData>>;
+    fn borrow_data(&self) -> Option<AtomicRef<ElementData<Self::RestyleDamage>>>;
 
     /// Mutably borrows the ElementData.
-    fn mutate_data(&self) -> Option<AtomicRefMut<ElementData>>;
+    fn mutate_data(&self) -> Option<AtomicRefMut<ElementData<Self::RestyleDamage>>>;
 
     /// Whether we should skip any root- or item-based display property
     /// blockification on this element.  (This function exists so that Gecko
@@ -909,9 +947,20 @@ pub trait TElement:
         None
     }
 
-    /// Compute the damage incurred by the change from the `_old` to `_new`.
-    fn compute_layout_damage(_old: &ComputedValues, _new: &ComputedValues) -> RestyleDamage {
-        Default::default()
+    /// Given the old and new style of this element, and whether it's a
+    /// pseudo-element, compute the restyle damage used to determine which
+    /// kind of layout or painting operations we'll need.
+    fn compute_style_difference(
+        &self,
+        _old: &ComputedValues,
+        _new: &ComputedValues,
+        pseudo: Option<&PseudoElement>,
+    ) -> StyleDifference<Self::RestyleDamage> {
+        debug_assert!(pseudo.map_or(true, |p| p.is_eager()));
+        StyleDifference {
+            damage: Default::default(),
+            change: StyleChange::Unchanged,
+        }
     }
 }
 

@@ -2964,7 +2964,8 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 
 % if engine == "servo":
 % for effect_name in ["repaint", "recalculate_overflow", "rebuild_stacking_context", "rebuild_box"]:
-pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &ComputedValues) -> bool {
+/// Returns true if any of the properties marked as effecting "${effect_name}" damage have changed
+pub fn restyle_damage_${effect_name} (old: &ComputedValues, new: &ComputedValues) -> bool {
     % for style_struct in data.active_style_structs():
         % for longhand in style_struct.longhands:
             % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:

@@ -13,7 +13,7 @@ use crate::context::CascadeInputs;
 use crate::context::{ElementCascadeInputs, QuirksMode};
 use crate::context::{SharedStyleContext, StyleContext};
 use crate::data::{ElementData, ElementStyles};
-use crate::dom::TElement;
+use crate::dom::{TElement, TRestyleDamage, StyleChange};
 #[cfg(feature = "servo")]
 use crate::dom::TNode;
 use crate::invalidation::element::restyle_hints::RestyleHint;
@@ -21,7 +21,7 @@ use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::ComputedValues;
 use crate::properties::PropertyDeclarationBlock;
 use crate::rule_tree::{CascadeLevel, StrongRuleNode};
-use crate::selector_parser::{PseudoElement, RestyleDamage};
+use crate::selector_parser::{PseudoElement};
 use crate::shared_lock::Locked;
 use crate::style_resolver::StyleResolverForElement;
 use crate::style_resolver::{PseudoElementResolution, ResolvedElementStyles};
@@ -29,28 +29,6 @@ use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::RuleInclusion;
 use crate::traversal_flags::TraversalFlags;
 use servo_arc::{Arc, ArcBorrow};
-
-/// Represents the result of comparing an element's old and new style.
-#[derive(Debug)]
-pub struct StyleDifference {
-    /// The resulting damage.
-    pub damage: RestyleDamage,
-
-    /// Whether any styles changed.
-    pub change: StyleChange,
-}
-
-/// Represents whether or not the style of an element has changed.
-#[derive(Clone, Copy, Debug)]
-pub enum StyleChange {
-    /// The style hasn't changed.
-    Unchanged,
-    /// The style has changed.
-    Changed {
-        /// Whether only reset structs changed.
-        reset_only: bool,
-    },
-}
 
 /// Whether or not newly computed values for an element need to be cascaded to
 /// children (or children might need to be re-matched, e.g., for container
@@ -778,7 +756,7 @@ trait PrivateMatchMethods: TElement {
     fn accumulate_damage_for(
         &self,
         shared_context: &SharedStyleContext,
-        damage: &mut RestyleDamage,
+        damage: &mut Self::RestyleDamage,
         old_values: &ComputedValues,
         new_values: &ComputedValues,
         pseudo: Option<&PseudoElement>,
@@ -937,7 +915,7 @@ pub trait MatchMethods: TElement {
     fn finish_restyle(
         &self,
         context: &mut StyleContext<Self>,
-        data: &mut ElementData,
+        data: &mut ElementData<Self::RestyleDamage>,
         mut new_styles: ResolvedElementStyles,
         important_rules_changed: bool,
     ) -> ChildRestyleRequirement {
@@ -1120,7 +1098,7 @@ pub trait MatchMethods: TElement {
                     let old_pseudo_should_exist =
                         old.as_ref().map_or(false, |s| pseudo.should_exist(s));
                     if new_pseudo_should_exist != old_pseudo_should_exist {
-                        data.damage |= RestyleDamage::reconstruct();
+                        data.damage.set_rebuild_pseudos();
                         return restyle_requirement;
                     }
                 },
@@ -1154,19 +1132,6 @@ pub trait MatchMethods: TElement {
             cascade_inputs,
         );
         result
-    }
-
-    /// Given the old and new style of this element, and whether it's a
-    /// pseudo-element, compute the restyle damage used to determine which
-    /// kind of layout or painting operations we'll need.
-    fn compute_style_difference(
-        &self,
-        old_values: &ComputedValues,
-        new_values: &ComputedValues,
-        pseudo: Option<&PseudoElement>,
-    ) -> StyleDifference {
-        debug_assert!(pseudo.map_or(true, |p| p.is_eager()));
-        RestyleDamage::compute_style_difference::<Self>(old_values, new_values)
     }
 }
 

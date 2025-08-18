@@ -308,7 +308,7 @@ ${helpers.predefined_type(
     "MathDepth",
     "0",
     engines="gecko",
-    animation_type="discrete",
+    animation_type="none",
     spec="https://mathml-refresh.github.io/mathml-core/#the-math-script-level-property",
     affects="",
 )}
@@ -319,21 +319,7 @@ ${helpers.single_keyword(
     engines="gecko",
     gecko_enum_prefix="StyleMathStyle",
     spec="https://mathml-refresh.github.io/mathml-core/#the-math-style-property",
-    animation_type="discrete",
-    needs_conversion=True,
-    affects="layout",
-)}
-
-${helpers.single_keyword(
-    "math-shift",
-    "normal compact",
-    engines="gecko",
-    gecko_enum_prefix="StyleMathShift",
-    spec="https://w3c.github.io/mathml-core/#the-math-shift",
-    animation_type="discrete",
-    gecko_pref="mathml.math_shift.enabled",
-    has_effect_on_gecko_scrollbars=False,
-    enabled_in="ua",
+    animation_type="none",
     needs_conversion=True,
     affects="layout",
 )}

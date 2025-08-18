@@ -47,6 +47,10 @@ bitflags! {
         ///
         /// Propagates both up and down the flow tree.
         const RELAYOUT = 0b1111;
+
+        // The embedder may set any bits
+        // See https://docs.rs/bitflags/latest/bitflags/#externally-defined-flags
+        const _ = !0;
     }
 }
 

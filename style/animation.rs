@@ -880,6 +880,7 @@ impl ElementAnimationSet {
     }
 
     /// Apply all active animations.
+    #[cfg(feature = "servo")]
     pub fn apply_active_animations(
         &self,
         context: &SharedStyleContext,
@@ -975,6 +976,7 @@ impl ElementAnimationSet {
 
     /// Update our transitions given a new style, canceling or starting new animations
     /// when appropriate.
+    #[cfg(feature = "servo")]
     pub fn update_transitions_for_new_style(
         &mut self,
         might_need_transitions_update: bool,

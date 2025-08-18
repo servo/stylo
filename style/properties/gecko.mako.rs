@@ -156,12 +156,6 @@ impl Drop for ComputedValues {
 unsafe impl Sync for ComputedValues {}
 unsafe impl Send for ComputedValues {}
 
-impl Clone for ComputedValues {
-    fn clone(&self) -> Self {
-        unreachable!()
-    }
-}
-
 impl Drop for ComputedValuesInner {
     fn drop(&mut self) {
         % for style_struct in data.style_structs:

@@ -344,8 +344,8 @@ impl PathCommand {
                             point: _,
                             control1: _,
                             control2: _,
-                        } |
-                        PathCommand::SmoothCubic {
+                        }
+                        | PathCommand::SmoothCubic {
                             by_to: _,
                             point: _,
                             control2: _,
@@ -380,8 +380,8 @@ impl PathCommand {
                             by_to: _,
                             point: _,
                             control1: _,
-                        } |
-                        PathCommand::SmoothQuad { by_to: _, point: _ } => {
+                        }
+                        | PathCommand::SmoothQuad { by_to: _, point: _ } => {
                             state.pos + state.pos - state.last_control
                         },
                         _ => state.pos,

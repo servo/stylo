@@ -128,15 +128,15 @@ impl RelativeSelectorFilterMap {
         }
         let is_sibling = matches!(
             selector.match_hint,
-            RelativeSelectorMatchHint::InSibling |
-                RelativeSelectorMatchHint::InNextSiblingSubtree |
-                RelativeSelectorMatchHint::InSiblingSubtree
+            RelativeSelectorMatchHint::InSibling
+                | RelativeSelectorMatchHint::InNextSiblingSubtree
+                | RelativeSelectorMatchHint::InSiblingSubtree
         );
         let is_subtree = matches!(
             selector.match_hint,
-            RelativeSelectorMatchHint::InSubtree |
-                RelativeSelectorMatchHint::InNextSiblingSubtree |
-                RelativeSelectorMatchHint::InSiblingSubtree
+            RelativeSelectorMatchHint::InSubtree
+                | RelativeSelectorMatchHint::InNextSiblingSubtree
+                | RelativeSelectorMatchHint::InSiblingSubtree
         );
         let kind = if is_subtree {
             TraversalKind::Descendants

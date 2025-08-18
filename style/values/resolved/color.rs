@@ -15,8 +15,8 @@ impl ToResolvedValue for computed::Color {
 
     #[inline]
     fn to_resolved_value(self, context: &Context) -> Self::ResolvedValue {
-        if context.for_property == crate::properties::ShorthandId::TextDecoration.into() &&
-            matches!(self, Self::CurrentColor)
+        if context.for_property == crate::properties::ShorthandId::TextDecoration.into()
+            && matches!(self, Self::CurrentColor)
         {
             return self;
         }

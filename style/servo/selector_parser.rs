@@ -221,13 +221,13 @@ impl PseudoElement {
             PseudoElement::Backdrop | PseudoElement::DetailsSummary => {
                 PseudoElementCascadeType::Lazy
             },
-            PseudoElement::DetailsContent |
-            PseudoElement::ServoAnonymousBox |
-            PseudoElement::ServoAnonymousTable |
-            PseudoElement::ServoAnonymousTableCell |
-            PseudoElement::ServoAnonymousTableRow |
-            PseudoElement::ServoTableGrid |
-            PseudoElement::ServoTableWrapper => PseudoElementCascadeType::Precomputed,
+            PseudoElement::DetailsContent
+            | PseudoElement::ServoAnonymousBox
+            | PseudoElement::ServoAnonymousTable
+            | PseudoElement::ServoAnonymousTableCell
+            | PseudoElement::ServoAnonymousTableRow
+            | PseudoElement::ServoTableGrid
+            | PseudoElement::ServoTableWrapper => PseudoElementCascadeType::Precomputed,
         }
     }
 
@@ -873,8 +873,8 @@ pub fn extended_filtering(tag: &str, range: &str) -> bool {
         // step 2
         // Note: [Level-4 spec](https://drafts.csswg.org/selectors/#lang-pseudo) check for wild card
         if let (Some(range_subtag), Some(tag_subtag)) = (range_subtags.next(), tag_subtags.next()) {
-            if !(range_subtag.eq_ignore_ascii_case(tag_subtag) ||
-                range_subtag.eq_ignore_ascii_case("*"))
+            if !(range_subtag.eq_ignore_ascii_case(tag_subtag)
+                || range_subtag.eq_ignore_ascii_case("*"))
             {
                 return false;
             }

@@ -36,8 +36,8 @@ impl DocumentRule {
     #[cfg(feature = "gecko")]
     pub fn size_of(&self, guard: &SharedRwLockReadGuard, ops: &mut MallocSizeOfOps) -> usize {
         // Measurement of other fields may be added later.
-        self.rules.unconditional_shallow_size_of(ops) +
-            self.rules.read_with(guard).size_of(guard, ops)
+        self.rules.unconditional_shallow_size_of(ops)
+            + self.rules.read_with(guard).size_of(guard, ops)
     }
 }
 
@@ -210,16 +210,16 @@ impl DocumentMatchingFunction {
 
         let pattern = nsCStr::from(match *self {
             DocumentMatchingFunction::Url(ref url) => url.as_str(),
-            DocumentMatchingFunction::UrlPrefix(ref pat) |
-            DocumentMatchingFunction::Domain(ref pat) |
-            DocumentMatchingFunction::Regexp(ref pat) => pat,
+            DocumentMatchingFunction::UrlPrefix(ref pat)
+            | DocumentMatchingFunction::Domain(ref pat)
+            | DocumentMatchingFunction::Regexp(ref pat) => pat,
             DocumentMatchingFunction::MediaDocument(kind) => match kind {
                 MediaDocumentKind::All => "all",
                 MediaDocumentKind::Image => "image",
                 MediaDocumentKind::Video => "video",
             },
-            DocumentMatchingFunction::PlainTextDocument(()) |
-            DocumentMatchingFunction::UnobservableDocument(()) => "",
+            DocumentMatchingFunction::PlainTextDocument(())
+            | DocumentMatchingFunction::UnobservableDocument(()) => "",
         });
         unsafe { Gecko_DocumentRule_UseForPresentation(device.document(), &*pattern, func) }
     }

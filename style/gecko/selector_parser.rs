@@ -251,8 +251,8 @@ impl NonTSPseudoClass {
     /// Returns true if the given pseudoclass should trigger style sharing cache
     /// revalidation.
     pub fn needs_cache_revalidation(&self) -> bool {
-        self.state_flag().is_empty() &&
-            !matches!(
+        self.state_flag().is_empty()
+            && !matches!(
                 *self,
                 // :dir() depends on state only, but may have an empty state_flag for invalid
                 // arguments.
@@ -333,14 +333,14 @@ impl<'a> SelectorParser<'a> {
             return true;
         }
 
-        if self.in_user_agent_stylesheet() &&
-            pseudo_class.has_any_flag(NonTSPseudoClassFlag::PSEUDO_CLASS_ENABLED_IN_UA_SHEETS)
+        if self.in_user_agent_stylesheet()
+            && pseudo_class.has_any_flag(NonTSPseudoClassFlag::PSEUDO_CLASS_ENABLED_IN_UA_SHEETS)
         {
             return true;
         }
 
-        if self.chrome_rules_enabled() &&
-            pseudo_class.has_any_flag(NonTSPseudoClassFlag::PSEUDO_CLASS_ENABLED_IN_CHROME)
+        if self.chrome_rules_enabled()
+            && pseudo_class.has_any_flag(NonTSPseudoClassFlag::PSEUDO_CLASS_ENABLED_IN_CHROME)
         {
             return true;
         }

@@ -254,8 +254,8 @@ impl NonCustomPropertyId {
     /// Returns a shorthand id, if this property is one.
     #[inline]
     pub fn as_shorthand(self) -> Option<ShorthandId> {
-        if self.0 >= property_counts::LONGHANDS as u16 &&
-            self.0 < property_counts::LONGHANDS_AND_SHORTHANDS as u16
+        if self.0 >= property_counts::LONGHANDS as u16
+            && self.0 < property_counts::LONGHANDS_AND_SHORTHANDS as u16
         {
             return Some(unsafe { mem::transmute(self.0 - (property_counts::LONGHANDS as u16)) });
         }

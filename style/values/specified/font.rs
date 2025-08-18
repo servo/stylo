@@ -232,8 +232,8 @@ impl Parse for AbsoluteFontWeight {
             // We could add another AllowedNumericType value, but it doesn't
             // seem worth it just for a single property with such a weird range,
             // so we do the clamping here manually.
-            if !number.was_calc() &&
-                (number.get() < MIN_FONT_WEIGHT || number.get() > MAX_FONT_WEIGHT)
+            if !number.was_calc()
+                && (number.get() < MIN_FONT_WEIGHT || number.get() > MAX_FONT_WEIGHT)
             {
                 return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
             }
@@ -344,8 +344,8 @@ impl SpecifiedFontStyle {
         }
 
         let degrees = angle.degrees();
-        if degrees < FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES ||
-            degrees > FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES
+        if degrees < FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES
+            || degrees > FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES
         {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
@@ -595,8 +595,8 @@ impl KeywordInfo {
         debug_assert_ne!(self.kw, FontSizeKeyword::Math);
         let base = context.maybe_zoom_text(self.kw.to_length(context).0);
         let zoom_factor = context.style().effective_zoom.value();
-        CSSPixelLength::new(base.px() * self.factor * zoom_factor) +
-            context.maybe_zoom_text(self.offset)
+        CSSPixelLength::new(base.px() * self.factor * zoom_factor)
+            + context.maybe_zoom_text(self.offset)
     }
 
     /// Given a parent keyword info (self), apply an additional factor/offset to
@@ -1139,12 +1139,12 @@ impl FontVariantAlternates {
     /// Returns the length of all variant alternates.
     pub fn len(&self) -> usize {
         self.0.iter().fold(0, |acc, alternate| match *alternate {
-            VariantAlternates::Swash(_) |
-            VariantAlternates::Stylistic(_) |
-            VariantAlternates::Ornaments(_) |
-            VariantAlternates::Annotation(_) => acc + 1,
-            VariantAlternates::Styleset(ref slice) |
-            VariantAlternates::CharacterVariant(ref slice) => acc + slice.len(),
+            VariantAlternates::Swash(_)
+            | VariantAlternates::Stylistic(_)
+            | VariantAlternates::Ornaments(_)
+            | VariantAlternates::Annotation(_) => acc + 1,
+            VariantAlternates::Styleset(ref slice)
+            | VariantAlternates::CharacterVariant(ref slice) => acc + slice.len(),
             _ => acc,
         })
     }
@@ -1399,10 +1399,10 @@ impl FontVariantLigatures {
 
     fn validate_mixed_flags(&self) -> bool {
         // Mixing a value and its disabling value is forbidden.
-        if self.contains(Self::COMMON_LIGATURES | Self::NO_COMMON_LIGATURES) ||
-            self.contains(Self::DISCRETIONARY_LIGATURES | Self::NO_DISCRETIONARY_LIGATURES) ||
-            self.contains(Self::HISTORICAL_LIGATURES | Self::NO_HISTORICAL_LIGATURES) ||
-            self.contains(Self::CONTEXTUAL | Self::NO_CONTEXTUAL)
+        if self.contains(Self::COMMON_LIGATURES | Self::NO_COMMON_LIGATURES)
+            || self.contains(Self::DISCRETIONARY_LIGATURES | Self::NO_DISCRETIONARY_LIGATURES)
+            || self.contains(Self::HISTORICAL_LIGATURES | Self::NO_HISTORICAL_LIGATURES)
+            || self.contains(Self::CONTEXTUAL | Self::NO_CONTEXTUAL)
         {
             return false;
         }
@@ -1469,9 +1469,9 @@ impl FontVariantNumeric {
     /// <numeric-spacing-values>  = [ proportional-nums | tabular-nums ]
     /// <numeric-fraction-values> = [ diagonal-fractions | stacked-fractions ]
     fn validate_mixed_flags(&self) -> bool {
-        if self.contains(Self::LINING_NUMS | Self::OLDSTYLE_NUMS) ||
-            self.contains(Self::PROPORTIONAL_NUMS | Self::TABULAR_NUMS) ||
-            self.contains(Self::DIAGONAL_FRACTIONS | Self::STACKED_FRACTIONS)
+        if self.contains(Self::LINING_NUMS | Self::OLDSTYLE_NUMS)
+            || self.contains(Self::PROPORTIONAL_NUMS | Self::TABULAR_NUMS)
+            || self.contains(Self::DIAGONAL_FRACTIONS | Self::STACKED_FRACTIONS)
         {
             return false;
         }

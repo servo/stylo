@@ -146,13 +146,13 @@ impl ComputedValueFlags {
     /// Flags that are unconditionally propagated to descendants.
     #[inline]
     fn inherited_flags() -> Self {
-        Self::IS_RELEVANT_LINK_VISITED |
-            Self::CAN_BE_FRAGMENTED |
-            Self::IS_IN_FIRST_LINE_SUBTREE |
-            Self::HAS_TEXT_DECORATION_LINES |
-            Self::IS_IN_OPACITY_ZERO_SUBTREE |
-            Self::SELF_OR_ANCESTOR_HAS_CONTAIN_STYLE |
-            Self::SELF_OR_ANCESTOR_HAS_SIZE_CONTAINER_TYPE
+        Self::IS_RELEVANT_LINK_VISITED
+            | Self::CAN_BE_FRAGMENTED
+            | Self::IS_IN_FIRST_LINE_SUBTREE
+            | Self::HAS_TEXT_DECORATION_LINES
+            | Self::IS_IN_OPACITY_ZERO_SUBTREE
+            | Self::SELF_OR_ANCESTOR_HAS_CONTAIN_STYLE
+            | Self::SELF_OR_ANCESTOR_HAS_SIZE_CONTAINER_TYPE
     }
 
     /// Flags that may be propagated to descendants.

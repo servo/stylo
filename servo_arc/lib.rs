@@ -817,8 +817,8 @@ impl<H, T> Arc<HeaderSlice<H, T>> {
                 // We should have consumed the buffer exactly, maybe accounting
                 // for some padding from the alignment.
                 debug_assert!(
-                    (buffer.add(layout.size()) as usize - current as *mut u8 as usize) <
-                        layout.align()
+                    (buffer.add(layout.size()) as usize - current as *mut u8 as usize)
+                        < layout.align()
                 );
             }
             assert!(

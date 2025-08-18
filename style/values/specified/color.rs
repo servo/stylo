@@ -556,12 +556,12 @@ impl Color {
                     .unwrap_or(false)
             },
             Self::LightDark(ref ld) => {
-                ld.light.honored_in_forced_colors_mode(allow_transparent) &&
-                    ld.dark.honored_in_forced_colors_mode(allow_transparent)
+                ld.light.honored_in_forced_colors_mode(allow_transparent)
+                    && ld.dark.honored_in_forced_colors_mode(allow_transparent)
             },
             Self::ColorMix(ref mix) => {
-                mix.left.honored_in_forced_colors_mode(allow_transparent) &&
-                    mix.right.honored_in_forced_colors_mode(allow_transparent)
+                mix.left.honored_in_forced_colors_mode(allow_transparent)
+                    && mix.right.honored_in_forced_colors_mode(allow_transparent)
             },
         }
     }

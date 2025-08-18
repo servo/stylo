@@ -62,17 +62,17 @@ where
     ) -> Option<slice::Iter<'a, CssRule>> {
         *effective = true;
         match *rule {
-            CssRule::Namespace(_) |
-            CssRule::FontFace(_) |
-            CssRule::CounterStyle(_) |
-            CssRule::Keyframes(_) |
-            CssRule::Margin(_) |
-            CssRule::Property(_) |
-            CssRule::LayerStatement(_) |
-            CssRule::FontFeatureValues(_) |
-            CssRule::FontPaletteValues(_) |
-            CssRule::NestedDeclarations(_) |
-            CssRule::PositionTry(_) => None,
+            CssRule::Namespace(_)
+            | CssRule::FontFace(_)
+            | CssRule::CounterStyle(_)
+            | CssRule::Keyframes(_)
+            | CssRule::Margin(_)
+            | CssRule::Property(_)
+            | CssRule::LayerStatement(_)
+            | CssRule::FontFeatureValues(_)
+            | CssRule::FontPaletteValues(_)
+            | CssRule::NestedDeclarations(_)
+            | CssRule::PositionTry(_) => None,
             CssRule::Page(ref page_rule) => {
                 let page_rule = page_rule.read_with(guard);
                 let rules = page_rule.rules.read_with(guard);

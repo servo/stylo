@@ -62,8 +62,8 @@ impl DomMutationOperation {
             // `:has(+ .a + .b)` with `.anchor + .a + .remove + .b` - `.a` would be present
             // in the search path.
             Self::SideEffectPrevSibling => {
-                !e.relative_selector_search_direction().is_empty() &&
-                    d.right_combinator_is_next_sibling()
+                !e.relative_selector_search_direction().is_empty()
+                    && d.right_combinator_is_next_sibling()
             },
             // If an element is being removed and would cause next-sibling match to happen,
             // e.g. `:has(+ .a)` with `.anchor + .remove + .a`, `.a` isn't yet searched
@@ -157,9 +157,10 @@ impl<'a, E: TElement> OptimizationContext<'a, E> {
         // get here, we've collapsed the 4 dependencies for each of `.item` position into one at the rightmost
         // position. Before we look for a standin, we need to find which `.item` this element matches - Doing
         // that would generate more work than it saves.
-        if dependency_is_rightmost &&
-            leftmost_collapse_offset != dependency.selector_offset &&
-            self.sibling_traversal_map
+        if dependency_is_rightmost
+            && leftmost_collapse_offset != dependency.selector_offset
+            && self
+                .sibling_traversal_map
                 .next_sibling_for(&element)
                 .is_some()
         {
@@ -485,12 +486,12 @@ where
                     dependency.next.is_some(),
                     "Orphaned inner relative selector?"
                 );
-                if element != self.top &&
-                    matches!(
+                if element != self.top
+                    && matches!(
                         kind,
-                        RelativeDependencyInvalidationKind::Parent |
-                            RelativeDependencyInvalidationKind::PrevSibling |
-                            RelativeDependencyInvalidationKind::EarlierSibling
+                        RelativeDependencyInvalidationKind::Parent
+                            | RelativeDependencyInvalidationKind::PrevSibling
+                            | RelativeDependencyInvalidationKind::EarlierSibling
                     )
                 {
                     return;
@@ -530,11 +531,11 @@ where
                     // We move the invalidation up to the top of the subtree to avoid unnecessary traveral, but
                     // this means that we need to take ancestor-earlier sibling invalidations into account, as
                     // they'd look into earlier siblings of the top of the subtree as well.
-                    if invalidation.element != self.top &&
-                        matches!(
+                    if invalidation.element != self.top
+                        && matches!(
                             kind,
-                            RelativeDependencyInvalidationKind::AncestorEarlierSibling |
-                                RelativeDependencyInvalidationKind::AncestorPrevSibling
+                            RelativeDependencyInvalidationKind::AncestorEarlierSibling
+                                | RelativeDependencyInvalidationKind::AncestorPrevSibling
                         )
                     {
                         result.invalidations.push(RelativeSelectorInvalidation {
@@ -658,8 +659,8 @@ where
                             self.optimization_context.is_some(),
                             "Optimization context not available for DOM mutation?"
                         );
-                        if dependency.state.contains(TSStateForInvalidation::EMPTY) &&
-                            element.first_element_child().is_some()
+                        if dependency.state.contains(TSStateForInvalidation::EMPTY)
+                            && element.first_element_child().is_some()
                         {
                             return true;
                         }
@@ -671,16 +672,16 @@ where
                             .sibling_traversal_map;
                         if dependency
                             .state
-                            .contains(TSStateForInvalidation::NTH_EDGE_FIRST) &&
-                            sibling_traversal_map.prev_sibling_for(&element).is_some()
+                            .contains(TSStateForInvalidation::NTH_EDGE_FIRST)
+                            && sibling_traversal_map.prev_sibling_for(&element).is_some()
                         {
                             return true;
                         }
 
                         if dependency
                             .state
-                            .contains(TSStateForInvalidation::NTH_EDGE_LAST) &&
-                            sibling_traversal_map.next_sibling_for(&element).is_some()
+                            .contains(TSStateForInvalidation::NTH_EDGE_LAST)
+                            && sibling_traversal_map.next_sibling_for(&element).is_some()
                         {
                             return true;
                         }
@@ -961,10 +962,10 @@ where
         host: Option<OpaqueElement>,
     ) {
         let is_rightmost = Self::is_subject(outer_dependency);
-        if (is_rightmost &&
-            !element.has_selector_flags(ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR)) ||
-            (!is_rightmost &&
-                !element.has_selector_flags(
+        if (is_rightmost
+            && !element.has_selector_flags(ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR))
+            || (!is_rightmost
+                && !element.has_selector_flags(
                     ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR_NON_SUBJECT,
                 ))
         {

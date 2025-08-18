@@ -464,8 +464,8 @@ where
         let (compat_mode, repeating, has_default_color_interpolation_method) = match *self {
             Gradient::Linear {
                 compat_mode, flags, ..
-            } |
-            Gradient::Radial {
+            }
+            | Gradient::Radial {
                 compat_mode, flags, ..
             } => (
                 compat_mode,
@@ -528,8 +528,8 @@ where
             } => {
                 dest.write_str("radial-gradient(")?;
                 let omit_shape = match *shape {
-                    EndingShape::Ellipse(Ellipse::Extent(ShapeExtent::Cover)) |
-                    EndingShape::Ellipse(Ellipse::Extent(ShapeExtent::FarthestCorner)) => true,
+                    EndingShape::Ellipse(Ellipse::Extent(ShapeExtent::Cover))
+                    | EndingShape::Ellipse(Ellipse::Extent(ShapeExtent::FarthestCorner)) => true,
                     _ => false,
                 };
                 let omit_position = position.is_center();

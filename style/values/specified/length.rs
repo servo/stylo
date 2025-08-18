@@ -135,14 +135,14 @@ impl FontRelativeLength {
     /// Return the unitless, raw value.
     fn unitless_value(&self) -> CSSFloat {
         match *self {
-            Self::Em(v) |
-            Self::Ex(v) |
-            Self::Ch(v) |
-            Self::Cap(v) |
-            Self::Ic(v) |
-            Self::Rem(v) |
-            Self::Lh(v) |
-            Self::Rlh(v) => v,
+            Self::Em(v)
+            | Self::Ex(v)
+            | Self::Ch(v)
+            | Self::Cap(v)
+            | Self::Ic(v)
+            | Self::Rem(v)
+            | Self::Lh(v)
+            | Self::Rlh(v) => v,
         }
     }
 
@@ -400,8 +400,8 @@ impl FontRelativeLength {
                         line_height_base,
                         context.style().writing_mode,
                     );
-                    if context.for_non_inherited_property &&
-                        line_height_base == LineHeightBase::CurrentStyle
+                    if context.for_non_inherited_property
+                        && line_height_base == LineHeightBase::CurrentStyle
                     {
                         context
                             .rule_cache_conditions
@@ -659,10 +659,10 @@ impl ViewportPercentageLength {
             // able to figure it own on its own so we help.
             _ => unsafe {
                 match *self {
-                    Vw(..) | Svw(..) | Lvw(..) | Dvw(..) | Vh(..) | Svh(..) | Lvh(..) |
-                    Dvh(..) | Vmin(..) | Svmin(..) | Lvmin(..) | Dvmin(..) | Vmax(..) |
-                    Svmax(..) | Lvmax(..) | Dvmax(..) | Vb(..) | Svb(..) | Lvb(..) | Dvb(..) |
-                    Vi(..) | Svi(..) | Lvi(..) | Dvi(..) => {},
+                    Vw(..) | Svw(..) | Lvw(..) | Dvw(..) | Vh(..) | Svh(..) | Lvh(..) | Dvh(..)
+                    | Vmin(..) | Svmin(..) | Lvmin(..) | Dvmin(..) | Vmax(..) | Svmax(..)
+                    | Lvmax(..) | Dvmax(..) | Vb(..) | Svb(..) | Lvb(..) | Dvb(..) | Vi(..)
+                    | Svi(..) | Lvi(..) | Dvi(..) => {},
                 }
                 debug_unreachable!("Forgot to handle unit in try_op()")
             },
@@ -782,13 +782,13 @@ impl AbsoluteLength {
     /// Return the unitless, raw value.
     fn unitless_value(&self) -> CSSFloat {
         match *self {
-            Self::Px(v) |
-            Self::In(v) |
-            Self::Cm(v) |
-            Self::Mm(v) |
-            Self::Q(v) |
-            Self::Pt(v) |
-            Self::Pc(v) => v,
+            Self::Px(v)
+            | Self::In(v)
+            | Self::Cm(v)
+            | Self::Mm(v)
+            | Self::Q(v)
+            | Self::Pt(v)
+            | Self::Pc(v) => v,
         }
     }
 
@@ -880,12 +880,12 @@ pub enum ContainerRelativeLength {
 impl ContainerRelativeLength {
     fn unitless_value(&self) -> CSSFloat {
         match *self {
-            Self::Cqw(v) |
-            Self::Cqh(v) |
-            Self::Cqi(v) |
-            Self::Cqb(v) |
-            Self::Cqmin(v) |
-            Self::Cqmax(v) => v,
+            Self::Cqw(v)
+            | Self::Cqh(v)
+            | Self::Cqi(v)
+            | Self::Cqb(v)
+            | Self::Cqmin(v)
+            | Self::Cqmax(v) => v,
         }
     }
 
@@ -1213,11 +1213,11 @@ impl NoCalcLength {
             // able to figure it own on its own so we help.
             _ => unsafe {
                 match *self {
-                    Absolute(..) |
-                    FontRelative(..) |
-                    ViewportPercentage(..) |
-                    ContainerRelative(..) |
-                    ServoCharacterWidth(..) => {},
+                    Absolute(..)
+                    | FontRelative(..)
+                    | ViewportPercentage(..)
+                    | ContainerRelative(..)
+                    | ServoCharacterWidth(..) => {},
                 }
                 debug_unreachable!("Forgot to handle unit in try_op()")
             },
@@ -1313,11 +1313,11 @@ impl PartialOrd for NoCalcLength {
             // able to figure it own on its own so we help.
             _ => unsafe {
                 match *self {
-                    Absolute(..) |
-                    FontRelative(..) |
-                    ViewportPercentage(..) |
-                    ContainerRelative(..) |
-                    ServoCharacterWidth(..) => {},
+                    Absolute(..)
+                    | FontRelative(..)
+                    | ViewportPercentage(..)
+                    | ContainerRelative(..)
+                    | ServoCharacterWidth(..) => {},
                 }
                 debug_unreachable!("Forgot an arm in partial_cmp?")
             },
@@ -1451,10 +1451,10 @@ impl PartialOrd for ViewportPercentageLength {
             // able to figure it own on its own so we help.
             _ => unsafe {
                 match *self {
-                    Vw(..) | Svw(..) | Lvw(..) | Dvw(..) | Vh(..) | Svh(..) | Lvh(..) |
-                    Dvh(..) | Vmin(..) | Svmin(..) | Lvmin(..) | Dvmin(..) | Vmax(..) |
-                    Svmax(..) | Lvmax(..) | Dvmax(..) | Vb(..) | Svb(..) | Lvb(..) | Dvb(..) |
-                    Vi(..) | Svi(..) | Lvi(..) | Dvi(..) => {},
+                    Vw(..) | Svw(..) | Lvw(..) | Dvw(..) | Vh(..) | Svh(..) | Lvh(..) | Dvh(..)
+                    | Vmin(..) | Svmin(..) | Lvmin(..) | Dvmin(..) | Vmax(..) | Svmax(..)
+                    | Lvmax(..) | Dvmax(..) | Vb(..) | Svb(..) | Lvb(..) | Dvb(..) | Vi(..)
+                    | Svi(..) | Lvi(..) | Dvi(..) => {},
                 }
                 debug_unreachable!("Forgot an arm in partial_cmp?")
             },
@@ -1481,9 +1481,9 @@ impl Length {
                     .map_err(|()| location.new_unexpected_token_error(token.clone()))
             },
             Token::Number { value, .. } if num_context.is_ok(context.parsing_mode, value) => {
-                if value != 0. &&
-                    !context.parsing_mode.allows_unitless_lengths() &&
-                    !allow_quirks.allowed(context.quirks_mode)
+                if value != 0.
+                    && !context.parsing_mode.allows_unitless_lengths()
+                    && !allow_quirks.allowed(context.quirks_mode)
                 {
                     return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
@@ -1732,9 +1732,9 @@ impl LengthPercentage {
                 )));
             },
             Token::Number { value, .. } if num_context.is_ok(context.parsing_mode, value) => {
-                if value != 0. &&
-                    !context.parsing_mode.allows_unitless_lengths() &&
-                    !allow_quirks.allowed(context.quirks_mode)
+                if value != 0.
+                    && !context.parsing_mode.allows_unitless_lengths()
+                    && !allow_quirks.allowed(context.quirks_mode)
                 {
                     return Err(location.new_unexpected_token_error(token.clone()));
                 } else {

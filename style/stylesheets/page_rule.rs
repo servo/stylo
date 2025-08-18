@@ -306,11 +306,11 @@ impl PageRule {
     #[cfg(feature = "gecko")]
     pub fn size_of(&self, guard: &SharedRwLockReadGuard, ops: &mut MallocSizeOfOps) -> usize {
         // Measurement of other fields may be added later.
-        self.rules.unconditional_shallow_size_of(ops) +
-            self.rules.read_with(guard).size_of(guard, ops) +
-            self.block.unconditional_shallow_size_of(ops) +
-            self.block.read_with(guard).size_of(ops) +
-            self.selectors.size_of(ops)
+        self.rules.unconditional_shallow_size_of(ops)
+            + self.rules.read_with(guard).size_of(guard, ops)
+            + self.block.unconditional_shallow_size_of(ops)
+            + self.block.read_with(guard).size_of(ops)
+            + self.selectors.size_of(ops)
     }
     /// Computes the specificity of this page rule when matched with flags.
     ///

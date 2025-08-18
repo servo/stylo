@@ -460,8 +460,8 @@ where
     fn is_3d(&self) -> bool {
         use self::TransformOperation::*;
         match *self {
-            Translate3D(..) | TranslateZ(..) | Rotate3D(..) | RotateX(..) | RotateY(..) |
-            RotateZ(..) | Scale3D(..) | ScaleZ(..) | Perspective(..) | Matrix3D(..) => true,
+            Translate3D(..) | TranslateZ(..) | Rotate3D(..) | RotateX(..) | RotateY(..)
+            | RotateZ(..) | Scale3D(..) | ScaleZ(..) | Perspective(..) | Matrix3D(..) => true,
             _ => false,
         }
     }

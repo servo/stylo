@@ -215,8 +215,8 @@ impl Image {
         cors_mode: CorsMode,
         flags: ParseImageFlags,
     ) -> Result<Image, ParseError<'i>> {
-        if !flags.contains(ParseImageFlags::FORBID_NONE) &&
-            input.try_parse(|i| i.expect_ident_matching("none")).is_ok()
+        if !flags.contains(ParseImageFlags::FORBID_NONE)
+            && input.try_parse(|i| i.expect_ident_matching("none")).is_ok()
         {
             return Ok(generic::Image::None);
         }

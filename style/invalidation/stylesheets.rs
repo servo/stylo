@@ -611,8 +611,8 @@ impl StylesheetInvalidationSet {
                 // invalidate fully.
                 return self.invalidate_fully();
             },
-            Document(..) | Import(..) | Media(..) | Supports(..) | Container(..) |
-            LayerBlock(..) | StartingStyle(..) => {
+            Document(..) | Import(..) | Media(..) | Supports(..) | Container(..)
+            | LayerBlock(..) | StartingStyle(..) => {
                 // Do nothing, relevant nested rules are visited as part of rule iteration.
             },
             FontFace(..) => {

@@ -420,8 +420,8 @@ impl Device {
                 );
                 Size2D::new(
                     Au(size.width),
-                    Au(size.height +
-                        pc.mDynamicToolbarMaxHeight as i32 * pc.mCurAppUnitsPerDevPixel),
+                    Au(size.height
+                        + pc.mDynamicToolbarMaxHeight as i32 * pc.mCurAppUnitsPerDevPixel),
                 )
             },
             ViewportVariant::Dynamic => {
@@ -435,9 +435,9 @@ impl Device {
                 );
                 Size2D::new(
                     Au(size.width),
-                    Au(size.height +
-                        (pc.mDynamicToolbarMaxHeight - pc.mDynamicToolbarHeight) as i32 *
-                            pc.mCurAppUnitsPerDevPixel),
+                    Au(size.height
+                        + (pc.mDynamicToolbarMaxHeight - pc.mDynamicToolbarHeight) as i32
+                            * pc.mCurAppUnitsPerDevPixel),
                 )
             },
         }

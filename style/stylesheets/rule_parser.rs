@@ -123,12 +123,12 @@ impl<'a, 'i> TopLevelRuleParser<'a, 'i> {
     fn nested(&mut self) -> &mut NestedRuleParser<'a, 'i> {
         // SAFETY: NestedRuleParser is just a repr(transparent) wrapper over TopLevelRuleParser
         const_assert!(
-            std::mem::size_of::<TopLevelRuleParser<'static, 'static>>() ==
-                std::mem::size_of::<NestedRuleParser<'static, 'static>>()
+            std::mem::size_of::<TopLevelRuleParser<'static, 'static>>()
+                == std::mem::size_of::<NestedRuleParser<'static, 'static>>()
         );
         const_assert!(
-            std::mem::align_of::<TopLevelRuleParser<'static, 'static>>() ==
-                std::mem::align_of::<NestedRuleParser<'static, 'static>>()
+            std::mem::align_of::<TopLevelRuleParser<'static, 'static>>()
+                == std::mem::align_of::<NestedRuleParser<'static, 'static>>()
         );
         unsafe { &mut *(self as *mut _ as *mut NestedRuleParser<'a, 'i>) }
     }
@@ -205,8 +205,8 @@ impl<'a, 'i> TopLevelRuleParser<'a, 'i> {
         // If there's anything that isn't a namespace rule (or import rule, but
         // we checked that already at the beginning), reject with a
         // StateError.
-        if new_state == State::Namespaces &&
-            ctx.rule_list[ctx.index..]
+        if new_state == State::Namespaces
+            && ctx.rule_list[ctx.index..]
                 .iter()
                 .any(|r| !matches!(*r, CssRule::Namespace(..)))
         {
@@ -517,24 +517,24 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
     //     style rule as well.
     fn at_rule_allowed(&self, prelude: &AtRulePrelude) -> bool {
         match prelude {
-            AtRulePrelude::Media(..) |
-            AtRulePrelude::Supports(..) |
-            AtRulePrelude::Container(..) |
-            AtRulePrelude::Document(..) |
-            AtRulePrelude::Layer(..) |
-            AtRulePrelude::Scope(..) |
-            AtRulePrelude::StartingStyle => true,
+            AtRulePrelude::Media(..)
+            | AtRulePrelude::Supports(..)
+            | AtRulePrelude::Container(..)
+            | AtRulePrelude::Document(..)
+            | AtRulePrelude::Layer(..)
+            | AtRulePrelude::Scope(..)
+            | AtRulePrelude::StartingStyle => true,
 
-            AtRulePrelude::Namespace(..) |
-            AtRulePrelude::FontFace |
-            AtRulePrelude::FontFeatureValues(..) |
-            AtRulePrelude::FontPaletteValues(..) |
-            AtRulePrelude::CounterStyle(..) |
-            AtRulePrelude::Keyframes(..) |
-            AtRulePrelude::Page(..) |
-            AtRulePrelude::Property(..) |
-            AtRulePrelude::Import(..) |
-            AtRulePrelude::PositionTry(..) => !self.in_style_or_page_rule(),
+            AtRulePrelude::Namespace(..)
+            | AtRulePrelude::FontFace
+            | AtRulePrelude::FontFeatureValues(..)
+            | AtRulePrelude::FontPaletteValues(..)
+            | AtRulePrelude::CounterStyle(..)
+            | AtRulePrelude::Keyframes(..)
+            | AtRulePrelude::Page(..)
+            | AtRulePrelude::Property(..)
+            | AtRulePrelude::Import(..)
+            | AtRulePrelude::PositionTry(..) => !self.in_style_or_page_rule(),
             AtRulePrelude::Margin(..) => self.in_page_rule(),
         }
     }

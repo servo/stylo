@@ -79,13 +79,13 @@ impl CascadeLevel {
             } => Self::AuthorImportant {
                 shadow_cascade_order: -shadow_cascade_order,
             },
-            Self::PresHints |
-            Self::SMILOverride |
-            Self::Animations |
-            Self::AuthorImportant { .. } |
-            Self::UserImportant |
-            Self::UAImportant |
-            Self::Transitions => *self,
+            Self::PresHints
+            | Self::SMILOverride
+            | Self::Animations
+            | Self::AuthorImportant { .. }
+            | Self::UserImportant
+            | Self::UAImportant
+            | Self::Transitions => *self,
         }
     }
 
@@ -99,13 +99,13 @@ impl CascadeLevel {
             } => Self::AuthorNormal {
                 shadow_cascade_order: -shadow_cascade_order,
             },
-            Self::PresHints |
-            Self::SMILOverride |
-            Self::Animations |
-            Self::AuthorNormal { .. } |
-            Self::UserNormal |
-            Self::UANormal |
-            Self::Transitions => *self,
+            Self::PresHints
+            | Self::SMILOverride
+            | Self::Animations
+            | Self::AuthorNormal { .. }
+            | Self::UserNormal
+            | Self::UANormal
+            | Self::Transitions => *self,
         }
     }
 
@@ -164,12 +164,12 @@ impl CascadeLevel {
         match *self {
             Self::UAImportant | Self::UANormal => Origin::UserAgent,
             Self::UserImportant | Self::UserNormal => Origin::User,
-            Self::PresHints |
-            Self::AuthorNormal { .. } |
-            Self::AuthorImportant { .. } |
-            Self::SMILOverride |
-            Self::Animations |
-            Self::Transitions => Origin::Author,
+            Self::PresHints
+            | Self::AuthorNormal { .. }
+            | Self::AuthorImportant { .. }
+            | Self::SMILOverride
+            | Self::Animations
+            | Self::Transitions => Origin::Author,
         }
     }
 

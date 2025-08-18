@@ -53,9 +53,9 @@ pub struct CssUrlData {
 
 impl PartialEq for CssUrlData {
     fn eq(&self, other: &Self) -> bool {
-        self.serialization == other.serialization &&
-            self.extra_data == other.extra_data &&
-            self.cors_mode == other.cors_mode
+        self.serialization == other.serialization
+            && self.extra_data == other.extra_data
+            && self.cors_mode == other.cors_mode
     }
 }
 

@@ -265,8 +265,8 @@ impl generic::CalcNodeLeaf for Leaf {
             (&ColorComponent(ref one), &ColorComponent(ref other)) => one.partial_cmp(other),
             _ => {
                 match *self {
-                    Length(..) | Percentage(..) | Angle(..) | Time(..) | Number(..) |
-                    Resolution(..) | ColorComponent(..) => {},
+                    Length(..) | Percentage(..) | Angle(..) | Time(..) | Number(..)
+                    | Resolution(..) | ColorComponent(..) => {},
                 }
                 unsafe {
                     debug_unreachable!("Forgot a branch?");
@@ -277,12 +277,12 @@ impl generic::CalcNodeLeaf for Leaf {
 
     fn as_number(&self) -> Option<f32> {
         match *self {
-            Leaf::Length(_) |
-            Leaf::Angle(_) |
-            Leaf::Time(_) |
-            Leaf::Resolution(_) |
-            Leaf::Percentage(_) |
-            Leaf::ColorComponent(_) => None,
+            Leaf::Length(_)
+            | Leaf::Angle(_)
+            | Leaf::Time(_)
+            | Leaf::Resolution(_)
+            | Leaf::Percentage(_)
+            | Leaf::ColorComponent(_) => None,
             Leaf::Number(value) => Some(value),
         }
     }
@@ -364,8 +364,8 @@ impl generic::CalcNodeLeaf for Leaf {
         }
 
         match (self, other) {
-            (&mut Number(ref mut one), &Number(ref other)) |
-            (&mut Percentage(ref mut one), &Percentage(ref other)) => {
+            (&mut Number(ref mut one), &Number(ref other))
+            | (&mut Percentage(ref mut one), &Percentage(ref other)) => {
                 *one += *other;
             },
             (&mut Angle(ref mut one), &Angle(ref other)) => {
@@ -382,8 +382,8 @@ impl generic::CalcNodeLeaf for Leaf {
             },
             _ => {
                 match *other {
-                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Resolution(..) |
-                    Length(..) | ColorComponent(..) => {},
+                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Resolution(..)
+                    | Length(..) | ColorComponent(..) => {},
                 }
                 unsafe {
                     debug_unreachable!();
@@ -460,8 +460,8 @@ impl generic::CalcNodeLeaf for Leaf {
             },
             _ => {
                 match *other {
-                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Length(..) |
-                    Resolution(..) | ColorComponent(..) => {},
+                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Length(..)
+                    | Resolution(..) | ColorComponent(..) => {},
                 }
                 unsafe {
                     debug_unreachable!();
@@ -605,8 +605,8 @@ impl CalcNode {
             &Token::Function(ref name)
                 if allowed
                     .additional_functions
-                    .intersects(AdditionalFunctions::ANCHOR) &&
-                    name.eq_ignore_ascii_case("anchor") =>
+                    .intersects(AdditionalFunctions::ANCHOR)
+                    && name.eq_ignore_ascii_case("anchor") =>
             {
                 let anchor_function = GenericAnchorFunction::parse_in_calc(context, input)?;
                 Ok(CalcNode::Anchor(Box::new(anchor_function)))
@@ -614,8 +614,8 @@ impl CalcNode {
             &Token::Function(ref name)
                 if allowed
                     .additional_functions
-                    .intersects(AdditionalFunctions::ANCHOR_SIZE) &&
-                    name.eq_ignore_ascii_case("anchor-size") =>
+                    .intersects(AdditionalFunctions::ANCHOR_SIZE)
+                    && name.eq_ignore_ascii_case("anchor-size") =>
             {
                 let anchor_size_function =
                     GenericAnchorSizeFunction::parse_in_calc(context, input)?;

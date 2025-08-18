@@ -90,20 +90,20 @@ bitflags! {
 impl ElementSelectorFlags {
     /// Returns the subset of flags that apply to the element.
     pub fn for_self(self) -> ElementSelectorFlags {
-        self & (ElementSelectorFlags::HAS_EMPTY_SELECTOR |
-            ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR |
-            ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR_NON_SUBJECT |
-            ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING |
-            ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR)
+        self & (ElementSelectorFlags::HAS_EMPTY_SELECTOR
+            | ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR
+            | ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR_NON_SUBJECT
+            | ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING
+            | ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR)
     }
 
     /// Returns the subset of flags that apply to the parent.
     pub fn for_parent(self) -> ElementSelectorFlags {
-        self & (ElementSelectorFlags::HAS_SLOW_SELECTOR |
-            ElementSelectorFlags::HAS_SLOW_SELECTOR_LATER_SIBLINGS |
-            ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH |
-            ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH_OF |
-            ElementSelectorFlags::HAS_EDGE_CHILD_SELECTOR)
+        self & (ElementSelectorFlags::HAS_SLOW_SELECTOR
+            | ElementSelectorFlags::HAS_SLOW_SELECTOR_LATER_SIBLINGS
+            | ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH
+            | ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH_OF
+            | ElementSelectorFlags::HAS_EDGE_CHILD_SELECTOR)
     }
 }
 
@@ -236,9 +236,9 @@ impl From<SelectorMatchingResult> for KleeneValue {
         match value {
             SelectorMatchingResult::Matched => KleeneValue::True,
             SelectorMatchingResult::Unknown => KleeneValue::Unknown,
-            SelectorMatchingResult::NotMatchedAndRestartFromClosestLaterSibling |
-            SelectorMatchingResult::NotMatchedAndRestartFromClosestDescendant |
-            SelectorMatchingResult::NotMatchedGlobally => KleeneValue::False,
+            SelectorMatchingResult::NotMatchedAndRestartFromClosestLaterSibling
+            | SelectorMatchingResult::NotMatchedAndRestartFromClosestDescendant
+            | SelectorMatchingResult::NotMatchedGlobally => KleeneValue::False,
         }
     }
 }
@@ -514,10 +514,10 @@ fn matches_relative_selector<E: Element>(
         debug_assert!(
             matches!(
                 relative_selector.match_hint,
-                RelativeSelectorMatchHint::InNextSibling |
-                    RelativeSelectorMatchHint::InNextSiblingSubtree |
-                    RelativeSelectorMatchHint::InSibling |
-                    RelativeSelectorMatchHint::InSiblingSubtree
+                RelativeSelectorMatchHint::InNextSibling
+                    | RelativeSelectorMatchHint::InNextSiblingSubtree
+                    | RelativeSelectorMatchHint::InSibling
+                    | RelativeSelectorMatchHint::InSiblingSubtree
             ),
             "Not descendant direction, but also not sibling direction?"
         );
@@ -712,8 +712,8 @@ fn hover_and_active_quirk_applies<Impl: SelectorImpl>(
 
     // This compound selector had a pseudo-element to the right that we
     // intentionally skipped.
-    if rightmost == SubjectOrPseudoElement::Yes &&
-        context.matching_mode() == MatchingMode::ForStatelessPseudoElement
+    if rightmost == SubjectOrPseudoElement::Yes
+        && context.matching_mode() == MatchingMode::ForStatelessPseudoElement
     {
         return false;
     }
@@ -961,10 +961,10 @@ where
                     return result;
                 }
             },
-            Combinator::NextSibling |
-            Combinator::PseudoElement |
-            Combinator::Part |
-            Combinator::SlotAssignment => {
+            Combinator::NextSibling
+            | Combinator::PseudoElement
+            | Combinator::Part
+            | Combinator::SlotAssignment => {
                 // NOTE(emilio): Conceptually, PseudoElement / Part / SlotAssignment should return
                 // `candidate_not_found`, but it doesn't matter in practice since they don't have
                 // sibling / descendant combinators to the right of them. This hopefully saves one
@@ -1158,8 +1158,8 @@ pub(crate) fn compound_matches_featureless_host<Impl: SelectorImpl>(
                 // https://github.com/w3c/csswg-drafts/issues/10179 for existing resolutions that
                 // tweak this behavior.
                 for selector in l.slice() {
-                    if selector.matches_featureless_host(scope_matches_featureless_host) !=
-                        MatchesFeaturelessHost::Only
+                    if selector.matches_featureless_host(scope_matches_featureless_host)
+                        != MatchesFeaturelessHost::Only
                     {
                         return MatchesFeaturelessHost::Never;
                     }
@@ -1183,8 +1183,8 @@ fn matches_compound_selector<E>(
 where
     E: Element,
 {
-    if context.featureless() &&
-        compound_matches_featureless_host(
+    if context.featureless()
+        && compound_matches_featureless_host(
             &mut selector_iter.clone(),
             /* scope_matches_featureless_host = */ true,
         ) == MatchesFeaturelessHost::Never
@@ -1263,9 +1263,9 @@ where
         },
         Component::NonTSPseudoClass(ref pc) => {
             if let Some(ref iter) = context.quirks_data {
-                if pc.is_active_or_hover() &&
-                    !element.is_link() &&
-                    hover_and_active_quirk_applies(iter, context.shared, context.rightmost)
+                if pc.is_active_or_hover()
+                    && !element.is_link()
+                    && hover_and_active_quirk_applies(iter, context.shared, context.rightmost)
                 {
                     return KleeneValue::False;
                 }
@@ -1379,8 +1379,8 @@ where
         return KleeneValue::False;
     }
     let has_selectors = !selectors.is_empty();
-    let selectors_match = !has_selectors ||
-        matches_complex_selector_list(selectors, element, context, rightmost).to_bool(true);
+    let selectors_match = !has_selectors
+        || matches_complex_selector_list(selectors, element, context, rightmost).to_bool(true);
     if let Some(may_return_unknown) = context.matching_for_invalidation_comparison() {
         // Skip expensive indexing math in invalidation.
         return if selectors_match && may_return_unknown {
@@ -1405,8 +1405,8 @@ where
                 selectors,
                 rightmost,
             )
-            .to_bool(true) &&
-                matches_generic_nth_child(
+            .to_bool(true)
+                && matches_generic_nth_child(
                     element,
                     context,
                     &NthSelectorData::last(is_of_type),
@@ -1512,9 +1512,9 @@ where
     // siblings to the left checking the cache in the is_from_end case (this
     // matches what Gecko does). The indices-from-the-left is handled during the
     // regular look further below.
-    if check_cache &&
-        is_from_end &&
-        !context
+    if check_cache
+        && is_from_end
+        && !context
             .nth_index_cache(is_of_type, is_from_end, selectors)
             .is_empty()
     {

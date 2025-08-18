@@ -188,9 +188,9 @@ fn parse_rgb<'i, 't>(
     // If the first component is not "none" and is followed by a comma, then we
     // are parsing the legacy syntax.  Legacy syntax also doesn't support an
     // origin color.
-    let is_legacy_syntax = origin_color.is_none() &&
-        !maybe_red.is_none() &&
-        arguments.try_parse(|p| p.expect_comma()).is_ok();
+    let is_legacy_syntax = origin_color.is_none()
+        && !maybe_red.is_none()
+        && arguments.try_parse(|p| p.expect_comma()).is_ok();
 
     Ok(if is_legacy_syntax {
         let (green, blue) = if maybe_red.could_be_percentage() {
@@ -231,9 +231,9 @@ fn parse_hsl<'i, 't>(
 
     // If the hue is not "none" and is followed by a comma, then we are parsing
     // the legacy syntax. Legacy syntax also doesn't support an origin color.
-    let is_legacy_syntax = origin_color.is_none() &&
-        !hue.is_none() &&
-        arguments.try_parse(|p| p.expect_comma()).is_ok();
+    let is_legacy_syntax = origin_color.is_none()
+        && !hue.is_none()
+        && arguments.try_parse(|p| p.expect_comma()).is_ok();
 
     let (saturation, lightness, alpha) = if is_legacy_syntax {
         let saturation = parse_percentage(context, arguments, false)?;

@@ -63,8 +63,8 @@ impl StyleFeature {
         input: &mut Parser<'i, 't>,
         feature_type: FeatureType,
     ) -> Result<Self, ParseError<'i>> {
-        if !static_prefs::pref!("layout.css.style-queries.enabled") ||
-            feature_type != FeatureType::Container
+        if !static_prefs::pref!("layout.css.style-queries.enabled")
+            || feature_type != FeatureType::Container
         {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }

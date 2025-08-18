@@ -75,9 +75,9 @@ impl ScopeRule {
     /// Measure heap usage.
     #[cfg(feature = "gecko")]
     pub fn size_of(&self, guard: &SharedRwLockReadGuard, ops: &mut MallocSizeOfOps) -> usize {
-        self.rules.unconditional_shallow_size_of(ops) +
-            self.rules.read_with(guard).size_of(guard, ops) +
-            self.bounds.size_of(ops)
+        self.rules.unconditional_shallow_size_of(ops)
+            + self.rules.read_with(guard).size_of(guard, ops)
+            + self.bounds.size_of(ops)
     }
 }
 
@@ -468,13 +468,13 @@ pub fn scope_selector_list_is_trivial(list: &SelectorList<SelectorImpl>) -> bool
         loop {
             while let Some(c) = iter.next() {
                 match c {
-                    Component::ID(_) |
-                    Component::Nth(_) |
-                    Component::NthOf(_) |
-                    Component::Has(_) => return false,
-                    Component::Is(ref list) |
-                    Component::Where(ref list) |
-                    Component::Negation(ref list) => {
+                    Component::ID(_)
+                    | Component::Nth(_)
+                    | Component::NthOf(_)
+                    | Component::Has(_) => return false,
+                    Component::Is(ref list)
+                    | Component::Where(ref list)
+                    | Component::Negation(ref list) => {
                         if !scope_selector_list_is_trivial(list) {
                             return false;
                         }

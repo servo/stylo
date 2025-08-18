@@ -81,13 +81,13 @@ impl ServoRestyleDamage {
     /// FIXME(bholley): Do we ever actually need this? Shouldn't
     /// RECONSTRUCT_FLOW imply everything else?
     pub fn rebuild_and_reflow() -> ServoRestyleDamage {
-        ServoRestyleDamage::REPAINT |
-            ServoRestyleDamage::REPOSITION |
-            ServoRestyleDamage::STORE_OVERFLOW |
-            ServoRestyleDamage::BUBBLE_ISIZES |
-            ServoRestyleDamage::REFLOW_OUT_OF_FLOW |
-            ServoRestyleDamage::REFLOW |
-            ServoRestyleDamage::RECONSTRUCT_FLOW
+        ServoRestyleDamage::REPAINT
+            | ServoRestyleDamage::REPOSITION
+            | ServoRestyleDamage::STORE_OVERFLOW
+            | ServoRestyleDamage::BUBBLE_ISIZES
+            | ServoRestyleDamage::REFLOW_OUT_OF_FLOW
+            | ServoRestyleDamage::REFLOW
+            | ServoRestyleDamage::RECONSTRUCT_FLOW
     }
 
     /// Returns a bitmask indicating that the frame needs to be reconstructed.
@@ -99,18 +99,18 @@ impl ServoRestyleDamage {
     /// returns the damage that we should add to the *parent* of this flow.
     pub fn damage_for_parent(self, child_is_absolutely_positioned: bool) -> ServoRestyleDamage {
         if child_is_absolutely_positioned {
-            self & (ServoRestyleDamage::REPAINT |
-                ServoRestyleDamage::REPOSITION |
-                ServoRestyleDamage::STORE_OVERFLOW |
-                ServoRestyleDamage::REFLOW_OUT_OF_FLOW |
-                ServoRestyleDamage::RESOLVE_GENERATED_CONTENT)
+            self & (ServoRestyleDamage::REPAINT
+                | ServoRestyleDamage::REPOSITION
+                | ServoRestyleDamage::STORE_OVERFLOW
+                | ServoRestyleDamage::REFLOW_OUT_OF_FLOW
+                | ServoRestyleDamage::RESOLVE_GENERATED_CONTENT)
         } else {
-            self & (ServoRestyleDamage::REPAINT |
-                ServoRestyleDamage::REPOSITION |
-                ServoRestyleDamage::STORE_OVERFLOW |
-                ServoRestyleDamage::REFLOW |
-                ServoRestyleDamage::REFLOW_OUT_OF_FLOW |
-                ServoRestyleDamage::RESOLVE_GENERATED_CONTENT)
+            self & (ServoRestyleDamage::REPAINT
+                | ServoRestyleDamage::REPOSITION
+                | ServoRestyleDamage::STORE_OVERFLOW
+                | ServoRestyleDamage::REFLOW
+                | ServoRestyleDamage::REFLOW_OUT_OF_FLOW
+                | ServoRestyleDamage::RESOLVE_GENERATED_CONTENT)
         }
     }
 
@@ -142,9 +142,9 @@ impl ServoRestyleDamage {
             },
             _ => {
                 // TODO(pcwalton): Take floatedness into account.
-                self & (ServoRestyleDamage::REPAINT |
-                    ServoRestyleDamage::REPOSITION |
-                    ServoRestyleDamage::REFLOW)
+                self & (ServoRestyleDamage::REPAINT
+                    | ServoRestyleDamage::REPOSITION
+                    | ServoRestyleDamage::REFLOW)
             },
         }
     }
@@ -213,8 +213,8 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
             ServoRestyleDamage::RECONSTRUCT_FLOW
         ],
         old.get_box().original_display != new.get_box().original_display
-    ) || (new.get_box().display == Display::Inline &&
-        restyle_damage_rebuild_and_reflow_inline!(
+    ) || (new.get_box().display == Display::Inline
+        && restyle_damage_rebuild_and_reflow_inline!(
             old,
             new,
             damage,
@@ -227,8 +227,8 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
                 ServoRestyleDamage::REFLOW,
                 ServoRestyleDamage::RECONSTRUCT_FLOW
             ]
-        )) ||
-        restyle_damage_reflow!(
+        ))
+        || restyle_damage_reflow!(
             old,
             new,
             damage,
@@ -240,8 +240,8 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
                 ServoRestyleDamage::REFLOW_OUT_OF_FLOW,
                 ServoRestyleDamage::REFLOW
             ]
-        ) ||
-        restyle_damage_reflow_out_of_flow!(
+        )
+        || restyle_damage_reflow_out_of_flow!(
             old,
             new,
             damage,
@@ -251,8 +251,8 @@ fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDam
                 ServoRestyleDamage::STORE_OVERFLOW,
                 ServoRestyleDamage::REFLOW_OUT_OF_FLOW
             ]
-        ) ||
-        restyle_damage_repaint!(old, new, damage, [ServoRestyleDamage::REPAINT]);
+        )
+        || restyle_damage_repaint!(old, new, damage, [ServoRestyleDamage::REPAINT]);
 
     // Paint worklets may depend on custom properties,
     // so if they have changed we should repaint.

@@ -176,54 +176,54 @@ impl Display {
     // Internal table boxes.
 
     pub const TableRowGroup: Self = Self(
-        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::TableRowGroup as u16,
+        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::TableRowGroup as u16,
     );
     pub const TableHeaderGroup: Self = Self(
-        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::TableHeaderGroup as u16,
+        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::TableHeaderGroup as u16,
     );
     pub const TableFooterGroup: Self = Self(
-        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::TableFooterGroup as u16,
+        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::TableFooterGroup as u16,
     );
     pub const TableColumn: Self = Self(
-        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::TableColumn as u16,
+        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::TableColumn as u16,
     );
     pub const TableColumnGroup: Self = Self(
-        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::TableColumnGroup as u16,
+        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::TableColumnGroup as u16,
     );
     pub const TableRow: Self = Self(
-        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::TableRow as u16,
+        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::TableRow as u16,
     );
     pub const TableCell: Self = Self(
-        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::TableCell as u16,
+        ((DisplayOutside::InternalTable as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::TableCell as u16,
     );
 
     /// Internal ruby boxes.
     #[cfg(feature = "gecko")]
     pub const RubyBase: Self = Self(
-        ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::RubyBase as u16,
+        ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::RubyBase as u16,
     );
     #[cfg(feature = "gecko")]
     pub const RubyBaseContainer: Self = Self(
-        ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::RubyBaseContainer as u16,
+        ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::RubyBaseContainer as u16,
     );
     #[cfg(feature = "gecko")]
     pub const RubyText: Self = Self(
-        ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::RubyText as u16,
+        ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::RubyText as u16,
     );
     #[cfg(feature = "gecko")]
     pub const RubyTextContainer: Self = Self(
-        ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT) |
-            DisplayInside::RubyTextContainer as u16,
+        ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::RubyTextContainer as u16,
     );
 
     /// Make a raw display value from <display-outside> and <display-inside> values.
@@ -285,11 +285,11 @@ impl Display {
     pub fn is_ruby_type(&self) -> bool {
         match self.inside() {
             #[cfg(feature = "gecko")]
-            DisplayInside::Ruby |
-            DisplayInside::RubyBase |
-            DisplayInside::RubyText |
-            DisplayInside::RubyBaseContainer |
-            DisplayInside::RubyTextContainer => true,
+            DisplayInside::Ruby
+            | DisplayInside::RubyBase
+            | DisplayInside::RubyText
+            | DisplayInside::RubyBaseContainer
+            | DisplayInside::RubyTextContainer => true,
             _ => false,
         }
     }
@@ -1014,16 +1014,16 @@ fn change_bits_for_longhand(longhand: LonghandId) -> WillChangeBits {
             WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL | WillChangeBits::POSITION
         },
         LonghandId::ZIndex => WillChangeBits::Z_INDEX,
-        LonghandId::Transform |
-        LonghandId::TransformStyle |
-        LonghandId::Translate |
-        LonghandId::Rotate |
-        LonghandId::Scale |
-        LonghandId::OffsetPath => WillChangeBits::TRANSFORM,
+        LonghandId::Transform
+        | LonghandId::TransformStyle
+        | LonghandId::Translate
+        | LonghandId::Rotate
+        | LonghandId::Scale
+        | LonghandId::OffsetPath => WillChangeBits::TRANSFORM,
         LonghandId::Filter | LonghandId::BackdropFilter => {
-            WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL |
-                WillChangeBits::BACKDROP_ROOT |
-                WillChangeBits::FIXPOS_CB_NON_SVG
+            WillChangeBits::STACKING_CONTEXT_UNCONDITIONAL
+                | WillChangeBits::BACKDROP_ROOT
+                | WillChangeBits::FIXPOS_CB_NON_SVG
         },
         LonghandId::ViewTransitionName => {
             WillChangeBits::VIEW_TRANSITION_NAME | WillChangeBits::BACKDROP_ROOT
@@ -1302,8 +1302,8 @@ impl ContainerType {
         if self.contains(Self::SIZE | Self::INLINE_SIZE) {
             return false;
         }
-        if self.contains(Self::SCROLL_STATE) &&
-            !static_prefs::pref!("layout.css.scroll-state.enabled")
+        if self.contains(Self::SCROLL_STATE)
+            && !static_prefs::pref!("layout.css.scroll-state.enabled")
         {
             return false;
         }

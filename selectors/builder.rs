@@ -279,9 +279,9 @@ impl From<u32> for Specificity {
 impl From<Specificity> for u32 {
     #[inline]
     fn from(specificity: Specificity) -> u32 {
-        cmp::min(specificity.id_selectors, MAX_10BIT) << 20 |
-            cmp::min(specificity.class_like_selectors, MAX_10BIT) << 10 |
-            cmp::min(specificity.element_selectors, MAX_10BIT)
+        cmp::min(specificity.id_selectors, MAX_10BIT) << 20
+            | cmp::min(specificity.class_like_selectors, MAX_10BIT) << 10
+            | cmp::min(specificity.element_selectors, MAX_10BIT)
     }
 }
 
@@ -353,14 +353,14 @@ where
             Component::ID(..) => {
                 specificity.id_selectors += 1;
             },
-            Component::Class(..) |
-            Component::AttributeInNoNamespace { .. } |
-            Component::AttributeInNoNamespaceExists { .. } |
-            Component::AttributeOther(..) |
-            Component::Root |
-            Component::Empty |
-            Component::Nth(..) |
-            Component::NonTSPseudoClass(..) => {
+            Component::Class(..)
+            | Component::AttributeInNoNamespace { .. }
+            | Component::AttributeInNoNamespaceExists { .. }
+            | Component::AttributeOther(..)
+            | Component::Root
+            | Component::Empty
+            | Component::Nth(..)
+            | Component::NonTSPseudoClass(..) => {
                 specificity.class_like_selectors += 1;
             },
             Component::Scope | Component::ImplicitScope => {
@@ -389,9 +389,9 @@ where
             //     The specificity of an :is(), :not(), or :has() pseudo-class
             //     is replaced by the specificity of the most specific complex
             //     selector in its selector list argument.
-            Component::Where(ref list) |
-            Component::Negation(ref list) |
-            Component::Is(ref list) => {
+            Component::Where(ref list)
+            | Component::Negation(ref list)
+            | Component::Is(ref list) => {
                 let sf = selector_list_specificity_and_flags(
                     list.slice().iter(),
                     /* nested = */ true,
@@ -409,13 +409,13 @@ where
                 *specificity += Specificity::from(sf.specificity);
                 flags.insert(sf.flags);
             },
-            Component::ExplicitUniversalType |
-            Component::ExplicitAnyNamespace |
-            Component::ExplicitNoNamespace |
-            Component::DefaultNamespace(..) |
-            Component::Namespace(..) |
-            Component::RelativeSelectorAnchor |
-            Component::Invalid(..) => {
+            Component::ExplicitUniversalType
+            | Component::ExplicitAnyNamespace
+            | Component::ExplicitNoNamespace
+            | Component::DefaultNamespace(..)
+            | Component::Namespace(..)
+            | Component::RelativeSelectorAnchor
+            | Component::Invalid(..) => {
                 // Does not affect specificity
             },
         }
@@ -446,8 +446,8 @@ pub(crate) fn selector_list_specificity_and_flags<'a, Impl: SelectorImpl>(
     let mut flags = SelectorFlags::empty();
     for selector in itr {
         let selector_flags = selector.flags();
-        let selector_specificity = if for_nesting_parent &&
-            selector_flags.intersects(SelectorFlags::forbidden_for_nesting())
+        let selector_specificity = if for_nesting_parent
+            && selector_flags.intersects(SelectorFlags::forbidden_for_nesting())
         {
             // In this case we need to re-compute the specificity.
             specificity_and_flags(selector.iter_raw_match_order(), for_nesting_parent).specificity

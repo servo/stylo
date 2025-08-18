@@ -409,18 +409,22 @@ impl InvalidationMap {
 
     /// Returns the number of dependencies stored in the invalidation map.
     pub fn len(&self) -> usize {
-        self.state_affecting_selectors.len() +
-            self.document_state_selectors.len() +
-            self.other_attribute_affecting_selectors
+        self.state_affecting_selectors.len()
+            + self.document_state_selectors.len()
+            + self
+                .other_attribute_affecting_selectors
                 .iter()
-                .fold(0, |accum, (_, ref v)| accum + v.len()) +
-            self.id_to_selector
+                .fold(0, |accum, (_, ref v)| accum + v.len())
+            + self
+                .id_to_selector
                 .iter()
-                .fold(0, |accum, (_, ref v)| accum + v.len()) +
-            self.class_to_selector
+                .fold(0, |accum, (_, ref v)| accum + v.len())
+            + self
+                .class_to_selector
                 .iter()
-                .fold(0, |accum, (_, ref v)| accum + v.len()) +
-            self.custom_state_affecting_selectors
+                .fold(0, |accum, (_, ref v)| accum + v.len())
+            + self
+                .custom_state_affecting_selectors
                 .iter()
                 .fold(0, |accum, (_, ref v)| accum + v.len())
     }
@@ -1238,9 +1242,9 @@ impl<'a, 'b> RelativeSelectorDependencyCollector<'a, 'b> {
 
         self.additional_relative_selector_invalidation_map
             .needs_ancestors_traversal |= match self.selector.match_hint {
-            RelativeSelectorMatchHint::InNextSiblingSubtree |
-            RelativeSelectorMatchHint::InSiblingSubtree |
-            RelativeSelectorMatchHint::InSubtree => true,
+            RelativeSelectorMatchHint::InNextSiblingSubtree
+            | RelativeSelectorMatchHint::InSiblingSubtree
+            | RelativeSelectorMatchHint::InSubtree => true,
             _ => false,
         };
         loop {

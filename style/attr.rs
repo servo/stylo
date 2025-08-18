@@ -371,16 +371,16 @@ impl ::std::ops::Deref for AttrValue {
 
     fn deref(&self) -> &str {
         match *self {
-            AttrValue::String(ref value) |
-            AttrValue::TokenList(ref value, _) |
-            AttrValue::UInt(ref value, _) |
-            AttrValue::Double(ref value, _) |
-            AttrValue::Length(ref value, _) |
-            AttrValue::Color(ref value, _) |
-            AttrValue::Int(ref value, _) |
-            AttrValue::ResolvedUrl(ref value, _) |
-            AttrValue::Declaration(ref value, _) |
-            AttrValue::Dimension(ref value, _) => &value,
+            AttrValue::String(ref value)
+            | AttrValue::TokenList(ref value, _)
+            | AttrValue::UInt(ref value, _)
+            | AttrValue::Double(ref value, _)
+            | AttrValue::Length(ref value, _)
+            | AttrValue::Color(ref value, _)
+            | AttrValue::Int(ref value, _)
+            | AttrValue::ResolvedUrl(ref value, _)
+            | AttrValue::Declaration(ref value, _)
+            | AttrValue::Dimension(ref value, _) => &value,
             AttrValue::Atom(ref value) => &value,
         }
     }

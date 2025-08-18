@@ -651,9 +651,9 @@ impl<L: ToCss, I: ToCss> ToCss for TrackList<L, I> {
                 None => break,
             }
 
-            if values_iter.peek().is_some() ||
-                line_names_iter.peek().map_or(false, |v| !v.is_empty()) ||
-                (idx + 1 == self.auto_repeat_index)
+            if values_iter.peek().is_some()
+                || line_names_iter.peek().map_or(false, |v| !v.is_empty())
+                || (idx + 1 == self.auto_repeat_index)
             {
                 dest.write_char(' ')?;
             }

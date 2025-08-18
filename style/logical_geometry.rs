@@ -1135,10 +1135,10 @@ impl<T: Clone> LogicalMargin<T> {
 impl<T: PartialEq + Zero> LogicalMargin<T> {
     #[inline]
     pub fn is_zero(&self) -> bool {
-        self.block_start == Zero::zero() &&
-            self.inline_end == Zero::zero() &&
-            self.block_end == Zero::zero() &&
-            self.inline_start == Zero::zero()
+        self.block_start == Zero::zero()
+            && self.inline_end == Zero::zero()
+            && self.block_end == Zero::zero()
+            && self.inline_start == Zero::zero()
     }
 }
 
@@ -1399,8 +1399,8 @@ impl<T: Copy + Add<T, Output = T> + Sub<T, Output = T>> LogicalRect<T> {
 
     pub fn translate(&self, offset: &LogicalPoint<T>) -> LogicalRect<T> {
         LogicalRect {
-            start: self.start +
-                LogicalSize {
+            start: self.start
+                + LogicalSize {
                     inline: offset.i,
                     block: offset.b,
                     debug_writing_mode: offset.debug_writing_mode,
@@ -1568,10 +1568,10 @@ impl LogicalSide {
         ];
 
         debug_assert!(
-            WritingMode::VERTICAL.bits() == 0x01 &&
-                WritingMode::INLINE_REVERSED.bits() == 0x02 &&
-                WritingMode::VERTICAL_LR.bits() == 0x04 &&
-                WritingMode::LINE_INVERTED.bits() == 0x08
+            WritingMode::VERTICAL.bits() == 0x01
+                && WritingMode::INLINE_REVERSED.bits() == 0x02
+                && WritingMode::VERTICAL_LR.bits() == 0x04
+                && WritingMode::LINE_INVERTED.bits() == 0x08
         );
         let index = (wm.bits() & 0xF) as usize;
         INLINE_MAPPING[index][edge]

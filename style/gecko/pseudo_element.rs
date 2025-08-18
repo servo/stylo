@@ -94,8 +94,8 @@ impl PtNameAndClassSelector {
         // <pt-name-selector> = '*' | <custom-ident>
         let parse_pt_name = |input: &mut Parser<'i, '_>| {
             // For pseudo-element string, we don't accept '*'.
-            if matches!(target, Target::Selector) &&
-                input.try_parse(|i| i.expect_delim('*')).is_ok()
+            if matches!(target, Target::Selector)
+                && input.try_parse(|i| i.expect_delim('*')).is_ok()
             {
                 Ok(atom!("*"))
             } else {
@@ -181,12 +181,12 @@ impl PseudoElementTrait for PseudoElement {
     fn valid_after_slotted(&self) -> bool {
         matches!(
             *self,
-            Self::Before |
-                Self::After |
-                Self::Marker |
-                Self::Placeholder |
-                Self::FileSelectorButton |
-                Self::DetailsContent
+            Self::Before
+                | Self::After
+                | Self::Marker
+                | Self::Placeholder
+                | Self::FileSelectorButton
+                | Self::DetailsContent
         )
     }
 
@@ -346,20 +346,20 @@ impl PseudoElement {
     pub fn is_named_view_transition(&self) -> bool {
         matches!(
             *self,
-            Self::ViewTransitionGroup(..) |
-                Self::ViewTransitionImagePair(..) |
-                Self::ViewTransitionOld(..) |
-                Self::ViewTransitionNew(..)
+            Self::ViewTransitionGroup(..)
+                | Self::ViewTransitionImagePair(..)
+                | Self::ViewTransitionOld(..)
+                | Self::ViewTransitionNew(..)
         )
     }
 
     /// The count we contribute to the specificity from this pseudo-element.
     pub fn specificity_count(&self) -> u32 {
         match *self {
-            Self::ViewTransitionGroup(ref name_and_class) |
-            Self::ViewTransitionImagePair(ref name_and_class) |
-            Self::ViewTransitionOld(ref name_and_class) |
-            Self::ViewTransitionNew(ref name_and_class) => {
+            Self::ViewTransitionGroup(ref name_and_class)
+            | Self::ViewTransitionImagePair(ref name_and_class)
+            | Self::ViewTransitionOld(ref name_and_class)
+            | Self::ViewTransitionNew(ref name_and_class) => {
                 // The specificity of a named view transition pseudo-element selector with either:
                 // 1. a <pt-name-selector> with a <custom-ident>; or
                 // 2. a <pt-class-selector> with at least one <custom-ident>,
@@ -391,11 +391,11 @@ impl PseudoElement {
             Self::DetailsContent => {
                 pref!("layout.css.details-content.enabled")
             },
-            Self::ViewTransition |
-            Self::ViewTransitionGroup(..) |
-            Self::ViewTransitionImagePair(..) |
-            Self::ViewTransitionOld(..) |
-            Self::ViewTransitionNew(..) => pref!("dom.viewTransitions.enabled"),
+            Self::ViewTransition
+            | Self::ViewTransitionGroup(..)
+            | Self::ViewTransitionImagePair(..)
+            | Self::ViewTransitionOld(..)
+            | Self::ViewTransitionNew(..) => pref!("dom.viewTransitions.enabled"),
             // If it's not explicitly enabled in UA sheets or chrome, then we're enabled for
             // content.
             _ => (self.flags() & structs::CSS_PSEUDO_ELEMENT_ENABLED_IN_UA_SHEETS_AND_CHROME) == 0,
@@ -518,13 +518,13 @@ impl PseudoElement {
             (
                 &Self::ViewTransitionGroup(ref name),
                 &Self::ViewTransitionGroup(ref s_name_class),
-            ) |
-            (
+            )
+            | (
                 &Self::ViewTransitionImagePair(ref name),
                 &Self::ViewTransitionImagePair(ref s_name_class),
-            ) |
-            (&Self::ViewTransitionOld(ref name), &Self::ViewTransitionOld(ref s_name_class)) |
-            (&Self::ViewTransitionNew(ref name), &Self::ViewTransitionNew(ref s_name_class)) => {
+            )
+            | (&Self::ViewTransitionOld(ref name), &Self::ViewTransitionOld(ref s_name_class))
+            | (&Self::ViewTransitionNew(ref name), &Self::ViewTransitionNew(ref s_name_class)) => {
                 // Named view transition pseudos accept the universal selector as the name, so we
                 // check it first.
                 // https://drafts.csswg.org/css-view-transitions-1/#named-view-transition-pseudo
@@ -535,8 +535,8 @@ impl PseudoElement {
 
                 // We have to check class list only when the name is matched and there are one or
                 // more <pt-class-selector>s.
-                s_name_class.classes().is_empty() ||
-                    unsafe {
+                s_name_class.classes().is_empty()
+                    || unsafe {
                         bindings::Gecko_MatchViewTransitionClass(
                             element.0,
                             s_name_class.name_and_classes(),

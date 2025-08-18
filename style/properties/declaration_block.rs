@@ -666,8 +666,9 @@ impl PropertyDeclarationBlock {
                 .all_shorthand
                 .declarations()
                 .any(|decl| {
-                    !self.contains(decl.id()) ||
-                        self.declarations
+                    !self.contains(decl.id())
+                        || self
+                            .declarations
                             .iter()
                             .enumerate()
                             .find(|&(_, ref d)| d.id() == decl.id())
@@ -709,9 +710,9 @@ impl PropertyDeclarationBlock {
                                     }
                                     return DeclarationUpdate::UpdateInPlace { pos };
                                 }
-                                if !needs_append &&
-                                    id.logical_group() == Some(logical_group) &&
-                                    id.is_logical() != longhand_id.is_logical()
+                                if !needs_append
+                                    && id.logical_group() == Some(logical_group)
+                                    && id.is_logical() != longhand_id.is_logical()
                                 {
                                     needs_append = true;
                                 }

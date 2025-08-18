@@ -44,15 +44,15 @@ pub type RelevantAttributes = thin_vec::ThinVec<LocalName>;
 /// We can avoid selector-matching those global rules for all elements without
 /// these pseudo-class states.
 const RARE_PSEUDO_CLASS_STATES: ElementState = ElementState::from_bits_retain(
-    ElementState::FULLSCREEN.bits() |
-        ElementState::VISITED_OR_UNVISITED.bits() |
-        ElementState::URLTARGET.bits() |
-        ElementState::INERT.bits() |
-        ElementState::FOCUS.bits() |
-        ElementState::FOCUSRING.bits() |
-        ElementState::TOPMOST_MODAL.bits() |
-        ElementState::SUPPRESS_FOR_PRINT_SELECTION.bits() |
-        ElementState::HEADING_LEVEL_BITS.bits(),
+    ElementState::FULLSCREEN.bits()
+        | ElementState::VISITED_OR_UNVISITED.bits()
+        | ElementState::URLTARGET.bits()
+        | ElementState::INERT.bits()
+        | ElementState::FOCUS.bits()
+        | ElementState::FOCUSRING.bits()
+        | ElementState::TOPMOST_MODAL.bits()
+        | ElementState::SUPPRESS_FOR_PRINT_SELECTION.bits()
+        | ElementState::HEADING_LEVEL_BITS.bits(),
 );
 
 /// A simple alias for a hashmap using PrecomputedHasher.
@@ -411,8 +411,8 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
                         .class_hash
                         .try_entry(class.clone(), quirks_mode)?
                         .or_default(),
-                    Bucket::Attribute { name, lower_name } |
-                    Bucket::LocalName { name, lower_name } => {
+                    Bucket::Attribute { name, lower_name }
+                    | Bucket::LocalName { name, lower_name } => {
                         // If the local name in the selector isn't lowercase,
                         // insert it into the rule hash twice. This means that,
                         // during lookup, we can always find the rules based on
@@ -472,8 +472,8 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
             // This is specially true if there's any universal selector in the
             // `disjoint_selectors` set, at which point we'd just be doing
             // wasted work.
-            if !disjoint_buckets.is_empty() &&
-                disjoint_buckets
+            if !disjoint_buckets.is_empty()
+                && disjoint_buckets
                     .iter()
                     .all(|b| b.more_specific_than(&bucket))
             {

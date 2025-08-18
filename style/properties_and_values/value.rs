@@ -72,11 +72,11 @@ impl<L, N, P, LP, C, Image, U, Integer, A, T, R, Transform>
             },
             Self::Number(_) | Self::Integer(_) => TokenSerializationType::Number,
             Self::Percentage(_) | Self::LengthPercentage(_) => TokenSerializationType::Percentage,
-            Self::Color(_) |
-            Self::Image(_) |
-            Self::Url(_) |
-            Self::TransformFunction(_) |
-            Self::TransformList(_) => TokenSerializationType::Function,
+            Self::Color(_)
+            | Self::Image(_)
+            | Self::Url(_)
+            | Self::TransformFunction(_)
+            | Self::TransformList(_) => TokenSerializationType::Function,
             Self::CustomIdent(_) => TokenSerializationType::Ident,
             Self::String(_) => TokenSerializationType::Other,
         };

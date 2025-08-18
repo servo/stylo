@@ -98,21 +98,21 @@ impl DataType {
     /// Returns which kinds of dependent data types this property might contain.
     pub fn dependent_types(&self) -> DependentDataTypes {
         match self {
-            DataType::Length |
-            DataType::LengthPercentage |
-            DataType::TransformFunction |
-            DataType::TransformList => DependentDataTypes::LENGTH,
+            DataType::Length
+            | DataType::LengthPercentage
+            | DataType::TransformFunction
+            | DataType::TransformList => DependentDataTypes::LENGTH,
             DataType::Color => DependentDataTypes::COLOR,
-            DataType::Number |
-            DataType::Percentage |
-            DataType::Image |
-            DataType::Url |
-            DataType::Integer |
-            DataType::Angle |
-            DataType::Time |
-            DataType::Resolution |
-            DataType::CustomIdent |
-            DataType::String => DependentDataTypes::empty(),
+            DataType::Number
+            | DataType::Percentage
+            | DataType::Image
+            | DataType::Url
+            | DataType::Integer
+            | DataType::Angle
+            | DataType::Time
+            | DataType::Resolution
+            | DataType::CustomIdent
+            | DataType::String => DependentDataTypes::empty(),
         }
     }
 }

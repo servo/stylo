@@ -58,11 +58,11 @@ impl StyleRule {
     pub fn size_of(&self, guard: &SharedRwLockReadGuard, ops: &mut MallocSizeOfOps) -> usize {
         let mut n = 0;
         n += self.selectors.unconditional_size_of(ops);
-        n += self.block.unconditional_shallow_size_of(ops) +
-            self.block.read_with(guard).size_of(ops);
+        n += self.block.unconditional_shallow_size_of(ops)
+            + self.block.read_with(guard).size_of(ops);
         if let Some(ref rules) = self.rules {
-            n += rules.unconditional_shallow_size_of(ops) +
-                rules.read_with(guard).size_of(guard, ops)
+            n += rules.unconditional_shallow_size_of(ops)
+                + rules.read_with(guard).size_of(guard, ops)
         }
         n
     }

@@ -552,8 +552,9 @@ where
 
     /// Returns whether the given set has changed from the last flush.
     pub fn has_changed(&self) -> bool {
-        !self.invalidations.is_empty() ||
-            self.collections
+        !self.invalidations.is_empty()
+            || self
+                .collections
                 .iter_origins()
                 .any(|(collection, _)| collection.dirty)
     }

@@ -447,13 +447,13 @@ impl AnchorSideKeyword {
         match self {
             Self::Left | Self::Right => matches!(side, PhysicalSide::Left | PhysicalSide::Right),
             Self::Top | Self::Bottom => matches!(side, PhysicalSide::Top | PhysicalSide::Bottom),
-            Self::Inside |
-            Self::Outside |
-            Self::Start |
-            Self::End |
-            Self::SelfStart |
-            Self::SelfEnd |
-            Self::Center => true,
+            Self::Inside
+            | Self::Outside
+            | Self::Start
+            | Self::End
+            | Self::SelfStart
+            | Self::SelfEnd
+            | Self::Center => true,
         }
     }
 }

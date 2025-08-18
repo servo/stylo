@@ -359,8 +359,9 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     #[cfg(feature = "gecko")]
     fn adjust_for_text_in_ruby(&mut self) {
         let parent_display = self.style.get_parent_box().clone_display();
-        if parent_display.is_ruby_type() ||
-            self.style
+        if parent_display.is_ruby_type()
+            || self
+                .style
                 .get_parent_flags()
                 .contains(ComputedValueFlags::SHOULD_SUPPRESS_LINEBREAK)
         {
@@ -386,8 +387,8 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         let our_writing_mode = self.style.get_inherited_box().clone_writing_mode();
         let parent_writing_mode = layout_parent_style.get_inherited_box().clone_writing_mode();
 
-        if our_writing_mode != parent_writing_mode &&
-            self.style.get_box().clone_display() == Display::Inline
+        if our_writing_mode != parent_writing_mode
+            && self.style.get_box().clone_display() == Display::Inline
         {
             // TODO(emilio): Figure out if we can just set the adjusted display
             // on Gecko too and unify this code path.
@@ -464,8 +465,8 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         let box_style = self.style.get_box();
         let container_type = box_style.clone_container_type();
         let content_visibility = box_style.clone_content_visibility();
-        if !container_type.is_size_container_type() &&
-            content_visibility == ContentVisibility::Visible
+        if !container_type.is_size_container_type()
+            && content_visibility == ContentVisibility::Visible
         {
             debug_assert_eq!(
                 box_style.clone_contain(),
@@ -580,9 +581,9 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         let old_collapse = self.style.get_inherited_text().clone_white_space_collapse();
         let new_collapse = match old_collapse {
             WhiteSpaceCollapse::Preserve | WhiteSpaceCollapse::BreakSpaces => old_collapse,
-            WhiteSpaceCollapse::Collapse |
-            WhiteSpaceCollapse::PreserveSpaces |
-            WhiteSpaceCollapse::PreserveBreaks => WhiteSpaceCollapse::Preserve,
+            WhiteSpaceCollapse::Collapse
+            | WhiteSpaceCollapse::PreserveSpaces
+            | WhiteSpaceCollapse::PreserveBreaks => WhiteSpaceCollapse::Preserve,
         };
         if new_collapse != old_collapse {
             self.style
@@ -869,9 +870,9 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         use crate::values::computed::font::{FontFamily, FontSynthesis, FontSynthesisStyle};
         use crate::values::computed::text::{LetterSpacing, WordSpacing};
 
-        let is_legacy_marker = self.style.pseudo.map_or(false, |p| p.is_marker()) &&
-            self.style.get_list().clone_list_style_type().is_bullet() &&
-            self.style.get_counters().clone_content() == Content::Normal;
+        let is_legacy_marker = self.style.pseudo.map_or(false, |p| p.is_marker())
+            && self.style.get_list().clone_list_style_type().is_bullet()
+            && self.style.get_counters().clone_content() == Content::Normal;
         if !is_legacy_marker {
             return;
         }

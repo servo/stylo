@@ -62,9 +62,9 @@ impl ModRemOp {
         // In mod(A, B) only, if B is infinite and A has opposite sign to B
         // (including an oppositely-signed zero), the result is NaN.
         // https://drafts.csswg.org/css-values/#round-infinities
-        if matches!(self, Self::Mod) &&
-            divisor.is_infinite() &&
-            dividend.is_sign_negative() != divisor.is_sign_negative()
+        if matches!(self, Self::Mod)
+            && divisor.is_infinite()
+            && dividend.is_sign_negative() != divisor.is_sign_negative()
         {
             return f32::NAN;
         }
@@ -1187,10 +1187,10 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             Self::Negate(child) | Self::Invert(child) | Self::Abs(child) | Self::Sign(child) => {
                 child.map_node_internal(mapping_fn)?;
             },
-            Self::Sum(children) |
-            Self::Product(children) |
-            Self::Hypot(children) |
-            Self::MinMax(children, _) => {
+            Self::Sum(children)
+            | Self::Product(children)
+            | Self::Hypot(children)
+            | Self::MinMax(children, _) => {
                 for child in children.iter_mut() {
                     child.map_node_internal(mapping_fn)?;
                 }
@@ -1278,10 +1278,10 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 dividend.visit_depth_first_internal(f);
                 divisor.visit_depth_first_internal(f);
             },
-            Self::Sum(ref mut children) |
-            Self::Product(ref mut children) |
-            Self::MinMax(ref mut children, _) |
-            Self::Hypot(ref mut children) => {
+            Self::Sum(ref mut children)
+            | Self::Product(ref mut children)
+            | Self::MinMax(ref mut children, _)
+            | Self::Hypot(ref mut children) => {
                 for child in &mut **children {
                     child.visit_depth_first_internal(f);
                 }
@@ -1380,8 +1380,8 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     return;
                 }
 
-                if value_or_stop!(value.is_infinite_leaf()) &&
-                    value_or_stop!(step.is_infinite_leaf())
+                if value_or_stop!(value.is_infinite_leaf())
+                    && value_or_stop!(step.is_infinite_leaf())
                 {
                     value_or_stop!(value.coerce_to_value(f32::NAN));
                     replace_self_with!(&mut **value);
@@ -1401,14 +1401,14 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                             return;
                         },
                         RoundingStrategy::Up => {
-                            if !value_or_stop!(value.is_negative_leaf()) &&
-                                !value_or_stop!(value.is_zero_leaf())
+                            if !value_or_stop!(value.is_negative_leaf())
+                                && !value_or_stop!(value.is_zero_leaf())
                             {
                                 value_or_stop!(value.coerce_to_value(f32::INFINITY));
                                 replace_self_with!(&mut **value);
                                 return;
-                            } else if !value_or_stop!(value.is_negative_leaf()) &&
-                                value_or_stop!(value.is_zero_leaf())
+                            } else if !value_or_stop!(value.is_negative_leaf())
+                                && value_or_stop!(value.is_zero_leaf())
                             {
                                 replace_self_with!(&mut **value);
                                 return;
@@ -1419,14 +1419,14 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                             }
                         },
                         RoundingStrategy::Down => {
-                            if value_or_stop!(value.is_negative_leaf()) &&
-                                !value_or_stop!(value.is_zero_leaf())
+                            if value_or_stop!(value.is_negative_leaf())
+                                && !value_or_stop!(value.is_zero_leaf())
                             {
                                 value_or_stop!(value.coerce_to_value(f32::INFINITY));
                                 replace_self_with!(&mut **value);
                                 return;
-                            } else if value_or_stop!(value.is_negative_leaf()) &&
-                                value_or_stop!(value.is_zero_leaf())
+                            } else if value_or_stop!(value.is_negative_leaf())
+                                && value_or_stop!(value.is_zero_leaf())
                             {
                                 replace_self_with!(&mut **value);
                                 return;

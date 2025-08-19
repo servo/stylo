@@ -10,6 +10,7 @@ use crate::Zero;
 use std::f64::consts::PI;
 use std::fmt::{self, Write};
 use std::{f32, f64};
+use std::ops::Neg;
 use style_traits::{CssWriter, ToCss};
 
 /// A computed angle in degrees.
@@ -97,5 +98,14 @@ impl ComputeSquaredDistance for Angle {
         // https://www.w3.org/TR/SVG/animate.html#complexDistances
         self.radians64()
             .compute_squared_distance(&other.radians64())
+    }
+}
+
+impl Neg for Angle {
+    type Output = Angle;
+
+    #[inline]
+    fn neg(self) -> Angle {
+        Angle(-self.0)
     }
 }

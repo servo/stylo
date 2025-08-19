@@ -78,6 +78,7 @@ extern crate to_shmem_derive;
 #[macro_use]
 mod macros;
 
+#[cfg(feature = "servo")]
 pub mod animation;
 pub mod applicable_declarations;
 #[allow(missing_docs)] // TODO.

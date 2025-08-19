@@ -605,7 +605,7 @@ trait PrivateMatchMethods: TElement {
     fn process_animations_for_pseudo(
         &self,
         context: &mut StyleContext<Self>,
-        old_styles: &mut ElementStyles,
+        old_styles: &ElementStyles,
         new_resolved_styles: &mut ResolvedElementStyles,
         pseudo_element: PseudoElement,
     ) {
@@ -613,7 +613,7 @@ trait PrivateMatchMethods: TElement {
         use crate::dom::TDocument;
 
         let key = AnimationSetKey::new_for_pseudo(self.as_node().opaque(), pseudo_element.clone());
-        let mut style = match new_resolved_styles.pseudos.get(&pseudo_element) {
+        let style = match new_resolved_styles.pseudos.get(&pseudo_element) {
             Some(style) => Arc::clone(style),
             None => {
                 context
@@ -624,11 +624,11 @@ trait PrivateMatchMethods: TElement {
             },
         };
 
-        let mut old_style = old_styles.pseudos.get(&pseudo_element).cloned();
+        let old_style = old_styles.pseudos.get(&pseudo_element).cloned();
         self.process_animations_for_style(
             context,
-            &mut old_style,
-            &mut style,
+            &old_style,
+            &style,
             Some(pseudo_element.clone()),
         );
 
@@ -687,11 +687,11 @@ trait PrivateMatchMethods: TElement {
     fn process_animations_for_style(
         &self,
         context: &mut StyleContext<Self>,
-        old_values: &mut Option<Arc<ComputedValues>>,
-        new_values: &mut Arc<ComputedValues>,
+        old_values: &Option<Arc<ComputedValues>>,
+        new_values: &Arc<ComputedValues>,
         pseudo_element: Option<PseudoElement>,
     ) -> bool {
-        use crate::animation::{AnimationSetKey, AnimationState};
+        use crate::animation::{self, AnimationSetKey, AnimationState};
 
         // We need to call this before accessing the `ElementAnimationSet` from the
         // map because this call will do a RwLock::read().
@@ -749,13 +749,15 @@ trait PrivateMatchMethods: TElement {
             after_change_style.as_ref().unwrap_or(new_values),
         );
 
-        // We clear away any finished transitions, but retain animations, because they
-        // might still be used for proper calculation of `animation-fill-mode`. This
-        // should change the computed values in the style, so we don't need to mark
-        // this set as dirty.
+        // This should change the computed values in the style, so we don't need
+        // to mark this set as dirty.
         animation_set
             .transitions
             .retain(|transition| transition.state != AnimationState::Finished);
+
+        animation_set
+            .animations
+            .retain(|animation| animation.state != AnimationState::Finished);
 
         // If the ElementAnimationSet is empty, and don't store it in order to
         // save memory and to avoid extra processing later.
@@ -1164,7 +1166,14 @@ pub trait MatchMethods: TElement {
         pseudo: Option<&PseudoElement>,
     ) -> StyleDifference {
         debug_assert!(pseudo.map_or(true, |p| p.is_eager()));
-        RestyleDamage::compute_style_difference(old_values, new_values)
+        #[cfg(feature = "gecko")]
+        {
+            RestyleDamage::compute_style_difference(old_values, new_values)
+        }
+        #[cfg(feature = "servo")]
+        {
+            RestyleDamage::compute_style_difference::<Self>(old_values, new_values)
+        }
     }
 }
 

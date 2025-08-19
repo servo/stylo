@@ -2225,40 +2225,6 @@ impl ComputedValuesInner {
             box_.transform_style
         }
     }
-
-    /// Whether given this transform value, the compositor would require a
-    /// layer.
-    pub fn transform_requires_layer(&self) -> bool {
-        use crate::values::generics::transform::TransformOperation;
-        // Check if the transform matrix is 2D or 3D
-        for transform in &*self.get_box().transform.0 {
-            match *transform {
-                TransformOperation::Perspective(..) => {
-                    return true;
-                }
-                TransformOperation::Matrix3D(m) => {
-                    // See http://dev.w3.org/csswg/css-transforms/#2d-matrix
-                    if m.m31 != 0.0 || m.m32 != 0.0 ||
-                       m.m13 != 0.0 || m.m23 != 0.0 ||
-                       m.m43 != 0.0 || m.m14 != 0.0 ||
-                       m.m24 != 0.0 || m.m34 != 0.0 ||
-                       m.m33 != 1.0 || m.m44 != 1.0 {
-                        return true;
-                    }
-                }
-                TransformOperation::Translate3D(_, _, z) |
-                TransformOperation::TranslateZ(z) => {
-                    if z.px() != 0. {
-                        return true;
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        // Neither perspective nor transform present
-        false
-    }
 }
 
 /// A reference to a style struct of the parent, or our own style struct.
@@ -2998,28 +2964,15 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 
 % if engine == "servo":
 % for effect_name in ["repaint", "recalculate_overflow", "rebuild_stacking_context", "rebuild_box"]:
-    macro_rules! restyle_damage_${effect_name} {
-        ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ]) => ({
-            restyle_damage_${effect_name}!($old, $new, $damage, [$($effect),*], false)
-        });
-        ($old: ident, $new: ident, $damage: ident, [ $($effect:expr),* ], $extra:expr) => ({
-            if
-                % for style_struct in data.active_style_structs():
-                    % for longhand in style_struct.longhands:
-                        % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:
-                            $old.get_${style_struct.name_lower}().${longhand.ident} !=
-                            $new.get_${style_struct.name_lower}().${longhand.ident} ||
-                        % endif
-                    % endfor
-                % endfor
-
-                $extra || false {
-                    $damage.insert($($effect)|*);
-                    true
-            } else {
-                false
-            }
-        });
-    }
+pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &ComputedValues) -> bool {
+    % for style_struct in data.active_style_structs():
+        % for longhand in style_struct.longhands:
+            % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:
+                old.get_${style_struct.name_lower}().${longhand.ident} != new.get_${style_struct.name_lower}().${longhand.ident} ||
+            % endif
+        % endfor
+    % endfor
+    false
+}
 % endfor
 % endif

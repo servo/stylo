@@ -654,8 +654,6 @@ pub trait TElement:
     ///
     /// Note that we still need to compute the pseudo-elements before-hand,
     /// given otherwise we don't know if we need to create an element or not.
-    ///
-    /// Servo doesn't have to deal with this.
     fn implemented_pseudo_element(&self) -> Option<PseudoElement> {
         None
     }

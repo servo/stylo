@@ -1185,31 +1185,15 @@ impl<'le> TElement for GeckoElement<'le> {
             return;
         }
 
-        unsafe {
-            const STACK_BUFFER_CAP: usize = 8;
-            // We should virtually never have more than 8 NAC roots for a single element.
-            let mut stack_buffer =
-                [mem::MaybeUninit::<*mut nsIContent>::uninit(); STACK_BUFFER_CAP];
-            let stack_buffer_ptr = stack_buffer.as_mut_ptr() as *mut *mut nsIContent;
-            let mut stack_buffer_len = 0;
-            // If we end up with more, they will end up on the heap, here.
-            let mut array = thin_vec::ThinVec::<*mut nsIContent>::new();
-            bindings::Gecko_GetAnonymousContentForElement(
-                self.0,
-                stack_buffer_ptr,
-                STACK_BUFFER_CAP,
-                &mut stack_buffer_len,
-                &mut array,
-            );
-            let stack_els = std::slice::from_raw_parts(stack_buffer_ptr, stack_buffer_len);
-            for content in stack_els.iter().chain(array.iter()) {
-                let node = GeckoNode::from_content(&**content);
-                let element = match node.as_element() {
-                    Some(e) => e,
-                    None => continue,
-                };
-                f(element);
-            }
+        thin_vec::auto_thin_vec!(let array: [*mut nsIContent; 8]);
+        unsafe { bindings::Gecko_GetAnonymousContentForElement(self.0, array.as_mut().as_mut_ptr()) };
+        for content in array.iter() {
+            let node = GeckoNode::from_content(unsafe { &**content });
+            let element = match node.as_element() {
+                Some(e) => e,
+                None => continue,
+            };
+            f(element);
         }
     }
 

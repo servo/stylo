@@ -256,6 +256,11 @@ impl Device {
         (AU_PER_PX as f32 / self.device_pixel_ratio.0) as i32
     }
 
+    /// Returns the device pixel ratio, ignoring the full zoom factor.
+    pub fn device_pixel_ratio_ignoring_full_zoom(&self) -> Scale<f32, CSSPixel, DevicePixel> {
+        self.device_pixel_ratio
+    }
+
     /// Returns the device pixel ratio.
     pub fn device_pixel_ratio(&self) -> Scale<f32, CSSPixel, DevicePixel> {
         self.device_pixel_ratio

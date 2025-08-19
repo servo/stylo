@@ -8,6 +8,7 @@
 
 use crate::color::{parsing::parse_color_keyword, AbsoluteColor};
 use crate::properties::PropertyDeclarationBlock;
+use crate::shadow_parts::ShadowParts;
 use crate::shared_lock::Locked;
 use crate::str::str_join;
 use crate::str::{read_exponent, read_fraction, HTML_SPACE_CHARACTERS};
@@ -72,6 +73,9 @@ pub enum AttrValue {
         String,
         #[ignore_malloc_size_of = "Arc"] Arc<Locked<PropertyDeclarationBlock>>,
     ),
+
+    /// The value of an `exportparts` attribute.
+    ShadowParts(String, ShadowParts),
 }
 
 /// Shared implementation to parse an integer according to
@@ -266,6 +270,11 @@ impl AttrValue {
         AttrValue::Dimension(string, parsed)
     }
 
+    pub fn from_shadow_parts(string: String) -> AttrValue {
+        let shadow_parts = ShadowParts::parse(&string);
+        AttrValue::ShadowParts(string, shadow_parts)
+    }
+
     /// Assumes the `AttrValue` is a `TokenList` and returns its tokens
     ///
     /// ## Panics
@@ -326,7 +335,22 @@ impl AttrValue {
         }
     }
 
-    /// Return the AttrValue as its integer representation, if any.
+    /// Return the AttrValue as its signed integer representation, if any.
+    /// This corresponds to attribute values returned as `AttrValue::Int(_)`
+    /// by `VirtualMethods::parse_plain_attribute()`.
+    ///
+    /// ## Panics
+    ///
+    /// Panics if the `AttrValue` is not a `Int`
+    pub fn as_int(&self) -> i32 {
+        if let AttrValue::Int(_, value) = *self {
+            value
+        } else {
+            panic!("Int not found");
+        }
+    }
+
+    /// Return the AttrValue as its unsigned integer representation, if any.
     /// This corresponds to attribute values returned as `AttrValue::UInt(_)`
     /// by `VirtualMethods::parse_plain_attribute()`.
     ///
@@ -341,7 +365,7 @@ impl AttrValue {
         }
     }
 
-    /// Return the AttrValue as a dimension computed from its integer
+    /// Return the AttrValue as a dimension computed from its unsigned integer
     /// representation, assuming that integer representation specifies pixels.
     ///
     /// This corresponds to attribute values returned as `AttrValue::UInt(_)`
@@ -355,6 +379,22 @@ impl AttrValue {
             LengthOrPercentageOrAuto::Length(Au::from_px(value as i32))
         } else {
             panic!("Uint not found");
+        }
+    }
+
+    /// Return the AttrValue as it's shadow-part representation.
+    ///
+    /// This corresponds to attribute values returned as `AttrValue::ShadowParts(_)`
+    /// by `VirtualMethods::parse_plain_attribute()`.
+    ///
+    /// ## Panics
+    ///
+    /// Panics if the `AttrValue` is not a shadow-part.
+    pub fn as_shadow_parts(&self) -> &ShadowParts {
+        if let AttrValue::ShadowParts(_, value) = &self {
+            value
+        } else {
+            panic!("Not a shadowpart attribute");
         }
     }
 
@@ -380,6 +420,7 @@ impl ::std::ops::Deref for AttrValue {
             | AttrValue::Int(ref value, _)
             | AttrValue::ResolvedUrl(ref value, _)
             | AttrValue::Declaration(ref value, _)
+            | AttrValue::ShadowParts(ref value, _)
             | AttrValue::Dimension(ref value, _) => &value,
             AttrValue::Atom(ref value) => &value,
         }

@@ -506,6 +506,11 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     }
 
     #[inline]
+    fn parse_part(&self) -> bool {
+        true
+    }
+
+    #[inline]
     fn allow_forgiving_selectors(&self) -> bool {
         !self.for_supports_rule
     }
@@ -789,8 +794,13 @@ impl ElementSnapshot for ServoElementSnapshot {
             .map(|v| v.as_atom())
     }
 
-    fn is_part(&self, _name: &AtomIdent) -> bool {
-        false
+    fn is_part(&self, part_name: &AtomIdent) -> bool {
+        self.get_attr(&ns!(), &local_name!("part"))
+            .is_some_and(|v| {
+                v.as_tokens()
+                    .iter()
+                    .any(|atom| CaseSensitivity::CaseSensitive.eq_atom(atom, part_name))
+            })
     }
 
     fn imported_part(&self, _: &AtomIdent) -> Option<AtomIdent> {

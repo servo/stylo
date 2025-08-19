@@ -46,7 +46,7 @@ pub enum GenericImage<G, ImageUrl, Color, Percentage, Resolution> {
     /// A paint worklet image.
     /// <https://drafts.css-houdini.org/css-paint-api/>
     #[cfg(feature = "servo")]
-    PaintWorklet(PaintWorklet),
+    PaintWorklet(Box<PaintWorklet>),
 
     /// A `<cross-fade()>` image. Storing this directly inside of
     /// GenericImage increases the size by 8 bytes so we box it here

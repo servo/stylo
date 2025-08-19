@@ -169,6 +169,11 @@ impl ScopeProximity {
     pub fn infinity() -> Self {
         Self(PROXIMITY_INFINITY)
     }
+
+    /// If the proximity is finite, get the value.
+    pub fn get(&self) -> Option<u16> {
+        (self.0 != PROXIMITY_INFINITY).then(|| self.0)
+    }
 }
 
 /// A property declaration together with its precedence among rules of equal

@@ -271,6 +271,25 @@ pub struct ScopeRootCandidate {
     pub proximity: ScopeProximity,
 }
 
+impl ScopeRootCandidate {
+    /// Get the element corresponding to this scope root candidate.
+    pub fn get_scope_root_element<E>(&self, originating_element: E) -> Option<E>
+    where
+        E: TElement,
+    {
+        // Could just unsafe-convert from opaque element - technically
+        // faster as well, but it doesn't seem worth having to manually
+        // assure safety every time.
+        let mut e = originating_element;
+        let hops = self.proximity.get()?;
+        for _ in 0..hops {
+            e = e.parent_element()?;
+        }
+        debug_assert_eq!(e.opaque(), self.root);
+        Some(e)
+    }
+}
+
 /// Collect potential scope roots for a given element and its scope target.
 /// The check may not pass the ceiling, if specified.
 pub fn collect_scope_roots<E>(

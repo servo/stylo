@@ -2,16 +2,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-//! Supports dynamic assertions in about what sort of thread is running and
+//! Supports dynamic assertions about what sort of thread is running and
 //! what state it's in.
 
 #![deny(missing_docs)]
 
-use std::cell::RefCell;
+use std::cell::Cell;
 
 bitflags! {
     /// A thread state flag, used for multiple assertions.
-    #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+    #[derive(Clone, Copy, Default, Debug, Eq, PartialEq)]
     pub struct ThreadState: u32 {
         /// Whether we're in a script thread.
         const SCRIPT          = 0x01;
@@ -27,38 +27,34 @@ bitflags! {
     }
 }
 
-macro_rules! thread_types ( ( $( $fun:ident = $flag:path ; )* ) => (
-    impl ThreadState {
-        /// Whether the current thread is a worker thread.
-        pub fn is_worker(self) -> bool {
-            self.contains(ThreadState::IN_WORKER)
-        }
-
-        $(
-            #[allow(missing_docs)]
-            pub fn $fun(self) -> bool {
-                self.contains($flag)
-            }
-        )*
+impl ThreadState {
+    /// Whether the current thread is a worker thread.
+    pub fn is_worker(self) -> bool {
+        self.contains(ThreadState::IN_WORKER)
     }
-));
 
-thread_types! {
-    is_script = ThreadState::SCRIPT;
-    is_layout = ThreadState::LAYOUT;
+    /// Whether the current thread is a script thread.
+    pub fn is_script(self) -> bool {
+        self.contains(ThreadState::SCRIPT)
+    }
+
+    /// Whether the current thread is a layout thread.
+    pub fn is_layout(self) -> bool {
+        self.contains(ThreadState::LAYOUT)
+    }
 }
 
-thread_local!(static STATE: RefCell<Option<ThreadState>> = RefCell::new(None));
+thread_local!(static STATE: Cell<Option<ThreadState>> = const { Cell::new(None) });
 
 /// Initializes the current thread state.
-pub fn initialize(x: ThreadState) {
-    STATE.with(|ref k| {
-        if let Some(ref s) = *k.borrow() {
-            if x != *s {
-                panic!("Thread state already initialized as {:?}", s);
+pub fn initialize(initialize_to: ThreadState) {
+    STATE.with(|state| {
+        if let Some(current_state) = state.get() {
+            if initialize_to != current_state {
+                panic!("Thread state already initialized as {:?}", current_state);
             }
         }
-        *k.borrow_mut() = Some(x);
+        state.set(Some(initialize_to));
     });
 }
 
@@ -69,30 +65,23 @@ pub fn initialize_layout_worker_thread() {
 
 /// Gets the current thread state.
 pub fn get() -> ThreadState {
-    let state = STATE.with(|ref k| {
-        match *k.borrow() {
-            None => ThreadState::empty(), // Unknown thread.
-            Some(s) => s,
-        }
-    });
-
-    state
+    STATE.with(|state| state.get().unwrap_or_default())
 }
 
-/// Enters into a given temporary state. Panics if re-entring.
-pub fn enter(x: ThreadState) {
-    let state = get();
-    debug_assert!(!state.intersects(x));
-    STATE.with(|ref k| {
-        *k.borrow_mut() = Some(state | x);
+/// Enters into a given temporary state. Panics if re-entering.
+pub fn enter(additional_flags: ThreadState) {
+    STATE.with(|state| {
+        let current_state = state.get().unwrap_or_default();
+        debug_assert!(!current_state.intersects(additional_flags));
+        state.set(Some(current_state | additional_flags));
     })
 }
 
 /// Exits a given temporary state.
-pub fn exit(x: ThreadState) {
-    let state = get();
-    debug_assert!(state.contains(x));
-    STATE.with(|ref k| {
-        *k.borrow_mut() = Some(state & !x);
+pub fn exit(flags_to_remove: ThreadState) {
+    STATE.with(|state| {
+        let current_state = state.get().unwrap_or_default();
+        debug_assert!(current_state.contains(flags_to_remove));
+        state.set(Some(current_state & !flags_to_remove));
     })
 }

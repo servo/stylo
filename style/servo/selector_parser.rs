@@ -49,11 +49,24 @@ pub enum PseudoElement {
     // our property_restriction implementation to do property filtering for
     // them.  Also, make sure the UA sheet has the !important rules some of the
     // APPLIES_TO_PLACEHOLDER properties expect!
-    Backdrop,
 
     // Non-eager pseudos.
+    Backdrop,
     DetailsSummary,
     DetailsContent,
+    Marker,
+
+    // Implemented pseudos. These pseudo elements are representing the
+    // elements within an UA shadow DOM, and matching the elements with
+    // their appropriate styles.
+    ColorSwatch,
+    Placeholder,
+
+    // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
+    ServoTextControlInnerContainer,
+    ServoTextControlInnerEditor,
+
+    // Other Servo-specific pseudos.
     ServoAnonymousBox,
     ServoAnonymousTable,
     ServoAnonymousTableCell,
@@ -78,6 +91,11 @@ impl ToCss for PseudoElement {
             Backdrop => "::backdrop",
             DetailsSummary => "::-servo-details-summary",
             DetailsContent => "::-servo-details-content",
+            Marker => "::marker",
+            ColorSwatch => "::color-swatch",
+            Placeholder => "::placeholder",
+            ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
+            ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoAnonymousBox => "::-servo-anonymous-box",
             ServoAnonymousTable => "::-servo-anonymous-table",
             ServoAnonymousTableCell => "::-servo-anonymous-table-cell",
@@ -138,7 +156,7 @@ impl PseudoElement {
     /// Whether this pseudo-element is the ::marker pseudo.
     #[inline]
     pub fn is_marker(&self) -> bool {
-        false
+        *self == PseudoElement::Marker
     }
 
     /// Whether this pseudo-element is the ::selection pseudo.
@@ -171,10 +189,11 @@ impl PseudoElement {
         false
     }
 
-    /// Whether this pseudo-element is the ::-moz-color-swatch pseudo.
+    /// Whether this pseudo-element is representing the color swatch
+    /// inside an `<input>` element.
     #[inline]
     pub fn is_color_swatch(&self) -> bool {
-        false
+        *self == PseudoElement::ColorSwatch
     }
 
     /// Whether this pseudo-element is eagerly-cascaded.
@@ -209,18 +228,24 @@ impl PseudoElement {
 
     /// Returns which kind of cascade type has this pseudo.
     ///
-    /// For more info on cascade types, see docs/components/style.md
+    /// See the documentation for `PseudoElementCascadeType` for how we choose
+    /// which cascade type to use.
     ///
-    /// Note: Keep this in sync with EAGER_PSEUDO_COUNT.
+    /// Note: Keep eager pseudos in sync with `EAGER_PSEUDO_COUNT` and
+    /// `EMPTY_PSEUDO_ARRAY` in `style/data.rs`
     #[inline]
     pub fn cascade_type(&self) -> PseudoElementCascadeType {
         match *self {
             PseudoElement::After | PseudoElement::Before | PseudoElement::Selection => {
                 PseudoElementCascadeType::Eager
             },
-            PseudoElement::Backdrop | PseudoElement::DetailsSummary => {
-                PseudoElementCascadeType::Lazy
-            },
+            PseudoElement::Backdrop
+            | PseudoElement::ColorSwatch
+            | PseudoElement::DetailsSummary
+            | PseudoElement::Marker
+            | PseudoElement::Placeholder
+            | PseudoElement::ServoTextControlInnerContainer
+            | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
             PseudoElement::DetailsContent
             | PseudoElement::ServoAnonymousBox
             | PseudoElement::ServoAnonymousTable
@@ -502,7 +527,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
 
     #[inline]
     fn parse_parent_selector(&self) -> bool {
-        false
+        true
     }
 
     #[inline]
@@ -592,8 +617,9 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
         let pseudo_element = match_ignore_ascii_case! { &name,
             "before" => Before,
             "after" => After,
-            "selection" => Selection,
             "backdrop" => Backdrop,
+            "selection" => Selection,
+            "marker" => Marker,
             "-servo-details-summary" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
@@ -605,6 +631,25 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 DetailsContent
+            },
+            "color-swatch" => ColorSwatch,
+            "placeholder" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                Placeholder
+            },
+            "-servo-text-control-inner-container" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTextControlInnerContainer
+            },
+            "-servo-text-control-inner-editor" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoTextControlInnerEditor
             },
             "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {

@@ -12,7 +12,7 @@ ${helpers.single_keyword(
     animation_type="discrete",
     gecko_enum_prefix="StyleTableLayout",
     spec="https://drafts.csswg.org/css-tables/#propdef-table-layout",
-    servo_restyle_damage="reflow",
+    servo_restyle_damage="rebuild_box",
     affects="layout",
 )}
 

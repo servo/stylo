@@ -52,7 +52,7 @@
         logical=is_logical,
         logical_group="border-width",
         allow_quirks="No" if is_logical else "Yes",
-        servo_restyle_damage="reflow rebuild_and_reflow_inline",
+        servo_restyle_damage="rebuild_box",
         affects="layout",
     )}
 % endfor
@@ -112,8 +112,8 @@ ${helpers.predefined_type(
     spec="https://drafts.csswg.org/css-backgrounds/#the-background-image",
     vector=False,
     animation_type="discrete",
-    boxed=engine == "servo",
     ignored_when_colors_disabled=True,
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -125,6 +125,7 @@ ${helpers.predefined_type(
     initial_specified_value="generics::rect::Rect::all(specified::NonNegativeLengthOrNumber::zero())",
     spec="https://drafts.csswg.org/css-backgrounds/#border-image-outset",
     boxed=True,
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -136,6 +137,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::BorderImageRepeat::stretch()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-backgrounds/#the-border-image-repeat",
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -147,6 +149,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::BorderImageWidth::all(specified::BorderImageSideWidth::one())",
     spec="https://drafts.csswg.org/css-backgrounds/#border-image-width",
     boxed=True,
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 
@@ -158,5 +161,6 @@ ${helpers.predefined_type(
     initial_specified_value="specified::BorderImageSlice::hundred_percent()",
     spec="https://drafts.csswg.org/css-backgrounds/#border-image-slice",
     boxed=True,
+    servo_restyle_damage="repaint",
     affects="paint",
 )}

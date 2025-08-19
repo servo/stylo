@@ -97,7 +97,6 @@ to_shmem = {path = "../to_shmem"}
 to_shmem_derive = {path = "../to_shmem_derive"}
 thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
 uluru = "3.0"
-unicode-bidi = { version = "0.3", default-features = false }
 void = "1.0.2"
 gecko-profiler = { path = "../../../tools/profiler/rust-api" }
 url = { version = "2.5", optional = true, features = ["serde"] }

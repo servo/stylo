@@ -78,12 +78,7 @@ extern crate to_shmem_derive;
 #[macro_use]
 mod macros;
 
-#[cfg(feature = "servo")]
-pub mod animation;
 pub mod applicable_declarations;
-#[allow(missing_docs)] // TODO.
-#[cfg(feature = "servo")]
-pub mod attr;
 pub mod author_styles;
 pub mod bezier;
 pub mod bloom;
@@ -98,8 +93,6 @@ pub mod data;
 pub mod dom;
 pub mod dom_apis;
 pub mod driver;
-#[cfg(feature = "servo")]
-mod encoding_support;
 pub mod error_reporting;
 pub mod font_face;
 pub mod font_metrics;
@@ -167,8 +160,6 @@ pub type Namespace = crate::values::GenericAtomIdent<web_atoms::NamespaceStaticS
 #[cfg(feature = "servo")]
 #[allow(missing_docs)]
 pub type Prefix = crate::values::GenericAtomIdent<web_atoms::PrefixStaticSet>;
-#[cfg(feature = "servo")]
-mod shadow_parts;
 
 pub use style_traits::arc_slice::ArcSlice;
 pub use style_traits::owned_slice::OwnedSlice;
@@ -187,6 +178,8 @@ pub mod gecko;
 #[cfg(feature = "servo")]
 #[allow(unsafe_code)]
 pub mod servo;
+#[cfg(feature = "servo")]
+pub use servo::{animation, attr};
 
 macro_rules! reexport_computed_values {
     ( $( { $name: ident } )+ ) => {

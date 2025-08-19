@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-use crate::Atom;
 use crate::values::AtomIdent;
+use crate::Atom;
 
 type Mapping<'a> = (&'a str, &'a str);
 
@@ -12,7 +12,7 @@ pub struct ShadowParts {
     // FIXME: Consider a smarter data structure for this.
     // Gecko uses a hashtable in both directions:
     // https://searchfox.org/mozilla-central/rev/5d4178378f84c7130ccb8ac1723d33e380d7f7d7/layout/style/ShadowParts.h
-    mappings: Vec<(Atom, Atom)>
+    mappings: Vec<(Atom, Atom)>,
 }
 
 /// <https://drafts.csswg.org/css-shadow-parts/#parsing-mapping>
@@ -28,7 +28,11 @@ pub fn parse_part_mapping(input: &str) -> Option<Mapping> {
 
     // Step 4. Collect a sequence of code points that are not space characters or U+003A COLON characters,
     // and let first token be the result.
-    let space_or_colon_position = input.char_indices().find(|(_, c)| matches!(c, ' ' | ':')).map(|(index, _)| index).unwrap_or(input.len());
+    let space_or_colon_position = input
+        .char_indices()
+        .find(|(_, c)| matches!(c, ' ' | ':'))
+        .map(|(index, _)| index)
+        .unwrap_or(input.len());
     let (first_token, input) = input.split_at(space_or_colon_position);
 
     // Step 5. If first token is empty then return error.
@@ -55,7 +59,11 @@ pub fn parse_part_mapping(input: &str) -> Option<Mapping> {
 
     // Step 11. Collect a sequence of code points that are not space characters or U+003A COLON characters.
     // and let second token be the result.
-    let space_or_colon_position = input.char_indices().find(|(_, c)| matches!(c, ' ' | ':')).map(|(index, _)| index).unwrap_or(input.len());
+    let space_or_colon_position = input
+        .char_indices()
+        .find(|(_, c)| matches!(c, ' ' | ':'))
+        .map(|(index, _)| index)
+        .unwrap_or(input.len());
     let (second_token, input) = input.split_at(space_or_colon_position);
 
     // Step 12. If second token is empty then return error.
@@ -76,7 +84,7 @@ pub fn parse_part_mapping(input: &str) -> Option<Mapping> {
 }
 
 /// <https://drafts.csswg.org/css-shadow-parts/#parsing-mapping-list>
-fn parse_mapping_list(input: &str) -> impl Iterator<Item=Mapping> {
+fn parse_mapping_list(input: &str) -> impl Iterator<Item = Mapping> {
     // Step 1. Let input be the string being parsed.
     // Step 2. Split the string input on commas. Let unparsed mappings be the resulting list of strings.
     let unparsed_mappings = input.split(',');
@@ -104,13 +112,17 @@ fn parse_mapping_list(input: &str) -> impl Iterator<Item=Mapping> {
 impl ShadowParts {
     pub fn parse(input: &str) -> Self {
         Self {
-            mappings: parse_mapping_list(input).map(|(first,second)| (first.into(), second.into())).collect(),
+            mappings: parse_mapping_list(input)
+                .map(|(first, second)| (first.into(), second.into()))
+                .collect(),
         }
     }
 
     /// Call the provided callback for each exported part with the given name.
     pub fn for_each_exported_part<F>(&self, name: &Atom, mut callback: F)
-    where F: FnMut(&AtomIdent) {
+    where
+        F: FnMut(&AtomIdent),
+    {
         for (from, to) in &self.mappings {
             if from == name {
                 callback(AtomIdent::cast(to));
@@ -119,12 +131,12 @@ impl ShadowParts {
     }
 
     pub fn imported_part(&self, name: &Atom) -> Option<&Atom> {
-        self.mappings.iter().find(|(_, to)| {
-            to == name
-        }).map(|(from, _)| from)
+        self.mappings
+            .iter()
+            .find(|(_, to)| to == name)
+            .map(|(from, _)| from)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -134,12 +146,36 @@ mod tests {
 
     #[test]
     fn parse_valid_mapping() {
-        assert_eq!(parse_part_mapping("foo"), Some(("foo", "foo")), "Single token");
-         assert_eq!(parse_part_mapping("  foo"), Some(("foo", "foo")), "Single token with leading whitespace");
-         assert_eq!(parse_part_mapping("foo "), Some(("foo", "foo")), "Single token with trailing whitespace");
-         assert_eq!(parse_part_mapping("foo:bar"), Some(("foo", "bar")), "Two tokens");
-         assert_eq!(parse_part_mapping("foo:bar "), Some(("foo", "bar")), "Two tokens with trailing whitespace");
-         assert_eq!(parse_part_mapping("🦀:🚀"), Some(("🦀", "🚀")), "Two tokens consisting of non-ascii characters");
+        assert_eq!(
+            parse_part_mapping("foo"),
+            Some(("foo", "foo")),
+            "Single token"
+        );
+        assert_eq!(
+            parse_part_mapping("  foo"),
+            Some(("foo", "foo")),
+            "Single token with leading whitespace"
+        );
+        assert_eq!(
+            parse_part_mapping("foo "),
+            Some(("foo", "foo")),
+            "Single token with trailing whitespace"
+        );
+        assert_eq!(
+            parse_part_mapping("foo:bar"),
+            Some(("foo", "bar")),
+            "Two tokens"
+        );
+        assert_eq!(
+            parse_part_mapping("foo:bar "),
+            Some(("foo", "bar")),
+            "Two tokens with trailing whitespace"
+        );
+        assert_eq!(
+            parse_part_mapping("🦀:🚀"),
+            Some(("🦀", "🚀")),
+            "Two tokens consisting of non-ascii characters"
+        );
     }
 
     #[test]
@@ -149,7 +185,10 @@ mod tests {
         assert!(parse_part_mapping("foo bar").is_none(), "Missing colon");
         assert!(parse_part_mapping(":bar").is_none(), "Empty first token");
         assert!(parse_part_mapping("foo:").is_none(), "Empty second token");
-        assert!(parse_part_mapping("foo:bar baz").is_none(), "Trailing input");
+        assert!(
+            parse_part_mapping("foo:bar baz").is_none(),
+            "Trailing input"
+        );
     }
 
     #[test]
@@ -157,10 +196,13 @@ mod tests {
         let mut mappings = parse_mapping_list("foo: bar, totally-invalid-mapping,,");
 
         // "foo: bar" is a valid mapping
-        assert_eq!(mappings.next(), Some(("foo", "bar")), "First mapping should be in the list");
+        assert_eq!(
+            mappings.next(),
+            Some(("foo", "bar")),
+            "First mapping should be in the list"
+        );
         // "totally-invalid-mapping" is not a valid mapping and should be ignored
         // "" is not valid (and consists of nothing but whitespace), so it should be ignored
         assert!(mappings.next().is_none(), "No more mappings should exist");
     }
-
 }

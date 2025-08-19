@@ -239,20 +239,20 @@ impl PseudoElement {
             PseudoElement::After | PseudoElement::Before | PseudoElement::Selection => {
                 PseudoElementCascadeType::Eager
             },
-            PseudoElement::Backdrop |
-            PseudoElement::ColorSwatch |
-            PseudoElement::DetailsSummary |
-            PseudoElement::Marker |
-            PseudoElement::Placeholder |
-            PseudoElement::ServoTextControlInnerContainer |
-            PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
-            PseudoElement::DetailsContent |
-            PseudoElement::ServoAnonymousBox |
-            PseudoElement::ServoAnonymousTable |
-            PseudoElement::ServoAnonymousTableCell |
-            PseudoElement::ServoAnonymousTableRow |
-            PseudoElement::ServoTableGrid |
-            PseudoElement::ServoTableWrapper => PseudoElementCascadeType::Precomputed,
+            PseudoElement::Backdrop
+            | PseudoElement::ColorSwatch
+            | PseudoElement::DetailsSummary
+            | PseudoElement::Marker
+            | PseudoElement::Placeholder
+            | PseudoElement::ServoTextControlInnerContainer
+            | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
+            PseudoElement::DetailsContent
+            | PseudoElement::ServoAnonymousBox
+            | PseudoElement::ServoAnonymousTable
+            | PseudoElement::ServoAnonymousTableCell
+            | PseudoElement::ServoAnonymousTableRow
+            | PseudoElement::ServoTableGrid
+            | PseudoElement::ServoTableWrapper => PseudoElementCascadeType::Precomputed,
         }
     }
 
@@ -453,7 +453,9 @@ impl NonTSPseudoClass {
             Self::UserValid => ElementState::USER_VALID,
             Self::Valid => ElementState::VALID,
             Self::Visited => ElementState::VISITED,
-            Self::CustomState(_) | Self::Lang(_) | Self::ServoNonZeroBorder => ElementState::empty(),
+            Self::CustomState(_) | Self::Lang(_) | Self::ServoNonZeroBorder => {
+                ElementState::empty()
+            },
         }
     }
 
@@ -926,8 +928,8 @@ pub fn extended_filtering(tag: &str, range: &str) -> bool {
         // step 2
         // Note: [Level-4 spec](https://drafts.csswg.org/selectors/#lang-pseudo) check for wild card
         if let (Some(range_subtag), Some(tag_subtag)) = (range_subtags.next(), tag_subtags.next()) {
-            if !(range_subtag.eq_ignore_ascii_case(tag_subtag) ||
-                range_subtag.eq_ignore_ascii_case("*"))
+            if !(range_subtag.eq_ignore_ascii_case(tag_subtag)
+                || range_subtag.eq_ignore_ascii_case("*"))
             {
                 return false;
             }

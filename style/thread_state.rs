@@ -65,9 +65,7 @@ pub fn initialize_layout_worker_thread() {
 
 /// Gets the current thread state.
 pub fn get() -> ThreadState {
-    STATE.with(|state| {
-        state.get().unwrap_or_default()
-    })
+    STATE.with(|state| state.get().unwrap_or_default())
 }
 
 /// Enters into a given temporary state. Panics if re-entering.

@@ -389,8 +389,8 @@ impl ElementData {
             return None;
         }
 
-        let needs_to_match_self = hint.intersects(RestyleHint::RESTYLE_SELF) ||
-            (hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style());
+        let needs_to_match_self = hint.intersects(RestyleHint::RESTYLE_SELF)
+            || (hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style());
         if needs_to_match_self {
             return Some(RestyleKind::MatchAndCascade);
         }
@@ -405,9 +405,9 @@ impl ElementData {
             ));
         }
 
-        let needs_to_recascade_self = hint.intersects(RestyleHint::RECASCADE_SELF) ||
-            (hint.intersects(RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE) &&
-                style
+        let needs_to_recascade_self = hint.intersects(RestyleHint::RECASCADE_SELF)
+            || (hint.intersects(RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE)
+                && style
                     .flags
                     .contains(ComputedValueFlags::INHERITS_RESET_STYLE));
         if needs_to_recascade_self {
@@ -447,9 +447,9 @@ impl ElementData {
             ));
         }
 
-        let needs_to_recascade_self = hint.intersects(RestyleHint::RECASCADE_SELF) ||
-            (hint.intersects(RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE) &&
-                style
+        let needs_to_recascade_self = hint.intersects(RestyleHint::RECASCADE_SELF)
+            || (hint.intersects(RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE)
+                && style
                     .flags
                     .contains(ComputedValueFlags::INHERITS_RESET_STYLE));
         if needs_to_recascade_self {
@@ -521,8 +521,8 @@ impl ElementData {
     /// we need for style sharing, the latter does not.
     pub fn safe_for_cousin_sharing(&self) -> bool {
         if self.flags.intersects(
-            ElementDataFlags::TRAVERSED_WITHOUT_STYLING |
-                ElementDataFlags::PRIMARY_STYLE_REUSED_VIA_RULE_NODE,
+            ElementDataFlags::TRAVERSED_WITHOUT_STYLING
+                | ElementDataFlags::PRIMARY_STYLE_REUSED_VIA_RULE_NODE,
         ) {
             return false;
         }

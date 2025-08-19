@@ -175,20 +175,25 @@ pub enum GenericSize<LengthPercent> {
     AnchorSizeFunction(
         #[animation(field_bound)]
         #[distance(field_bound)]
-        Box<GenericAnchorSizeFunction<LengthPercent>>
+        Box<GenericAnchorSizeFunction<LengthPercent>>,
     ),
     AnchorContainingCalcFunction(LengthPercent),
 }
 
 impl<LengthPercent> SpecifiedValueInfo for GenericSize<LengthPercent>
 where
-LengthPercent: SpecifiedValueInfo
+    LengthPercent: SpecifiedValueInfo,
 {
     fn collect_completion_keywords(f: style_traits::KeywordsCollectFn) {
         LengthPercent::collect_completion_keywords(f);
         f(&["auto", "stretch", "fit-content"]);
         if cfg!(feature = "gecko") {
-            f(&["max-content", "min-content", "-moz-available", "-webkit-fill-available"]);
+            f(&[
+                "max-content",
+                "min-content",
+                "-moz-available",
+                "-webkit-fill-available",
+            ]);
         }
         if static_prefs::pref!("layout.css.anchor-positioning.enabled") {
             f(&["anchor-size"]);
@@ -252,20 +257,25 @@ pub enum GenericMaxSize<LengthPercent> {
     AnchorSizeFunction(
         #[animation(field_bound)]
         #[distance(field_bound)]
-        Box<GenericAnchorSizeFunction<LengthPercent>>
+        Box<GenericAnchorSizeFunction<LengthPercent>>,
     ),
     AnchorContainingCalcFunction(LengthPercent),
 }
 
 impl<LP> SpecifiedValueInfo for GenericMaxSize<LP>
 where
-    LP: SpecifiedValueInfo
+    LP: SpecifiedValueInfo,
 {
     fn collect_completion_keywords(f: style_traits::KeywordsCollectFn) {
         LP::collect_completion_keywords(f);
         f(&["none", "stretch", "fit-content"]);
         if cfg!(feature = "gecko") {
-            f(&["max-content", "min-content", "-moz-available", "-webkit-fill-available"]);
+            f(&[
+                "max-content",
+                "min-content",
+                "-moz-available",
+                "-webkit-fill-available",
+            ]);
         }
         if static_prefs::pref!("layout.css.anchor-positioning.enabled") {
             f(&["anchor-size"]);
@@ -438,19 +448,12 @@ where
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
         input.expect_function_matching("anchor-size")?;
-        Self::parse_inner(
-            context,
-            input,
-            |i| LengthPercentage::parse(context, i)
-        )
+        Self::parse_inner(context, input, |i| LengthPercentage::parse(context, i))
     }
 }
 impl<LengthPercentage> GenericAnchorSizeFunction<LengthPercentage> {
     /// Is the anchor-size use valid for given property?
-    pub fn valid_for(
-        &self,
-        position_property: PositionProperty,
-    ) -> bool {
+    pub fn valid_for(&self, position_property: PositionProperty) -> bool {
         position_property.is_absolutely_positioned()
     }
 }
@@ -475,8 +478,7 @@ impl<'a, LengthPercentage> AnchorResolutionResult<'a, LengthPercentage> {
     }
 }
 
-impl<LengthPercentage> GenericAnchorSizeFunction<LengthPercentage>
-{
+impl<LengthPercentage> GenericAnchorSizeFunction<LengthPercentage> {
     /// Parse the inner part of `anchor-size()`, after the parser has consumed "anchor-size(".
     pub fn parse_inner<'i, 't, F>(
         context: &ParserContext,
@@ -490,7 +492,9 @@ impl<LengthPercentage> GenericAnchorSizeFunction<LengthPercentage>
             let mut target_element = i
                 .try_parse(|i| DashedIdent::parse(context, i))
                 .unwrap_or(DashedIdent::empty());
-            let size = i.try_parse(AnchorSizeKeyword::parse).unwrap_or(AnchorSizeKeyword::None);
+            let size = i
+                .try_parse(AnchorSizeKeyword::parse)
+                .unwrap_or(AnchorSizeKeyword::None);
             if target_element.is_empty() {
                 target_element = i
                     .try_parse(|i| DashedIdent::parse(context, i))

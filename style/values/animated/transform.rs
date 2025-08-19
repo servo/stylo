@@ -139,10 +139,10 @@ impl ComputeSquaredDistance for MatrixDecomposed2D {
         const RAD_PER_DEG: f64 = std::f64::consts::PI / 180.0;
         let angle1 = self.angle as f64 * RAD_PER_DEG;
         let angle2 = other.angle as f64 * RAD_PER_DEG;
-        Ok(self.translate.compute_squared_distance(&other.translate)? +
-            self.scale.compute_squared_distance(&other.scale)? +
-            angle1.compute_squared_distance(&angle2)? +
-            self.matrix.compute_squared_distance(&other.matrix)?)
+        Ok(self.translate.compute_squared_distance(&other.translate)?
+            + self.scale.compute_squared_distance(&other.scale)?
+            + angle1.compute_squared_distance(&angle2)?
+            + self.matrix.compute_squared_distance(&other.matrix)?)
     }
 }
 
@@ -312,9 +312,9 @@ impl ComputeSquaredDistance for Skew {
     // ComputeSquaredDistance manually.
     #[inline]
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
-        Ok(self.0.atan().compute_squared_distance(&other.0.atan())? +
-            self.1.atan().compute_squared_distance(&other.1.atan())? +
-            self.2.atan().compute_squared_distance(&other.2.atan())?)
+        Ok(self.0.atan().compute_squared_distance(&other.0.atan())?
+            + self.1.atan().compute_squared_distance(&other.1.atan())?
+            + self.2.atan().compute_squared_distance(&other.2.atan())?)
     }
 }
 
@@ -355,8 +355,8 @@ impl Quaternion {
         let half_angle = angle
             .abs()
             .rem_euclid(std::f64::consts::TAU)
-            .copysign(angle) /
-            2.;
+            .copysign(angle)
+            / 2.;
 
         // Reference:
         // https://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation
@@ -412,9 +412,9 @@ impl Animate for Quaternion {
         debug_assert!(
             // Doule EPSILON since both this_weight and other_weght have calculation errors
             // which are approximately equal to EPSILON.
-            (this_weight + other_weight - 1.0f64).abs() <= f64::EPSILON * 2.0 ||
-                other_weight == 1.0f64 ||
-                other_weight == 0.0f64,
+            (this_weight + other_weight - 1.0f64).abs() <= f64::EPSILON * 2.0
+                || other_weight == 1.0f64
+                || other_weight == 0.0f64,
             "animate should only be used for interpolating or accumulating transforms"
         );
 
@@ -969,17 +969,17 @@ fn is_matched_operation(
     second: &ComputedTransformOperation,
 ) -> bool {
     match (first, second) {
-        (&TransformOperation::Matrix(..), &TransformOperation::Matrix(..)) |
-        (&TransformOperation::Matrix3D(..), &TransformOperation::Matrix3D(..)) |
-        (&TransformOperation::Skew(..), &TransformOperation::Skew(..)) |
-        (&TransformOperation::SkewX(..), &TransformOperation::SkewX(..)) |
-        (&TransformOperation::SkewY(..), &TransformOperation::SkewY(..)) |
-        (&TransformOperation::Rotate(..), &TransformOperation::Rotate(..)) |
-        (&TransformOperation::Rotate3D(..), &TransformOperation::Rotate3D(..)) |
-        (&TransformOperation::RotateX(..), &TransformOperation::RotateX(..)) |
-        (&TransformOperation::RotateY(..), &TransformOperation::RotateY(..)) |
-        (&TransformOperation::RotateZ(..), &TransformOperation::RotateZ(..)) |
-        (&TransformOperation::Perspective(..), &TransformOperation::Perspective(..)) => true,
+        (&TransformOperation::Matrix(..), &TransformOperation::Matrix(..))
+        | (&TransformOperation::Matrix3D(..), &TransformOperation::Matrix3D(..))
+        | (&TransformOperation::Skew(..), &TransformOperation::Skew(..))
+        | (&TransformOperation::SkewX(..), &TransformOperation::SkewX(..))
+        | (&TransformOperation::SkewY(..), &TransformOperation::SkewY(..))
+        | (&TransformOperation::Rotate(..), &TransformOperation::Rotate(..))
+        | (&TransformOperation::Rotate3D(..), &TransformOperation::Rotate3D(..))
+        | (&TransformOperation::RotateX(..), &TransformOperation::RotateX(..))
+        | (&TransformOperation::RotateY(..), &TransformOperation::RotateY(..))
+        | (&TransformOperation::RotateZ(..), &TransformOperation::RotateZ(..))
+        | (&TransformOperation::Perspective(..), &TransformOperation::Perspective(..)) => true,
         // Match functions that have the same primitive transform function
         (a, b) if a.is_translate() && b.is_translate() => true,
         (a, b) if a.is_scale() && b.is_scale() => true,
@@ -1049,8 +1049,8 @@ impl Animate for ComputedTransform {
                             let identity = transform.to_animated_zero().unwrap();
 
                             match transform {
-                                TransformOperation::AccumulateMatrix { .. } |
-                                TransformOperation::InterpolateMatrix { .. } => {
+                                TransformOperation::AccumulateMatrix { .. }
+                                | TransformOperation::InterpolateMatrix { .. } => {
                                     let (from, to) = if fill_right {
                                         (transform, &identity)
                                     } else {
@@ -1317,8 +1317,8 @@ impl ComputeSquaredDistance for ComputedTransformOperation {
                 &TransformOperation::Skew(ref fx, ref fy),
                 &TransformOperation::Skew(ref tx, ref ty),
             ) => Ok(fx.compute_squared_distance(&tx)? + fy.compute_squared_distance(&ty)?),
-            (&TransformOperation::SkewX(ref f), &TransformOperation::SkewX(ref t)) |
-            (&TransformOperation::SkewY(ref f), &TransformOperation::SkewY(ref t)) => {
+            (&TransformOperation::SkewX(ref f), &TransformOperation::SkewX(ref t))
+            | (&TransformOperation::SkewY(ref f), &TransformOperation::SkewY(ref t)) => {
                 f.compute_squared_distance(&t)
             },
             (
@@ -1337,25 +1337,25 @@ impl ComputeSquaredDistance for ComputedTransformOperation {
                 let tx = tx.resolve(basis).px();
                 let ty = ty.resolve(basis).px();
 
-                Ok(fx.compute_squared_distance(&tx)? +
-                    fy.compute_squared_distance(&ty)? +
-                    fz.compute_squared_distance(&tz)?)
+                Ok(fx.compute_squared_distance(&tx)?
+                    + fy.compute_squared_distance(&ty)?
+                    + fz.compute_squared_distance(&tz)?)
             },
             (
                 &TransformOperation::Scale3D(ref fx, ref fy, ref fz),
                 &TransformOperation::Scale3D(ref tx, ref ty, ref tz),
-            ) => Ok(fx.compute_squared_distance(&tx)? +
-                fy.compute_squared_distance(&ty)? +
-                fz.compute_squared_distance(&tz)?),
+            ) => Ok(fx.compute_squared_distance(&tx)?
+                + fy.compute_squared_distance(&ty)?
+                + fz.compute_squared_distance(&tz)?),
             (
                 &TransformOperation::Rotate3D(fx, fy, fz, fa),
                 &TransformOperation::Rotate3D(tx, ty, tz, ta),
             ) => Rotate::Rotate3D(fx, fy, fz, fa)
                 .compute_squared_distance(&Rotate::Rotate3D(tx, ty, tz, ta)),
-            (&TransformOperation::RotateX(fa), &TransformOperation::RotateX(ta)) |
-            (&TransformOperation::RotateY(fa), &TransformOperation::RotateY(ta)) |
-            (&TransformOperation::RotateZ(fa), &TransformOperation::RotateZ(ta)) |
-            (&TransformOperation::Rotate(fa), &TransformOperation::Rotate(ta)) => {
+            (&TransformOperation::RotateX(fa), &TransformOperation::RotateX(ta))
+            | (&TransformOperation::RotateY(fa), &TransformOperation::RotateY(ta))
+            | (&TransformOperation::RotateZ(fa), &TransformOperation::RotateZ(ta))
+            | (&TransformOperation::Rotate(fa), &TransformOperation::Rotate(ta)) => {
                 fa.compute_squared_distance(&ta)
             },
             (
@@ -1364,8 +1364,8 @@ impl ComputeSquaredDistance for ComputedTransformOperation {
             ) => fd
                 .infinity_or(|l| l.px())
                 .compute_squared_distance(&td.infinity_or(|l| l.px())),
-            (&TransformOperation::Perspective(ref p), &TransformOperation::Matrix3D(ref m)) |
-            (&TransformOperation::Matrix3D(ref m), &TransformOperation::Perspective(ref p)) => {
+            (&TransformOperation::Perspective(ref p), &TransformOperation::Matrix3D(ref m))
+            | (&TransformOperation::Matrix3D(ref m), &TransformOperation::Perspective(ref p)) => {
                 // FIXME(emilio): Is this right? Why interpolating this with
                 // Perspective but not with anything else?
                 let mut p_matrix = Matrix3D::identity();
@@ -1534,8 +1534,8 @@ impl ComputeSquaredDistance for ComputedRotate {
         use euclid::approxeq::ApproxEq;
         match (self, other) {
             (&Rotate::None, &Rotate::None) => Ok(SquaredDistance::from_sqrt(0.)),
-            (&Rotate::Rotate3D(_, _, _, a), &Rotate::None) |
-            (&Rotate::None, &Rotate::Rotate3D(_, _, _, a)) => {
+            (&Rotate::Rotate3D(_, _, _, a), &Rotate::None)
+            | (&Rotate::None, &Rotate::Rotate3D(_, _, _, a)) => {
                 a.compute_squared_distance(&Angle::zero())
             },
             (&Rotate::Rotate3D(_, ..), _) | (_, &Rotate::Rotate3D(_, ..)) => {
@@ -1611,9 +1611,9 @@ impl ComputeSquaredDistance for ComputedTranslate {
     #[inline]
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
         let (from, to) = (self.resolve(), other.resolve());
-        Ok(from.0.compute_squared_distance(&to.0)? +
-            from.1.compute_squared_distance(&to.1)? +
-            from.2.compute_squared_distance(&to.2)?)
+        Ok(from.0.compute_squared_distance(&to.0)?
+            + from.1.compute_squared_distance(&to.1)?
+            + from.2.compute_squared_distance(&to.2)?)
     }
 }
 
@@ -1660,8 +1660,8 @@ impl ComputeSquaredDistance for ComputedScale {
     #[inline]
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
         let (from, to) = (self.resolve(), other.resolve());
-        Ok(from.0.compute_squared_distance(&to.0)? +
-            from.1.compute_squared_distance(&to.1)? +
-            from.2.compute_squared_distance(&to.2)?)
+        Ok(from.0.compute_squared_distance(&to.0)?
+            + from.1.compute_squared_distance(&to.1)?
+            + from.2.compute_squared_distance(&to.2)?)
     }
 }

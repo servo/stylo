@@ -232,10 +232,10 @@ impl<L: Zero> Zero for BorderRadius<L> {
     }
 
     fn is_zero(&self) -> bool {
-        self.top_left.is_zero() &&
-            self.top_right.is_zero() &&
-            self.bottom_right.is_zero() &&
-            self.bottom_left.is_zero()
+        self.top_left.is_zero()
+            && self.top_right.is_zero()
+            && self.bottom_right.is_zero()
+            && self.bottom_left.is_zero()
     }
 }
 

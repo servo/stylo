@@ -5,10 +5,11 @@
 //! Computed types for text properties.
 
 use crate::values::computed::length::LengthPercentage;
-use crate::values::generics::NumberOrAuto;
 use crate::values::generics::text::{
-    GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationLength, GenericTextIndent,
+    GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationLength,
+    GenericTextIndent,
 };
+use crate::values::generics::NumberOrAuto;
 use crate::values::specified::text as specified;
 use crate::values::specified::text::{TextEmphasisFillMode, TextEmphasisShapeKeyword};
 use crate::values::{CSSFloat, CSSInteger};

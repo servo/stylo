@@ -353,9 +353,9 @@ impl UnconstrainedRelativeSelectorVisitor {
                 s.visit(&mut visitor);
             }
 
-            if (visitor.compound_state.relative_selector_found ||
-                visitor.compound_state.in_relative_selector) &&
-                !visitor.compound_state.constrained
+            if (visitor.compound_state.relative_selector_found
+                || visitor.compound_state.in_relative_selector)
+                && !visitor.compound_state.constrained
             {
                 return true;
             }
@@ -374,10 +374,10 @@ impl SelectorVisitor for UnconstrainedRelativeSelectorVisitor {
     fn visit_simple_selector(&mut self, c: &Component<Self::Impl>) -> bool {
         match c {
             // Deferred to visit_selector_list
-            Component::Is(..) |
-            Component::Where(..) |
-            Component::Negation(..) |
-            Component::Has(..) => (),
+            Component::Is(..)
+            | Component::Where(..)
+            | Component::Negation(..)
+            | Component::Has(..) => (),
             Component::ExplicitUniversalType => (),
             _ => self.compound_state.constrained |= true,
         };

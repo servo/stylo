@@ -412,8 +412,10 @@ impl CssRule {
 
     fn is_empty_nested_declarations(&self, guard: &SharedRwLockReadGuard) -> bool {
         match *self {
-            CssRule::NestedDeclarations(ref lock) => lock.read_with(guard).block.read_with(guard).is_empty(),
-            _ => false
+            CssRule::NestedDeclarations(ref lock) => {
+                lock.read_with(guard).block.read_with(guard).is_empty()
+            },
+            _ => false,
         }
     }
 }
@@ -481,7 +483,8 @@ impl From<CssRuleType> for CssRuleTypes {
 
 impl CssRuleTypes {
     /// Rules where !important declarations are forbidden.
-    pub const IMPORTANT_FORBIDDEN: Self = Self(CssRuleType::PositionTry.bit() | CssRuleType::Keyframe.bit());
+    pub const IMPORTANT_FORBIDDEN: Self =
+        Self(CssRuleType::PositionTry.bit() | CssRuleType::Keyframe.bit());
 
     /// Returns whether the rule is in the current set.
     #[inline]
@@ -613,7 +616,10 @@ impl CssRule {
             rules: Default::default(),
         };
 
-        if input.try_parse(|input| parse_one_rule(input, &mut parser)).is_ok() {
+        if input
+            .try_parse(|input| parse_one_rule(input, &mut parser))
+            .is_ok()
+        {
             return Ok(parser.rules.pop().unwrap());
         }
 
@@ -622,10 +628,12 @@ impl CssRule {
         if matches!(error, RulesMutateError::Syntax) && parser.can_parse_declarations() {
             let declarations = parse_property_declaration_list(&parser.context, &mut input, &[]);
             if !declarations.is_empty() {
-                return Ok(CssRule::NestedDeclarations(Arc::new(parser.shared_lock.wrap(NestedDeclarationsRule {
-                    block: Arc::new(parser.shared_lock.wrap(declarations)),
-                    source_location: input.current_source_location(),
-                }))));
+                return Ok(CssRule::NestedDeclarations(Arc::new(
+                    parser.shared_lock.wrap(NestedDeclarationsRule {
+                        block: Arc::new(parser.shared_lock.wrap(declarations)),
+                        source_location: input.current_source_location(),
+                    }),
+                )));
             }
         }
         Err(error)

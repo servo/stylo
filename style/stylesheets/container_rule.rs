@@ -58,17 +58,13 @@ impl ContainerRule {
     #[cfg(feature = "gecko")]
     pub fn size_of(&self, guard: &SharedRwLockReadGuard, ops: &mut MallocSizeOfOps) -> usize {
         // Measurement of other fields may be added later.
-        self.rules.unconditional_shallow_size_of(ops) +
-            self.rules.read_with(guard).size_of(guard, ops)
+        self.rules.unconditional_shallow_size_of(ops)
+            + self.rules.read_with(guard).size_of(guard, ops)
     }
 }
 
 impl DeepCloneWithLock for ContainerRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         let rules = self.rules.read_with(guard);
         Self {
             condition: self.condition.clone(),
@@ -384,8 +380,8 @@ pub static CONTAINER_FEATURES: [QueryFeatureDescription; 6] = [
         // XXX from_bits_truncate is const, but the pipe operator isn't, so this
         // works around it.
         FeatureFlags::from_bits_truncate(
-            FeatureFlags::CONTAINER_REQUIRES_BLOCK_AXIS.bits() |
-                FeatureFlags::CONTAINER_REQUIRES_INLINE_AXIS.bits()
+            FeatureFlags::CONTAINER_REQUIRES_BLOCK_AXIS.bits()
+                | FeatureFlags::CONTAINER_REQUIRES_INLINE_AXIS.bits()
         ),
     ),
     feature!(
@@ -393,8 +389,8 @@ pub static CONTAINER_FEATURES: [QueryFeatureDescription; 6] = [
         AllowsRanges::No,
         keyword_evaluator!(eval_orientation, Orientation),
         FeatureFlags::from_bits_truncate(
-            FeatureFlags::CONTAINER_REQUIRES_BLOCK_AXIS.bits() |
-                FeatureFlags::CONTAINER_REQUIRES_INLINE_AXIS.bits()
+            FeatureFlags::CONTAINER_REQUIRES_BLOCK_AXIS.bits()
+                | FeatureFlags::CONTAINER_REQUIRES_INLINE_AXIS.bits()
         ),
     ),
 ];

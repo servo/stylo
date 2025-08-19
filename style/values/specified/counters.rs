@@ -262,9 +262,9 @@ impl Parse for Content {
                     });
                 },
                 Token::Delim('/')
-                    if alt_start.is_none() &&
-                        !items.is_empty() &&
-                        static_prefs::pref!("layout.css.content.alt-text.enabled") =>
+                    if alt_start.is_none()
+                        && !items.is_empty()
+                        && static_prefs::pref!("layout.css.content.alt-text.enabled") =>
                 {
                     alt_start = Some(items.len());
                 },

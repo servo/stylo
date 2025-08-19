@@ -212,8 +212,8 @@ impl Image {
         cors_mode: CorsMode,
         flags: ParseImageFlags,
     ) -> Result<Image, ParseError<'i>> {
-        if !flags.contains(ParseImageFlags::FORBID_NONE) &&
-            input.try_parse(|i| i.expect_ident_matching("none")).is_ok()
+        if !flags.contains(ParseImageFlags::FORBID_NONE)
+            && input.try_parse(|i| i.expect_ident_matching("none")).is_ok()
         {
             return Ok(generic::Image::None);
         }
@@ -1280,14 +1280,19 @@ impl<T> generic::ColorStop<Color, T> {
 
 impl PaintWorklet {
     #[cfg(feature = "servo")]
-    fn parse_args<'i>(context: &ParserContext, input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        use servo_arc::Arc;
+    fn parse_args<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
         use crate::custom_properties::SpecifiedValue;
+        use servo_arc::Arc;
         let name = Atom::from(&**input.expect_ident()?);
         let arguments = input
             .try_parse(|input| {
                 input.expect_comma()?;
-                input.parse_comma_separated(|input| SpecifiedValue::parse(input, &context.url_data).map(Arc::new))
+                input.parse_comma_separated(|input| {
+                    SpecifiedValue::parse(input, &context.url_data).map(Arc::new)
+                })
             })
             .unwrap_or_default();
         Ok(Self { name, arguments })

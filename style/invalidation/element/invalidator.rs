@@ -193,9 +193,9 @@ pub struct DescendantInvalidationLists<'a> {
 
 impl<'a> DescendantInvalidationLists<'a> {
     fn is_empty(&self) -> bool {
-        self.dom_descendants.is_empty() &&
-            self.slotted_descendants.is_empty() &&
-            self.parts.is_empty()
+        self.dom_descendants.is_empty()
+            && self.slotted_descendants.is_empty()
+            && self.parts.is_empty()
     }
 }
 
@@ -272,9 +272,9 @@ impl<'a> Invalidation<'a> {
     /// Create a new invalidation for matching a dependency.
     pub fn new(dependency: &'a Dependency, scope: Option<OpaqueElement>) -> Self {
         debug_assert!(
-            dependency.selector_offset == dependency.selector.len() + 1 ||
-                dependency.normal_invalidation_kind() !=
-                    NormalDependencyInvalidationKind::Element,
+            dependency.selector_offset == dependency.selector.len() + 1
+                || dependency.normal_invalidation_kind()
+                    != NormalDependencyInvalidationKind::Element,
             "No point to this, if the dependency matched the element we should just invalidate it"
         );
         Self {
@@ -303,10 +303,10 @@ impl<'a> Invalidation<'a> {
             .combinator_at_parse_order(self.offset - 1)
         {
             Combinator::Descendant | Combinator::LaterSibling | Combinator::PseudoElement => true,
-            Combinator::Part |
-            Combinator::SlotAssignment |
-            Combinator::NextSibling |
-            Combinator::Child => false,
+            Combinator::Part
+            | Combinator::SlotAssignment
+            | Combinator::NextSibling
+            | Combinator::Child => false,
         }
     }
 
@@ -956,8 +956,8 @@ where
                         };
                     }
 
-                    if cur_dependency.normal_invalidation_kind() ==
-                        NormalDependencyInvalidationKind::Element
+                    if cur_dependency.normal_invalidation_kind()
+                        == NormalDependencyInvalidationKind::Element
                     {
                         continue;
                     }
@@ -987,8 +987,8 @@ where
             .selector
             .combinator_at_parse_order(next_invalidation.offset - 1);
 
-        if matches!(next_combinator, Combinator::PseudoElement) &&
-            self.processor.invalidates_on_pseudo_element()
+        if matches!(next_combinator, Combinator::PseudoElement)
+            && self.processor.invalidates_on_pseudo_element()
         {
             // We need to invalidate the element whenever pseudos change, for
             // two reasons:
@@ -1081,9 +1081,9 @@ where
         //
         //   [div div div, div div, div]
         //
-        let can_skip_pushing = next_invalidation_kind == invalidation_kind &&
-            invalidation.matched_by_any_previous &&
-            next_invalidation.effective_for_next();
+        let can_skip_pushing = next_invalidation_kind == invalidation_kind
+            && invalidation.matched_by_any_previous
+            && next_invalidation.effective_for_next();
 
         if can_skip_pushing {
             debug!(

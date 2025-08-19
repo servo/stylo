@@ -11,7 +11,7 @@ use crate::media_queries::Device;
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::{Color as ComputedColor, Context, ToComputedValue};
 use crate::values::generics::color::{
-    ColorMixFlags, GenericCaretColor, GenericColorMix, GenericColorOrAuto, GenericLightDark
+    ColorMixFlags, GenericCaretColor, GenericColorMix, GenericColorOrAuto, GenericLightDark,
 };
 use crate::values::specified::Percentage;
 use crate::values::{normalize, CustomIdent};
@@ -447,8 +447,11 @@ impl Color {
                     return Ok(Color::ColorMix(Box::new(mix)));
                 }
 
-                if let Ok(ld) = input.try_parse(|i| GenericLightDark::parse_with(i, |i| Self::parse_internal(context, i, preserve_authored)))
-                {
+                if let Ok(ld) = input.try_parse(|i| {
+                    GenericLightDark::parse_with(i, |i| {
+                        Self::parse_internal(context, i, preserve_authored)
+                    })
+                }) {
                     return Ok(Color::LightDark(Box::new(ld)));
                 }
 
@@ -553,12 +556,12 @@ impl Color {
                     .unwrap_or(false)
             },
             Self::LightDark(ref ld) => {
-                ld.light.honored_in_forced_colors_mode(allow_transparent) &&
-                    ld.dark.honored_in_forced_colors_mode(allow_transparent)
+                ld.light.honored_in_forced_colors_mode(allow_transparent)
+                    && ld.dark.honored_in_forced_colors_mode(allow_transparent)
             },
             Self::ColorMix(ref mix) => {
-                mix.left.honored_in_forced_colors_mode(allow_transparent) &&
-                    mix.right.honored_in_forced_colors_mode(allow_transparent)
+                mix.left.honored_in_forced_colors_mode(allow_transparent)
+                    && mix.right.honored_in_forced_colors_mode(allow_transparent)
             },
         }
     }

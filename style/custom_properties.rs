@@ -108,7 +108,10 @@ fn get_scrollbar_inline_size(device: &Device, url_data: &UrlExtraData) -> Variab
 }
 
 fn get_hairline(device: &Device, url_data: &UrlExtraData) -> VariableValue {
-    VariableValue::pixels(app_units::Au(device.app_units_per_device_pixel()).to_f32_px(), url_data)
+    VariableValue::pixels(
+        app_units::Au(device.app_units_per_device_pixel()).to_f32_px(),
+        url_data,
+    )
 }
 
 static ENVIRONMENT_VARIABLES: [EnvironmentVariable; 4] = [
@@ -258,12 +261,7 @@ pub fn compute_variable_value(
     if registration.syntax.is_universal() {
         return Some(ComputedRegisteredValue::universal(Arc::clone(value)));
     }
-    compute_value(
-        &value.css,
-        &value.url_data,
-        registration,
-        computed_context,
-    ).ok()
+    compute_value(&value.css, &value.url_data, registration, computed_context).ok()
 }
 
 // For all purposes, we want values to be considered equal if their css text is equal.
@@ -409,11 +407,11 @@ impl NonCustomReferences {
         if value.eq_ignore_ascii_case(FontRelativeLength::LH) {
             return Self::FONT_UNITS | Self::LH_UNITS;
         }
-        if value.eq_ignore_ascii_case(FontRelativeLength::EM) ||
-            value.eq_ignore_ascii_case(FontRelativeLength::EX) ||
-            value.eq_ignore_ascii_case(FontRelativeLength::CAP) ||
-            value.eq_ignore_ascii_case(FontRelativeLength::CH) ||
-            value.eq_ignore_ascii_case(FontRelativeLength::IC)
+        if value.eq_ignore_ascii_case(FontRelativeLength::EM)
+            || value.eq_ignore_ascii_case(FontRelativeLength::EX)
+            || value.eq_ignore_ascii_case(FontRelativeLength::CAP)
+            || value.eq_ignore_ascii_case(FontRelativeLength::CH)
+            || value.eq_ignore_ascii_case(FontRelativeLength::IC)
         {
             return Self::FONT_UNITS;
         }
@@ -595,8 +593,8 @@ impl VariableValue {
         let mut css = input.slice_from(start_position).to_owned();
         if !missing_closing_characters.is_empty() {
             // Unescaped backslash at EOF in a quoted string is ignored.
-            if css.ends_with("\\") &&
-                matches!(missing_closing_characters.as_bytes()[0], b'"' | b'\'')
+            if css.ends_with("\\")
+                && matches!(missing_closing_characters.as_bytes()[0], b'"' | b'\'')
             {
                 css.pop();
             }
@@ -867,8 +865,8 @@ fn parse_declaration_value_block<'i, 't>(
                     check_closed!(")");
                     prev_reference_index = Some(our_ref_index);
                     let reference = &mut references.refs[our_ref_index];
-                    reference.end = input.position().byte_index() - input_start.byte_index() +
-                        missing_closing_characters.len();
+                    reference.end = input.position().byte_index() - input_start.byte_index()
+                        + missing_closing_characters.len();
                     reference.fallback = fallback;
                     if is_var {
                         references.any_var = true;
@@ -900,12 +898,12 @@ fn parse_declaration_value_block<'i, 't>(
                     missing_closing_characters.push_str(quote)
                 }
             },
-            Token::Ident(ref value) |
-            Token::AtKeyword(ref value) |
-            Token::Hash(ref value) |
-            Token::IDHash(ref value) |
-            Token::UnquotedUrl(ref value) |
-            Token::Dimension {
+            Token::Ident(ref value)
+            | Token::AtKeyword(ref value)
+            | Token::Hash(ref value)
+            | Token::IDHash(ref value)
+            | Token::UnquotedUrl(ref value)
+            | Token::Dimension {
                 unit: ref value, ..
             } => {
                 references
@@ -949,8 +947,8 @@ fn find_non_custom_references(
     include_universal: bool,
 ) -> Option<NonCustomReferences> {
     let dependent_types = registration.syntax.dependent_types();
-    let may_reference_length = dependent_types.intersects(DependentDataTypes::LENGTH) ||
-        (include_universal && registration.syntax.is_universal());
+    let may_reference_length = dependent_types.intersects(DependentDataTypes::LENGTH)
+        || (include_universal && registration.syntax.is_universal());
     if may_reference_length {
         let value_dependencies = value.references.non_custom_references(is_root_element);
         if !value_dependencies.is_empty() {
@@ -1044,8 +1042,8 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                 let may_have_color_scheme = true;
                 // Non-custom dependency is really relevant for registered custom properties
                 // that require computed value of such dependencies.
-                let has_dependency = unparsed_value.references.any_var ||
-                    find_non_custom_references(
+                let has_dependency = unparsed_value.references.any_var
+                    || find_non_custom_references(
                         registration,
                         unparsed_value,
                         may_have_color_scheme,
@@ -1215,7 +1213,10 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
         let existing_value = self.custom_properties.get(registration, &name);
         let existing_value = match existing_value {
             None => {
-                if matches!(value, CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Initial)) {
+                if matches!(
+                    value,
+                    CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Initial)
+                ) {
                     debug_assert!(registration.inherits(), "Should've been handled earlier");
                     // The initial value of a custom property without a
                     // guaranteed-invalid initial value is the same as it
@@ -1241,7 +1242,8 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                         &value.url_data,
                         registration,
                         self.computed_context,
-                    ).ok()
+                    )
+                    .ok()
                 } else {
                     None
                 }
@@ -1284,7 +1286,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                     CSSWideKeyword::Revert | CSSWideKeyword::RevertLayer => {},
                 }
                 None
-            }
+            },
         };
 
         if let Some(value) = computed_value {
@@ -1344,8 +1346,8 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
             inherited: if self
                 .computed_context
                 .inherited_custom_properties()
-                .inherited ==
-                self.custom_properties.inherited
+                .inherited
+                == self.custom_properties.inherited
             {
                 self.computed_context
                     .inherited_custom_properties()
@@ -1658,10 +1660,9 @@ fn substitute_all(
             if context.contains_computed_custom_property {
                 // These non-custom properties can't become invalid-at-compute-time from
                 // cyclic dependencies purely consisting of non-registered properties.
-                if context
-                    .non_custom_references
-                    .intersects(NonCustomReferences::FONT_UNITS | NonCustomReferences::ROOT_FONT_UNITS)
-                {
+                if context.non_custom_references.intersects(
+                    NonCustomReferences::FONT_UNITS | NonCustomReferences::ROOT_FONT_UNITS,
+                ) {
                     context
                         .invalid_non_custom_properties
                         .insert(LonghandId::FontSize);
@@ -1733,8 +1734,8 @@ fn substitute_all(
                     context.computed_context.is_root_element(),
                     /* include_unregistered = */ false,
                 )
-                .is_some() ||
-                    v.references.refs.iter().any(|reference| {
+                .is_some()
+                    || v.references.refs.iter().any(|reference| {
                         reference.is_var && deferred.get(&reference.name).is_some()
                     });
 
@@ -1839,18 +1840,14 @@ fn substitute_references_if_needed_and_apply(
 
     let inherited = computed_context.inherited_custom_properties();
     let url_data = &value.url_data;
-    let substitution = match substitute_internal(
-        value,
-        custom_properties,
-        stylist,
-        computed_context,
-    ) {
-        Ok(v) => v,
-        Err(..) => {
-            handle_invalid_at_computed_value_time(name, custom_properties, computed_context);
-            return;
-        },
-    };
+    let substitution =
+        match substitute_internal(value, custom_properties, stylist, computed_context) {
+            Ok(v) => v,
+            Err(..) => {
+                handle_invalid_at_computed_value_time(name, custom_properties, computed_context);
+                return;
+            },
+        };
 
     // If variable fallback results in a wide keyword, deal with it now.
     {
@@ -1870,20 +1867,20 @@ fn substitute_references_if_needed_and_apply(
                 registration.inherits(),
                 computed_context.is_root_element(),
             ) {
-                (CSSWideKeyword::Initial, _, _) |
-                (CSSWideKeyword::Revert, false, _) |
-                (CSSWideKeyword::RevertLayer, false, _) |
-                (CSSWideKeyword::Unset, false, _) |
-                (CSSWideKeyword::Revert, true, true) |
-                (CSSWideKeyword::RevertLayer, true, true) |
-                (CSSWideKeyword::Unset, true, true) |
-                (CSSWideKeyword::Inherit, _, true) => {
+                (CSSWideKeyword::Initial, _, _)
+                | (CSSWideKeyword::Revert, false, _)
+                | (CSSWideKeyword::RevertLayer, false, _)
+                | (CSSWideKeyword::Unset, false, _)
+                | (CSSWideKeyword::Revert, true, true)
+                | (CSSWideKeyword::RevertLayer, true, true)
+                | (CSSWideKeyword::Unset, true, true)
+                | (CSSWideKeyword::Inherit, _, true) => {
                     remove_and_insert_initial_value(name, registration, custom_properties);
                 },
-                (CSSWideKeyword::Revert, true, false) |
-                (CSSWideKeyword::RevertLayer, true, false) |
-                (CSSWideKeyword::Inherit, _, false) |
-                (CSSWideKeyword::Unset, true, false) => {
+                (CSSWideKeyword::Revert, true, false)
+                | (CSSWideKeyword::RevertLayer, true, false)
+                | (CSSWideKeyword::Inherit, _, false)
+                | (CSSWideKeyword::Unset, true, false) => {
                     match inherited.get(registration, name) {
                         Some(value) => {
                             custom_properties.insert(registration, name, value.clone());
@@ -1903,7 +1900,7 @@ fn substitute_references_if_needed_and_apply(
         Err(()) => {
             handle_invalid_at_computed_value_time(name, custom_properties, computed_context);
             return;
-        }
+        },
     };
 
     custom_properties.insert(registration, name, value);
@@ -1932,13 +1929,15 @@ impl<'a> Substitution<'a> {
         computed_context: &computed::Context,
     ) -> Result<ComputedRegisteredValue, ()> {
         if registration.syntax.is_universal() {
-            return Ok(ComputedRegisteredValue::universal(Arc::new(VariableValue {
-                css: self.css.into_owned(),
-                first_token_type: self.first_token_type,
-                last_token_type: self.last_token_type,
-                url_data: url_data.clone(),
-                references: Default::default(),
-            })))
+            return Ok(ComputedRegisteredValue::universal(Arc::new(
+                VariableValue {
+                    css: self.css.into_owned(),
+                    first_token_type: self.first_token_type,
+                    last_token_type: self.last_token_type,
+                    url_data: url_data.clone(),
+                    references: Default::default(),
+                },
+            )));
         }
         compute_value(&self.css, url_data, registration, computed_context)
     }
@@ -2073,7 +2072,7 @@ fn substitute_one_reference<'a>(
                 .next_if(|next_ref| next_ref.end <= reference.end)
                 .is_some()
             {}
-            return Ok(Substitution::from_value(v.to_variable_value()))
+            return Ok(Substitution::from_value(v.to_variable_value()));
         }
     } else {
         let device = stylist.device();
@@ -2134,11 +2133,6 @@ pub fn substitute<'a>(
     computed_context: &computed::Context,
 ) -> Result<Cow<'a, str>, ()> {
     debug_assert!(variable_value.has_references());
-    let v = substitute_internal(
-        variable_value,
-        custom_properties,
-        stylist,
-        computed_context,
-    )?;
+    let v = substitute_internal(variable_value, custom_properties, stylist, computed_context)?;
     Ok(v.css)
 }

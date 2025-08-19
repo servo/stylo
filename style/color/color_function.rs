@@ -355,14 +355,14 @@ impl ColorFunction<SpecifiedColor> {
     /// Return true if the color funciton has an origin color specified.
     pub fn has_origin_color(&self) -> bool {
         match self {
-            Self::Rgb(origin_color, ..) |
-            Self::Hsl(origin_color, ..) |
-            Self::Hwb(origin_color, ..) |
-            Self::Lab(origin_color, ..) |
-            Self::Lch(origin_color, ..) |
-            Self::Oklab(origin_color, ..) |
-            Self::Oklch(origin_color, ..) |
-            Self::Color(origin_color, ..) => origin_color.is_some(),
+            Self::Rgb(origin_color, ..)
+            | Self::Hsl(origin_color, ..)
+            | Self::Hwb(origin_color, ..)
+            | Self::Lab(origin_color, ..)
+            | Self::Lch(origin_color, ..)
+            | Self::Oklab(origin_color, ..)
+            | Self::Oklch(origin_color, ..)
+            | Self::Color(origin_color, ..) => origin_color.is_some(),
         }
     }
 

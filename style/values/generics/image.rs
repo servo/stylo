@@ -8,7 +8,7 @@
 
 use crate::color::mix::ColorInterpolationMethod;
 use crate::custom_properties;
-use crate::values::generics::{position::PositionComponent, color::GenericLightDark, Optional};
+use crate::values::generics::{color::GenericLightDark, position::PositionComponent, Optional};
 use crate::values::serialize_atom_identifier;
 use crate::Atom;
 use crate::Zero;
@@ -18,9 +18,7 @@ use style_traits::{CssWriter, ToCss};
 /// An `<image> | none` value.
 ///
 /// https://drafts.csswg.org/css-images/#image-values
-#[derive(
-    Clone, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToResolvedValue, ToShmem,
-)]
+#[derive(Clone, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToResolvedValue, ToShmem)]
 #[repr(C, u8)]
 pub enum GenericImage<G, ImageUrl, Color, Percentage, Resolution> {
     /// `none` variant.
@@ -466,8 +464,8 @@ where
         let (compat_mode, repeating, has_default_color_interpolation_method) = match *self {
             Gradient::Linear {
                 compat_mode, flags, ..
-            } |
-            Gradient::Radial {
+            }
+            | Gradient::Radial {
                 compat_mode, flags, ..
             } => (
                 compat_mode,
@@ -530,8 +528,8 @@ where
             } => {
                 dest.write_str("radial-gradient(")?;
                 let omit_shape = match *shape {
-                    EndingShape::Ellipse(Ellipse::Extent(ShapeExtent::Cover)) |
-                    EndingShape::Ellipse(Ellipse::Extent(ShapeExtent::FarthestCorner)) => true,
+                    EndingShape::Ellipse(Ellipse::Extent(ShapeExtent::Cover))
+                    | EndingShape::Ellipse(Ellipse::Extent(ShapeExtent::FarthestCorner)) => true,
                     _ => false,
                 };
                 let omit_position = position.is_center();

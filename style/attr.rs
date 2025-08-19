@@ -6,15 +6,15 @@
 //!
 //! [attr]: https://dom.spec.whatwg.org/#interface-attr
 
-use crate::shadow_parts::ShadowParts;
-use crate::color::{AbsoluteColor, parsing::parse_color_keyword};
+use crate::color::{parsing::parse_color_keyword, AbsoluteColor};
 use crate::properties::PropertyDeclarationBlock;
+use crate::shadow_parts::ShadowParts;
 use crate::shared_lock::Locked;
 use crate::str::str_join;
 use crate::str::{read_exponent, read_fraction, HTML_SPACE_CHARACTERS};
 use crate::str::{read_numbers, split_commas, split_html_space_chars};
-use crate::values::specified::Length;
 use crate::values::specified::color::Color;
+use crate::values::specified::Length;
 use crate::values::AtomString;
 use crate::{Atom, LocalName, Namespace, Prefix};
 use app_units::Au;
@@ -54,7 +54,7 @@ pub enum AttrValue {
     /// not actually suitable for most URL-reflecting IDL attributes.
     ResolvedUrl(
         String,
-        #[ignore_malloc_size_of = "Arc"] Option<Arc<url::Url>>
+        #[ignore_malloc_size_of = "Arc"] Option<Arc<url::Url>>,
     ),
 
     /// Note that this variant is only used transitively as a fast path to set
@@ -411,17 +411,17 @@ impl ::std::ops::Deref for AttrValue {
 
     fn deref(&self) -> &str {
         match *self {
-            AttrValue::String(ref value) |
-            AttrValue::TokenList(ref value, _) |
-            AttrValue::UInt(ref value, _) |
-            AttrValue::Double(ref value, _) |
-            AttrValue::Length(ref value, _) |
-            AttrValue::Color(ref value, _) |
-            AttrValue::Int(ref value, _) |
-            AttrValue::ResolvedUrl(ref value, _) |
-            AttrValue::Declaration(ref value, _) |
-            AttrValue::ShadowParts(ref value, _) |
-            AttrValue::Dimension(ref value, _) => &value,
+            AttrValue::String(ref value)
+            | AttrValue::TokenList(ref value, _)
+            | AttrValue::UInt(ref value, _)
+            | AttrValue::Double(ref value, _)
+            | AttrValue::Length(ref value, _)
+            | AttrValue::Color(ref value, _)
+            | AttrValue::Int(ref value, _)
+            | AttrValue::ResolvedUrl(ref value, _)
+            | AttrValue::Declaration(ref value, _)
+            | AttrValue::ShadowParts(ref value, _)
+            | AttrValue::Dimension(ref value, _) => &value,
             AttrValue::Atom(ref value) => &value,
         }
     }

@@ -9,7 +9,7 @@
 //! module's raison d'être is to ultimately contain all these types.
 
 use crate::color::AbsoluteColor;
-use crate::properties::{PropertyId, ComputedValues};
+use crate::properties::{ComputedValues, PropertyId};
 use crate::values::computed::url::ComputedUrl;
 use crate::values::computed::{Angle, Image, Length};
 use crate::values::specified::SVGPathData;
@@ -277,7 +277,9 @@ where
 
     #[inline]
     fn to_animated_value(self, context: &Context) -> Self::AnimatedValue {
-        self.into_iter().map(|v| v.to_animated_value(context)).collect()
+        self.into_iter()
+            .map(|v| v.to_animated_value(context))
+            .collect()
     }
 
     #[inline]
@@ -294,7 +296,9 @@ where
 
     #[inline]
     fn to_animated_value(self, context: &Context) -> Self::AnimatedValue {
-        self.into_iter().map(|v| v.to_animated_value(context)).collect()
+        self.into_iter()
+            .map(|v| v.to_animated_value(context))
+            .collect()
     }
 
     #[inline]
@@ -369,7 +373,9 @@ where
 
     #[inline]
     fn to_animated_value(self, context: &Context) -> Self::AnimatedValue {
-        self.into_iter().map(|v| v.to_animated_value(context)).collect()
+        self.into_iter()
+            .map(|v| v.to_animated_value(context))
+            .collect()
     }
 
     #[inline]

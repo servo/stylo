@@ -61,10 +61,10 @@ impl AngleDimension {
 
     fn unitless_value(&self) -> CSSFloat {
         match *self {
-            AngleDimension::Deg(v) |
-            AngleDimension::Rad(v) |
-            AngleDimension::Turn(v) |
-            AngleDimension::Grad(v) => v,
+            AngleDimension::Deg(v)
+            | AngleDimension::Rad(v)
+            | AngleDimension::Turn(v)
+            | AngleDimension::Grad(v) => v,
         }
     }
 

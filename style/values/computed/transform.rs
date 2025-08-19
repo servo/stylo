@@ -409,8 +409,8 @@ impl TransformOperation {
     pub fn to_rotate_3d(&self) -> Self {
         match *self {
             generic::TransformOperation::Rotate3D(..) => self.clone(),
-            generic::TransformOperation::RotateZ(ref angle) |
-            generic::TransformOperation::Rotate(ref angle) => {
+            generic::TransformOperation::RotateZ(ref angle)
+            | generic::TransformOperation::Rotate(ref angle) => {
                 generic::TransformOperation::Rotate3D(0., 0., 1., angle.clone())
             },
             generic::TransformOperation::RotateX(ref angle) => {
@@ -523,8 +523,8 @@ impl ToAnimatedZero for TransformOperation {
             generic::TransformOperation::Perspective(_) => Ok(
                 generic::TransformOperation::Perspective(generic::PerspectiveFunction::None),
             ),
-            generic::TransformOperation::AccumulateMatrix { .. } |
-            generic::TransformOperation::InterpolateMatrix { .. } => {
+            generic::TransformOperation::AccumulateMatrix { .. }
+            | generic::TransformOperation::InterpolateMatrix { .. } => {
                 // AccumulateMatrix/InterpolateMatrix: We do interpolation on
                 //     AccumulateMatrix/InterpolateMatrix by reading it as a ComputedMatrix
                 //     (with layout information), and then do matrix interpolation.

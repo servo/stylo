@@ -5,7 +5,9 @@
 //! Generic types for color properties.
 
 use crate::color::{mix::ColorInterpolationMethod, AbsoluteColor, ColorFunction};
-use crate::values::{specified::percentage::ToPercentage, computed::ToComputedValue, Parser, ParseError};
+use crate::values::{
+    computed::ToComputedValue, specified::percentage::ToPercentage, ParseError, Parser,
+};
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ToCss};
 
@@ -210,7 +212,9 @@ impl<C> GenericCaretColor<C> {
 pub use self::GenericCaretColor as CaretColor;
 
 /// A light-dark(<light>, <dark>) function.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToShmem, ToCss, ToResolvedValue)]
+#[derive(
+    Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToShmem, ToCss, ToResolvedValue,
+)]
 #[css(function = "light-dark", comma)]
 #[repr(C)]
 pub struct GenericLightDark<T> {

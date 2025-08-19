@@ -604,10 +604,10 @@ impl<T: MallocSizeOf, U> MallocSizeOf for euclid::Rect<T, U> {
 
 impl<T: MallocSizeOf, U> MallocSizeOf for euclid::SideOffsets2D<T, U> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.top.size_of(ops) +
-            self.right.size_of(ops) +
-            self.bottom.size_of(ops) +
-            self.left.size_of(ops)
+        self.top.size_of(ops)
+            + self.right.size_of(ops)
+            + self.bottom.size_of(ops)
+            + self.left.size_of(ops)
     }
 }
 
@@ -619,33 +619,33 @@ impl<T: MallocSizeOf, U> MallocSizeOf for euclid::Size2D<T, U> {
 
 impl<T: MallocSizeOf, Src, Dst> MallocSizeOf for euclid::Transform2D<T, Src, Dst> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.m11.size_of(ops) +
-            self.m12.size_of(ops) +
-            self.m21.size_of(ops) +
-            self.m22.size_of(ops) +
-            self.m31.size_of(ops) +
-            self.m32.size_of(ops)
+        self.m11.size_of(ops)
+            + self.m12.size_of(ops)
+            + self.m21.size_of(ops)
+            + self.m22.size_of(ops)
+            + self.m31.size_of(ops)
+            + self.m32.size_of(ops)
     }
 }
 
 impl<T: MallocSizeOf, Src, Dst> MallocSizeOf for euclid::Transform3D<T, Src, Dst> {
     fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
-        self.m11.size_of(ops) +
-            self.m12.size_of(ops) +
-            self.m13.size_of(ops) +
-            self.m14.size_of(ops) +
-            self.m21.size_of(ops) +
-            self.m22.size_of(ops) +
-            self.m23.size_of(ops) +
-            self.m24.size_of(ops) +
-            self.m31.size_of(ops) +
-            self.m32.size_of(ops) +
-            self.m33.size_of(ops) +
-            self.m34.size_of(ops) +
-            self.m41.size_of(ops) +
-            self.m42.size_of(ops) +
-            self.m43.size_of(ops) +
-            self.m44.size_of(ops)
+        self.m11.size_of(ops)
+            + self.m12.size_of(ops)
+            + self.m13.size_of(ops)
+            + self.m14.size_of(ops)
+            + self.m21.size_of(ops)
+            + self.m22.size_of(ops)
+            + self.m23.size_of(ops)
+            + self.m24.size_of(ops)
+            + self.m31.size_of(ops)
+            + self.m32.size_of(ops)
+            + self.m33.size_of(ops)
+            + self.m34.size_of(ops)
+            + self.m41.size_of(ops)
+            + self.m42.size_of(ops)
+            + self.m43.size_of(ops)
+            + self.m44.size_of(ops)
     }
 }
 
@@ -724,27 +724,27 @@ where
             Component::Has(ref relative_selectors) => relative_selectors.size_of(ops),
             Component::NthOf(ref nth_of_data) => nth_of_data.size_of(ops),
             Component::PseudoElement(ref pseudo) => (*pseudo).size_of(ops),
-            Component::Combinator(..) |
-            Component::ExplicitAnyNamespace |
-            Component::ExplicitNoNamespace |
-            Component::DefaultNamespace(..) |
-            Component::Namespace(..) |
-            Component::ExplicitUniversalType |
-            Component::LocalName(..) |
-            Component::ID(..) |
-            Component::Part(..) |
-            Component::Class(..) |
-            Component::AttributeInNoNamespaceExists { .. } |
-            Component::AttributeInNoNamespace { .. } |
-            Component::Root |
-            Component::Empty |
-            Component::Scope |
-            Component::ImplicitScope |
-            Component::ParentSelector |
-            Component::Nth(..) |
-            Component::Host(None) |
-            Component::RelativeSelectorAnchor |
-            Component::Invalid(..) => 0,
+            Component::Combinator(..)
+            | Component::ExplicitAnyNamespace
+            | Component::ExplicitNoNamespace
+            | Component::DefaultNamespace(..)
+            | Component::Namespace(..)
+            | Component::ExplicitUniversalType
+            | Component::LocalName(..)
+            | Component::ID(..)
+            | Component::Part(..)
+            | Component::Class(..)
+            | Component::AttributeInNoNamespaceExists { .. }
+            | Component::AttributeInNoNamespace { .. }
+            | Component::Root
+            | Component::Empty
+            | Component::Scope
+            | Component::ImplicitScope
+            | Component::ParentSelector
+            | Component::Nth(..)
+            | Component::Host(None)
+            | Component::RelativeSelectorAnchor
+            | Component::Invalid(..) => 0,
         }
     }
 }
@@ -819,7 +819,11 @@ malloc_size_of_is_0!(Range<f32>, Range<f64>);
 
 malloc_size_of_is_0!(app_units::Au);
 
-malloc_size_of_is_0!(cssparser::TokenSerializationType, cssparser::SourceLocation, cssparser::SourcePosition);
+malloc_size_of_is_0!(
+    cssparser::TokenSerializationType,
+    cssparser::SourceLocation,
+    cssparser::SourcePosition
+);
 
 malloc_size_of_is_0!(selectors::OpaqueElement);
 

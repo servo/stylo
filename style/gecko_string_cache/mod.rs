@@ -18,6 +18,7 @@ use crate::gecko_bindings::structs::root::mozilla::detail::GkAtoms_Atoms_AtomsCo
 use crate::gecko_bindings::structs::{nsAtom, nsDynamicAtom, nsStaticAtom};
 use nsstring::{nsAString, nsStr};
 use precomputed_hash::PrecomputedHash;
+use serde::{Deserialize, Serialize};
 use std::borrow::{Borrow, Cow};
 use std::char::{self, DecodeUtf16};
 use std::fmt::{self, Write};
@@ -29,7 +30,6 @@ use std::ops::Deref;
 use std::{slice, str};
 use style_traits::SpecifiedValueInfo;
 use to_shmem::{SharedMemoryBuilder, ToShmem};
-use serde::{Deserialize, Serialize};
 
 #[macro_use]
 #[allow(improper_ctypes, non_camel_case_types, missing_docs)]
@@ -57,7 +57,7 @@ pub struct Atom(NonZeroUsize);
 impl Serialize for Atom {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer
+        S: serde::Serializer,
     {
         // TODO(dshin, Bug 1929015): Optimization for static atoms is possible.
         self.deref().with_str(|s| serializer.serialize_str(s))

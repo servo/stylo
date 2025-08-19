@@ -86,7 +86,10 @@ impl NonLocalUriDependency {
             // https://drafts.csswg.org/css-values-4/#url-empty
             return Self::No;
         }
-        if specified.starts_with('/') || specified.starts_with("http:") || specified.starts_with("https:") {
+        if specified.starts_with('/')
+            || specified.starts_with("http:")
+            || specified.starts_with("https:")
+        {
             return Self::Absolute;
         }
         if specified.starts_with('?') {

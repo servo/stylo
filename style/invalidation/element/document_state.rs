@@ -17,6 +17,7 @@ use selectors::matching::{
     IncludeStartingStyle, MatchingContext, MatchingForInvalidation, MatchingMode,
     NeedsSelectorFlags, QuirksMode, SelectorCaches, VisitedHandlingMode,
 };
+use selectors::OpaqueElement;
 
 /// A struct holding the members necessary to invalidate document state
 /// selectors.
@@ -83,7 +84,7 @@ where
     E: TElement,
     I: Iterator<Item = &'b CascadeData>,
 {
-    fn check_outer_dependency(&mut self, _: &Dependency, _: E) -> bool {
+    fn check_outer_dependency(&mut self, _: &Dependency, _: E, _: Option<OpaqueElement>) -> bool {
         debug_assert!(
             false,
             "how, we should only have parent-less dependencies here!"
@@ -114,6 +115,7 @@ where
                 // for example.
                 self_invalidations.push(Invalidation::new(
                     &dependency.dependency,
+                    /* host = */ None,
                     /* scope = */ None,
                 ));
             }

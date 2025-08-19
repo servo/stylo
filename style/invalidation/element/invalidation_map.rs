@@ -144,12 +144,21 @@ pub enum DependencyInvalidationKind {
     Scope(ScopeDependencyInvalidationKind),
 }
 
+/// The type of invalidation a non-relative selector can generate.
+#[derive(Clone, Copy, Debug, MallocSizeOf)]
+pub enum GeneratedInvalidation<'a> {
+    /// Generates a normal invalidation.
+    Normal,
+    /// Generates a scope invalidation.
+    Scope(Option<&'a ThinArc<(), Dependency>>),
+}
+
 /// Return the type of normal invalidation given a selector & an offset.
-fn get_normal_invalidation_kind(
-    selector: &Selector<SelectorImpl>,
-    selector_offset: usize,
-) -> DependencyInvalidationKind {
-    if selector_offset == 0 || selector.len() <= selector_offset {
+fn get_non_relative_invalidation_kind(selector: &Selector<SelectorImpl>, selector_offset: usize, is_scope: bool) -> DependencyInvalidationKind {
+    if is_scope {
+        return DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ExplicitScope);
+    }
+    if selector_offset == 0 || selector.len() <= selector_offset{
         return DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element);
     }
     let combinator = Some(selector.combinator_at_match_order(selector_offset - 1));
@@ -798,8 +807,16 @@ fn next_dependency(
         let dependency = Dependency {
             selector: selector.clone(),
             selector_offset,
-            next: dependencies_from(previous, next_outer_dependency, next_scope_dependencies),
-            kind: get_normal_invalidation_kind(selector, selector_offset),
+            next: dependencies_from(
+                previous,
+                next_outer_dependency,
+                next_scope_dependencies,
+            ),
+            kind: get_non_relative_invalidation_kind(
+                selector,
+                selector_offset,
+                next_scope_dependencies.is_some()
+            ),
         };
 
         Some(
@@ -825,17 +842,20 @@ impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
 
         let offset = self.compound_state.offset;
 
+        let scope_dependencies = self.inner_scope_dependencies();
+
+
         let next = next_dependency(
             self.next_selectors,
             optional_dependency,
-            self.inner_scope_dependencies().as_ref(),
+            scope_dependencies.as_ref(),
         );
 
         Dependency {
             selector: self.selector.clone(),
             selector_offset: offset,
             next: next,
-            kind: get_normal_invalidation_kind(self.selector, offset),
+            kind: get_non_relative_invalidation_kind(self.selector, offset, scope_dependencies.is_some()),
         }
     }
 
@@ -1333,10 +1353,12 @@ impl<'a, 'b> RelativeSelectorDependencyCollector<'a, 'b> {
 
 impl<'a, 'b> Collector for RelativeSelectorDependencyCollector<'a, 'b> {
     fn dependency(&mut self) -> Dependency {
+        let scope_dependencies = self.inner_scope_dependencies();
+
         let next = next_dependency(
             self.next_selectors,
             None,
-            self.inner_scope_dependencies().as_ref(),
+            scope_dependencies.as_ref(),
         );
         debug_assert!(
             next.as_ref().is_some_and(|d| !matches!(

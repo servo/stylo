@@ -21,7 +21,7 @@ use selectors::matching::{
     SelectorCaches,
 };
 use selectors::parser::{Combinator, Component, LocalName};
-use selectors::{Element, SelectorList};
+use selectors::{Element, OpaqueElement, SelectorList};
 use smallvec::SmallVec;
 
 /// <https://dom.spec.whatwg.org/#dom-element-matches>
@@ -162,7 +162,7 @@ where
         true
     }
 
-    fn check_outer_dependency(&mut self, _: &Dependency, _: E) -> bool {
+    fn check_outer_dependency(&mut self, _: &Dependency, _: E, _:Option<OpaqueElement>) -> bool {
         debug_assert!(
             false,
             "How? We should only have parent-less dependencies here!"
@@ -202,6 +202,7 @@ where
             target_vector.push(Invalidation::new(
                 dependency,
                 self.matching_context.current_host.clone(),
+                self.matching_context.scope_element.clone(),
             ))
         }
 

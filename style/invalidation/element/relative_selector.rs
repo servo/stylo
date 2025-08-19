@@ -1047,7 +1047,7 @@ where
         true
     }
 
-    fn check_outer_dependency(&mut self, _dependency: &Dependency, _element: E) -> bool {
+    fn check_outer_dependency(&mut self, _dependency: &Dependency, _element: E, _: Option<OpaqueElement>) -> bool {
         // At this point, we know a relative selector invalidated, and are ignoring them.
         true
     }
@@ -1108,10 +1108,10 @@ where
                 }
                 debug_assert_ne!(d.selector_offset, 0);
                 debug_assert_ne!(d.selector_offset, d.selector.len());
-                let invalidation = Invalidation::new(&d, self.host);
+                let invalidation = Invalidation::new(&d, self.host, None);
                 break push_invalidation(
                     invalidation,
-                    invalidation_kind,
+                    d.invalidation_kind(),
                     descendant_invalidations,
                     sibling_invalidations,
                 );
@@ -1204,7 +1204,7 @@ where
     fn note_dependency(
         &mut self,
         element: E,
-        scope: Option<OpaqueElement>,
+        host: Option<OpaqueElement>,
         dependency: &'a Dependency,
         descendant_invalidations: &mut DescendantInvalidationLists<'a>,
         sibling_invalidations: &mut InvalidationVector<'a>,
@@ -1229,7 +1229,7 @@ where
             if let Some(next) = dependency.next.as_ref() {
                 self.note_dependency(
                     element,
-                    scope,
+                    host,
                     &next.as_ref().slice()[0],
                     descendant_invalidations,
                     sibling_invalidations,
@@ -1237,7 +1237,7 @@ where
             }
             return;
         }
-        let invalidation = Invalidation::new(&dependency, scope);
+        let invalidation = Invalidation::new(&dependency, None, None);
         match dependency.normal_invalidation_kind() {
             NormalDependencyInvalidationKind::Descendants => {
                 // Descendant invalidations are simplified due to pseudo-elements not being available within the relative selector.
@@ -1263,10 +1263,10 @@ impl<'a, 'b, 'c, E> InvalidationProcessor<'a, 'b, E>
 where
     E: TElement + 'a,
 {
-    fn check_outer_dependency(&mut self, dependency: &Dependency, element: E) -> bool {
+    fn check_outer_dependency(&mut self, dependency: &Dependency, element: E, _: Option<OpaqueElement>) -> bool {
         if let Some(snapshot_table) = self.snapshot_table {
             let wrapper = ElementWrapper::new(element, snapshot_table);
-            return check_dependency(dependency, &element, &wrapper, &mut self.matching_context);
+            return check_dependency(dependency, &element, &wrapper, &mut self.matching_context, None);
         }
         // Just invalidate if we don't have a snapshot.
         true

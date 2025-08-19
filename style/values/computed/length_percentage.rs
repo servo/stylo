@@ -33,6 +33,7 @@ use crate::values::animated::{
 };
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::calc::{CalcUnits, PositivePercentageBasis};
+#[cfg(feature = "gecko")]
 use crate::values::generics::length::AnchorResolutionResult;
 use crate::values::generics::position::{AnchorSideKeyword, GenericAnchorSide};
 use crate::values::generics::{calc, NonNegative};

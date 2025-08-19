@@ -49,7 +49,7 @@ extern crate malloc_size_of;
 extern crate malloc_size_of_derive;
 #[cfg(feature = "servo")]
 #[macro_use]
-extern crate markup5ever;
+extern crate web_atoms;
 #[allow(unused_extern_crates)]
 #[macro_use]
 extern crate matches;
@@ -159,13 +159,13 @@ pub use stylo_atoms::Atom;
 
 #[cfg(feature = "servo")]
 #[allow(missing_docs)]
-pub type LocalName = crate::values::GenericAtomIdent<markup5ever::LocalNameStaticSet>;
+pub type LocalName = crate::values::GenericAtomIdent<web_atoms::LocalNameStaticSet>;
 #[cfg(feature = "servo")]
 #[allow(missing_docs)]
-pub type Namespace = crate::values::GenericAtomIdent<markup5ever::NamespaceStaticSet>;
+pub type Namespace = crate::values::GenericAtomIdent<web_atoms::NamespaceStaticSet>;
 #[cfg(feature = "servo")]
 #[allow(missing_docs)]
-pub type Prefix = crate::values::GenericAtomIdent<markup5ever::PrefixStaticSet>;
+pub type Prefix = crate::values::GenericAtomIdent<web_atoms::PrefixStaticSet>;
 
 pub use style_traits::arc_slice::ArcSlice;
 pub use style_traits::owned_slice::OwnedSlice;

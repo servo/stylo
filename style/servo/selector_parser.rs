@@ -477,8 +477,8 @@ impl ::selectors::SelectorImpl for SelectorImpl {
     type LocalName = LocalName;
     type NamespacePrefix = Prefix;
     type NamespaceUrl = Namespace;
-    type BorrowedLocalName = markup5ever::LocalName;
-    type BorrowedNamespaceUrl = markup5ever::Namespace;
+    type BorrowedLocalName = web_atoms::LocalName;
+    type BorrowedNamespaceUrl = web_atoms::Namespace;
 }
 
 impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {

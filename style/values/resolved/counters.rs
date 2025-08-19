@@ -6,6 +6,7 @@
 
 use super::{Context, ToResolvedValue};
 use crate::values::computed;
+#[cfg(feature = "gecko")]
 use selectors::parser::PseudoElement;
 
 /// https://drafts.csswg.org/css-content/#content-property

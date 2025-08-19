@@ -926,6 +926,7 @@ where
                             match invalidation_kind {
                                 DependencyInvalidationKind::FullSelector => unreachable!(),
                                 DependencyInvalidationKind::Normal(_) => n,
+                                DependencyInvalidationKind::Scope(_) => n,
                                 DependencyInvalidationKind::Relative(kind) => {
                                     self.processor.found_relative_selector_invalidation(
                                         self.element,

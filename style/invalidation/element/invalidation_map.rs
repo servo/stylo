@@ -121,6 +121,15 @@ pub enum RelativeDependencyInvalidationKind {
     AncestorEarlierSibling,
 }
 
+/// The kind of invalidation the subject of this dependency triggers.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, MallocSizeOf)]
+pub enum ScopeDependencyInvalidationKind {
+    /// This dependency's subject is an explicit scope root
+    ExplicitScope,
+    /// This dependency's subject is an implicit scope root
+    ImplicitScope,
+}
+
 /// Invalidation kind merging normal and relative dependencies.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, MallocSizeOf)]
 pub enum DependencyInvalidationKind {
@@ -131,6 +140,8 @@ pub enum DependencyInvalidationKind {
     Normal(NormalDependencyInvalidationKind),
     /// This dependency is a relative dependency.
     Relative(RelativeDependencyInvalidationKind),
+    /// This dependency is a scope dependency.
+    Scope(ScopeDependencyInvalidationKind),
 }
 
 /// Return the type of normal invalidation given a selector & an offset.
@@ -173,6 +184,20 @@ fn get_relative_kind(match_hint: RelativeSelectorMatchHint) -> RelativeDependenc
 }
 
 impl Dependency {
+    /// Generate a new dependency
+    pub fn new(
+        selector: Selector<SelectorImpl>,
+        selector_offset: usize,
+        next: Option<ThinArc<(), Dependency>>,
+        kind: DependencyInvalidationKind
+    ) -> Self{
+        Self{
+            selector,
+            selector_offset,
+            next,
+            kind,
+        }
+    }
     /// Creates a dummy dependency to invalidate the whole selector.
     ///
     /// This is necessary because document state invalidation wants to

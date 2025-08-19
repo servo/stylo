@@ -474,7 +474,7 @@ where
     ) {
         match dependency.invalidation_kind() {
             DependencyInvalidationKind::FullSelector => unreachable!(),
-            DependencyInvalidationKind::Normal(..) => {
+            DependencyInvalidationKind::Normal(..) | DependencyInvalidationKind::Scope(..) => {
                 self.dependencies
                     .entry(element)
                     .and_modify(|v| v.push((host, dependency)))
@@ -507,9 +507,8 @@ where
         for invalidation in self.invalidations {
             match invalidation.dependency.invalidation_kind() {
                 DependencyInvalidationKind::FullSelector => unreachable!(),
-                DependencyInvalidationKind::Normal(_) => {
-                    unreachable!("Inner selector in invalidation?")
-                },
+                DependencyInvalidationKind::Normal(_) | DependencyInvalidationKind::Scope(_) =>
+                    unreachable!("Inner selector in invalidation?"),
                 DependencyInvalidationKind::Relative(kind) => {
                     if let Some(context) = self.optimization_context.as_ref() {
                         if context.can_be_ignored(
@@ -1212,7 +1211,7 @@ where
     ) {
         match dependency.invalidation_kind() {
             DependencyInvalidationKind::FullSelector => unreachable!(),
-            DependencyInvalidationKind::Normal(_) => (),
+            DependencyInvalidationKind::Normal(_) | DependencyInvalidationKind::Scope(_) => (),
             DependencyInvalidationKind::Relative(kind) => {
                 self.found_relative_selector_invalidation(element, kind, dependency);
                 return;

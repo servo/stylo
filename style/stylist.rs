@@ -14,8 +14,7 @@ use crate::dom::TElement;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{ServoStyleSetSizes, StyleRuleInclusion};
 use crate::invalidation::element::invalidation_map::{
-    note_selector_for_invalidation, AdditionalRelativeSelectorInvalidationMap, Dependency,
-    InvalidationMap,
+    note_selector_for_invalidation, AdditionalRelativeSelectorInvalidationMap, Dependency, DependencyInvalidationKind, InvalidationMap, ScopeDependencyInvalidationKind
 };
 use crate::invalidation::media_queries::{
     EffectiveMediaQueryResults, MediaListKey, ToMediaListKey,
@@ -3441,6 +3440,17 @@ impl CascadeData {
 
                     if let Some(cond) = cur_scope.condition.as_ref() {
                         let mut dependency_vector: Vec<Dependency> = Vec::new();
+
+                        if cond.start.is_none(){
+                            dependency_vector.push(Dependency::new(
+                                IMPLICIT_SCOPE.slice()[0].clone(),
+                                0,
+                                inner_scope_dependencies.clone(),
+                                DependencyInvalidationKind::Scope(
+                                    ScopeDependencyInvalidationKind::ImplicitScope
+                                ),
+                            ));
+                        }
 
                         for s in cond.iter_selectors() {
                             let mut new_inner_dependencies = note_selector_for_invalidation(

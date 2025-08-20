@@ -154,42 +154,28 @@ pub enum GeneratedInvalidation<'a> {
 }
 
 /// Return the type of normal invalidation given a selector & an offset.
-fn get_non_relative_invalidation_kind(selector: &Selector<SelectorImpl>, selector_offset: usize, is_scope: bool) -> DependencyInvalidationKind {
+#[inline(always)]
+fn get_non_relative_invalidation_kind(
+    selector: &Selector<SelectorImpl>,
+    selector_offset: usize,
+    is_scope: bool,
+) -> DependencyInvalidationKind {
     if is_scope {
         return DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ExplicitScope);
     }
-    if selector_offset == 0 || selector.len() <= selector_offset{
+    if selector_offset == 0 {
         return DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element);
     }
-    let combinator = Some(selector.combinator_at_match_order(selector_offset - 1));
+    let combinator = selector.combinator_at_match_order(selector_offset - 1);
     DependencyInvalidationKind::Normal(match combinator {
-        None => NormalDependencyInvalidationKind::Element,
-        Some(Combinator::Child) | Some(Combinator::Descendant) => {
-            NormalDependencyInvalidationKind::Descendants
-        },
-        Some(Combinator::LaterSibling) | Some(Combinator::NextSibling) => {
+        Combinator::Child | Combinator::Descendant => NormalDependencyInvalidationKind::Descendants,
+        Combinator::LaterSibling | Combinator::NextSibling => {
             NormalDependencyInvalidationKind::Siblings
         },
-        Some(Combinator::PseudoElement) => NormalDependencyInvalidationKind::ElementAndDescendants,
-        Some(Combinator::SlotAssignment) => NormalDependencyInvalidationKind::SlottedElements,
-        Some(Combinator::Part) => NormalDependencyInvalidationKind::Parts,
+        Combinator::PseudoElement => NormalDependencyInvalidationKind::ElementAndDescendants,
+        Combinator::SlotAssignment => NormalDependencyInvalidationKind::SlottedElements,
+        Combinator::Part => NormalDependencyInvalidationKind::Parts,
     })
-}
-
-/// Return the relative invalidation kind given a match hint
-fn get_relative_kind(match_hint: RelativeSelectorMatchHint) -> RelativeDependencyInvalidationKind {
-    match match_hint {
-        RelativeSelectorMatchHint::InChild => RelativeDependencyInvalidationKind::Parent,
-        RelativeSelectorMatchHint::InSubtree => RelativeDependencyInvalidationKind::Ancestors,
-        RelativeSelectorMatchHint::InNextSibling => RelativeDependencyInvalidationKind::PrevSibling,
-        RelativeSelectorMatchHint::InSibling => RelativeDependencyInvalidationKind::EarlierSibling,
-        RelativeSelectorMatchHint::InNextSiblingSubtree => {
-            RelativeDependencyInvalidationKind::AncestorPrevSibling
-        },
-        RelativeSelectorMatchHint::InSiblingSubtree => {
-            RelativeDependencyInvalidationKind::AncestorEarlierSibling
-        },
-    }
 }
 
 impl Dependency {
@@ -198,9 +184,9 @@ impl Dependency {
         selector: Selector<SelectorImpl>,
         selector_offset: usize,
         next: Option<ThinArc<(), Dependency>>,
-        kind: DependencyInvalidationKind
-    ) -> Self{
-        Self{
+        kind: DependencyInvalidationKind,
+    ) -> Self {
+        Self {
             selector,
             selector_offset,
             next,
@@ -807,15 +793,11 @@ fn next_dependency(
         let dependency = Dependency {
             selector: selector.clone(),
             selector_offset,
-            next: dependencies_from(
-                previous,
-                next_outer_dependency,
-                next_scope_dependencies,
-            ),
+            next: dependencies_from(previous, next_outer_dependency, next_scope_dependencies),
             kind: get_non_relative_invalidation_kind(
                 selector,
                 selector_offset,
-                next_scope_dependencies.is_some()
+                next_scope_dependencies.is_some(),
             ),
         };
 
@@ -844,7 +826,6 @@ impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
 
         let scope_dependencies = self.inner_scope_dependencies();
 
-
         let next = next_dependency(
             self.next_selectors,
             optional_dependency,
@@ -855,7 +836,11 @@ impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
             selector: self.selector.clone(),
             selector_offset: offset,
             next: next,
-            kind: get_non_relative_invalidation_kind(self.selector, offset, scope_dependencies.is_some()),
+            kind: get_non_relative_invalidation_kind(
+                self.selector,
+                offset,
+                scope_dependencies.is_some(),
+            ),
         }
     }
 
@@ -1355,11 +1340,7 @@ impl<'a, 'b> Collector for RelativeSelectorDependencyCollector<'a, 'b> {
     fn dependency(&mut self) -> Dependency {
         let scope_dependencies = self.inner_scope_dependencies();
 
-        let next = next_dependency(
-            self.next_selectors,
-            None,
-            scope_dependencies.as_ref(),
-        );
+        let next = next_dependency(self.next_selectors, None, scope_dependencies.as_ref());
         debug_assert!(
             next.as_ref().is_some_and(|d| !matches!(
                 d.slice()[0].kind,
@@ -1375,9 +1356,28 @@ impl<'a, 'b> Collector for RelativeSelectorDependencyCollector<'a, 'b> {
         Dependency {
             selector: self.selector.selector.clone(),
             selector_offset: self.compound_state.offset,
-            kind: DependencyInvalidationKind::Relative(get_relative_kind(
-                self.combinator_count.get_match_hint(),
-            )),
+            kind: DependencyInvalidationKind::Relative(
+                match self.combinator_count.get_match_hint() {
+                    RelativeSelectorMatchHint::InChild => {
+                        RelativeDependencyInvalidationKind::Parent
+                    },
+                    RelativeSelectorMatchHint::InSubtree => {
+                        RelativeDependencyInvalidationKind::Ancestors
+                    },
+                    RelativeSelectorMatchHint::InNextSibling => {
+                        RelativeDependencyInvalidationKind::PrevSibling
+                    },
+                    RelativeSelectorMatchHint::InSibling => {
+                        RelativeDependencyInvalidationKind::EarlierSibling
+                    },
+                    RelativeSelectorMatchHint::InNextSiblingSubtree => {
+                        RelativeDependencyInvalidationKind::AncestorPrevSibling
+                    },
+                    RelativeSelectorMatchHint::InSiblingSubtree => {
+                        RelativeDependencyInvalidationKind::AncestorEarlierSibling
+                    },
+                },
+            ),
             next: next,
         }
     }

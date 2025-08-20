@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-use crate::to_css::{CssBitflagAttrs, CssVariantAttrs};
 use crate::cg;
+use crate::to_css::{CssBitflagAttrs, CssVariantAttrs};
 use proc_macro2::{Span, TokenStream};
 use quote::TokenStreamExt;
 use syn::{self, DeriveInput, Ident, Path};
@@ -244,13 +244,8 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
     let mut parse_non_keywords = quote! {};
     for (i, (variant, css_attrs, parse_attrs)) in non_keywords.iter().enumerate() {
         let skip_try = !has_keywords && i == non_keywords.len() - 1;
-        let parse_variant = parse_non_keyword_variant(
-            &mut where_clause,
-            variant,
-            css_attrs,
-            parse_attrs,
-            skip_try,
-        );
+        let parse_variant =
+            parse_non_keyword_variant(&mut where_clause, variant, css_attrs, parse_attrs, skip_try);
         parse_non_keywords.extend(parse_variant);
     }
 

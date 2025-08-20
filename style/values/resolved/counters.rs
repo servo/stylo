@@ -5,9 +5,9 @@
 //! Resolved values for counter properties
 
 use super::{Context, ToResolvedValue};
+use crate::values::computed;
 #[cfg(feature = "gecko")]
 use selectors::parser::PseudoElement;
-use crate::values::computed;
 
 /// https://drafts.csswg.org/css-content/#content-property
 ///

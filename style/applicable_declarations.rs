@@ -70,9 +70,9 @@ impl Ord for CascadePriority {
             //     the declaration whose cascade layer is first wins.
             //
             // But the style attribute layer for some reason is special.
-            if self.cascade_level.is_important() &&
-                !self.layer_order.is_style_attribute_layer() &&
-                !other.layer_order.is_style_attribute_layer()
+            if self.cascade_level.is_important()
+                && !self.layer_order.is_style_attribute_layer()
+                && !other.layer_order.is_style_attribute_layer()
             {
                 ordering.reverse()
             } else {

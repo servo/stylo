@@ -698,7 +698,10 @@ impl<E: TElement> StyleSharingCache<E> {
         self.cache_mut().insert(
             *element,
             validation_data_holder,
-            style.style().flags.intersects(ComputedValueFlags::CONSIDERED_NONTRIVIAL_SCOPED_STYLE),
+            style
+                .style()
+                .flags
+                .intersects(ComputedValueFlags::CONSIDERED_NONTRIVIAL_SCOPED_STYLE),
         );
     }
 
@@ -819,7 +822,9 @@ impl<E: TElement> StyleSharingCache<E> {
             return None;
         }
 
-        if target.element.has_animations(shared_context) || candidate.element.has_animations(shared_context) {
+        if target.element.has_animations(shared_context)
+            || candidate.element.has_animations(shared_context)
+        {
             trace!("Miss: Has Animations");
             return None;
         }
@@ -829,8 +834,8 @@ impl<E: TElement> StyleSharingCache<E> {
             return None;
         }
 
-        if target.matches_user_and_content_rules() !=
-            candidate.element.matches_user_and_content_rules()
+        if target.matches_user_and_content_rules()
+            != candidate.element.matches_user_and_content_rules()
         {
             trace!("Miss: User and Author Rules");
             return None;
@@ -869,7 +874,9 @@ impl<E: TElement> StyleSharingCache<E> {
 
         // While the scoped style rules may be different (e.g. `@scope { .foo + .foo { /* .. */} }`),
         // we rely on revalidation to handle that.
-        if candidate.considered_nontrivial_scoped_style && !checks::revalidate_scope(target, candidate, shared, selector_caches) {
+        if candidate.considered_nontrivial_scoped_style
+            && !checks::revalidate_scope(target, candidate, shared, selector_caches)
+        {
             trace!("Miss: Active Scopes");
             return None;
         }
@@ -914,8 +921,8 @@ impl<E: TElement> StyleSharingCache<E> {
             // NOTE(emilio): We only need to check name / namespace because we
             // do name-dependent style adjustments, like the display: contents
             // to display: none adjustment.
-            if target.namespace() != candidate.element.namespace() ||
-                target.local_name() != candidate.element.local_name()
+            if target.namespace() != candidate.element.namespace()
+                || target.local_name() != candidate.element.local_name()
             {
                 return None;
             }
@@ -926,8 +933,8 @@ impl<E: TElement> StyleSharingCache<E> {
                 .styles
                 .primary()
                 .flags
-                .intersects(ComputedValueFlags::USES_CONTAINER_UNITS) &&
-                candidate.element.traversal_parent() != target.traversal_parent()
+                .intersects(ComputedValueFlags::USES_CONTAINER_UNITS)
+                && candidate.element.traversal_parent() != target.traversal_parent()
             {
                 return None;
             }

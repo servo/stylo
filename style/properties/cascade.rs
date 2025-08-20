@@ -437,8 +437,8 @@ fn tweak_when_ignoring_colors(
     if context
         .builder
         .pseudo
-        .map_or(false, |p| p.is_color_swatch()) &&
-        longhand_id == LonghandId::BackgroundColor
+        .map_or(false, |p| p.is_color_swatch())
+        && longhand_id == LonghandId::BackgroundColor
     {
         return;
     }
@@ -495,8 +495,8 @@ fn tweak_when_ignoring_colors(
                 .builder
                 .get_parent_inherited_text()
                 .clone_color()
-                .alpha ==
-                0.0
+                .alpha
+                == 0.0
             {
                 let color = context.builder.device.default_color();
                 declarations_to_apply_unless_overridden.push(PropertyDeclaration::Color(
@@ -938,7 +938,10 @@ impl<'b> Cascade<'b> {
         }
         let can_skip_apply = match declaration.get_css_wide_keyword() {
             Some(keyword) => {
-                if matches!(keyword, CSSWideKeyword::RevertLayer | CSSWideKeyword::Revert) {
+                if matches!(
+                    keyword,
+                    CSSWideKeyword::RevertLayer | CSSWideKeyword::Revert
+                ) {
                     let origin_revert = keyword == CSSWideKeyword::Revert;
                     // We intentionally don't want to insert it into `self.seen`, `reverted` takes
                     // care of rejecting other declarations as needed.
@@ -948,8 +951,8 @@ impl<'b> Cascade<'b> {
                 }
 
                 let inherited = longhand_id.inherited();
-                let zoomed = !context.builder.effective_zoom_for_inheritance.is_one() &&
-                    longhand_id.zoom_dependent();
+                let zoomed = !context.builder.effective_zoom_for_inheritance.is_one()
+                    && longhand_id.zoom_dependent();
                 match keyword {
                     CSSWideKeyword::Revert | CSSWideKeyword::RevertLayer => unreachable!(),
                     CSSWideKeyword::Unset => !zoomed || !inherited,
@@ -1125,11 +1128,11 @@ impl<'b> Cascade<'b> {
         // style specified viewport units / used font-relative lengths, this one
         // would as well.  It matches the same rules, so it is the right thing
         // to do anyways, even if it's only used on inherited properties.
-        let bits_to_copy = ComputedValueFlags::HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND |
-            ComputedValueFlags::DEPENDS_ON_SELF_FONT_METRICS |
-            ComputedValueFlags::DEPENDS_ON_INHERITED_FONT_METRICS |
-            ComputedValueFlags::USES_CONTAINER_UNITS |
-            ComputedValueFlags::USES_VIEWPORT_UNITS;
+        let bits_to_copy = ComputedValueFlags::HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND
+            | ComputedValueFlags::DEPENDS_ON_SELF_FONT_METRICS
+            | ComputedValueFlags::DEPENDS_ON_INHERITED_FONT_METRICS
+            | ComputedValueFlags::USES_CONTAINER_UNITS
+            | ComputedValueFlags::USES_VIEWPORT_UNITS;
         builder.add_flags(style.flags & bits_to_copy);
 
         true
@@ -1182,8 +1185,8 @@ impl<'b> Cascade<'b> {
 
         // Check the use_document_fonts setting for content, but for chrome
         // documents they're treated as always enabled.
-        if static_prefs::pref!("browser.display.use_document_fonts") != 0 ||
-            builder.device.chrome_rules_enabled_for_document()
+        if static_prefs::pref!("browser.display.use_document_fonts") != 0
+            || builder.device.chrome_rules_enabled_for_document()
         {
             return;
         }
@@ -1313,8 +1316,8 @@ impl<'b> Cascade<'b> {
         use crate::values::generics::NonNegative;
 
         // Do not do anything if font-size: math or math-depth is not set.
-        if context.builder.get_font().clone_font_size().keyword_info.kw !=
-            specified::FontSizeKeyword::Math
+        if context.builder.get_font().clone_font_size().keyword_info.kw
+            != specified::FontSizeKeyword::Math
         {
             return;
         }

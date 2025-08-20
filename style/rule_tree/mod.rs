@@ -112,8 +112,8 @@ impl RuleTree {
         //
         // Important rules are sorted differently from unimportant ones by
         // shadow order and cascade order.
-        if !important_author.is_empty() &&
-            important_author.first().unwrap().1 != important_author.last().unwrap().1
+        if !important_author.is_empty()
+            && important_author.first().unwrap().1 != important_author.last().unwrap().1
         {
             // We only need to sort if the important rules come from
             // different trees, but we need this sort to be stable.

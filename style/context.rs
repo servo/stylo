@@ -33,8 +33,6 @@ use fxhash::FxHashMap;
 use selectors::context::SelectorCaches;
 #[cfg(feature = "gecko")]
 use servo_arc::Arc;
-#[cfg(feature = "servo")]
-use stylo_atoms::Atom;
 use std::fmt;
 use std::ops;
 use std::time::{Duration, Instant};
@@ -42,6 +40,8 @@ use style_traits::CSSPixel;
 use style_traits::DevicePixel;
 #[cfg(feature = "servo")]
 use style_traits::SpeculativePainter;
+#[cfg(feature = "servo")]
+use stylo_atoms::Atom;
 
 pub use selectors::matching::QuirksMode;
 
@@ -358,7 +358,11 @@ impl fmt::Display for TraversalStatistics {
         )?;
         writeln!(f, "[PERF],declarations,{}", self.declarations)?;
         writeln!(f, "[PERF],stylist_rebuilds,{}", self.stylist_rebuilds)?;
-        writeln!(f, "[PERF],traversal_time_ms,{}", self.traversal_time.as_secs_f64() * 1000.)?;
+        writeln!(
+            f,
+            "[PERF],traversal_time_ms,{}",
+            self.traversal_time.as_secs_f64() * 1000.
+        )?;
         writeln!(f, "[PERF] perf block end")
     }
 }

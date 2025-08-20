@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-use crate::{Atom, LocalName, ShrinkIfNeeded};
 use crate::selector_map::{MaybeCaseInsensitiveHashMap, PrecomputedHashMap};
+use crate::{Atom, LocalName, ShrinkIfNeeded};
 
 /// A map for filtering by easily-discernable features in a selector.
 #[derive(Clone, Debug, MallocSizeOf)]
@@ -46,8 +46,6 @@ impl<T> SimpleBucketsMap<T> {
     /// Returns whether there's nothing in the map.
     #[inline(always)]
     pub fn is_empty(&self) -> bool {
-        self.classes.is_empty() &&
-            self.ids.is_empty() &&
-            self.local_names.is_empty()
+        self.classes.is_empty() && self.ids.is_empty() && self.local_names.is_empty()
     }
 }

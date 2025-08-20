@@ -200,8 +200,8 @@ impl QueryFeatureExpressionKind {
                     Some(c) => c,
                     None => return false,
                 };
-                cmp == Ordering::Equal ||
-                    match range {
+                cmp == Ordering::Equal
+                    || match range {
                         LegacyRange::Min => cmp == Ordering::Greater,
                         LegacyRange::Max => cmp == Ordering::Less,
                     }
@@ -267,8 +267,8 @@ impl ToCss for QueryFeatureExpression {
 
         match self.kind {
             QueryFeatureExpressionKind::Empty => self.write_name(dest)?,
-            QueryFeatureExpressionKind::Single(ref v) |
-            QueryFeatureExpressionKind::LegacyRange(_, ref v) => {
+            QueryFeatureExpressionKind::Single(ref v)
+            | QueryFeatureExpressionKind::LegacyRange(_, ref v) => {
                 self.write_name(dest)?;
                 dest.write_str(": ")?;
                 v.to_css(dest, self)?;
@@ -312,15 +312,15 @@ fn disabled_by_pref(feature: &Atom, context: &ParserContext) -> bool {
         // prefers-reduced-transparency is always enabled in the ua and chrome. On
         // the web it is hidden behind a preference (see Bug 1822176).
         if *feature == atom!("prefers-reduced-transparency") {
-            return !context.chrome_rules_enabled() &&
-                !static_prefs::pref!("layout.css.prefers-reduced-transparency.enabled");
+            return !context.chrome_rules_enabled()
+                && !static_prefs::pref!("layout.css.prefers-reduced-transparency.enabled");
         }
 
         // inverted-colors is always enabled in the ua and chrome. On
         // the web it is hidden behind a preference.
         if *feature == atom!("inverted-colors") {
-            return !context.chrome_rules_enabled() &&
-                !static_prefs::pref!("layout.css.inverted-colors.enabled");
+            return !context.chrome_rules_enabled()
+                && !static_prefs::pref!("layout.css.inverted-colors.enabled");
         }
     }
     false
@@ -426,9 +426,9 @@ impl QueryFeatureExpression {
             },
         };
 
-        if disabled_by_pref(&feature.name, context) ||
-            !flags.contains(feature.flags.parsing_requirements()) ||
-            (range.is_some() && !feature.allows_ranges())
+        if disabled_by_pref(&feature.name, context)
+            || !flags.contains(feature.flags.parsing_requirements())
+            || (range.is_some() && !feature.allows_ranges())
         {
             return Err(location.new_custom_error(
                 StyleParseErrorKind::MediaQueryExpectedFeatureName(ident.clone()),

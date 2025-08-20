@@ -168,9 +168,9 @@ pub fn style_trees<'a, 'scope, E, D>(
         // relatively soon, while keeping always at least `local_queue_size` worth of work for
         // ourselves.
         let discovered_children = discovered.len() - nodes_remaining_at_current_depth;
-        if discovered_children >= work_unit_max &&
-            discovered.len() >= local_queue_size + work_unit_max &&
-            scope.is_some()
+        if discovered_children >= work_unit_max
+            && discovered.len() >= local_queue_size + work_unit_max
+            && scope.is_some()
         {
             let kept_work = std::cmp::max(nodes_remaining_at_current_depth, local_queue_size);
             let mut traversal_data_copy = traversal_data.clone();

@@ -176,11 +176,7 @@ impl ToCssWithGuard for LayerBlockRule {
 }
 
 impl DeepCloneWithLock for LayerBlockRule {
-    fn deep_clone_with_lock(
-        &self,
-        lock: &SharedRwLock,
-        guard: &SharedRwLockReadGuard,
-    ) -> Self {
+    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
         Self {
             name: self.name.clone(),
             rules: Arc::new(

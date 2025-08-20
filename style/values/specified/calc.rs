@@ -7,12 +7,14 @@
 //! [calc]: https://drafts.csswg.org/css-values/#calc-notation
 
 use crate::color::parsing::ChannelKeyword;
-use crate::parser::{ParserContext, Parse};
-use crate::values::generics::position::{GenericAnchorSide, AnchorSideKeyword, GenericAnchorFunction};
-use crate::values::generics::length::GenericAnchorSizeFunction;
+use crate::parser::{Parse, ParserContext};
 use crate::values::generics::calc::{
     self as generic, CalcNodeLeaf, CalcUnits, MinMaxOp, ModRemOp, PositivePercentageBasis,
     RoundingStrategy, SortKey,
+};
+use crate::values::generics::length::GenericAnchorSizeFunction;
+use crate::values::generics::position::{
+    AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide,
 };
 use crate::values::specified::length::{AbsoluteLength, FontRelativeLength, NoCalcLength};
 use crate::values::specified::length::{ContainerRelativeLength, ViewportPercentageLength};
@@ -263,8 +265,8 @@ impl generic::CalcNodeLeaf for Leaf {
             (&ColorComponent(ref one), &ColorComponent(ref other)) => one.partial_cmp(other),
             _ => {
                 match *self {
-                    Length(..) | Percentage(..) | Angle(..) | Time(..) | Number(..) |
-                    Resolution(..) | ColorComponent(..) => {},
+                    Length(..) | Percentage(..) | Angle(..) | Time(..) | Number(..)
+                    | Resolution(..) | ColorComponent(..) => {},
                 }
                 unsafe {
                     debug_unreachable!("Forgot a branch?");
@@ -275,12 +277,12 @@ impl generic::CalcNodeLeaf for Leaf {
 
     fn as_number(&self) -> Option<f32> {
         match *self {
-            Leaf::Length(_) |
-            Leaf::Angle(_) |
-            Leaf::Time(_) |
-            Leaf::Resolution(_) |
-            Leaf::Percentage(_) |
-            Leaf::ColorComponent(_) => None,
+            Leaf::Length(_)
+            | Leaf::Angle(_)
+            | Leaf::Time(_)
+            | Leaf::Resolution(_)
+            | Leaf::Percentage(_)
+            | Leaf::ColorComponent(_) => None,
             Leaf::Number(value) => Some(value),
         }
     }
@@ -362,8 +364,8 @@ impl generic::CalcNodeLeaf for Leaf {
         }
 
         match (self, other) {
-            (&mut Number(ref mut one), &Number(ref other)) |
-            (&mut Percentage(ref mut one), &Percentage(ref other)) => {
+            (&mut Number(ref mut one), &Number(ref other))
+            | (&mut Percentage(ref mut one), &Percentage(ref other)) => {
                 *one += *other;
             },
             (&mut Angle(ref mut one), &Angle(ref other)) => {
@@ -380,8 +382,8 @@ impl generic::CalcNodeLeaf for Leaf {
             },
             _ => {
                 match *other {
-                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Resolution(..) |
-                    Length(..) | ColorComponent(..) => {},
+                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Resolution(..)
+                    | Length(..) | ColorComponent(..) => {},
                 }
                 unsafe {
                     debug_unreachable!();
@@ -458,8 +460,8 @@ impl generic::CalcNodeLeaf for Leaf {
             },
             _ => {
                 match *other {
-                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Length(..) |
-                    Resolution(..) | ColorComponent(..) => {},
+                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Length(..)
+                    | Resolution(..) | ColorComponent(..) => {},
                 }
                 unsafe {
                     debug_unreachable!();
@@ -603,8 +605,8 @@ impl CalcNode {
             &Token::Function(ref name)
                 if allowed
                     .additional_functions
-                    .intersects(AdditionalFunctions::ANCHOR) &&
-                    name.eq_ignore_ascii_case("anchor") =>
+                    .intersects(AdditionalFunctions::ANCHOR)
+                    && name.eq_ignore_ascii_case("anchor") =>
             {
                 let anchor_function = GenericAnchorFunction::parse_in_calc(context, input)?;
                 Ok(CalcNode::Anchor(Box::new(anchor_function)))
@@ -612,8 +614,8 @@ impl CalcNode {
             &Token::Function(ref name)
                 if allowed
                     .additional_functions
-                    .intersects(AdditionalFunctions::ANCHOR_SIZE) &&
-                    name.eq_ignore_ascii_case("anchor-size") =>
+                    .intersects(AdditionalFunctions::ANCHOR_SIZE)
+                    && name.eq_ignore_ascii_case("anchor-size") =>
             {
                 let anchor_size_function =
                     GenericAnchorSizeFunction::parse_in_calc(context, input)?;
@@ -1164,7 +1166,7 @@ impl CalcNode {
         input: &mut Parser<'i, 't>,
         clamping_mode: AllowedNumericType,
         function: MathFunction,
-        allow_anchor: AllowAnchorPositioningFunctions
+        allow_anchor: AllowAnchorPositioningFunctions,
     ) -> Result<CalcLengthPercentage, ParseError<'i>> {
         let allowed = if allow_anchor == AllowAnchorPositioningFunctions::No {
             AllowParse::new(CalcUnits::LENGTH_PERCENTAGE)
@@ -1173,8 +1175,12 @@ impl CalcNode {
                 units: CalcUnits::LENGTH_PERCENTAGE,
                 additional_functions: match allow_anchor {
                     AllowAnchorPositioningFunctions::No => unreachable!(),
-                    AllowAnchorPositioningFunctions::AllowAnchorSize => AdditionalFunctions::ANCHOR_SIZE,
-                    AllowAnchorPositioningFunctions::AllowAnchorAndAnchorSize => AdditionalFunctions::ANCHOR | AdditionalFunctions::ANCHOR_SIZE,
+                    AllowAnchorPositioningFunctions::AllowAnchorSize => {
+                        AdditionalFunctions::ANCHOR_SIZE
+                    },
+                    AllowAnchorPositioningFunctions::AllowAnchorAndAnchorSize => {
+                        AdditionalFunctions::ANCHOR | AdditionalFunctions::ANCHOR_SIZE
+                    },
                 },
             }
         };
@@ -1189,10 +1195,15 @@ impl CalcNode {
         input: &mut Parser<'i, 't>,
         function: MathFunction,
     ) -> Result<CSSFloat, ParseError<'i>> {
-        Self::parse(context, input, function, AllowParse::new(CalcUnits::PERCENTAGE))?
-            .to_percentage()
-            .map(crate::values::normalize)
-            .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        Self::parse(
+            context,
+            input,
+            function,
+            AllowParse::new(CalcUnits::PERCENTAGE),
+        )?
+        .to_percentage()
+        .map(crate::values::normalize)
+        .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
 
     /// Convenience parsing function for `<length>`.
@@ -1213,9 +1224,14 @@ impl CalcNode {
         input: &mut Parser<'i, 't>,
         function: MathFunction,
     ) -> Result<CSSFloat, ParseError<'i>> {
-        Self::parse(context, input, function, AllowParse::new(CalcUnits::empty()))?
-            .to_number()
-            .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        Self::parse(
+            context,
+            input,
+            function,
+            AllowParse::new(CalcUnits::empty()),
+        )?
+        .to_number()
+        .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
 
     /// Convenience parsing function for `<angle>`.
@@ -1247,8 +1263,13 @@ impl CalcNode {
         input: &mut Parser<'i, 't>,
         function: MathFunction,
     ) -> Result<Resolution, ParseError<'i>> {
-        Self::parse(context, input, function, AllowParse::new(CalcUnits::RESOLUTION))?
-            .to_resolution()
-            .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        Self::parse(
+            context,
+            input,
+            function,
+            AllowParse::new(CalcUnits::RESOLUTION),
+        )?
+        .to_resolution()
+        .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
 }

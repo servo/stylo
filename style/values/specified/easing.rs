@@ -149,7 +149,6 @@ impl TimingFunction {
             return name.with_str(|n| TimingKeyword::from_ident(n).is_ok());
             #[cfg(feature = "servo")]
             return TimingKeyword::from_ident(name).is_ok();
-
         }
         false
     }

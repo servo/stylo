@@ -10,7 +10,10 @@ use servo_arc::ThinArc;
 use std::ops::Deref;
 use std::ptr::NonNull;
 use std::sync::LazyLock;
-use std::{iter, mem, hash::{Hash, Hasher}};
+use std::{
+    hash::{Hash, Hasher},
+    iter, mem,
+};
 
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps, MallocUnconditionalSizeOf};
 

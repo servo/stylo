@@ -219,7 +219,6 @@ impl<T: ToShmem> ToShmem for Range<T> {
     }
 }
 
-
 impl<T: ToShmem, U: ToShmem> ToShmem for (T, U) {
     fn to_shmem(&self, builder: &mut SharedMemoryBuilder) -> Result<Self> {
         Ok(ManuallyDrop::new((
@@ -577,9 +576,7 @@ impl ToShmem for smallbitvec::SmallBitVec {
             },
             InternalStorage::Inline(x) => InternalStorage::Inline(x),
         };
-        Ok(ManuallyDrop::new(unsafe {
-            Self::from_storage(storage)
-        }))
+        Ok(ManuallyDrop::new(unsafe { Self::from_storage(storage) }))
     }
 }
 

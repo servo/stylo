@@ -8,11 +8,13 @@
 //! [position]: https://drafts.csswg.org/css-backgrounds-3/#position
 
 use crate::values::computed::{Integer, LengthPercentage, NonNegativeNumber, Percentage};
-use crate::values::generics::position::{AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide};
 use crate::values::generics::position::Position as GenericPosition;
 use crate::values::generics::position::PositionComponent as GenericPositionComponent;
 use crate::values::generics::position::PositionOrAuto as GenericPositionOrAuto;
 use crate::values::generics::position::ZIndex as GenericZIndex;
+use crate::values::generics::position::{
+    AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide,
+};
 use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericInset};
 pub use crate::values::specified::position::{
     AnchorName, AnchorScope, DashedIdentAndOrTryTactic, PositionAnchor, PositionArea,
@@ -43,10 +45,12 @@ impl AnchorSide {
     pub fn keyword_and_percentage(&self) -> (AnchorSideKeyword, Percentage) {
         match self {
             Self::Percentage(p) => (AnchorSideKeyword::Start, *p),
-            Self::Keyword(k) => if matches!(k, AnchorSideKeyword::Center) {
-                (AnchorSideKeyword::Start, Percentage(0.5))
-            } else {
-                (*k, Percentage::zero())
+            Self::Keyword(k) => {
+                if matches!(k, AnchorSideKeyword::Center) {
+                    (AnchorSideKeyword::Start, Percentage(0.5))
+                } else {
+                    (*k, Percentage::zero())
+                }
             },
         }
     }
@@ -55,16 +59,16 @@ impl AnchorSide {
 /// The computed value of an `anchor()` function.
 pub type AnchorFunction = GenericAnchorFunction<Percentage, LengthPercentage>;
 
-#[cfg(feature="gecko")]
+#[cfg(feature = "gecko")]
 use crate::{
     gecko_bindings::structs::AnchorPosOffsetResolutionParams,
     logical_geometry::PhysicalSide,
-    values::{DashedIdent, computed::Length},
+    values::{computed::Length, DashedIdent},
 };
 
 impl AnchorFunction {
     /// Resolve the anchor function with the given resolver. Returns `Err()` if no anchor is found.
-    #[cfg(feature="gecko")]
+    #[cfg(feature = "gecko")]
     pub fn resolve(
         anchor_name: &DashedIdent,
         anchor_side: &AnchorSide,

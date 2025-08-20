@@ -581,9 +581,9 @@ where
                 self.element.is_html_slot_element()
             },
             NormalDependencyInvalidationKind::Parts => self.element.shadow_root().is_some(),
-            NormalDependencyInvalidationKind::ElementAndDescendants |
-            NormalDependencyInvalidationKind::Siblings |
-            NormalDependencyInvalidationKind::Descendants => true,
+            NormalDependencyInvalidationKind::ElementAndDescendants
+            | NormalDependencyInvalidationKind::Siblings
+            | NormalDependencyInvalidationKind::Descendants => true,
         }
     }
 }
@@ -630,8 +630,8 @@ pub(crate) fn dependency_may_be_relevant<E: TElement>(
         NormalDependencyInvalidationKind::Element => !already_invalidated_self,
         NormalDependencyInvalidationKind::SlottedElements => element.is_html_slot_element(),
         NormalDependencyInvalidationKind::Parts => element.shadow_root().is_some(),
-        NormalDependencyInvalidationKind::ElementAndDescendants |
-        NormalDependencyInvalidationKind::Siblings |
-        NormalDependencyInvalidationKind::Descendants => true,
+        NormalDependencyInvalidationKind::ElementAndDescendants
+        | NormalDependencyInvalidationKind::Siblings
+        | NormalDependencyInvalidationKind::Descendants => true,
     }
 }

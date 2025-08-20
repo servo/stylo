@@ -128,8 +128,8 @@ impl AttrSelectorOperator {
                 !s.is_empty() && case.contains(element_attr_value, attr_selector_value)
             },
             AttrSelectorOperator::Includes => {
-                !s.is_empty() &&
-                    element_attr_value
+                !s.is_empty()
+                    && element_attr_value
                         .split(SELECTOR_WHITESPACE)
                         .any(|part| case.eq(part.as_bytes(), s))
             },

@@ -208,12 +208,15 @@ impl<T> Arc<T> {
             let ptr = ptr::NonNull::new(alloc::alloc(layout))
                 .unwrap_or_else(|| alloc::handle_alloc_error(layout))
                 .cast::<ArcInner<T>>();
-            ptr::write(ptr.as_ptr(), ArcInner {
-                count: atomic::AtomicUsize::new(1),
-                #[cfg(feature = "track_alloc_size")]
-                alloc_size: layout.size(),
-                data,
-            });
+            ptr::write(
+                ptr.as_ptr(),
+                ArcInner {
+                    count: atomic::AtomicUsize::new(1),
+                    #[cfg(feature = "track_alloc_size")]
+                    alloc_size: layout.size(),
+                    data,
+                },
+            );
             ptr
         };
 
@@ -814,7 +817,8 @@ impl<H, T> Arc<HeaderSlice<H, T>> {
                 // We should have consumed the buffer exactly, maybe accounting
                 // for some padding from the alignment.
                 debug_assert!(
-                    (buffer.add(layout.size()) as usize - current as *mut u8 as usize) < layout.align()
+                    (buffer.add(layout.size()) as usize - current as *mut u8 as usize)
+                        < layout.align()
                 );
             }
             assert!(

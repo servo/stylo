@@ -6,9 +6,9 @@
 //!
 //! [attr]: https://dom.spec.whatwg.org/#interface-attr
 
+use super::shadow_parts::ShadowParts;
 use crate::color::{parsing::parse_color_keyword, AbsoluteColor};
 use crate::properties::PropertyDeclarationBlock;
-use crate::shadow_parts::ShadowParts;
 use crate::shared_lock::Locked;
 use crate::str::str_join;
 use crate::str::{read_exponent, read_fraction, HTML_SPACE_CHARACTERS};

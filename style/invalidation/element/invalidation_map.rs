@@ -219,6 +219,16 @@ impl Dependency {
         unreachable!("Querying normal invalidation kind on non-normal dependency.");
     }
 
+    /// The kind of relative invalidation that this would generate. The dependency
+    /// in question must be a relative dependency.
+    #[inline(always)]
+    pub fn relative_invalidation_kind(&self) -> RelativeDependencyInvalidationKind {
+        if let DependencyInvalidationKind::Relative(kind) = self.kind {
+            return kind;
+        }
+        unreachable!("Querying relative invalidation kind on non-relative dependency.");
+    }
+
     /// The kind of invalidation that this would generate.
     pub fn invalidation_kind(&self) -> DependencyInvalidationKind {
         self.kind

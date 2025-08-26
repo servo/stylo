@@ -365,7 +365,7 @@ fn invalidation_can_collapse(
     // e.g. :has(.item .item).
 
     // If they trigger different invalidations, they shouldn't be collapsed.
-    if a.invalidation_kind() != b.invalidation_kind() {
+    if a.relative_invalidation_kind() != b.relative_invalidation_kind() {
         return false;
     }
 

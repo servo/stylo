@@ -418,6 +418,7 @@ impl FontFamily {
         generic_font_family!(MONOSPACE, Monospace);
         generic_font_family!(CURSIVE, Cursive);
         generic_font_family!(FANTASY, Fantasy);
+        generic_font_family!(MATH, Math);
         #[cfg(feature = "gecko")]
         generic_font_family!(MOZ_EMOJI, MozEmoji);
         generic_font_family!(SYSTEM_UI, SystemUi);
@@ -432,6 +433,7 @@ impl FontFamily {
             GenericFontFamily::Monospace => &*MONOSPACE,
             GenericFontFamily::Cursive => &*CURSIVE,
             GenericFontFamily::Fantasy => &*FANTASY,
+            GenericFontFamily::Math => &*MATH,
             #[cfg(feature = "gecko")]
             GenericFontFamily::MozEmoji => &*MOZ_EMOJI,
             GenericFontFamily::SystemUi => &*SYSTEM_UI,
@@ -573,6 +575,10 @@ fn system_ui_enabled(_: &ParserContext) -> bool {
     static_prefs::pref!("layout.css.system-ui.enabled")
 }
 
+fn math_enabled(context: &ParserContext) -> bool {
+    context.chrome_rules_enabled() || static_prefs::pref!("mathml.font_family_math.enabled")
+}
+
 /// A generic font-family name.
 ///
 /// The order here is important, if you change it make sure that
@@ -611,6 +617,8 @@ pub enum GenericFontFamily {
     Monospace,
     Cursive,
     Fantasy,
+    #[parse(condition = "math_enabled")]
+    Math,
     #[parse(condition = "system_ui_enabled")]
     SystemUi,
     /// An internal value for emoji font selection.
@@ -625,7 +633,7 @@ impl GenericFontFamily {
     /// the user. See bug 789788 and bug 1730098.
     pub(crate) fn valid_for_user_font_prioritization(self) -> bool {
         match self {
-            Self::None | Self::Fantasy | Self::Cursive | Self::SystemUi => false,
+            Self::None | Self::Cursive | Self::Fantasy | Self::Math | Self::SystemUi => false,
             #[cfg(feature = "gecko")]
             Self::MozEmoji => false,
             Self::Serif | Self::SansSerif | Self::Monospace => true,

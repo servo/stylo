@@ -610,6 +610,10 @@ fn eval_moz_overlay_scrollbars(context: &Context) -> bool {
     unsafe { bindings::Gecko_MediaFeatures_UseOverlayScrollbars(context.device().document()) }
 }
 
+fn eval_moz_mac_rtl(context: &Context) -> bool {
+    unsafe { bindings::Gecko_MediaFeatures_MacRTL(context.device().document()) }
+}
+
 fn get_lnf_int(int_id: i32) -> i32 {
     unsafe { bindings::Gecko_GetLookAndFeelInt(int_id) }
 }
@@ -914,7 +918,12 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 58] = [
     ),
     lnf_int_feature!(atom!("-moz-menubar-drag"), MenuBarDrag),
     lnf_int_feature!(atom!("-moz-mac-big-sur-theme"), MacBigSurTheme),
-    lnf_int_feature!(atom!("-moz-mac-rtl"), MacRTL),
+    feature!(
+        atom!("-moz-mac-rtl"),
+        AllowsRanges::No,
+        Evaluator::BoolInteger(eval_moz_mac_rtl),
+        FeatureFlags::CHROME_AND_UA_ONLY,
+    ),
     lnf_int_feature!(
         atom!("-moz-windows-accent-color-in-titlebar"),
         WindowsAccentColorInTitlebar

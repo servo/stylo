@@ -12,6 +12,7 @@ use crate::selector_map::PrecomputedHashMap;
 use crate::str::HTML_SPACE_CHARACTERS;
 use crate::values::computed::LengthPercentage as ComputedLengthPercentage;
 use crate::values::computed::{Context, Percentage, ToComputedValue};
+use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::Position as GenericPosition;
 use crate::values::generics::position::PositionComponent as GenericPositionComponent;
 use crate::values::generics::position::PositionOrAuto as GenericPositionOrAuto;
@@ -1796,7 +1797,9 @@ impl Inset {
         if let Ok(inner) = input.try_parse(|i| AnchorFunction::parse(context, i)) {
             return Ok(Self::AnchorFunction(Box::new(inner)));
         }
-        if let Ok(inner) = input.try_parse(|i| specified::AnchorSizeFunction::parse(context, i)) {
+        if let Ok(inner) =
+            input.try_parse(|i| GenericAnchorSizeFunction::<Inset>::parse(context, i))
+        {
             return Ok(Self::AnchorSizeFunction(Box::new(inner)));
         }
         Ok(Self::AnchorContainingCalcFunction(input.try_parse(

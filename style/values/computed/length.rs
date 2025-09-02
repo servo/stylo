@@ -9,8 +9,7 @@ use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
 use crate::values::computed::{NonNegativeNumber, Zoom};
 use crate::values::generics::length as generics;
 use crate::values::generics::length::{
-    GenericAnchorSizeFunction, GenericLengthOrNumber, GenericLengthPercentageOrNormal,
-    GenericMaxSize, GenericSize,
+    GenericLengthOrNumber, GenericLengthPercentageOrNormal, GenericMaxSize, GenericSize,
 };
 use crate::values::generics::NonNegative;
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
@@ -530,45 +529,40 @@ pub type Size = GenericSize<NonNegativeLengthPercentage>;
 /// A computed value for `max-width` or `max-height` property.
 pub type MaxSize = GenericMaxSize<NonNegativeLengthPercentage>;
 
-/// A computed value for `anchor-size` runction.
-pub type AnchorSizeFunction = GenericAnchorSizeFunction<LengthPercentage>;
-
 #[cfg(feature = "gecko")]
 use crate::{
     gecko_bindings::structs::AnchorPosResolutionParams, logical_geometry::PhysicalAxis,
     values::generics::length::AnchorSizeKeyword, values::DashedIdent,
 };
 
-impl AnchorSizeFunction {
-    /// Resolve the anchor function with the given resolver. Returns `Err()` if no anchor is found.
-    /// `prop_axis`, axis of the property (e.g. `margin-left` -> Horizontal axis), is used if the
-    /// anchor size keyword is not specified.
-    #[cfg(feature = "gecko")]
-    pub fn resolve(
-        anchor_name: &DashedIdent,
-        prop_axis: PhysicalAxis,
-        anchor_size_keyword: AnchorSizeKeyword,
-        params: &AnchorPosResolutionParams,
-    ) -> Result<Length, ()> {
-        use crate::gecko_bindings::structs::Gecko_GetAnchorPosSize;
+/// Resolve the anchor function with the given resolver. Returns `Err()` if no anchor is found.
+/// `prop_axis`, axis of the property (e.g. `margin-left` -> Horizontal axis), is used if the
+/// anchor size keyword is not specified.
+#[cfg(feature = "gecko")]
+pub fn resolve_anchor_size(
+    anchor_name: &DashedIdent,
+    prop_axis: PhysicalAxis,
+    anchor_size_keyword: AnchorSizeKeyword,
+    params: &AnchorPosResolutionParams,
+) -> Result<Length, ()> {
+    use crate::gecko_bindings::structs::Gecko_GetAnchorPosSize;
 
-        let mut offset = Length::zero();
-        let valid = unsafe {
-            Gecko_GetAnchorPosSize(
-                params,
-                anchor_name.0.as_ptr(),
-                prop_axis as u8,
-                anchor_size_keyword as u8,
-                &mut offset,
-            )
-        };
+    let mut offset = Length::zero();
+    let valid = unsafe {
+        Gecko_GetAnchorPosSize(
+            params,
+            anchor_name.0.as_ptr(),
+            prop_axis as u8,
+            anchor_size_keyword as u8,
+            &mut offset,
+        )
+    };
 
-        if !valid {
-            return Err(());
-        }
-
-        Ok(offset)
+    if !valid {
+        return Err(());
     }
+
+    Ok(offset)
 }
 
 /// A computed type for `margin` properties.

@@ -172,11 +172,7 @@ pub enum GenericSize<LengthPercent> {
     #[animation(error)]
     #[css(function = "fit-content")]
     FitContentFunction(LengthPercent),
-    AnchorSizeFunction(
-        #[animation(field_bound)]
-        #[distance(field_bound)]
-        Box<GenericAnchorSizeFunction<LengthPercent>>,
-    ),
+    AnchorSizeFunction(Box<GenericAnchorSizeFunction<Self>>),
     AnchorContainingCalcFunction(LengthPercent),
 }
 
@@ -254,11 +250,7 @@ pub enum GenericMaxSize<LengthPercent> {
     #[animation(error)]
     #[css(function = "fit-content")]
     FitContentFunction(LengthPercent),
-    AnchorSizeFunction(
-        #[animation(field_bound)]
-        #[distance(field_bound)]
-        Box<GenericAnchorSizeFunction<LengthPercent>>,
-    ),
+    AnchorSizeFunction(Box<GenericAnchorSizeFunction<Self>>),
     AnchorContainingCalcFunction(LengthPercent),
 }
 
@@ -393,7 +385,7 @@ impl<LengthPercent> LengthPercentageOrNormal<LengthPercent> {
     Deserialize,
 )]
 #[repr(C)]
-pub struct GenericAnchorSizeFunction<LengthPercentage> {
+pub struct GenericAnchorSizeFunction<Fallback> {
     /// Anchor name of the element to anchor to.
     /// If omitted (i.e. empty), selects the implicit anchor element.
     #[animation(constant)]
@@ -402,12 +394,12 @@ pub struct GenericAnchorSizeFunction<LengthPercentage> {
     /// If omitted, defaults to the axis of the property the function is used in.
     pub size: AnchorSizeKeyword,
     /// Value to use in case the anchor function is invalid.
-    pub fallback: Optional<LengthPercentage>,
+    pub fallback: Optional<Fallback>,
 }
 
-impl<LengthPercentage> ToCss for GenericAnchorSizeFunction<LengthPercentage>
+impl<Fallback> ToCss for GenericAnchorSizeFunction<Fallback>
 where
-    LengthPercentage: ToCss,
+    Fallback: ToCss,
 {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> std::fmt::Result
     where
@@ -436,9 +428,9 @@ where
     }
 }
 
-impl<LengthPercentage> Parse for GenericAnchorSizeFunction<LengthPercentage>
+impl<Fallback> Parse for GenericAnchorSizeFunction<Fallback>
 where
-    LengthPercentage: Parse,
+    Fallback: Parse,
 {
     fn parse<'i, 't>(
         context: &ParserContext,
@@ -448,10 +440,10 @@ where
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
         input.expect_function_matching("anchor-size")?;
-        Self::parse_inner(context, input, |i| LengthPercentage::parse(context, i))
+        Self::parse_inner(context, input, |i| Fallback::parse(context, i))
     }
 }
-impl<LengthPercentage> GenericAnchorSizeFunction<LengthPercentage> {
+impl<Fallback> GenericAnchorSizeFunction<Fallback> {
     /// Is the anchor-size use valid for given property?
     pub fn valid_for(&self, position_property: PositionProperty) -> bool {
         position_property.is_absolutely_positioned()
@@ -582,11 +574,7 @@ pub enum GenericMargin<LP> {
     /// Margin size defined by the anchor element.
     ///
     /// https://drafts.csswg.org/css-anchor-position-1/#funcdef-anchor-size
-    AnchorSizeFunction(
-        #[animation(field_bound)]
-        #[distance(field_bound)]
-        Box<GenericAnchorSizeFunction<LP>>,
-    ),
+    AnchorSizeFunction(Box<GenericAnchorSizeFunction<Self>>),
     /// A `<length-percentage>` value, guaranteed to contain `calc()`,
     /// which then is guaranteed to contain `anchor()` or `anchor-size()`.
     AnchorContainingCalcFunction(LP),

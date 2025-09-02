@@ -2184,9 +2184,6 @@ impl MaxSize {
 /// A specified non-negative `<length>` | `<number>`.
 pub type NonNegativeLengthOrNumber = GenericLengthOrNumber<NonNegativeLength, NonNegativeNumber>;
 
-/// A specified value for `anchor-size` function.
-pub type AnchorSizeFunction = GenericAnchorSizeFunction<LengthPercentage>;
-
 /// A specified value for `margin` properties.
 pub type Margin = GenericMargin<LengthPercentage>;
 
@@ -2215,7 +2212,7 @@ impl Margin {
         }) {
             return Ok(Self::AnchorContainingCalcFunction(l));
         }
-        let inner = AnchorSizeFunction::parse(context, input)?;
+        let inner = GenericAnchorSizeFunction::<Margin>::parse(context, input)?;
         Ok(Self::AnchorSizeFunction(Box::new(inner)))
     }
 }

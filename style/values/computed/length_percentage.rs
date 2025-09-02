@@ -961,7 +961,8 @@ pub enum AllowAnchorPosResolutionInCalcPercentage {
 
 impl AllowAnchorPosResolutionInCalcPercentage {
     #[cfg(feature = "gecko")]
-    fn to_axis(&self) -> PhysicalAxis {
+    /// Get the `anchor-size()` resolution axis.
+    pub fn to_axis(&self) -> PhysicalAxis {
         match self {
             Self::AnchorSizeOnly(axis) => *axis,
             Self::Both(side) => {
@@ -1021,12 +1022,9 @@ impl CalcLengthPercentage {
         allowed: AllowAnchorPosResolutionInCalcPercentage,
         params: &AnchorPosOffsetResolutionParams,
     ) -> Result<(CalcNode, AllowedNumericType), ()> {
-        use crate::{
-            gecko_bindings::structs::AnchorPosResolutionParams,
-            values::{
-                computed::{AnchorFunction, AnchorSizeFunction},
-                generics::{length::GenericAnchorSizeFunction, position::GenericAnchorFunction},
-            },
+        use crate::values::{
+            computed::{length::resolve_anchor_size, AnchorFunction},
+            generics::{length::GenericAnchorSizeFunction, position::GenericAnchorFunction},
         };
 
         fn resolve_anchor_function<'a>(
@@ -1069,22 +1067,28 @@ impl CalcLengthPercentage {
 
         fn resolve_anchor_size_function<'a>(
             f: &'a GenericAnchorSizeFunction<Box<CalcNode>>,
-            axis: PhysicalAxis,
-            params: &AnchorPosResolutionParams,
+            allowed: AllowAnchorPosResolutionInCalcPercentage,
+            params: &AnchorPosOffsetResolutionParams,
         ) -> AnchorResolutionResult<'a, Box<CalcNode>> {
-            let resolved = if f.valid_for(params.mPosition) {
-                AnchorSizeFunction::resolve(&f.target_element, axis, f.size, params).ok()
+            let axis = allowed.to_axis();
+            let resolved = if f.valid_for(params.mBaseParams.mPosition) {
+                resolve_anchor_size(&f.target_element, axis, f.size, &params.mBaseParams).ok()
             } else {
                 None
             };
 
             resolved.map_or_else(
                 || {
-                    if let Some(fb) = f.fallback.as_ref() {
-                        AnchorResolutionResult::Fallback(fb)
-                    } else {
-                        AnchorResolutionResult::Invalid
+                    let Some(fb) = f.fallback.as_ref() else {
+                        return AnchorResolutionResult::Invalid;
+                    };
+                    let mut node = fb.clone();
+                    let result =
+                        node.map_node(|node| resolve_anchor_functions(node, allowed, params));
+                    if result.is_err() {
+                        return AnchorResolutionResult::Invalid;
                     }
+                    AnchorResolutionResult::Resolved(node)
                 },
                 |v| {
                     AnchorResolutionResult::Resolved(Box::new(CalcNode::Leaf(
@@ -1109,9 +1113,7 @@ impl CalcLengthPercentage {
                     };
                     resolve_anchor_function(f, prop_side, params)
                 },
-                CalcNode::AnchorSize(f) => {
-                    resolve_anchor_size_function(f, allowed.to_axis(), &params.mBaseParams)
-                },
+                CalcNode::AnchorSize(f) => resolve_anchor_size_function(f, allowed, params),
                 _ => return Ok(None),
             };
 

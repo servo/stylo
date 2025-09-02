@@ -286,11 +286,7 @@ pub enum GenericInset<P, LP> {
     /// Inset defined by the size of the anchor element.
     ///
     /// <https://drafts.csswg.org/css-anchor-position-1/#anchor-pos>
-    AnchorSizeFunction(
-        #[animation(field_bound)]
-        #[distance(field_bound)]
-        Box<GenericAnchorSizeFunction<LP>>,
-    ),
+    AnchorSizeFunction(Box<GenericAnchorSizeFunction<Self>>),
     /// A `<length-percentage>` value, guaranteed to contain `calc()`,
     /// which then is guaranteed to contain `anchor()` or `anchor-size()`.
     AnchorContainingCalcFunction(LP),

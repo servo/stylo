@@ -282,11 +282,7 @@ pub enum GenericInset<P, LP> {
     /// Inset defined by the anchor element.
     ///
     /// <https://drafts.csswg.org/css-anchor-position-1/#anchor-pos>
-    AnchorFunction(
-        #[animation(field_bound)]
-        #[distance(field_bound)]
-        Box<GenericAnchorFunction<P, LP>>,
-    ),
+    AnchorFunction(Box<GenericAnchorFunction<P, Self>>),
     /// Inset defined by the size of the anchor element.
     ///
     /// <https://drafts.csswg.org/css-anchor-position-1/#anchor-pos>
@@ -351,7 +347,7 @@ pub use self::GenericInset as Inset;
     Deserialize,
 )]
 #[repr(C)]
-pub struct GenericAnchorFunction<Percentage, LengthPercentage> {
+pub struct GenericAnchorFunction<Percentage, Fallback> {
     /// Anchor name of the element to anchor to.
     /// If omitted, selects the implicit anchor element.
     #[animation(constant)]
@@ -360,13 +356,13 @@ pub struct GenericAnchorFunction<Percentage, LengthPercentage> {
     /// the anchored element to.
     pub side: GenericAnchorSide<Percentage>,
     /// Value to use in case the anchor function is invalid.
-    pub fallback: Optional<LengthPercentage>,
+    pub fallback: Optional<Fallback>,
 }
 
-impl<Percentage, LengthPercentage> ToCss for GenericAnchorFunction<Percentage, LengthPercentage>
+impl<Percentage, Fallback> ToCss for GenericAnchorFunction<Percentage, Fallback>
 where
     Percentage: ToCss,
-    LengthPercentage: ToCss,
+    Fallback: ToCss,
 {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> std::fmt::Result
     where
@@ -387,7 +383,7 @@ where
     }
 }
 
-impl<Percentage, LengthPercentage> GenericAnchorFunction<Percentage, LengthPercentage> {
+impl<Percentage, Fallback> GenericAnchorFunction<Percentage, Fallback> {
     /// Is the anchor valid for given property?
     pub fn valid_for(&self, side: PhysicalSide, position_property: PositionProperty) -> bool {
         position_property.is_absolutely_positioned() && self.side.valid_for(side)

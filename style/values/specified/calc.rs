@@ -502,6 +502,7 @@ impl GenericAnchorSide<Box<CalcNode>> {
 impl GenericAnchorFunction<Box<CalcNode>, Box<CalcNode>> {
     fn parse_in_calc<'i, 't>(
         context: &ParserContext,
+        additional_functions: AdditionalFunctions,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
         if !static_prefs::pref!("layout.css.anchor-positioning.enabled") {
@@ -521,7 +522,10 @@ impl GenericAnchorFunction<Box<CalcNode>, Box<CalcNode>> {
                     let node = CalcNode::parse_argument(
                         context,
                         i,
-                        AllowParse::new(CalcUnits::LENGTH_PERCENTAGE),
+                        AllowParse {
+                            units: CalcUnits::LENGTH_PERCENTAGE,
+                            additional_functions,
+                        },
                     )?;
                     Ok::<Box<CalcNode>, ParseError<'i>>(Box::new(node))
                 })
@@ -608,7 +612,11 @@ impl CalcNode {
                     .intersects(AdditionalFunctions::ANCHOR)
                     && name.eq_ignore_ascii_case("anchor") =>
             {
-                let anchor_function = GenericAnchorFunction::parse_in_calc(context, input)?;
+                let anchor_function = GenericAnchorFunction::parse_in_calc(
+                    context,
+                    allowed.additional_functions,
+                    input,
+                )?;
                 Ok(CalcNode::Anchor(Box::new(anchor_function)))
             },
             &Token::Function(ref name)

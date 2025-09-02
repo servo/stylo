@@ -57,7 +57,7 @@ impl AnchorSide {
 }
 
 /// The computed value of an `anchor()` function.
-pub type AnchorFunction = GenericAnchorFunction<Percentage, LengthPercentage>;
+pub type AnchorFunction = GenericAnchorFunction<Percentage, Inset>;
 
 #[cfg(feature = "gecko")]
 use crate::{

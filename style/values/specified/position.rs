@@ -1769,6 +1769,30 @@ impl Inset {
             },
             Err(_) => (),
         };
+        Self::parse_anchor_functions_quirky(context, input, allow_quirks)
+    }
+
+    fn parse_as_anchor_function_fallback<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        if let Ok(l) =
+            input.try_parse(|i| LengthPercentage::parse_quirky(context, i, AllowQuirks::No))
+        {
+            return Ok(Self::LengthPercentage(l));
+        }
+        Self::parse_anchor_functions_quirky(context, input, AllowQuirks::No)
+    }
+
+    fn parse_anchor_functions_quirky<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        allow_quirks: AllowQuirks,
+    ) -> Result<Self, ParseError<'i>> {
+        debug_assert!(
+            static_prefs::pref!("layout.css.anchor-positioning.enabled"),
+            "How are we parsing with pref off?"
+        );
         if let Ok(inner) = input.try_parse(|i| AnchorFunction::parse(context, i)) {
             return Ok(Self::AnchorFunction(Box::new(inner)));
         }
@@ -1791,7 +1815,7 @@ impl Parse for Inset {
 }
 
 /// A specified value for `anchor()` function.
-pub type AnchorFunction = GenericAnchorFunction<specified::Percentage, LengthPercentage>;
+pub type AnchorFunction = GenericAnchorFunction<specified::Percentage, Inset>;
 
 impl Parse for AnchorFunction {
     fn parse<'i, 't>(
@@ -1813,7 +1837,7 @@ impl Parse for AnchorFunction {
             let fallback = i
                 .try_parse(|i| {
                     i.expect_comma()?;
-                    LengthPercentage::parse(context, i)
+                    Inset::parse_as_anchor_function_fallback(context, i)
                 })
                 .ok();
             Ok(Self {

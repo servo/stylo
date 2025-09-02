@@ -1043,11 +1043,21 @@ impl CalcLengthPercentage {
 
             resolved.map_or_else(
                 || {
-                    if let Some(fb) = f.fallback.as_ref() {
-                        AnchorResolutionResult::Fallback(fb)
-                    } else {
-                        AnchorResolutionResult::Invalid
+                    let Some(fb) = f.fallback.as_ref() else {
+                        return AnchorResolutionResult::Invalid;
+                    };
+                    let mut node = fb.clone();
+                    let result = node.map_node(|node| {
+                        resolve_anchor_functions(
+                            node,
+                            AllowAnchorPosResolutionInCalcPercentage::Both(side),
+                            params,
+                        )
+                    });
+                    if result.is_err() {
+                        return AnchorResolutionResult::Invalid;
                     }
+                    AnchorResolutionResult::Resolved(node)
                 },
                 |v| {
                     AnchorResolutionResult::Resolved(Box::new(CalcNode::Leaf(

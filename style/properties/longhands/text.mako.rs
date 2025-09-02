@@ -54,7 +54,7 @@ ${helpers.predefined_type(
     "text-decoration-trim",
     "TextDecorationTrim",
     "computed::text::TextDecorationTrim::get_initial_value()",
-    engines="gecko servo",
+    engines="gecko",
     initial_specified_value="specified::text::TextDecorationTrim::get_initial_value()",
     boxed=True,
     gecko_pref="layout.css.text-decoration-trim.enabled",

@@ -1263,7 +1263,8 @@ impl SpecifiedValueInfo for RubyPosition {
 #[css(bitflags(
     single = "normal,auto,no-autospace",
     // Bug 1980111: add 'replace' to 'mixed' in the future so that it parses correctly.
-    mixed = "ideograph-alpha,ideograph-numeric,punctuation,insert",
+    // Bug 1986500: add 'punctuation' to 'mixed' in the future so that it parses correctly.
+    mixed = "ideograph-alpha,ideograph-numeric,insert",
     // Bug 1980111: Uncomment 'validate_mixed' to support 'replace' value.
     // validate_mixed = "Self::validate_mixed_flags",
 ))]
@@ -1286,8 +1287,10 @@ bitflags! {
         /// 1/8ic space between ideographic characters and non-ideographic decimal numerals.
         const IDEOGRAPH_NUMERIC = 1 << 3;
 
+        /* Bug 1986500: Uncomment the following to support the 'punctuation' value.
         /// Apply special spacing between letters and punctuation (French).
         const PUNCTUATION = 1 << 4;
+        */
 
         /// Auto-spacing is only inserted if no space character is present in the text.
         const INSERT = 1 << 5;

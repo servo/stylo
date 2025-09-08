@@ -1282,10 +1282,24 @@ where
         Component::Host(ref selector) => {
             return matches_host(element, selector.as_ref(), &mut context.shared, rightmost);
         },
-        Component::ParentSelector | Component::Scope | Component::ImplicitScope => {
+        Component::ParentSelector => {
             match context.shared.scope_element {
                 Some(ref scope_element) => element.opaque() == *scope_element,
                 None => element.is_root(),
+            }
+        },
+        Component::Scope | Component::ImplicitScope =>{
+            if let Some(may_return_unknown) = context.shared.matching_for_invalidation_comparison() {
+                return if may_return_unknown {
+                    KleeneValue::Unknown
+                } else {
+                    KleeneValue::from(!context.shared.in_negation())
+                };
+            }else{
+                match context.shared.scope_element {
+                    Some(ref scope_element) => element.opaque() == *scope_element,
+                    None => element.is_root(),
+                }
             }
         },
         Component::Nth(ref nth_data) => {

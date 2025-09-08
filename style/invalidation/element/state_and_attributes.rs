@@ -584,14 +584,14 @@ where
                 }
             } else {
                 let invalidation =
-                Invalidation::new(&dependency, self.matching_context.current_host.clone(), Some(self.element.opaque()));
+                    Invalidation::new(&dependency, self.matching_context.current_host.clone(), None);
 
-                self.invalidates_self |= push_invalidation(
-                    invalidation,
-                    invalidation_kind,
-                    self.descendant_invalidations,
-                    self.sibling_invalidations,
-                );
+                let combinator = dependency.selector.combinator_at_match_order(dependency.selector_offset - 1);
+                if combinator.is_sibling() {
+                    self.sibling_invalidations.push(invalidation);
+                } else {
+                    self.descendant_invalidations.dom_descendants.push(invalidation);
+                }
             }
             return;
         }

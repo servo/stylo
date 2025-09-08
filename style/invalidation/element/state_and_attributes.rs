@@ -458,7 +458,7 @@ where
         if let Some(ref id) = removed_id {
             if let Some(deps) = map.id_to_selector.get(id, quirks_mode) {
                 for dep in deps {
-                    self.scan_dependency(dep);
+                    self.scan_dependency(dep, false);
                 }
             }
         }
@@ -467,7 +467,7 @@ where
         if let Some(ref id) = added_id {
             if let Some(deps) = map.id_to_selector.get(id, quirks_mode) {
                 for dep in deps {
-                    self.scan_dependency(dep);
+                    self.scan_dependency(dep, false);
                 }
             }
         }
@@ -475,7 +475,7 @@ where
         for class in self.classes_added.iter().chain(self.classes_removed.iter()) {
             if let Some(deps) = map.class_to_selector.get(class, quirks_mode) {
                 for dep in deps {
-                    self.scan_dependency(dep);
+                    self.scan_dependency(dep, false);
                 }
             }
         }
@@ -487,7 +487,7 @@ where
         {
             if let Some(deps) = map.custom_state_affecting_selectors.get(state) {
                 for dep in deps {
-                    self.scan_dependency(dep);
+                    self.scan_dependency(dep, false);
                 }
             }
         }
@@ -495,7 +495,7 @@ where
         self.snapshot.each_attr_changed(|attribute| {
             if let Some(deps) = map.other_attribute_affecting_selectors.get(attribute) {
                 for dep in deps {
-                    self.scan_dependency(dep);
+                    self.scan_dependency(dep, false);
                 }
             }
         });
@@ -517,7 +517,7 @@ where
                 if !dependency.state.intersects(self.state_changes) {
                     return true;
                 }
-                self.scan_dependency(&dependency.dep);
+                self.scan_dependency(&dependency.dep, false);
                 true
             },
         );
@@ -525,17 +525,17 @@ where
 
     /// Check whether a dependency should be taken into account.
     #[inline]
-    fn check_dependency(&mut self, dependency: &Dependency) -> bool {
+    fn check_dependency(&mut self, dependency: &Dependency, set_scope: bool) -> bool {
         check_dependency(
             dependency,
             &self.element,
             &self.wrapper,
             &mut self.matching_context,
-            None,
+            set_scope.then(|| self.element.opaque()),
         )
     }
 
-    fn scan_dependency(&mut self, dependency: &'selectors Dependency) {
+    fn scan_dependency(&mut self, dependency: &'selectors Dependency, set_scope: bool) {
         debug_assert!(
             matches!(
                 dependency.invalidation_kind(),
@@ -552,7 +552,7 @@ where
             return;
         }
 
-        if self.check_dependency(dependency) || matches!(
+        if self.check_dependency(dependency, set_scope) || matches!(
                 dependency.invalidation_kind(),
                 DependencyInvalidationKind::Scope(_)
             )
@@ -568,7 +568,7 @@ where
             if let Some(ref next) = dependency.next {
                 // We know something changed in the inner selector, go outwards
                 // now.
-                self.scan_dependency(&next.as_ref().slice()[0]);
+                self.scan_dependency(&next.as_ref().slice()[0], false);
             } else {
                 self.invalidates_self = true;
             }
@@ -579,7 +579,7 @@ where
             if dependency.selector_offset == 0 {
                 if let Some(ref next) = dependency.next{
                     for dep in next.as_ref().slice(){
-                        self.scan_dependency(dep);
+                        self.scan_dependency(dep, true);
                     }
                 }
             } else {

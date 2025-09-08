@@ -962,7 +962,7 @@ where
                     // checking for descendants.
                     if !self
                         .processor
-                        .check_outer_dependency(cur_dependency, self.element, scope)
+                        .check_outer_dependency(cur_dependency, self.element, invalidation.scope)
                     {
                         return SingleInvalidationResult {
                             invalidated_self: false,
@@ -991,7 +991,7 @@ where
             } => Invalidation {
                 dependency: invalidation.dependency,
                 host: invalidation.host,
-                scope: Some(self.element.opaque()),
+                scope: invalidation.scope,
                 offset: next_combinator_offset + 1,
                 matched_by_any_previous: false,
             },

@@ -1272,14 +1272,14 @@ impl SpecifiedValueInfo for RubyPosition {
 pub struct TextAutospace(u8);
 bitflags! {
     impl TextAutospace: u8 {
-        /// Same behavior as ideograph-alpha ideograph-numeric.
-        const NORMAL = 0;
+        /// No automatic space is inserted.
+        const NO_AUTOSPACE = 0;
 
         /// The user agent chooses a set of typographically high quality spacing values.
         const AUTO = 1 << 0;
 
-        /// No automatic space is inserted.
-        const NO_AUTOSPACE = 1 << 1;
+        /// Same behavior as ideograph-alpha ideograph-numeric.
+        const NORMAL = 1 << 1;
 
         /// 1/8ic space between ideographic characters and non-ideographic letters.
         const IDEOGRAPH_ALPHA = 1 << 2;

@@ -25,7 +25,7 @@ cssparser = "0.35"
 derive_more = { version = "2", features = ["add", "add_assign"] }
 fxhash = "0.2"
 log = "0.4"
-phf = "0.11"
+phf = "0.13"
 precomputed-hash = "0.1"
 servo_arc = { version = "0.4", path = "../servo_arc" }
 smallvec = "1.0"
@@ -34,4 +34,4 @@ to_shmem_derive = { version = "0.1", path = "../to_shmem_derive", optional = tru
 new_debug_unreachable = "1"
 
 [build-dependencies]
-phf_codegen = "0.11"
+phf_codegen = "0.13"

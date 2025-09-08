@@ -23,7 +23,7 @@ use bitflags::bitflags;
 use cssparser::{CowRcStr, Token};
 use selectors::parser::SelectorParseErrorKind;
 #[cfg(feature = "servo")]
-use stylo_atoms::Atom;
+use web_atoms::StyleAtom as Atom;
 
 /// One hardware pixel.
 ///

@@ -3441,13 +3441,13 @@ impl CascadeData {
                     if let Some(cond) = cur_scope.condition.as_ref() {
                         let mut dependency_vector: Vec<Dependency> = Vec::new();
 
-                        if cond.start.is_none(){
+                        if cond.start.is_none() {
                             dependency_vector.push(Dependency::new(
                                 IMPLICIT_SCOPE.slice()[0].clone(),
                                 0,
                                 inner_scope_dependencies.clone(),
                                 DependencyInvalidationKind::Scope(
-                                    ScopeDependencyInvalidationKind::ImplicitScope
+                                    ScopeDependencyInvalidationKind::ImplicitScope,
                                 ),
                             ));
                         }

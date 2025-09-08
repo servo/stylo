@@ -64,7 +64,7 @@ dom = { version = "0.7", path = "../stylo_dom", package = "stylo_dom" }
 new_debug_unreachable = "1.0"
 encoding_rs = {version = "0.8", optional = true}
 euclid = "0.22"
-fxhash = "0.2"
+rustc-hash = "2.1.1"
 icu_segmenter = { version = "1.5", default-features = false, features = ["auto", "compiled_data"] }
 indexmap = {version = "2", features = ["std"]}
 itertools = "0.14"

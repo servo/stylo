@@ -39,6 +39,13 @@ macro_rules! try_match_ident_ignore_ascii_case {
 }
 
 #[cfg(feature = "servo")]
+macro_rules! atom {
+    ($s:tt) => {
+        web_atoms::style_atom!($s)
+    };
+}
+
+#[cfg(feature = "servo")]
 macro_rules! local_name {
     ($s:tt) => {
         $crate::values::GenericAtomIdent(web_atoms::local_name!($s))

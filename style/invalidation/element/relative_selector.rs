@@ -1003,7 +1003,8 @@ where
         debug_assert!(
             matches!(
                 outer_dependency.invalidation_kind(),
-                DependencyInvalidationKind::Normal(_)
+                DependencyInvalidationKind::Normal(_) |
+                DependencyInvalidationKind::Scope(_)
             ),
             "Outer selector of relative selector is relative?"
         );
@@ -1083,7 +1084,9 @@ where
             let mut d = self.dependency;
             loop {
                 debug_assert!(
-                    matches!(d.invalidation_kind(), DependencyInvalidationKind::Normal(_)),
+                    matches!(d.invalidation_kind(),
+                        DependencyInvalidationKind::Normal(_) |
+                        DependencyInvalidationKind::Scope(_)),
                     "Unexpected dependency kind"
                 );
                 if !dependency_may_be_relevant(d, &element, false) {
@@ -1098,8 +1101,10 @@ where
                 ) {
                     break false;
                 }
-                let invalidation_kind = d.normal_invalidation_kind();
-                if matches!(invalidation_kind, NormalDependencyInvalidationKind::Element) {
+                let invalidation_kind = d.invalidation_kind();
+                if matches!(invalidation_kind,
+                    DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element) |
+                    DependencyInvalidationKind::Scope(_)){
                     if let Some(ref deps) = d.next {
                         d = &deps.as_ref().slice()[0];
                         continue;

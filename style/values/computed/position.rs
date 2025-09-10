@@ -7,7 +7,9 @@
 //!
 //! [position]: https://drafts.csswg.org/css-backgrounds-3/#position
 
-use crate::values::computed::{Integer, LengthPercentage, NonNegativeNumber, Percentage};
+use crate::values::computed::{
+    Context, Integer, LengthPercentage, NonNegativeNumber, Percentage, ToComputedValue,
+};
 use crate::values::generics::position::Position as GenericPosition;
 use crate::values::generics::position::PositionComponent as GenericPositionComponent;
 use crate::values::generics::position::PositionOrAuto as GenericPositionOrAuto;
@@ -18,7 +20,8 @@ use crate::values::generics::position::{
 use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericInset};
 pub use crate::values::specified::position::{
     AnchorName, AnchorScope, DashedIdentAndOrTryTactic, PositionAnchor, PositionArea,
-    PositionAreaKeyword, PositionTryFallbacks, PositionTryOrder, PositionVisibility,
+    PositionAreaKeyword, PositionAreaType, PositionTryFallbacks, PositionTryOrder,
+    PositionVisibility,
 };
 pub use crate::values::specified::position::{GridAutoFlow, GridTemplateAreas, MasonryAutoFlow};
 use crate::Zero;
@@ -135,6 +138,111 @@ impl GenericPositionComponent for LengthPercentage {
             Some(Percentage(per)) => per == 0.5,
             _ => false,
         }
+    }
+}
+
+#[inline]
+fn block_or_inline_to_inferred(keyword: PositionAreaKeyword) -> PositionAreaKeyword {
+    match keyword {
+        PositionAreaKeyword::BlockStart | PositionAreaKeyword::InlineStart => {
+            PositionAreaKeyword::Start
+        },
+        PositionAreaKeyword::BlockEnd | PositionAreaKeyword::InlineEnd => PositionAreaKeyword::End,
+        PositionAreaKeyword::SpanBlockStart | PositionAreaKeyword::SpanInlineStart => {
+            PositionAreaKeyword::SpanStart
+        },
+        PositionAreaKeyword::SpanBlockEnd | PositionAreaKeyword::SpanInlineEnd => {
+            PositionAreaKeyword::SpanEnd
+        },
+        PositionAreaKeyword::SelfBlockStart | PositionAreaKeyword::SelfInlineStart => {
+            PositionAreaKeyword::SelfStart
+        },
+        PositionAreaKeyword::SelfBlockEnd | PositionAreaKeyword::SelfInlineEnd => {
+            PositionAreaKeyword::SelfEnd
+        },
+        PositionAreaKeyword::SpanSelfBlockStart | PositionAreaKeyword::SpanSelfInlineStart => {
+            PositionAreaKeyword::SpanSelfStart
+        },
+        PositionAreaKeyword::SpanSelfBlockEnd | PositionAreaKeyword::SpanSelfInlineEnd => {
+            PositionAreaKeyword::SpanSelfEnd
+        },
+        other => other,
+    }
+}
+
+#[inline]
+fn inferred_to_block(keyword: PositionAreaKeyword) -> PositionAreaKeyword {
+    match keyword {
+        PositionAreaKeyword::Start => PositionAreaKeyword::BlockStart,
+        PositionAreaKeyword::End => PositionAreaKeyword::BlockEnd,
+        PositionAreaKeyword::SpanStart => PositionAreaKeyword::SpanBlockStart,
+        PositionAreaKeyword::SpanEnd => PositionAreaKeyword::SpanBlockEnd,
+        PositionAreaKeyword::SelfStart => PositionAreaKeyword::SelfBlockStart,
+        PositionAreaKeyword::SelfEnd => PositionAreaKeyword::SelfBlockEnd,
+        PositionAreaKeyword::SpanSelfStart => PositionAreaKeyword::SpanSelfBlockStart,
+        PositionAreaKeyword::SpanSelfEnd => PositionAreaKeyword::SpanSelfBlockEnd,
+        other => other,
+    }
+}
+
+#[inline]
+fn inferred_to_inline(keyword: PositionAreaKeyword) -> PositionAreaKeyword {
+    match keyword {
+        PositionAreaKeyword::Start => PositionAreaKeyword::InlineStart,
+        PositionAreaKeyword::End => PositionAreaKeyword::InlineEnd,
+        PositionAreaKeyword::SpanStart => PositionAreaKeyword::SpanInlineStart,
+        PositionAreaKeyword::SpanEnd => PositionAreaKeyword::SpanInlineEnd,
+        PositionAreaKeyword::SelfStart => PositionAreaKeyword::SelfInlineStart,
+        PositionAreaKeyword::SelfEnd => PositionAreaKeyword::SelfInlineEnd,
+        PositionAreaKeyword::SpanSelfStart => PositionAreaKeyword::SpanSelfInlineStart,
+        PositionAreaKeyword::SpanSelfEnd => PositionAreaKeyword::SpanSelfInlineEnd,
+        other => other,
+    }
+}
+
+// This exists because the spec currently says that further simplifications
+// should be made to the computed value. That's confusing though, and probably
+// all these simplifications should be wrapped up into the simplifications that
+// we make to the specified value. I.e. all this should happen in
+// PositionArea::parse_internal().
+// See also https://github.com/w3c/csswg-drafts/issues/12759
+impl ToComputedValue for PositionArea {
+    type ComputedValue = PositionArea;
+
+    fn to_computed_value(&self, _context: &Context) -> Self::ComputedValue {
+        let mut computed = self.clone();
+
+        let pair_type = self.get_type();
+
+        if pair_type == PositionAreaType::Logical || pair_type == PositionAreaType::SelfLogical {
+            if computed.second != PositionAreaKeyword::None {
+                computed.first = block_or_inline_to_inferred(computed.first);
+                computed.second = block_or_inline_to_inferred(computed.second);
+            }
+        } else if pair_type == PositionAreaType::Inferred
+            || pair_type == PositionAreaType::SelfInferred
+        {
+            if computed.second == PositionAreaKeyword::SpanAll {
+                // We remove the superfluous span-all, converting the inferred
+                // keyword to a logical keyword to avoid ambiguity, per spec.
+                computed.first = inferred_to_block(computed.first);
+                computed.second = PositionAreaKeyword::None;
+            } else if computed.first == PositionAreaKeyword::SpanAll {
+                computed.first = computed.second;
+                computed.first = inferred_to_inline(computed.first);
+                computed.second = PositionAreaKeyword::None;
+            }
+        }
+
+        if computed.first == computed.second {
+            computed.second = PositionAreaKeyword::None;
+        }
+
+        computed
+    }
+
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        computed.clone()
     }
 }
 

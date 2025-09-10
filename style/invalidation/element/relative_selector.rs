@@ -27,7 +27,7 @@ use crate::invalidation::element::state_and_attributes::{
 use crate::selector_parser::SnapshotMap as ServoElementSnapshotTable;
 use crate::stylist::{CascadeData, Stylist};
 use dom::ElementState;
-use rustc_hash::FxHashMap;
+use fxhash::FxHashMap;
 use selectors::matching::{
     matches_selector, ElementSelectorFlags, IncludeStartingStyle, MatchingContext,
     MatchingForInvalidation, MatchingMode, NeedsSelectorFlags, QuirksMode, SelectorCaches,

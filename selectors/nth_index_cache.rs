@@ -5,7 +5,7 @@
 use std::hash::Hash;
 
 use crate::{parser::Selector, tree::OpaqueElement, SelectorImpl};
-use rustc_hash::FxHashMap;
+use fxhash::FxHashMap;
 
 /// A cache to speed up matching of nth-index-like selectors.
 ///

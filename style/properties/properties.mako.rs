@@ -1396,7 +1396,7 @@ pub use super::gecko::style_structs;
 /// The module where all the style structs are defined.
 #[cfg(feature = "servo")]
 pub mod style_structs {
-    use rustc_hash::FxHasher;
+    use fxhash::FxHasher;
     use super::longhands;
     use std::hash::{Hash, Hasher};
     use crate::values::specified::color::ColorSchemeFlags;

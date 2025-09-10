@@ -23,7 +23,7 @@ use crate::properties::{
 };
 use std::ptr;
 use std::mem;
-use rustc_hash::FxHashMap;
+use fxhash::FxHashMap;
 use super::ComputedValues;
 use crate::properties::OwnedPropertyDeclarationId;
 use crate::values::animated::{Animate, Procedure, ToAnimatedValue, ToAnimatedZero};

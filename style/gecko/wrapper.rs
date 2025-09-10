@@ -71,7 +71,7 @@ use app_units::Au;
 use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 use dom::{DocumentState, ElementState};
 use euclid::default::Size2D;
-use rustc_hash::FxHashMap;
+use fxhash::FxHashMap;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::{BloomFilter, BLOOM_HASH_MASK};
 use selectors::matching::VisitedHandlingMode;

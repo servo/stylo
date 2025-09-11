@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-use fxhash::FxHashMap;
+use rustc_hash::FxHashMap;
 /// Relative selector cache. This is useful for following cases.
 /// First case is non-subject relative selector: Imagine `.anchor:has(<..>) ~ .foo`, with DOM
 /// `.anchor + .foo + .. + .foo`. Each match on `.foo` triggers `:has()` traversal that

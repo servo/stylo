@@ -380,6 +380,10 @@ impl generic::CalcNodeLeaf for Leaf {
             (&mut Length(ref mut one), &Length(ref other)) => {
                 *one = one.try_op(other, std::ops::Add::add)?;
             },
+            (&mut ColorComponent(_), &ColorComponent(_)) => {
+                // Can not get the sum of color components, because they haven't been resolved yet.
+                return Err(());
+            },
             _ => {
                 match *other {
                     Number(..) | Percentage(..) | Angle(..) | Time(..) | Resolution(..)

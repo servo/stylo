@@ -36,12 +36,12 @@ impl<T> IndexMut<usize> for nsStyleAutoArray<T> {
 
 impl<T> nsStyleAutoArray<T> {
     /// Mutably iterate over the array elements.
-    pub fn iter_mut(&mut self) -> Chain<Once<&mut T>, IterMut<T>> {
+    pub fn iter_mut(&mut self) -> Chain<Once<&mut T>, IterMut<'_, T>> {
         once(&mut self.mFirstElement).chain(self.mOtherElements.iter_mut())
     }
 
     /// Iterate over the array elements.
-    pub fn iter(&self) -> Chain<Once<&T>, Iter<T>> {
+    pub fn iter(&self) -> Chain<Once<&T>, Iter<'_, T>> {
         once(&self.mFirstElement).chain(self.mOtherElements.iter())
     }
 

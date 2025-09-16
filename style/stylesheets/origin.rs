@@ -162,7 +162,7 @@ impl<T> PerOrigin<T> {
 
     /// Iterates over references to per-origin extra style data, from highest
     /// level (author) to lowest (user agent).
-    pub fn iter_origins(&self) -> PerOriginIter<T> {
+    pub fn iter_origins(&self) -> PerOriginIter<'_, T> {
         PerOriginIter {
             data: &self,
             cur: 0,
@@ -172,7 +172,7 @@ impl<T> PerOrigin<T> {
 
     /// Iterates over references to per-origin extra style data, from lowest
     /// level (user agent) to highest (author).
-    pub fn iter_origins_rev(&self) -> PerOriginIter<T> {
+    pub fn iter_origins_rev(&self) -> PerOriginIter<'_, T> {
         PerOriginIter {
             data: &self,
             cur: 2,
@@ -182,7 +182,7 @@ impl<T> PerOrigin<T> {
 
     /// Iterates over mutable references to per-origin extra style data, from
     /// highest level (author) to lowest (user agent).
-    pub fn iter_mut_origins(&mut self) -> PerOriginIterMut<T> {
+    pub fn iter_mut_origins(&mut self) -> PerOriginIterMut<'_, T> {
         PerOriginIterMut {
             data: self,
             cur: 0,

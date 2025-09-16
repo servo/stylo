@@ -159,14 +159,14 @@ where
     S: StylesheetInDocument + PartialEq + 'static,
 {
     /// Returns a flusher for `origin`.
-    pub fn flush_origin(&mut self, origin: Origin) -> SheetCollectionFlusher<S> {
+    pub fn flush_origin(&mut self, origin: Origin) -> SheetCollectionFlusher<'_, S> {
         self.collections.borrow_mut_for_origin(&origin).flush()
     }
 
     /// Returns the list of stylesheets for `origin`.
     ///
     /// Only used for UA sheets.
-    pub fn origin_sheets(&mut self, origin: Origin) -> StylesheetCollectionIterator<S> {
+    pub fn origin_sheets(&mut self, origin: Origin) -> StylesheetCollectionIterator<'_, S> {
         self.collections.borrow_mut_for_origin(&origin).iter()
     }
 
@@ -367,11 +367,11 @@ where
     }
 
     /// Returns an iterator over the current list of stylesheets.
-    fn iter(&self) -> StylesheetCollectionIterator<S> {
+    fn iter(&self) -> StylesheetCollectionIterator<'_, S> {
         StylesheetCollectionIterator(self.entries.iter())
     }
 
-    fn flush(&mut self) -> SheetCollectionFlusher<S> {
+    fn flush(&mut self) -> SheetCollectionFlusher<'_, S> {
         let dirty = mem::replace(&mut self.dirty, false);
         let validity = mem::replace(&mut self.data_validity, DataValidity::Valid);
 
@@ -565,7 +565,7 @@ where
         &mut self,
         document_element: Option<E>,
         snapshots: Option<&SnapshotMap>,
-    ) -> DocumentStylesheetFlusher<S>
+    ) -> DocumentStylesheetFlusher<'_, S>
     where
         E: TElement,
     {
@@ -597,7 +597,7 @@ where
     }
 
     /// Return an iterator over the flattened view of all the stylesheets.
-    pub fn iter(&self) -> StylesheetIterator<S> {
+    pub fn iter(&self) -> StylesheetIterator<'_, S> {
         StylesheetIterator {
             origins: OriginSet::all().iter_origins(),
             collections: &self.collections,
@@ -681,7 +681,7 @@ where
     sheet_set_methods!("AuthorStylesheetSet");
 
     /// Iterate over the list of stylesheets.
-    pub fn iter(&self) -> StylesheetCollectionIterator<S> {
+    pub fn iter(&self) -> StylesheetCollectionIterator<'_, S> {
         self.collection.iter()
     }
 
@@ -700,7 +700,7 @@ where
         &mut self,
         host: Option<E>,
         snapshots: Option<&SnapshotMap>,
-    ) -> AuthorStylesheetFlusher<S>
+    ) -> AuthorStylesheetFlusher<'_, S>
     where
         E: TElement,
     {

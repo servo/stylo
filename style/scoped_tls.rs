@@ -45,13 +45,13 @@ impl<'scope, T: Send> ScopedTLS<'scope, T> {
     }
 
     /// Return an immutable reference to the `Option<T>` that this thread owns.
-    pub fn borrow(&self) -> Ref<Option<T>> {
+    pub fn borrow(&self) -> Ref<'_, Option<T>> {
         let idx = self.current_thread_index();
         self.slots[idx].borrow()
     }
 
     /// Return a mutable reference to the `Option<T>` that this thread owns.
-    pub fn borrow_mut(&self) -> RefMut<Option<T>> {
+    pub fn borrow_mut(&self) -> RefMut<'_, Option<T>> {
         let idx = self.current_thread_index();
         self.slots[idx].borrow_mut()
     }
@@ -63,7 +63,7 @@ impl<'scope, T: Send> ScopedTLS<'scope, T> {
     /// That's why we hand `f` a mutable borrow to write to instead of just
     /// having it return a T.
     #[inline(always)]
-    pub fn ensure<F: FnOnce(&mut Option<T>)>(&self, f: F) -> RefMut<T> {
+    pub fn ensure<F: FnOnce(&mut Option<T>)>(&self, f: F) -> RefMut<'_, T> {
         let mut opt = self.borrow_mut();
         if opt.is_none() {
             f(opt.deref_mut());

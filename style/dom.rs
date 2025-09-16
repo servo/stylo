@@ -462,14 +462,14 @@ pub trait TElement:
     }
 
     /// Get this element's style attribute.
-    fn style_attribute(&self) -> Option<ArcBorrow<Locked<PropertyDeclarationBlock>>>;
+    fn style_attribute(&self) -> Option<ArcBorrow<'_, Locked<PropertyDeclarationBlock>>>;
 
     /// Unset the style attribute's dirty bit.
     /// Servo doesn't need to manage ditry bit for style attribute.
     fn unset_dirty_style_attribute(&self) {}
 
     /// Get this element's SMIL override declarations.
-    fn smil_override(&self) -> Option<ArcBorrow<Locked<PropertyDeclarationBlock>>> {
+    fn smil_override(&self) -> Option<ArcBorrow<'_, Locked<PropertyDeclarationBlock>>> {
         None
     }
 
@@ -670,7 +670,7 @@ pub trait TElement:
     ///
     /// Unsafe because it can race to allocate and leak if not used with
     /// exclusive access to the element.
-    unsafe fn ensure_data(&self) -> AtomicRefMut<ElementData>;
+    unsafe fn ensure_data(&self) -> AtomicRefMut<'_, ElementData>;
 
     /// Clears the element data reference, if any.
     ///
@@ -681,10 +681,10 @@ pub trait TElement:
     fn has_data(&self) -> bool;
 
     /// Immutably borrows the ElementData.
-    fn borrow_data(&self) -> Option<AtomicRef<ElementData>>;
+    fn borrow_data(&self) -> Option<AtomicRef<'_, ElementData>>;
 
     /// Mutably borrows the ElementData.
-    fn mutate_data(&self) -> Option<AtomicRefMut<ElementData>>;
+    fn mutate_data(&self) -> Option<AtomicRefMut<'_, ElementData>>;
 
     /// Whether we should skip any root- or item-based display property
     /// blockification on this element.  (This function exists so that Gecko

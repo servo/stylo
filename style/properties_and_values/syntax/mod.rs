@@ -194,7 +194,7 @@ impl Component {
 
     /// If the component is premultiplied, return the un-premultiplied component.
     #[inline]
-    pub fn unpremultiplied(&self) -> Cow<Self> {
+    pub fn unpremultiplied(&self) -> Cow<'_, Self> {
         match self.name.unpremultiply() {
             Some(component) => {
                 debug_assert!(

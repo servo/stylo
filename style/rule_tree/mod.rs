@@ -322,7 +322,7 @@ impl RuleTree {
 
 impl StrongRuleNode {
     /// Get an iterator for this rule node and its ancestors.
-    pub fn self_and_ancestors(&self) -> SelfAndAncestors {
+    pub fn self_and_ancestors(&self) -> SelfAndAncestors<'_> {
         SelfAndAncestors {
             current: Some(self),
         }

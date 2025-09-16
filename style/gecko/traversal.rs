@@ -47,7 +47,7 @@ impl<'recalc, 'le> DomTraversal<GeckoElement<'le>> for RecalcStyleOnly<'recalc> 
         false
     }
 
-    fn shared_context(&self) -> &SharedStyleContext {
+    fn shared_context(&self) -> &SharedStyleContext<'recalc> {
         &self.shared
     }
 }

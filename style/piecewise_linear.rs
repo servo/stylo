@@ -138,7 +138,7 @@ impl PiecewiseLinearFunction {
     }
 
     #[allow(missing_docs)]
-    pub fn iter(&self) -> Iter<PiecewiseLinearFunctionEntry> {
+    pub fn iter(&self) -> Iter<'_, PiecewiseLinearFunctionEntry> {
         self.entries.iter()
     }
 }

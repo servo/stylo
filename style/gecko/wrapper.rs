@@ -414,7 +414,7 @@ impl<'ln> GeckoNode<'ln> {
 
     /// Returns the previous sibling of this node that is an element.
     #[inline]
-    pub fn prev_sibling_element(&self) -> Option<GeckoElement> {
+    pub fn prev_sibling_element(&self) -> Option<GeckoElement<'ln>> {
         let mut prev = self.prev_sibling();
         while let Some(p) = prev {
             if let Some(e) = p.as_element() {
@@ -427,7 +427,7 @@ impl<'ln> GeckoNode<'ln> {
 
     /// Returns the next sibling of this node that is an element.
     #[inline]
-    pub fn next_sibling_element(&self) -> Option<GeckoElement> {
+    pub fn next_sibling_element(&self) -> Option<GeckoElement<'ln>> {
         let mut next = self.next_sibling();
         while let Some(n) = next {
             if let Some(e) = n.as_element() {
@@ -1186,7 +1186,9 @@ impl<'le> TElement for GeckoElement<'le> {
         }
 
         thin_vec::auto_thin_vec!(let array: [*mut nsIContent; 8]);
-        unsafe { bindings::Gecko_GetAnonymousContentForElement(self.0, array.as_mut().as_mut_ptr()) };
+        unsafe {
+            bindings::Gecko_GetAnonymousContentForElement(self.0, array.as_mut().as_mut_ptr())
+        };
         for content in array.iter() {
             let node = GeckoNode::from_content(unsafe { &**content });
             let element = match node.as_element() {
@@ -1206,7 +1208,7 @@ impl<'le> TElement for GeckoElement<'le> {
         self.as_node().owner_doc().0 as *const structs::Document == device.document() as *const _
     }
 
-    fn style_attribute(&self) -> Option<ArcBorrow<Locked<PropertyDeclarationBlock>>> {
+    fn style_attribute(&self) -> Option<ArcBorrow<'_, Locked<PropertyDeclarationBlock>>> {
         if !self.may_have_style_attribute() {
             return None;
         }
@@ -1225,7 +1227,7 @@ impl<'le> TElement for GeckoElement<'le> {
         unsafe { Gecko_UnsetDirtyStyleAttr(self.0) };
     }
 
-    fn smil_override(&self) -> Option<ArcBorrow<Locked<PropertyDeclarationBlock>>> {
+    fn smil_override(&self) -> Option<ArcBorrow<'_, Locked<PropertyDeclarationBlock>>> {
         unsafe {
             let slots = self.extended_slots()?;
 
@@ -1424,7 +1426,7 @@ impl<'le> TElement for GeckoElement<'le> {
         panic!("Atomic child count not implemented in Gecko");
     }
 
-    unsafe fn ensure_data(&self) -> AtomicRefMut<ElementData> {
+    unsafe fn ensure_data(&self) -> AtomicRefMut<'_, ElementData> {
         if !self.has_data() {
             debug!("Creating ElementData for {:?}", self);
             let ptr = Box::into_raw(Box::new(AtomicRefCell::new(ElementData::default())));
@@ -1579,12 +1581,12 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     /// Immutably borrows the ElementData.
-    fn borrow_data(&self) -> Option<AtomicRef<ElementData>> {
+    fn borrow_data(&self) -> Option<AtomicRef<'_, ElementData>> {
         self.get_data().map(|x| x.borrow())
     }
 
     /// Mutably borrows the ElementData.
-    fn mutate_data(&self) -> Option<AtomicRefMut<ElementData>> {
+    fn mutate_data(&self) -> Option<AtomicRefMut<'_, ElementData>> {
         self.get_data().map(|x| x.borrow_mut())
     }
 

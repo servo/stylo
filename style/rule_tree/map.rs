@@ -4,8 +4,8 @@
 
 #![forbid(unsafe_code)]
 
-use rustc_hash::FxHashMap;
 use malloc_size_of::{MallocShallowSizeOf, MallocSizeOfOps};
+use rustc_hash::FxHashMap;
 use std::collections::hash_map;
 use std::hash::Hash;
 use std::mem;

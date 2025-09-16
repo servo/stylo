@@ -425,7 +425,7 @@ impl<'a> Context<'a> {
     }
 
     /// The current style.
-    pub fn style(&self) -> &StyleBuilder {
+    pub fn style(&self) -> &StyleBuilder<'a> {
         &self.builder
     }
 

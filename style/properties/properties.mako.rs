@@ -1289,7 +1289,7 @@ impl PropertyId {
 impl PropertyDeclaration {
     /// Given a property declaration, return the property declaration id.
     #[inline]
-    pub fn id(&self) -> PropertyDeclarationId {
+    pub fn id(&self) -> PropertyDeclarationId<'_> {
         match *self {
             PropertyDeclaration::Custom(ref declaration) => {
                 return PropertyDeclarationId::Custom(&declaration.name)
@@ -1578,7 +1578,7 @@ pub mod style_structs {
                 /// Iterate over the values of ${longhand.name}.
                 #[allow(non_snake_case)]
                 #[inline]
-                pub fn ${longhand.ident}_iter(&self) -> ${longhand.camel_case}Iter {
+                pub fn ${longhand.ident}_iter(&self) -> ${longhand.camel_case}Iter<'_> {
                     ${longhand.camel_case}Iter {
                         style_struct: self,
                         current: 0,

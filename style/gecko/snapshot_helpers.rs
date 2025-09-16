@@ -37,7 +37,7 @@ unsafe fn ptr<T>(attr: &structs::nsAttrValue) -> *const T {
 }
 
 #[inline(always)]
-unsafe fn get_class_or_part_from_attr(attr: &structs::nsAttrValue) -> Class {
+unsafe fn get_class_or_part_from_attr(attr: &structs::nsAttrValue) -> Class<'_> {
     debug_assert!(bindings::Gecko_AssertClassAttrValueIsSane(attr));
     let base_type = base_type(attr);
     if base_type == structs::nsAttrValue_ValueBaseType_eAtomBase {

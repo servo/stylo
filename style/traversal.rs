@@ -266,7 +266,7 @@ pub trait DomTraversal<E: TElement>: Sync {
     }
 
     /// Return the shared style context common to all worker threads.
-    fn shared_context(&self) -> &SharedStyleContext;
+    fn shared_context(&self) -> &SharedStyleContext<'_>;
 }
 
 /// Manually resolve style by sequentially walking up the parent chain to the

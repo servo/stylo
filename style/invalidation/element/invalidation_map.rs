@@ -76,7 +76,7 @@ pub struct Dependency {
 }
 
 impl SelectorMapEntry for Dependency {
-    fn selector(&self) -> SelectorIter<SelectorImpl> {
+    fn selector(&self) -> SelectorIter<'_, SelectorImpl> {
         self.selector.iter_from(self.selector_offset)
     }
 }
@@ -274,7 +274,7 @@ pub struct StateDependency {
 }
 
 impl SelectorMapEntry for StateDependency {
-    fn selector(&self) -> SelectorIter<SelectorImpl> {
+    fn selector(&self) -> SelectorIter<'_, SelectorImpl> {
         self.dep.selector()
     }
 }
@@ -371,7 +371,7 @@ pub struct TSStateDependency {
 }
 
 impl SelectorMapEntry for TSStateDependency {
-    fn selector(&self) -> SelectorIter<SelectorImpl> {
+    fn selector(&self) -> SelectorIter<'_, SelectorImpl> {
         self.dep.selector()
     }
 }

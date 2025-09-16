@@ -14,7 +14,8 @@ use crate::dom::TElement;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{ServoStyleSetSizes, StyleRuleInclusion};
 use crate::invalidation::element::invalidation_map::{
-    note_selector_for_invalidation, AdditionalRelativeSelectorInvalidationMap, Dependency, DependencyInvalidationKind, InvalidationMap, ScopeDependencyInvalidationKind
+    note_selector_for_invalidation, AdditionalRelativeSelectorInvalidationMap, Dependency,
+    DependencyInvalidationKind, InvalidationMap, ScopeDependencyInvalidationKind,
 };
 use crate::invalidation::media_queries::{
     EffectiveMediaQueryResults, MediaListKey, ToMediaListKey,
@@ -58,10 +59,10 @@ use crate::values::{computed, AtomIdent};
 use crate::AllocErr;
 use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded, WeakAtom};
 use dom::{DocumentState, ElementState};
-use rustc_hash::FxHashMap;
 #[cfg(feature = "gecko")]
 use malloc_size_of::MallocUnconditionalShallowSizeOf;
 use malloc_size_of::{MallocShallowSizeOf, MallocSizeOf, MallocSizeOfOps};
+use rustc_hash::FxHashMap;
 use selectors::attr::{CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::BloomFilter;
 use selectors::matching::{
@@ -391,14 +392,14 @@ impl DocumentCascadeData {
         }
     }
 
-    fn iter_origins(&self) -> DocumentCascadeDataIter {
+    fn iter_origins(&self) -> DocumentCascadeDataIter<'_> {
         DocumentCascadeDataIter {
             iter: self.per_origin.iter_origins(),
             cascade_data: self,
         }
     }
 
-    fn iter_origins_rev(&self) -> DocumentCascadeDataIter {
+    fn iter_origins_rev(&self) -> DocumentCascadeDataIter<'_> {
         DocumentCascadeDataIter {
             iter: self.per_origin.iter_origins_rev(),
             cascade_data: self,
@@ -741,7 +742,7 @@ impl Stylist {
 
     /// Iterate through all the cascade datas from the document.
     #[inline]
-    pub fn iter_origins(&self) -> DocumentCascadeDataIter {
+    pub fn iter_origins(&self) -> DocumentCascadeDataIter<'_> {
         self.cascade_data.iter_origins()
     }
 
@@ -838,13 +839,13 @@ impl Stylist {
 
     /// Iterate over the extra data in origin order.
     #[inline]
-    pub fn iter_extra_data_origins(&self) -> ExtraStyleDataIterator {
+    pub fn iter_extra_data_origins(&self) -> ExtraStyleDataIterator<'_> {
         ExtraStyleDataIterator(self.cascade_data.iter_origins())
     }
 
     /// Iterate over the extra data in reverse origin order.
     #[inline]
-    pub fn iter_extra_data_origins_rev(&self) -> ExtraStyleDataIterator {
+    pub fn iter_extra_data_origins_rev(&self) -> ExtraStyleDataIterator<'_> {
         ExtraStyleDataIterator(self.cascade_data.iter_origins_rev())
     }
 
@@ -2114,7 +2115,7 @@ impl RevalidationSelectorAndHashes {
 }
 
 impl SelectorMapEntry for RevalidationSelectorAndHashes {
-    fn selector(&self) -> SelectorIter<SelectorImpl> {
+    fn selector(&self) -> SelectorIter<'_, SelectorImpl> {
         self.selector.iter_from(self.selector_offset)
     }
 }
@@ -3470,9 +3471,8 @@ impl CascadeData {
 
                 let mut scope_idx = containing_rule_state.scope_condition_id;
                 let mut inner_scope_dependencies: Option<ThinArc<(), Dependency>> =
-                    innermost_dependency.map(|dep_vec| {
-                        ThinArc::from_header_and_iter((), dep_vec.into_iter())
-                    });
+                    innermost_dependency
+                        .map(|dep_vec| ThinArc::from_header_and_iter((), dep_vec.into_iter()));
 
                 while scope_idx != ScopeConditionId::none() {
                     let cur_scope = &self.scope_conditions[scope_idx.0 as usize];
@@ -3480,13 +3480,13 @@ impl CascadeData {
                     if let Some(cond) = cur_scope.condition.as_ref() {
                         let mut dependency_vector: Vec<Dependency> = Vec::new();
 
-                        if cond.start.is_none(){
+                        if cond.start.is_none() {
                             dependency_vector.push(Dependency::new(
                                 IMPLICIT_SCOPE.slice()[0].clone(),
                                 0,
                                 inner_scope_dependencies.clone(),
                                 DependencyInvalidationKind::Scope(
-                                    ScopeDependencyInvalidationKind::ImplicitScope
+                                    ScopeDependencyInvalidationKind::ImplicitScope,
                                 ),
                             ));
                         }
@@ -4286,7 +4286,7 @@ pub struct Rule {
 }
 
 impl SelectorMapEntry for Rule {
-    fn selector(&self) -> SelectorIter<SelectorImpl> {
+    fn selector(&self) -> SelectorIter<'_, SelectorImpl> {
         self.selector.iter()
     }
 }

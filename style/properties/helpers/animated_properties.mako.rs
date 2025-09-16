@@ -179,7 +179,7 @@ impl PartialEq for AnimationValue {
 impl AnimationValue {
     /// Returns the longhand id this animated value corresponds to.
     #[inline]
-    pub fn id(&self) -> PropertyDeclarationId {
+    pub fn id(&self) -> PropertyDeclarationId<'_> {
         if let AnimationValue::Custom(animated_value) = self {
             return PropertyDeclarationId::Custom(&animated_value.name);
         }

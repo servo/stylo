@@ -205,7 +205,6 @@ ${helpers.predefined_type(
         logical=logical,
         logical_group="size",
         allow_quirks="No" if logical else "Yes",
-        parse_method="parse_size_for_width_or_height",
         spec=spec % size,
         rule_types_allowed=DEFAULT_RULES_AND_POSITION_TRY,
         servo_restyle_damage="rebuild_box",

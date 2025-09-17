@@ -2048,7 +2048,8 @@ impl Parse for Size {
 }
 
 macro_rules! parse_size_non_length {
-    ($size:ident, $input:expr, $auto_or_none:expr => $auto_or_none_ident:ident) => {{
+    ($size:ident, $input:expr, $allow_webkit_fill_available:expr,
+     $auto_or_none:expr => $auto_or_none_ident:ident) => {{
         let size = $input.try_parse(|input| {
             Ok(try_match_ident_ignore_ascii_case! { input,
                 "min-content" | "-moz-min-content" => $size::MinContent,
@@ -2057,7 +2058,7 @@ macro_rules! parse_size_non_length {
                 #[cfg(feature = "gecko")]
                 "-moz-available" => $size::MozAvailable,
                 #[cfg(feature = "gecko")]
-                "-webkit-fill-available" if is_webkit_fill_available_keyword_enabled() => $size::WebkitFillAvailable,
+                "-webkit-fill-available" if $allow_webkit_fill_available => $size::WebkitFillAvailable,
                 "stretch" if is_stretch_enabled() => $size::Stretch,
                 $auto_or_none => $size::$auto_or_none_ident,
             })
@@ -2069,9 +2070,29 @@ macro_rules! parse_size_non_length {
 }
 
 #[cfg(feature = "gecko")]
-fn is_webkit_fill_available_keyword_enabled() -> bool {
+fn is_webkit_fill_available_enabled_in_width_and_height() -> bool {
     static_prefs::pref!("layout.css.webkit-fill-available.enabled")
 }
+
+#[cfg(feature = "gecko")]
+fn is_webkit_fill_available_enabled_in_all_size_properties() -> bool {
+    // For convenience at the callsites, we check both prefs here,
+    // since both must be 'true' in order for the keyword to be
+    // enabled in all size properties.
+    static_prefs::pref!("layout.css.webkit-fill-available.enabled")
+        && static_prefs::pref!("layout.css.webkit-fill-available.all-size-properties.enabled")
+}
+
+#[cfg(feature = "servo")]
+fn is_webkit_fill_available_enabled_in_width_and_height() -> bool {
+    false
+}
+
+#[cfg(feature = "servo")]
+fn is_webkit_fill_available_enabled_in_all_size_properties() -> bool {
+    false
+}
+
 fn is_stretch_enabled() -> bool {
     static_prefs::pref!("layout.css.stretch-size-keyword.enabled")
 }
@@ -2102,7 +2123,22 @@ impl Size {
         input: &mut Parser<'i, 't>,
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
-        parse_size_non_length!(Size, input, "auto" => Auto);
+        let allow_webkit_fill_available = is_webkit_fill_available_enabled_in_all_size_properties();
+        Self::parse_quirky_internal(context, input, allow_quirks, allow_webkit_fill_available)
+    }
+
+    /// Parses, with quirks and configurable support for
+    /// whether the '-webkit-fill-available' keyword is allowed.
+    /// TODO(dholbert) Fold this function into callsites in bug 1989073 when
+    /// removing 'layout.css.webkit-fill-available.all-size-properties.enabled'.
+    fn parse_quirky_internal<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        allow_quirks: AllowQuirks,
+        allow_webkit_fill_available: bool,
+    ) -> Result<Self, ParseError<'i>> {
+        parse_size_non_length!(Size, input, allow_webkit_fill_available,
+                               "auto" => Auto);
         parse_fit_content_function!(Size, input, context, allow_quirks);
 
         match input
@@ -2126,6 +2162,33 @@ impl Size {
         Ok(Self::AnchorSizeFunction(Box::new(
             GenericAnchorSizeFunction::parse(context, input)?,
         )))
+    }
+
+    /// Parse a size for width or height, where -webkit-fill-available
+    /// support is only controlled by one pref (vs. other properties where
+    /// there's an additional pref check):
+    /// TODO(dholbert) Remove this custom parse func in bug 1989073, along with
+    /// 'layout.css.webkit-fill-available.all-size-properties.enabled'.
+    pub fn parse_size_for_width_or_height_quirky<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        allow_quirks: AllowQuirks,
+    ) -> Result<Self, ParseError<'i>> {
+        let allow_webkit_fill_available = is_webkit_fill_available_enabled_in_width_and_height();
+        Self::parse_quirky_internal(context, input, allow_quirks, allow_webkit_fill_available)
+    }
+
+    /// Parse a size for width or height, where -webkit-fill-available
+    /// support is only controlled by one pref (vs. other properties where
+    /// there's an additional pref check):
+    /// TODO(dholbert) Remove this custom parse func in bug 1989073, along with
+    /// 'layout.css.webkit-fill-available.all-size-properties.enabled'.
+    pub fn parse_size_for_width_or_height<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        let allow_webkit_fill_available = is_webkit_fill_available_enabled_in_width_and_height();
+        Self::parse_quirky_internal(context, input, AllowQuirks::No, allow_webkit_fill_available)
     }
 
     /// Returns `0%`.
@@ -2154,7 +2217,9 @@ impl MaxSize {
         input: &mut Parser<'i, 't>,
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
-        parse_size_non_length!(MaxSize, input, "none" => None);
+        let allow_webkit_fill_available = is_webkit_fill_available_enabled_in_all_size_properties();
+        parse_size_non_length!(MaxSize, input, allow_webkit_fill_available,
+                               "none" => None);
         parse_fit_content_function!(MaxSize, input, context, allow_quirks);
 
         match input

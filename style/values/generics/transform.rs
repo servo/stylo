@@ -737,9 +737,15 @@ where
                     // vector.
                     (None, angle)
                 } else if v.is_parallel_to(&DirectionVector::new(1., 0., 0.)) {
-                    (Some("x "), if v.0 < Number::zero() { -angle } else { angle })
+                    (
+                        Some("x "),
+                        if v.0 < Number::zero() { -angle } else { angle },
+                    )
                 } else if v.is_parallel_to(&DirectionVector::new(0., 1., 0.)) {
-                    (Some("y "), if v.1 < Number::zero() { -angle } else { angle })
+                    (
+                        Some("y "),
+                        if v.1 < Number::zero() { -angle } else { angle },
+                    )
                 } else if v.is_parallel_to(&DirectionVector::new(0., 0., 1.)) {
                     // When we're parallel to the z-axis, we can just serialize the angle.
                     let angle = if v.2 < Number::zero() { -angle } else { angle };

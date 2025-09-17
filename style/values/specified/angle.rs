@@ -287,6 +287,9 @@ impl Neg for Angle {
             AngleDimension::Turn(v) => AngleDimension::Turn(-v),
             AngleDimension::Grad(v) => AngleDimension::Grad(-v),
         };
-        Angle { value, was_calc: self.was_calc }
+        Angle {
+            value,
+            was_calc: self.was_calc,
+        }
     }
 }

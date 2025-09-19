@@ -282,7 +282,7 @@
         }
 
         /// The specified value of ${name}.
-        #[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+        #[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
         % if none_value:
         #[value_info(other_values = "none")]
         % endif
@@ -616,7 +616,7 @@
         pub use self::computed_value::T as SpecifiedValue;
         pub mod computed_value {
             #[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
-            #[derive(Clone, Copy, Debug, Eq, FromPrimitive, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToAnimatedValue, ToComputedValue, ToCss, ToResolvedValue, ToShmem)]
+            #[derive(Clone, Copy, Debug, Eq, FromPrimitive, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToAnimatedValue, ToComputedValue, ToCss, ToResolvedValue, ToShmem, ToTyped)]
             pub enum T {
             % for variant in keyword.values_for(engine):
             <%

@@ -20,6 +20,7 @@
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericUrlOrNone<U> {

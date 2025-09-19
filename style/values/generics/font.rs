@@ -111,6 +111,7 @@ impl<T> TaggedFontValue for VariationValue<T> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[css(comma)]
@@ -256,6 +257,7 @@ impl<Angle: Zero> FontStyle<Angle> {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 pub enum GenericFontSizeAdjust<Factor> {
     #[animation(error)]
@@ -305,6 +307,7 @@ impl<Factor: ToCss> ToCss for GenericFontSizeAdjust<Factor> {
     ToCss,
     ToShmem,
     Parse,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C, u8)]

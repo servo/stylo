@@ -27,6 +27,7 @@ use style_traits::{CssWriter, ParseError, ToCss};
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct Rect<T>(pub T, pub T, pub T, pub T);

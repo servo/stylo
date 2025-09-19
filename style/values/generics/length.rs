@@ -33,6 +33,7 @@ use style_traits::{CssWriter, SpecifiedValueInfo};
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C, u8)]
@@ -150,6 +151,7 @@ impl<LengthPercentage: Parse> Parse for LengthPercentageOrAuto<LengthPercentage>
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericSize<LengthPercent> {
@@ -228,6 +230,7 @@ impl<LengthPercentage> Size<LengthPercentage> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericMaxSize<LengthPercent> {
@@ -302,6 +305,7 @@ impl<LengthPercentage> MaxSize<LengthPercentage> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericLengthOrNumber<L, N> {
@@ -346,6 +350,7 @@ impl<L, N: Zero> Zero for LengthOrNumber<L, N> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 #[allow(missing_docs)]
@@ -564,6 +569,7 @@ pub enum AnchorSizeKeyword {
     ToAnimatedZero,
     ToComputedValue,
     ToResolvedValue,
+    ToTyped,
 )]
 #[repr(C)]
 pub enum GenericMargin<LP> {

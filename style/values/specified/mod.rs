@@ -553,7 +553,16 @@ impl Parse for NonNegativeNumberOrPercentage {
 /// However, we serialize the specified value as number, so it's ok to store
 /// the Opacity as Number.
 #[derive(
-    Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    PartialOrd,
+    SpecifiedValueInfo,
+    ToCss,
+    ToShmem,
+    ToTyped,
 )]
 pub struct Opacity(Number);
 
@@ -596,7 +605,7 @@ impl ToComputedValue for Opacity {
 /// at computed-value time.
 ///
 /// <https://drafts.csswg.org/css-values/#integers>
-#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToShmem)]
+#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToShmem, ToTyped)]
 pub enum Integer {
     /// A literal integer value.
     Literal(CSSInteger),

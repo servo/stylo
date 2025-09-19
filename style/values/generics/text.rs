@@ -48,6 +48,7 @@ pub enum NumberOrAuto<N> {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericHyphenateLimitChars<Integer> {
@@ -92,6 +93,7 @@ impl<Integer: ToCss + PartialEq> ToCss for GenericHyphenateLimitChars<Integer> {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericInitialLetter<Number, Integer> {
@@ -153,6 +155,7 @@ impl<N: ToCss + Zero, I: ToCss + Zero> ToCss for InitialLetter<N, I> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum GenericTextDecorationLength<L> {
@@ -179,6 +182,7 @@ pub enum GenericTextDecorationLength<L> {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 pub enum GenericTextDecorationTrim<L> {
     /// `auto` value
@@ -238,6 +242,7 @@ impl<L: ToCss + PartialEq> ToCss for GenericTextDecorationTrim<L> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 pub struct GenericTextIndent<LengthPercentage> {
     /// The amount of indent to be applied to the inline-start of the first line.

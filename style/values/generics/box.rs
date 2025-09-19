@@ -55,6 +55,7 @@ pub enum VerticalAlignKeyword {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericVerticalAlign<LengthPercentage> {
@@ -94,6 +95,7 @@ impl<L> ToAnimatedZero for VerticalAlign<L> {
     ToAnimatedZero,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[value_info(other_values = "auto")]
 #[repr(C, u8)]
@@ -145,6 +147,7 @@ impl<L: ToCss> ToCss for ContainIntrinsicSize<L> {
     ToAnimatedZero,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(transparent)]
 #[value_info(other_values = "none")]
@@ -193,6 +196,7 @@ impl<I: crate::Zero + ToCss> ToCss for LineClamp<I> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericPerspective<NonNegativeLength> {
@@ -224,6 +228,7 @@ impl<L> Perspective<L> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]

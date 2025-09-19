@@ -61,6 +61,7 @@ impl Parse for PageSize {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum PageName {

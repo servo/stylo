@@ -987,6 +987,7 @@ where
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]

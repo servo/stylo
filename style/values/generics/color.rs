@@ -171,6 +171,7 @@ impl<Percentage> Color<Percentage> {
     ToResolvedValue,
     ToCss,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericColorOrAuto<C> {
@@ -198,6 +199,7 @@ pub use self::GenericColorOrAuto as ColorOrAuto;
     ToComputedValue,
     ToCss,
     ToShmem,
+    ToTyped,
 )]
 #[repr(transparent)]
 pub struct GenericCaretColor<C>(pub GenericColorOrAuto<C>);

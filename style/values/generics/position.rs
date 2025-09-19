@@ -36,6 +36,7 @@ use crate::values::DashedIdent;
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericPosition<H, V> {
@@ -96,6 +97,7 @@ pub trait PositionComponent {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericPositionOrAuto<Pos> {
@@ -138,6 +140,7 @@ impl<Pos> PositionOrAuto<Pos> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericZIndex<I> {
@@ -217,6 +220,7 @@ pub enum PreferredRatio<N> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericAspectRatio<N> {
@@ -272,6 +276,7 @@ impl<N> ToAnimatedZero for AspectRatio<N> {
     ToAnimatedZero,
     ToComputedValue,
     ToResolvedValue,
+    ToTyped,
 )]
 #[repr(C)]
 pub enum GenericInset<P, LP> {

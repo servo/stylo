@@ -113,6 +113,7 @@ impl DisplayInside {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct Display(u16);
@@ -612,6 +613,7 @@ impl Parse for VerticalAlign {
     ToShmem,
     ToComputedValue,
     ToResolvedValue,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum BaselineSource {
@@ -688,6 +690,7 @@ pub enum ScrollSnapStrictness {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct ScrollSnapType {
@@ -783,6 +786,7 @@ pub enum ScrollSnapAlignKeyword {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct ScrollSnapAlign {
@@ -844,6 +848,7 @@ impl ToCss for ScrollSnapAlign {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum ScrollSnapStop {
@@ -866,6 +871,7 @@ pub enum ScrollSnapStop {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum OverscrollBehavior {
@@ -889,6 +895,7 @@ pub enum OverscrollBehavior {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum OverflowAnchor {
@@ -911,6 +918,7 @@ pub enum OverflowAnchor {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum OverflowClipBox {
@@ -929,6 +937,7 @@ pub enum OverflowClipBox {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(comma)]
 #[repr(C)]
@@ -1112,6 +1121,7 @@ impl Parse for WillChange {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(single = "none,auto,manipulation", mixed = "pan-x,pan-y,pinch-zoom"))]
 #[repr(C)]
@@ -1154,6 +1164,7 @@ impl TouchAction {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(
     single = "none,strict,content",
@@ -1243,6 +1254,7 @@ impl Parse for LineClamp {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum ContentVisibility {
@@ -1269,6 +1281,7 @@ pub enum ContentVisibility {
     Parse,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(
     single = "normal",
@@ -1333,6 +1346,7 @@ impl ContainerType {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 pub struct ContainerName(#[css(iterable, if_empty = "none")] pub crate::OwnedSlice<CustomIdent>);
 
@@ -1414,6 +1428,7 @@ pub type Perspective = GenericPerspective<NonNegativeLength>;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum Float {
@@ -1450,6 +1465,7 @@ impl Float {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum Clear {
@@ -1466,7 +1482,18 @@ pub enum Clear {
 #[allow(missing_docs)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToCss,
+    ToShmem,
+    ToTyped,
 )]
 pub enum Resize {
     None,
@@ -1496,6 +1523,7 @@ pub enum Resize {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum Appearance {
@@ -1646,6 +1674,7 @@ pub enum Appearance {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum BreakBetween {
@@ -1715,6 +1744,7 @@ impl BreakBetween {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum BreakWithin {
@@ -1773,6 +1803,7 @@ impl BreakWithin {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum Overflow {
@@ -1835,6 +1866,7 @@ impl Overflow {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 #[css(bitflags(
@@ -1865,7 +1897,7 @@ impl ScrollbarGutter {
 
 /// A specified value for the zoom property.
 #[derive(
-    Clone, Copy, Debug, MallocSizeOf, PartialEq, Parse, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone, Copy, Debug, MallocSizeOf, PartialEq, Parse, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum Zoom {

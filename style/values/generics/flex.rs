@@ -21,6 +21,7 @@
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub enum GenericFlexBasis<S> {

@@ -24,6 +24,7 @@ use style_traits::ParseError;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 /// <https://drafts.csswg.org/css-ui/#propdef-outline-style>

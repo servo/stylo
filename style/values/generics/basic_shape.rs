@@ -113,6 +113,7 @@ impl Default for ShapeBox {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[animation(no_bound(U))]
 #[repr(u8)]
@@ -146,6 +147,7 @@ pub use self::GenericClipPath as ClipPath;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[animation(no_bound(I))]
 #[repr(u8)]
@@ -420,6 +422,7 @@ pub enum GenericPathOrShapeFunction<Angle, LengthPercentage> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum FillRule {

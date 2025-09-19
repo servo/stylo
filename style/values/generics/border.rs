@@ -59,6 +59,7 @@ pub use self::GenericBorderImageSideWidth as BorderImageSideWidth;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericBorderImageSlice<NumberOrPercentage> {
@@ -91,6 +92,7 @@ pub use self::GenericBorderImageSlice as BorderImageSlice;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericBorderCornerRadius<L>(
@@ -134,6 +136,7 @@ impl<L: Zero> Zero for BorderCornerRadius<L> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(transparent)]
 pub struct GenericBorderSpacing<L>(

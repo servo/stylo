@@ -86,6 +86,7 @@ impl PaperSize {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum PageOrientation {
@@ -129,7 +130,9 @@ fn is_portrait(orientation: &PageSizeOrientation) -> bool {
 /// Page size property
 ///
 /// https://drafts.csswg.org/css-page-3/#page-size-prop
-#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(
+    Clone, Copy, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
+)]
 #[repr(C, u8)]
 pub enum GenericPageSize<S> {
     /// `auto` value.

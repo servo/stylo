@@ -355,6 +355,7 @@ impl<S: Side> PositionComponent<S> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(comma)]
 pub struct AnchorName(
@@ -407,6 +408,7 @@ impl Parse for AnchorName {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum AnchorScope {
@@ -471,6 +473,7 @@ impl Parse for AnchorScope {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum PositionAnchor {
@@ -670,6 +673,7 @@ pub enum PositionTryFallbacksItem {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(comma)]
 #[repr(C)]
@@ -727,6 +731,7 @@ impl Parse for PositionTryFallbacks {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum PositionTryOrder {
@@ -770,6 +775,7 @@ impl PositionTryOrder {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(single = "always", mixed = "anchors-valid,anchors-visible,no-overflow"))]
 #[repr(C)]
@@ -1056,6 +1062,7 @@ impl PositionAreaKeyword {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 /// https://drafts.csswg.org/css-anchor-position-1/#propdef-position-area
@@ -1245,6 +1252,7 @@ impl Side for VerticalPositionKeyword {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(
     mixed = "row,column,dense",
@@ -1356,6 +1364,7 @@ pub enum MasonryItemOrder {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 /// Controls how the Masonry layout algorithm works
@@ -1722,6 +1731,7 @@ fn is_name_code_point(c: char) -> bool {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 pub enum GridTemplateAreas {
     /// The `none` value.

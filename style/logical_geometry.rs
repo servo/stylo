@@ -40,6 +40,7 @@ pub enum InlineBaseDirection {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum WritingModeProperty {

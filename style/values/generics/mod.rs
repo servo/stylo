@@ -56,6 +56,7 @@ pub mod url;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(transparent)]
 pub struct NonNegative<T>(pub T);
@@ -167,6 +168,7 @@ pub use self::GenericClipRect as ClipRect;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericClipRectOrAuto<R> {

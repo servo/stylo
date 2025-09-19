@@ -129,7 +129,7 @@ impl CSSWideKeyword {
 }
 
 /// A declaration using a CSS-wide keyword.
-#[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf)]
+#[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf, ToTyped)]
 pub struct WideKeywordDeclaration {
     #[css(skip)]
     id: LonghandId,
@@ -138,7 +138,7 @@ pub struct WideKeywordDeclaration {
 }
 
 /// An unparsed declaration that contains `var()` functions.
-#[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf)]
+#[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf, ToTyped)]
 pub struct VariableDeclaration {
     /// The id of the property this declaration represents.
     #[css(skip)]
@@ -161,7 +161,7 @@ pub enum CustomDeclarationValue {
 }
 
 /// A custom property declaration with the property name and the declared value.
-#[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf)]
+#[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf, ToTyped)]
 pub struct CustomDeclaration {
     /// The name of the custom property.
     #[css(skip)]

@@ -23,7 +23,7 @@ use crate::media_queries::Device;
 use crate::parser::ParserContext;
 use crate::selector_parser::PseudoElement;
 use crate::stylist::Stylist;
-use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
+use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, TypedValue, ToTyped};
 use crate::stylesheets::{CssRuleType, CssRuleTypes, Origin};
 use crate::logical_geometry::{LogicalAxis, LogicalCorner, LogicalSide};
 use crate::use_counters::UseCounters;
@@ -404,6 +404,19 @@ impl PropertyDeclaration {
             % for ty, vs in groupby(variants, key=lambda x: x["type"]):
             ${" | ".join("{}(ref value)".format(v["name"]) for v in vs)} => {
                 value.to_css(&mut dest)
+            }
+            % endfor
+        }
+    }
+
+    /// Like the method on ToTyped.
+    pub fn to_typed(&self) -> Option<TypedValue> {
+        use self::PropertyDeclaration::*;
+
+        match *self {
+            % for ty, vs in groupby(variants, key=lambda x: x["type"]):
+            ${" | ".join("{}(ref value)".format(v["name"]) for v in vs)} => {
+                value.to_typed()
             }
             % endfor
         }

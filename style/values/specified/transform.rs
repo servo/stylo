@@ -66,6 +66,7 @@ fn all_transform_boxes_are_enabled(_context: &ParserContext) -> bool {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum TransformBox {

@@ -52,7 +52,9 @@ impl Parse for Spacing {
 }
 
 /// A specified value for the `letter-spacing` property.
-#[derive(Clone, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(
+    Clone, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
+)]
 pub struct LetterSpacing(pub Spacing);
 
 impl ToComputedValue for LetterSpacing {
@@ -77,7 +79,9 @@ impl ToComputedValue for LetterSpacing {
 }
 
 /// A specified value for the `word-spacing` property.
-#[derive(Clone, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(
+    Clone, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
+)]
 pub struct WordSpacing(pub Spacing);
 
 impl ToComputedValue for WordSpacing {
@@ -109,6 +113,7 @@ impl ToComputedValue for WordSpacing {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum HyphenateCharacter {
@@ -196,6 +201,7 @@ pub enum TextOverflowSide {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 /// text-overflow.
@@ -281,6 +287,7 @@ impl ToCss for TextOverflow {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(
     feature = "gecko",
@@ -381,6 +388,7 @@ pub enum TextTransformCase {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(
     feature = "gecko",
@@ -463,6 +471,7 @@ impl TextTransform {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 #[repr(u8)]
@@ -512,7 +521,18 @@ pub enum TextAlignKeyword {
 
 /// Specified value of text-align property.
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToCss,
+    ToShmem,
+    ToTyped,
 )]
 pub enum TextAlign {
     /// Keyword value of text-align property.
@@ -598,7 +618,7 @@ fn fill_mode_is_default_and_shape_exists(
 /// Specified value of text-emphasis-style property.
 ///
 /// https://drafts.csswg.org/css-text-decor/#propdef-text-emphasis-style
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 #[allow(missing_docs)]
 pub enum TextEmphasisStyle {
     /// [ <fill> || <shape> ]
@@ -778,6 +798,7 @@ impl Parse for TextEmphasisStyle {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 #[css(bitflags(
@@ -835,6 +856,7 @@ impl TextEmphasisPosition {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum WordBreak {
@@ -864,6 +886,7 @@ pub enum WordBreak {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum TextJustify {
@@ -891,6 +914,7 @@ pub enum TextJustify {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum MozControlCharacterVisibility {
@@ -924,6 +948,7 @@ impl Default for MozControlCharacterVisibility {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum LineBreak {
@@ -949,6 +974,7 @@ pub enum LineBreak {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum OverflowWrap {
@@ -1027,6 +1053,7 @@ impl Parse for TextIndent {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum TextDecorationSkipInk {
@@ -1096,6 +1123,7 @@ impl Parse for TextDecorationTrim {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(
     single = "auto",
@@ -1172,7 +1200,16 @@ impl ToCss for TextUnderlinePosition {
 /// Values for `ruby-position` property
 #[repr(u8)]
 #[derive(
-    Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem,
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    PartialEq,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum RubyPosition {
@@ -1259,6 +1296,7 @@ impl SpecifiedValueInfo for RubyPosition {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(
     single = "normal,auto,no-autospace",

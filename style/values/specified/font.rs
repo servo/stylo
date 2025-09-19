@@ -137,7 +137,7 @@ pub const MAX_FONT_WEIGHT: f32 = 1000.;
 ///
 /// https://drafts.csswg.org/css-fonts-4/#propdef-font-weight
 #[derive(
-    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 pub enum FontWeight {
     /// `<font-weight-absolute>`
@@ -363,7 +363,7 @@ impl SpecifiedFontStyle {
 
 /// The specified value of the `font-style` property.
 #[derive(
-    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum FontStyle {
@@ -402,7 +402,7 @@ impl ToComputedValue for FontStyle {
 /// https://drafts.csswg.org/css-fonts-4/#font-stretch-prop
 #[allow(missing_docs)]
 #[derive(
-    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 pub enum FontStretch {
     Stretch(NonNegativePercentage),
@@ -619,7 +619,7 @@ impl SpecifiedValueInfo for KeywordInfo {
     }
 }
 
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 /// A specified font-size value
 pub enum FontSize {
     /// A length; e.g. 10px.
@@ -645,7 +645,7 @@ pub enum FontSize {
 }
 
 /// Specifies a prioritized list of font family names or generic family names.
-#[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem, ToTyped)]
 #[cfg_attr(feature = "servo", derive(Hash))]
 pub enum FontFamily {
     /// List of `font-family`
@@ -1128,6 +1128,7 @@ pub enum VariantAlternates {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(transparent)]
 /// List of Variant Alternates
@@ -1291,6 +1292,7 @@ impl Parse for FontVariantAlternates {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(
     single = "normal",
@@ -1359,6 +1361,7 @@ impl FontVariantEastAsian {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(
     single = "normal,none",
@@ -1424,6 +1427,7 @@ impl FontVariantLigatures {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[css(bitflags(
     single = "normal",
@@ -1530,6 +1534,7 @@ impl Parse for FontLanguageOverride {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 pub enum FontSynthesis {
     /// This attribute may be synthesized if not supported by a face.
@@ -1553,6 +1558,7 @@ pub enum FontSynthesis {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 pub enum FontSynthesisStyle {
     /// This attribute may be synthesized if not supported by a face.
@@ -1573,6 +1579,7 @@ pub enum FontSynthesisStyle {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 /// Allows authors to choose a palette from those supported by a color font
@@ -1713,6 +1720,7 @@ impl MetricsOverride {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 /// How to do font-size scaling.
@@ -1743,6 +1751,7 @@ impl XTextScale {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 /// Internal property that reflects the lang attribute
@@ -1799,7 +1808,7 @@ impl Parse for MozScriptMinSize {
 /// A value for the `math-depth` property.
 /// https://mathml-refresh.github.io/mathml-core/#the-math-script-level-property
 #[cfg_attr(feature = "gecko", derive(MallocSizeOf))]
-#[derive(Clone, Copy, Debug, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Copy, Debug, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 pub enum MathDepth {
     /// Increment math-depth if math-style is compact.
     AutoAdd,

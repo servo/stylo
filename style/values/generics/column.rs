@@ -21,6 +21,7 @@
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum GenericColumnCount<PositiveInteger> {

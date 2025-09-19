@@ -43,6 +43,7 @@ use style_traits::{values::SequenceWriter, CssWriter, ParseError, ToCss};
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum BorderStyle {
@@ -97,7 +98,7 @@ impl BorderImageSlice {
 }
 
 /// https://drafts.csswg.org/css-backgrounds-3/#typedef-line-width
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 pub enum LineWidth {
     /// `thin`
     Thin,
@@ -165,7 +166,7 @@ impl ToComputedValue for LineWidth {
 
 /// A specified value for a single side of the `border-width` property. The difference between this
 /// and LineWidth is whether we snap to device pixels or not.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 pub struct BorderSideWidth(LineWidth);
 
 impl BorderSideWidth {
@@ -326,6 +327,7 @@ pub enum BorderImageRepeatKeyword {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct BorderImageRepeat(pub BorderImageRepeatKeyword, pub BorderImageRepeatKeyword);

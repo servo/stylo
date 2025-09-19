@@ -20,6 +20,7 @@ use style_traits::{CssWriter, ToCss};
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericCursor<Image> {
@@ -105,6 +106,7 @@ impl<Image: ToCss, Number: ToCss> ToCss for CursorImage<Image, Number> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericScrollbarColor<Color> {

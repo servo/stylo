@@ -1315,6 +1315,7 @@ impl PaintWorklet {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum ImageRendering {

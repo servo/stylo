@@ -56,6 +56,7 @@ pub use self::GenericSVGPaintFallback as SVGPaintFallback;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[animation(no_bound(Url))]
 #[repr(C)]
@@ -151,6 +152,7 @@ impl<C: Parse, U: Parse> Parse for SVGPaint<C, U> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericSVGLength<L> {
@@ -176,6 +178,7 @@ pub use self::GenericSVGLength as SVGLength;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericSVGStrokeDashArray<L> {
@@ -206,6 +209,7 @@ pub use self::GenericSVGStrokeDashArray as SVGStrokeDashArray;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericSVGOpacity<OpacityType> {

@@ -274,6 +274,7 @@ impl ContentDistribution {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(transparent)]
@@ -313,6 +314,7 @@ impl SpecifiedValueInfo for AlignContent {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(transparent)]
@@ -423,6 +425,7 @@ impl SelfAlignment {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
@@ -462,6 +465,7 @@ impl SpecifiedValueInfo for AlignSelf {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
@@ -501,6 +505,7 @@ impl SpecifiedValueInfo for JustifySelf {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
@@ -554,7 +559,9 @@ impl SpecifiedValueInfo for AlignItems {
 /// Value of the `justify-items` property
 ///
 /// <https://drafts.csswg.org/css-align/#justify-items-property>
-#[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem)]
+#[derive(
+    Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem, ToTyped,
+)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct JustifyItems(pub AlignFlags);

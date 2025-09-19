@@ -573,3 +573,46 @@ pub mod specified {
         }
     }
 }
+
+/// A property-agnostic representation of a value, used by Typed OM.
+///
+/// `TypedValue` is the internal counterpart of the various `CSSStyleValue`
+/// subclasses defined by the Typed OM specification. It captures values that
+/// can be represented independently of any particular property.
+#[derive(Clone, Debug)]
+pub enum TypedValue {}
+
+/// Reifies a value into its Typed OM representation.
+///
+/// This trait is the Typed OM analogue of [`ToCss`]. Instead of serializing
+/// values into CSS syntax, it converts them into [`TypedValue`]s that can be
+/// exposed to the DOM as `CSSStyleValue` subclasses.
+///
+/// This trait is derivable with `#[derive(ToTyped)]`. The derived
+/// implementation currently does not attempt to reify anything by default; it
+/// simply provides the trait with its default method, which always returns
+/// `None`. This acts as a marker that reification is not yet supported for the
+/// given value.
+///
+/// Over time, the derive may be extended to cover common patterns, similar to
+/// `ToCss`
+pub trait ToTyped {
+    /// Attempt to convert `self` into a [`TypedValue`].
+    ///
+    /// Returns `Some(TypedValue)` if the value can be reified into a
+    /// property-agnostic CSSStyleValue subclass. Returns `None` if the value
+    /// is unrepresentable, in which case reification produces a property-tied
+    /// CSSStyleValue instead.
+    fn to_typed(&self) -> Option<TypedValue> {
+        None
+    }
+}
+
+impl<T> ToTyped for Box<T>
+where
+    T: ?Sized + ToTyped,
+{
+    fn to_typed(&self) -> Option<TypedValue> {
+        (**self).to_typed()
+    }
+}

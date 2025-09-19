@@ -25,6 +25,7 @@ use style_traits::{ParseError, StyleParseErrorKind};
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(transparent)]
 pub struct ListStyleType(pub CounterStyle);
@@ -154,6 +155,7 @@ pub struct QuoteList(
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub enum Quotes {

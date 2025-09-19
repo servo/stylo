@@ -170,7 +170,7 @@ impl Parse for AnimationDuration {
 
 /// https://drafts.csswg.org/css-animations/#animation-iteration-count
 #[derive(
-    Copy, Clone, Debug, MallocSizeOf, PartialEq, Parse, SpecifiedValueInfo, ToCss, ToShmem,
+    Copy, Clone, Debug, MallocSizeOf, PartialEq, Parse, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 pub enum AnimationIterationCount {
     /// A `<number>` value.
@@ -206,6 +206,7 @@ impl AnimationIterationCount {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[value_info(other_values = "none")]
 #[repr(C)]
@@ -258,6 +259,7 @@ impl Parse for AnimationName {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -295,6 +297,7 @@ impl AnimationDirection {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -330,6 +333,7 @@ impl AnimationPlayState {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -368,6 +372,7 @@ impl AnimationFillMode {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -684,6 +689,7 @@ impl Parse for ViewTimelineInset {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum ViewTransitionName {
@@ -755,6 +761,7 @@ impl ToCss for ViewTransitionName {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 #[value_info(other_values = "none")]

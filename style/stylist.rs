@@ -3518,7 +3518,7 @@ impl CascadeData {
                                 nth_of_state_dependencies: &mut self.nth_of_state_dependencies,
                                 document_state_dependencies: &mut self.document_state_dependencies,
                             };
-                            rule.selector.visit(&mut visitor);
+                            s.visit(&mut visitor);
 
                             new_inner_dependencies.as_mut().map(|dep| {
                                 dependency_vector.append(dep);

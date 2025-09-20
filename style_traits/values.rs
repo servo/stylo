@@ -580,7 +580,12 @@ pub mod specified {
 /// subclasses defined by the Typed OM specification. It captures values that
 /// can be represented independently of any particular property.
 #[derive(Clone, Debug)]
-pub enum TypedValue {}
+#[repr(C)]
+pub enum TypedValue {
+    /// Temporary marker to satisfy `#[repr(C)]`. This will be replaced by
+    /// concrete value kinds as Typed OM reification support expands.
+    Placeholder,
+}
 
 /// Reifies a value into its Typed OM representation.
 ///

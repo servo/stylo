@@ -1503,35 +1503,41 @@ impl Stylist {
         self.any_applicable_rule_data(element, |data| data.mapped_ids.contains(id))
     }
 
-    /// Returns the registered `@keyframes` animation for the specified name.
+    /// Looks up a CascadeData-dependent rule for a given element.
+    ///
+    /// NOTE(emilio): This is a best-effort thing, the right fix is a bit TBD because it involves
+    /// "recording" which tree the name came from, see [1][2].
+    ///
+    /// [1]: https://github.com/w3c/csswg-drafts/issues/1995
+    /// [2]: https://bugzil.la/1458189
     #[inline]
-    pub fn get_animation<'a, E>(&'a self, name: &Atom, element: E) -> Option<&'a KeyframesAnimation>
+    fn lookup_element_dependent_at_rule<'a, T, F, E>(
+        &'a self,
+        element: E,
+        find_in: F,
+    ) -> Option<&'a T>
     where
         E: TElement + 'a,
+        F: Fn(&'a CascadeData) -> Option<&'a T>,
     {
         macro_rules! try_find_in {
             ($data:expr) => {
-                if let Some(animation) = $data.animations.get(name) {
-                    return Some(animation);
+                if let Some(thing) = find_in(&$data) {
+                    return Some(thing);
                 }
             };
         }
 
-        // NOTE(emilio): This is a best-effort thing, the right fix is a bit TBD because it
-        // involves "recording" which tree the name came from, see [1][2].
-        //
-        // [1]: https://github.com/w3c/csswg-drafts/issues/1995
-        // [2]: https://bugzil.la/1458189
-        let mut animation = None;
+        let mut result = None;
         let doc_rules_apply =
             element.each_applicable_non_document_style_rule_data(|data, _host| {
-                if animation.is_none() {
-                    animation = data.animations.get(name);
+                if result.is_none() {
+                    result = find_in(data);
                 }
             });
 
-        if animation.is_some() {
-            return animation;
+        if result.is_some() {
+            return result;
         }
 
         if doc_rules_apply {
@@ -1541,6 +1547,34 @@ impl Stylist {
         try_find_in!(self.cascade_data.user_agent.cascade_data);
 
         None
+    }
+
+    /// Returns the registered `@keyframes` animation for the specified name.
+    #[inline]
+    pub fn lookup_keyframes<'a, E>(
+        &'a self,
+        name: &Atom,
+        element: E,
+    ) -> Option<&'a KeyframesAnimation>
+    where
+        E: TElement + 'a,
+    {
+        self.lookup_element_dependent_at_rule(element, |data| data.animations.get(name))
+    }
+
+    /// Returns the registered `@position-try-rule` animation for the specified name.
+    #[inline]
+    pub fn lookup_position_try<'a, E>(
+        &'a self,
+        name: &Atom,
+        element: E,
+    ) -> Option<&'a Arc<Locked<PositionTryRule>>>
+    where
+        E: TElement + 'a,
+    {
+        self.lookup_element_dependent_at_rule(element, |data| {
+            data.extra_data.position_try_rules.get(name)
+        })
     }
 
     /// Computes the match results of a given element against the set of

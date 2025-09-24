@@ -13,7 +13,7 @@ use style_traits::{CssWriter, ToCss};
 
 /// This struct represents a combined color from a numeric color and
 /// the current foreground color (currentcolor keyword).
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToAnimatedValue, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToAnimatedValue, ToShmem, ToTyped)]
 #[repr(C)]
 pub enum GenericColor<Percentage> {
     /// The actual numeric color.

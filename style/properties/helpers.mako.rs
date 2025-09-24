@@ -148,7 +148,7 @@
             /// Making this type generic allows the compiler to figure out the
             /// animated value for us, instead of having to implement it
             /// manually for every type we care about.
-            #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToAnimatedValue, ToResolvedValue, ToCss)]
+            #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToAnimatedValue, ToResolvedValue, ToCss, ToTyped)]
             % if separator == "Comma":
             #[css(comma)]
             % endif
@@ -168,7 +168,7 @@
             % else:
             pub use self::ComputedList as List;
 
-            #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss)]
+            #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToTyped)]
             % if separator == "Comma":
             #[css(comma)]
             % endif

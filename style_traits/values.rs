@@ -621,3 +621,27 @@ where
         (**self).to_typed()
     }
 }
+
+impl ToTyped for Au {
+    fn to_typed(&self) -> Option<TypedValue> {
+        // XXX Should return TypedValue::Numeric in px units once that variant
+        // is available. Tracked in bug 1990419.
+        None
+    }
+}
+
+macro_rules! impl_to_typed_for_predefined_type {
+    ($name: ty) => {
+        impl<'a> ToTyped for $name {
+            fn to_typed(&self) -> Option<TypedValue> {
+                // XXX Should return TypedValue::Numeric with unit "number"
+                // once that variant is available. Tracked in bug 1990419.
+                None
+            }
+        }
+    };
+}
+
+impl_to_typed_for_predefined_type!(f32);
+impl_to_typed_for_predefined_type!(i8);
+impl_to_typed_for_predefined_type!(i32);

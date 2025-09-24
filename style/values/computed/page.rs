@@ -21,7 +21,7 @@ pub use specified::PageName;
 /// The spec says that the computed value should be the same as the specified
 /// value but with all absolute units, but it's not currently possibly observe
 /// the computed value of page-size.
-#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem)]
+#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem, ToTyped)]
 #[repr(C, u8)]
 pub enum PageSize {
     /// Specified size, paper size, or paper size and orientation.

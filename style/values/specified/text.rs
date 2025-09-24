@@ -501,6 +501,7 @@ pub enum TextAlignLast {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 #[repr(u8)]

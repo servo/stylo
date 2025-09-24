@@ -31,6 +31,7 @@ use style_traits::{CssWriter, ToCss};
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct Percentage(pub CSSFloat);

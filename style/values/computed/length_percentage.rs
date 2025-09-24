@@ -112,6 +112,7 @@ pub struct TagVariant {
 /// Also we need the union and the variants to be `pub` (even though the member
 /// is private) so that cbindgen generates it. They're not part of the public
 /// API otherwise.
+#[derive(ToTyped)]
 #[repr(transparent)]
 pub struct LengthPercentage(LengthPercentageUnion);
 

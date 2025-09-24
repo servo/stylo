@@ -61,7 +61,9 @@ pub type Perspective = GenericPerspective<NonNegativeLength>;
 /// A computed value for the `resize` property.
 #[allow(missing_docs)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-#[derive(Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, ToCss, ToResolvedValue)]
+#[derive(
+    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, ToCss, ToResolvedValue, ToTyped,
+)]
 #[repr(u8)]
 pub enum Resize {
     None,
@@ -119,7 +121,15 @@ impl ToComputedValue for specified::Resize {
 
 /// The computed `zoom` property value.
 #[derive(
-    Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue,
+    Clone,
+    ComputeSquaredDistance,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    PartialOrd,
+    ToResolvedValue,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]

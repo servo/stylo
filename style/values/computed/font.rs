@@ -143,6 +143,7 @@ pub type FontWeightFixedPoint = FixedPoint<u16, FONT_WEIGHT_FRACTION_BITS>;
     PartialEq,
     PartialOrd,
     ToResolvedValue,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
@@ -249,6 +250,7 @@ impl FontWeight {
     PartialEq,
     ToAnimatedZero,
     ToCss,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
 /// The computed value of font-size
@@ -336,7 +338,7 @@ impl ToResolvedValue for FontSize {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ToComputedValue, ToResolvedValue)]
+#[derive(Clone, Debug, Eq, PartialEq, ToComputedValue, ToResolvedValue, ToTyped)]
 #[cfg_attr(feature = "servo", derive(Hash, Serialize, Deserialize))]
 /// Specifies a prioritized list of font family names or generic family names.
 #[repr(C)]
@@ -1125,6 +1127,7 @@ pub type FontStyleFixedPoint = FixedPoint<i16, FONT_STYLE_FRACTION_BITS>;
     PartialEq,
     PartialOrd,
     ToResolvedValue,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
@@ -1234,7 +1237,15 @@ pub type FontStretchFixedPoint = FixedPoint<u16, FONT_STRETCH_FRACTION_BITS>;
 /// cbindgen:derive-gt
 /// cbindgen:derive-gte
 #[derive(
-    Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue,
+    Clone,
+    ComputeSquaredDistance,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    PartialOrd,
+    ToResolvedValue,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[repr(C)]

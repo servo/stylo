@@ -189,6 +189,7 @@ impl NonNegativeLengthPercentageOrAuto {
     ToAnimatedZero,
     ToComputedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct CSSPixelLength(CSSFloat);

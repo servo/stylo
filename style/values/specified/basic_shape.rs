@@ -309,18 +309,12 @@ impl BasicShape {
                         .map(BasicShapeRect::Inset)
                         .map(BasicShape::Rect)
                 },
-                "xywh"
-                    if flags.contains(AllowedBasicShapes::XYWH)
-                        && static_prefs::pref!("layout.css.basic-shape-xywh.enabled") =>
-                {
+                "xywh" if flags.contains(AllowedBasicShapes::XYWH) => {
                     Xywh::parse_function_arguments(context, i)
                         .map(BasicShapeRect::Xywh)
                         .map(BasicShape::Rect)
                 },
-                "rect"
-                    if flags.contains(AllowedBasicShapes::RECT)
-                        && static_prefs::pref!("layout.css.basic-shape-rect.enabled") =>
-                {
+                "rect" if flags.contains(AllowedBasicShapes::RECT) => {
                     ShapeRectFunction::parse_function_arguments(context, i)
                         .map(BasicShapeRect::Rect)
                         .map(BasicShape::Rect)

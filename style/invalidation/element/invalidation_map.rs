@@ -128,6 +128,8 @@ pub enum ScopeDependencyInvalidationKind {
     ExplicitScope,
     /// This dependency's subject is an implicit scope root
     ImplicitScope,
+    /// This dependency's subject is an end scope condition
+    ScopeEnd,
 }
 
 /// Invalidation kind merging normal and relative dependencies.
@@ -158,10 +160,10 @@ pub enum GeneratedInvalidation<'a> {
 fn get_non_relative_invalidation_kind(
     selector: &Selector<SelectorImpl>,
     selector_offset: usize,
-    is_scope: bool,
+    scope_kind: Option<ScopeDependencyInvalidationKind>,
 ) -> DependencyInvalidationKind {
-    if is_scope {
-        return DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ExplicitScope);
+    if let Some(kind) = scope_kind {
+        return DependencyInvalidationKind::Scope(kind);
     }
     if selector_offset == 0 {
         return DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element);
@@ -487,12 +489,14 @@ pub fn note_selector_for_invalidation(
     relative_selector_invalidation_map: &mut InvalidationMap,
     additional_relative_selector_invalidation_map: &mut AdditionalRelativeSelectorInvalidationMap,
     inner_scope_dependencies: Option<&ThinArc<(), Dependency>>,
+    scope_kind: Option<ScopeDependencyInvalidationKind>,
 ) -> Result<Option<Vec<Dependency>>, AllocErr> {
     let next_dependency = Dependency::for_full_selector_invalidation(selector.clone());
     let mut document_state = DocumentState::empty();
     let mut scope_dependencies = ScopeSelectorCollectorState {
         inner_dependencies: &inner_scope_dependencies.cloned(),
         this_dependencies: None,
+        scope_kind,
     };
 
     {
@@ -563,6 +567,8 @@ struct ScopeSelectorCollectorState<'a> {
     inner_dependencies: &'a Option<ThinArc<(), Dependency>>,
     // Scope dependencies added by this scope selector
     this_dependencies: Option<Vec<Dependency>>,
+    // Whether this dependency is scope start, end, or other.
+    scope_kind: Option<ScopeDependencyInvalidationKind>,
 }
 
 trait Collector {
@@ -777,6 +783,7 @@ fn next_dependency(
     next_selector: &mut NextSelectors,
     next_outer_dependency: Option<&ThinArc<(), Dependency>>,
     next_scope_dependencies: Option<&ThinArc<(), Dependency>>,
+    scope_kind: Option<ScopeDependencyInvalidationKind>,
 ) -> Option<ThinArc<(), Dependency>> {
     if next_selector.is_empty() {
         return match next_outer_dependency {
@@ -789,6 +796,7 @@ fn next_dependency(
         entries: &mut [NextDependencyEntry],
         next_outer_dependency: &Option<&ThinArc<(), Dependency>>,
         next_scope_dependencies: &Option<&ThinArc<(), Dependency>>,
+        scope_kind: Option<ScopeDependencyInvalidationKind>,
     ) -> Option<ThinArc<(), Dependency>> {
         if entries.is_empty() {
             return next_scope_dependencies.cloned();
@@ -803,11 +811,16 @@ fn next_dependency(
         let dependency = Dependency {
             selector: selector.clone(),
             selector_offset,
-            next: dependencies_from(previous, next_outer_dependency, next_scope_dependencies),
+            next: dependencies_from(
+                previous,
+                next_outer_dependency,
+                next_scope_dependencies,
+                scope_kind,
+            ),
             kind: get_non_relative_invalidation_kind(
                 selector,
                 selector_offset,
-                next_scope_dependencies.is_some(),
+                next_scope_dependencies.is_some().then(|| scope_kind).flatten(),
             ),
         };
 
@@ -822,6 +835,7 @@ fn next_dependency(
         next_selector,
         &next_outer_dependency,
         &next_scope_dependencies,
+        scope_kind
     )
 }
 
@@ -840,6 +854,7 @@ impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
             self.next_selectors,
             optional_dependency,
             scope_dependencies.as_ref(),
+            self.scope_dependencies.scope_kind,
         );
 
         Dependency {
@@ -849,7 +864,7 @@ impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
             kind: get_non_relative_invalidation_kind(
                 self.selector,
                 offset,
-                scope_dependencies.is_some(),
+                scope_dependencies.is_some().then(|| self.scope_dependencies.scope_kind).flatten(),
             ),
         }
     }
@@ -1349,8 +1364,14 @@ impl<'a, 'b> RelativeSelectorDependencyCollector<'a, 'b> {
 impl<'a, 'b> Collector for RelativeSelectorDependencyCollector<'a, 'b> {
     fn dependency(&mut self) -> Dependency {
         let scope_dependencies = self.inner_scope_dependencies();
+        let scope_kind = self.scope_dependencies.scope_kind;
 
-        let next = next_dependency(self.next_selectors, None, scope_dependencies.as_ref());
+        let next = next_dependency(
+            self.next_selectors,
+            None,
+            scope_dependencies.as_ref(),
+            scope_kind,
+        );
         debug_assert!(
             next.as_ref().is_some_and(|d| !matches!(
                 d.slice()[0].kind,

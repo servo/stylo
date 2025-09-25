@@ -2676,10 +2676,12 @@ impl ScopeBoundsWithHashes {
             .flatten()
     }
 
-    fn iter_selectors<'a>(&'a self) -> impl Iterator<Item = &'a Selector<SelectorImpl>> {
-        let start_selectors = Self::selectors_for(self.start.as_ref());
-        let end_selectors = Self::selectors_for(self.end.as_ref());
-        start_selectors.chain(end_selectors)
+    fn start_selectors<'a>(&'a self) -> impl Iterator<Item = &'a Selector<SelectorImpl>> {
+        Self::selectors_for(self.start.as_ref())
+    }
+
+    fn end_selectors<'a>(&'a self) -> impl Iterator<Item = &'a Selector<SelectorImpl>> {
+        Self::selectors_for(self.end.as_ref())
     }
 
     fn is_trivial(&self) -> bool {
@@ -3407,6 +3409,47 @@ impl CascadeData {
         }
     }
 
+    fn note_scope_selector_for_invalidation(
+        &mut self,
+        quirks_mode: QuirksMode,
+        inner_scope_dependencies: &Option<Arc<servo_arc::HeaderSlice<(), Dependency>>>,
+        dependency_vector: &mut Vec<Dependency>,
+        s: &Selector<SelectorImpl>,
+        scope_kind: ScopeDependencyInvalidationKind,
+    ) -> Result<(), AllocErr> {
+        let mut new_inner_dependencies = note_selector_for_invalidation(
+            &s.clone(),
+            quirks_mode,
+            &mut self.invalidation_map,
+            &mut self.relative_selector_invalidation_map,
+            &mut self.additional_relative_selector_invalidation_map,
+            inner_scope_dependencies.as_ref(),
+            Some(scope_kind),
+        )?;
+        let mut _unused = false;
+        let mut visitor = StylistSelectorVisitor {
+            needs_revalidation: &mut _unused,
+            passed_rightmost_selector: true,
+            in_selector_list_of: SelectorListKind::default(),
+            mapped_ids: &mut self.mapped_ids,
+            nth_of_mapped_ids: &mut self.nth_of_mapped_ids,
+            attribute_dependencies: &mut self.attribute_dependencies,
+            nth_of_class_dependencies: &mut self.nth_of_class_dependencies,
+            nth_of_attribute_dependencies: &mut self
+                .nth_of_attribute_dependencies,
+            nth_of_custom_state_dependencies: &mut self
+                .nth_of_custom_state_dependencies,
+            state_dependencies: &mut self.state_dependencies,
+            nth_of_state_dependencies: &mut self.nth_of_state_dependencies,
+            document_state_dependencies: &mut self.document_state_dependencies,
+        };
+        s.visit(&mut visitor);
+        new_inner_dependencies.as_mut().map(|dep| {
+            dependency_vector.append(dep);
+        });
+        Ok(())
+    }
+
     fn add_styles(
         &mut self,
         selectors: &SelectorList<SelectorImpl>,
@@ -3491,6 +3534,7 @@ impl CascadeData {
                     &mut self.relative_selector_invalidation_map,
                     &mut self.additional_relative_selector_invalidation_map,
                     None,
+                    None,
                 )?;
                 let mut needs_revalidation = false;
                 let mut visitor = StylistSelectorVisitor {
@@ -3525,7 +3569,7 @@ impl CascadeData {
                         .map(|dep_vec| ThinArc::from_header_and_iter((), dep_vec.into_iter()));
 
                 while scope_idx != ScopeConditionId::none() {
-                    let cur_scope = &self.scope_conditions[scope_idx.0 as usize];
+                    let cur_scope = self.scope_conditions[scope_idx.0 as usize].clone();
 
                     if let Some(cond) = cur_scope.condition.as_ref() {
                         let mut dependency_vector: Vec<Dependency> = Vec::new();
@@ -3541,39 +3585,27 @@ impl CascadeData {
                             ));
                         }
 
-                        for s in cond.iter_selectors() {
-                            let mut new_inner_dependencies = note_selector_for_invalidation(
-                                &s.clone(),
+                        for s in cond.start_selectors() {
+                            self.note_scope_selector_for_invalidation(
                                 quirks_mode,
-                                &mut self.invalidation_map,
-                                &mut self.relative_selector_invalidation_map,
-                                &mut self.additional_relative_selector_invalidation_map,
-                                inner_scope_dependencies.as_ref(),
+                                &inner_scope_dependencies,
+                                &mut dependency_vector,
+                                s,
+                                ScopeDependencyInvalidationKind::ExplicitScope,
                             )?;
-
-                            let mut _unused = false;
-                            let mut visitor = StylistSelectorVisitor {
-                                needs_revalidation: &mut _unused,
-                                passed_rightmost_selector: true,
-                                in_selector_list_of: SelectorListKind::default(),
-                                mapped_ids: &mut self.mapped_ids,
-                                nth_of_mapped_ids: &mut self.nth_of_mapped_ids,
-                                attribute_dependencies: &mut self.attribute_dependencies,
-                                nth_of_class_dependencies: &mut self.nth_of_class_dependencies,
-                                nth_of_attribute_dependencies: &mut self
-                                    .nth_of_attribute_dependencies,
-                                nth_of_custom_state_dependencies: &mut self
-                                    .nth_of_custom_state_dependencies,
-                                state_dependencies: &mut self.state_dependencies,
-                                nth_of_state_dependencies: &mut self.nth_of_state_dependencies,
-                                document_state_dependencies: &mut self.document_state_dependencies,
-                            };
-                            s.visit(&mut visitor);
-
-                            new_inner_dependencies.as_mut().map(|dep| {
-                                dependency_vector.append(dep);
-                            });
                         }
+
+                        // End-Scope selectors require special handling
+                        for s in cond.end_selectors() {
+                            self.note_scope_selector_for_invalidation(
+                                quirks_mode,
+                                &inner_scope_dependencies,
+                                &mut dependency_vector,
+                                s,
+                                ScopeDependencyInvalidationKind::ScopeEnd,
+                            )?;
+                        }
+
                         inner_scope_dependencies = Some(ThinArc::from_header_and_iter(
                             (),
                             dependency_vector.into_iter(),

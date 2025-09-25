@@ -36,6 +36,9 @@ macro_rules! pref {
     ("layout.css.marker.restricted") => {
         true
     };
+    ("layout.css.webkit-fill-available.enabled") => {
+        true
+    };
     ($string:literal) => {
         false
     };

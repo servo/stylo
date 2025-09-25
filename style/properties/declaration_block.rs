@@ -118,7 +118,6 @@ impl Importance {
 /// While `TypedValue` is property-agnostic, this enum represents the outcome
 /// of reifying a specific property inside a `PropertyDeclarationBlock`.
 #[derive(Clone, Debug)]
-#[repr(C)]
 pub enum PropertyTypedValue {
     /// The property is not present in the declaration block.
     None,

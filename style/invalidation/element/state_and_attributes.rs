@@ -11,7 +11,7 @@ use crate::dom::{TElement, TNode};
 use crate::invalidation::element::element_wrapper::{ElementSnapshot, ElementWrapper};
 use crate::invalidation::element::invalidation_map::*;
 use crate::invalidation::element::invalidator::{
-    DescendantInvalidationLists, InvalidationVector, SiblingTraversalMap,
+    note_scope_dependency_force_at_subject, DescendantInvalidationLists, InvalidationAddOverride, InvalidationVector, SiblingTraversalMap
 };
 use crate::invalidation::element::invalidator::{Invalidation, InvalidationProcessor};
 use crate::invalidation::element::restyle_hints::RestyleHint;
@@ -575,9 +575,24 @@ where
             return;
         }
 
-        if matches!(invalidation_kind, DependencyInvalidationKind::Scope(_)){
+        if let DependencyInvalidationKind::Scope(scope_kind) = invalidation_kind {
             if dependency.selector_offset == 0 {
-                if let Some(ref next) = dependency.next{
+                if scope_kind == ScopeDependencyInvalidationKind::ScopeEnd {
+                    let invalidations = note_scope_dependency_force_at_subject(
+                        dependency,
+                        self.matching_context.current_host.clone(),
+                    );
+                    for (invalidation, override_type) in invalidations {
+                        match override_type {
+                            InvalidationAddOverride::Descendant
+                                => self.descendant_invalidations.dom_descendants.push(invalidation),
+                            InvalidationAddOverride::Sibling
+                                => self.sibling_invalidations.push(invalidation),
+                        }
+                    }
+                    self.invalidates_self = true;
+
+                } else if let Some(ref next) = dependency.next{
                     for dep in next.as_ref().slice(){
                         self.scan_dependency(dep, true);
                     }

@@ -9,7 +9,7 @@ use crate::context::StackLimitChecker;
 use crate::dom::{TElement, TNode, TShadowRoot};
 use crate::invalidation::element::invalidation_map::{
     Dependency, DependencyInvalidationKind, NormalDependencyInvalidationKind,
-    RelativeDependencyInvalidationKind,
+    RelativeDependencyInvalidationKind, ScopeDependencyInvalidationKind,
 };
 use selectors::matching::matches_compound_selector_from;
 use selectors::matching::{CompoundSelectorMatchingResult, MatchingContext};
@@ -240,6 +240,14 @@ enum InvalidationKind {
     Sibling,
 }
 
+/// The kind of traversal an invalidation requires.
+pub enum InvalidationAddOverride{
+    /// This invalidation should be added to descendant invalidation
+    Descendant,
+    /// This invalidation should be added to sibling invalidations
+    Sibling,
+}
+
 /// An `Invalidation` is a complex selector that describes which elements,
 /// relative to a current element we are processing, must be restyled.
 #[derive(Clone)]
@@ -288,6 +296,33 @@ impl<'a> Invalidation<'a> {
             scope,
             // + 1 to go past the combinator.
             offset: dependency.selector.len() + 1 - dependency.selector_offset,
+            matched_by_any_previous: false,
+        }
+    }
+
+    /// Create a new invalidation for matching a dependency from the selector's subject.
+    /// Using this should be avoided whenever possible as it overinvalidates.
+    /// Only use it when it's not possible to match the selector in order due to
+    /// invalidations that don't necessarily start at the pointed compound, such as
+    /// what happens in note_scope_dependency_force_at_subject.
+    pub fn new_subject_invalidation(
+        dependency: &'a Dependency,
+        host: Option<OpaqueElement>,
+        scope: Option<OpaqueElement>
+    ) -> Self {
+        let mut compound_offset = 0;
+        for s in dependency.selector.iter_raw_match_order(){
+            if s.is_combinator() {
+                break;
+            }
+            compound_offset += 1;
+        }
+
+        Self {
+            dependency,
+            host,
+            scope,
+            offset: dependency.selector.len() - compound_offset,
             matched_by_any_previous: false,
         }
     }
@@ -880,6 +915,8 @@ where
     fn handle_fully_matched(
         &mut self,
         invalidation: &Invalidation<'b>,
+        descendant_invalidations: &mut DescendantInvalidationLists<'b>,
+        sibling_invalidations: &mut InvalidationVector<'b>,
     ) -> (ProcessInvalidationResult, SmallVec<[Invalidation<'b>; 1]>){
         debug!(" > Invalidation matched completely");
         // We matched completely. If we're an inner selector now we need
@@ -895,6 +932,23 @@ where
             let mut next_dependencies: SmallVec<[&Dependency; 1]> = SmallVec::new();
 
             while let Some(dependency) = to_process.pop() {
+                if dependency.invalidation_kind() ==
+                    DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ScopeEnd)
+                {
+                    let invalidations = note_scope_dependency_force_at_subject(
+                        dependency,
+                        invalidation.host,
+                    );
+                    for (invalidation, override_type) in invalidations{
+                        match override_type {
+                            InvalidationAddOverride::Descendant
+                                => descendant_invalidations.dom_descendants.push(invalidation),
+                            InvalidationAddOverride::Sibling
+                                => sibling_invalidations.push(invalidation),
+                        }
+                    }
+                    continue;
+                }
                 match dependency.next {
                     None => {
                         result.invalidated_self = true;
@@ -942,7 +996,7 @@ where
                 }
 
                 let invalidation_kind = cur_dependency.invalidation_kind();
-                if  matches!(invalidation_kind,
+                if matches!(invalidation_kind,
                     DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element))
                     || (
                     matches!(invalidation_kind,
@@ -1005,7 +1059,7 @@ where
                 }
             },
             CompoundSelectorMatchingResult::FullyMatched => {
-                self.handle_fully_matched(invalidation)
+                self.handle_fully_matched(invalidation, descendant_invalidations, sibling_invalidations)
             },
             CompoundSelectorMatchingResult::Matched {
                 next_combinator_offset,
@@ -1166,4 +1220,46 @@ where
             matched: true,
         }
     }
+}
+
+/// Note the child dependencies of a scope end selector
+/// This is necessary because the scope end selector is not bound to :scope
+///
+/// e.g @scope to (.b) {:scope .a .c {...}}
+/// in the case of the following:
+/// <div class=a><div id=x class=b><div class=c></div></div></div>
+///
+/// If we toggle class "b" in x, we would have to go up to find .a
+/// if we wanted to invalidate correctly. However, this is costly.
+/// Instead we just invalidate to the subject of the selector .c
+pub fn note_scope_dependency_force_at_subject<'selectors>(
+    dependency: &'selectors Dependency,
+    current_host: Option<OpaqueElement>,
+) -> Vec<(Invalidation<'selectors>, InvalidationAddOverride)> {
+    let mut invalidations_and_override_types: Vec<(Invalidation, InvalidationAddOverride)> = Vec::new();
+    if let Some(next) = dependency.next.as_ref() {
+        for dep in next.slice() {
+            if dep.selector_offset == 0 { continue; }
+
+            let invalidation =
+                Invalidation::new_subject_invalidation(dep, current_host, None);
+
+            let combinator = dep.selector.combinator_at_match_order(dep.selector_offset - 1);
+
+            let invalidation_override = match combinator.is_sibling() {
+                true => InvalidationAddOverride::Sibling,
+                false => InvalidationAddOverride::Descendant,
+            };
+
+            invalidations_and_override_types.push((invalidation, invalidation_override));
+            invalidations_and_override_types
+            .extend(
+                note_scope_dependency_force_at_subject(
+                    dep,
+                    current_host,
+                )
+            );
+        }
+    }
+    invalidations_and_override_types
 }

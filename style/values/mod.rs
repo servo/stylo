@@ -227,7 +227,7 @@ where
 
 /// A generic CSS `<ident>` stored as an `Atom`, for the default atom set.
 #[cfg(feature = "servo")]
-pub type AtomIdent = GenericAtomIdent<stylo_atoms::AtomStaticSet>;
+pub type AtomIdent = GenericAtomIdent<web_atoms::StyleAtomStaticSet>;
 
 #[cfg(feature = "servo")]
 impl<Set: string_cache::StaticAtomSet> style_traits::SpecifiedValueInfo for GenericAtomIdent<Set> {}

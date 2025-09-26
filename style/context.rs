@@ -25,6 +25,8 @@ use crate::stylist::Stylist;
 use crate::thread_state::{self, ThreadState};
 use crate::traversal::DomTraversal;
 use crate::traversal_flags::TraversalFlags;
+#[cfg(feature = "servo")]
+use crate::Atom;
 use app_units::Au;
 use euclid::default::Size2D;
 use euclid::Scale;
@@ -40,8 +42,6 @@ use style_traits::CSSPixel;
 use style_traits::DevicePixel;
 #[cfg(feature = "servo")]
 use style_traits::SpeculativePainter;
-#[cfg(feature = "servo")]
-use stylo_atoms::Atom;
 
 pub use selectors::matching::QuirksMode;
 

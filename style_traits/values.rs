@@ -7,8 +7,6 @@
 use app_units::Au;
 use cssparser::ToCss as CssparserToCss;
 use cssparser::{serialize_string, ParseError, Parser, Token, UnicodeRange};
-#[cfg(feature = "gecko")]
-use nsstring::nsCString;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
 
@@ -96,13 +94,12 @@ pub trait ToCss {
         s
     }
 
-    /// Serialize `self` in CSS syntax and return a nsCString.
+    /// Serialize `self` in CSS syntax and return a CssString.
     ///
     /// (This is a convenience wrapper for `to_css` and probably should not be overridden.)
     #[inline]
-    #[cfg(feature = "gecko")]
-    fn to_css_nscstring(&self) -> nsCString {
-        let mut s = nsCString::new();
+    fn to_css_cssstring(&self) -> CssString {
+        let mut s = CssString::new();
         self.to_css(&mut CssWriter::new(&mut s)).unwrap();
         s
     }
@@ -235,7 +232,10 @@ where
 pub type CssStringWriter = ::nsstring::nsACString;
 
 /// String type that coerces to CssStringWriter, used when serialization code
-/// needs to allocate a temporary string.
+/// needs to allocate a temporary string. In Gecko, this is backed by
+/// nsCString, which allows the result to be passed directly to C++ without
+/// conversion or copying. This makes it suitable not only for temporary
+/// serialization but also for values that need to cross the Rust/C++ boundary.
 #[cfg(feature = "gecko")]
 pub type CssString = ::nsstring::nsCString;
 

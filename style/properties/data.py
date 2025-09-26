@@ -1071,16 +1071,13 @@ class PropertyRestrictions:
 
         return props
 
-    # https://drafts.csswg.org/css-lists-3/#marker-properties
+    # https://drafts.csswg.org/css-pseudo/#marker-pseudo
     @staticmethod
     def marker(data):
         return set(
             [
                 "color",
                 "text-combine-upright",
-                "text-emphasis-color",
-                "text-emphasis-position",
-                "text-emphasis-style",
                 "text-transform",
                 "unicode-bidi",
                 "direction",

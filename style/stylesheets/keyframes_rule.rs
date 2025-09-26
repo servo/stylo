@@ -16,7 +16,6 @@ use crate::properties::{
 };
 use crate::shared_lock::{DeepCloneWithLock, SharedRwLock, SharedRwLockReadGuard};
 use crate::shared_lock::{Locked, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::stylesheets::rule_parser::VendorPrefix;
 use crate::stylesheets::{CssRuleType, StylesheetContents};
 use crate::values::{serialize_percentage, KeyframesName};
@@ -27,7 +26,9 @@ use cssparser::{
 use servo_arc::Arc;
 use std::borrow::Cow;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError, ParsingMode, StyleParseErrorKind, ToCss};
+use style_traits::{
+    CssStringWriter, CssWriter, ParseError, ParsingMode, StyleParseErrorKind, ToCss,
+};
 
 /// A [`@keyframes`][keyframes] rule.
 ///

@@ -14,7 +14,6 @@ use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
 use crate::simple_buckets_map::SimpleBucketsMap;
-use crate::str::CssStringWriter;
 use crate::stylesheets::CssRules;
 use cssparser::{Parser, SourceLocation, ToCss};
 #[cfg(feature = "gecko")]
@@ -27,7 +26,7 @@ use selectors::parser::{Component, ParseRelative, Selector, SelectorList};
 use selectors::OpaqueElement;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError};
+use style_traits::{CssStringWriter, CssWriter, ParseError};
 
 /// A scoped rule.
 #[derive(Debug, ToShmem)]

@@ -9,10 +9,10 @@ use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
-use crate::str::CssStringWriter;
 use cssparser::SourceLocation;
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
 use servo_arc::Arc;
+use style_traits::CssStringWriter;
 
 /// A nested declarations rule.
 #[derive(Clone, Debug, ToShmem)]

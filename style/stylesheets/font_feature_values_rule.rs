@@ -13,7 +13,6 @@ use crate::gecko_bindings::bindings::Gecko_AppendFeatureValueHashEntry;
 use crate::gecko_bindings::structs::{self, gfxFontFeatureValueSet};
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::stylesheets::CssRuleType;
 use crate::values::computed::font::FamilyName;
 use crate::values::serialize_atom_identifier;
@@ -23,7 +22,7 @@ use cssparser::{
     QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourceLocation, Token,
 };
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::{CssStringWriter, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 #[cfg(feature = "gecko")]
 use thin_vec::ThinVec;
 

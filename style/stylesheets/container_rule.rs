@@ -17,7 +17,6 @@ use crate::queries::{FeatureType, QueryCondition};
 use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
-use crate::str::CssStringWriter;
 use crate::stylesheets::CssRules;
 use crate::stylist::Stylist;
 use crate::values::computed::{CSSPixelLength, ContainerType, Context, Ratio};
@@ -30,7 +29,7 @@ use malloc_size_of::{MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
 use selectors::kleene_value::KleeneValue;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError, ToCss};
+use style_traits::{CssStringWriter, CssWriter, ParseError, ToCss};
 
 /// A container rule.
 #[derive(Debug, ToShmem)]

@@ -10,7 +10,6 @@ use crate::properties::{PropertyDeclaration, PropertyId, SourcePropertyDeclarati
 use crate::selector_parser::{SelectorImpl, SelectorParser};
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::stylesheets::{CssRuleType, CssRules};
 use cssparser::parse_important;
 use cssparser::{Delimiter, Parser, SourceLocation, Token};
@@ -21,7 +20,7 @@ use selectors::parser::{Selector, SelectorParseErrorKind};
 use servo_arc::Arc;
 use std::fmt::{self, Write};
 use std::str;
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::{CssStringWriter, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 
 /// An [`@supports`][supports] rule.
 ///

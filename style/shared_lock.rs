@@ -4,7 +4,6 @@
 
 //! Different objects protected by the same lock
 
-use crate::str::{CssString, CssStringWriter};
 use crate::stylesheets::Origin;
 #[cfg(feature = "gecko")]
 use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
@@ -17,6 +16,7 @@ use std::fmt;
 use std::mem;
 #[cfg(feature = "gecko")]
 use std::ptr;
+use style_traits::{CssString, CssStringWriter};
 use to_shmem::{SharedMemoryBuilder, ToShmem};
 
 /// A shared read/write lock that can protect multiple objects.

@@ -9,7 +9,6 @@
 use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::values::specified::Integer;
 use crate::values::{AtomString, CustomIdent};
 use crate::Atom;
@@ -22,8 +21,8 @@ use std::fmt::{self, Write};
 use std::mem;
 use std::num::Wrapping;
 use style_traits::{
-    Comma, CssWriter, KeywordsCollectFn, OneOrMoreSeparated, ParseError, SpecifiedValueInfo,
-    StyleParseErrorKind, ToCss,
+    Comma, CssStringWriter, CssWriter, KeywordsCollectFn, OneOrMoreSeparated, ParseError,
+    SpecifiedValueInfo, StyleParseErrorKind, ToCss,
 };
 
 /// https://drafts.csswg.org/css-counter-styles/#typedef-symbols-type

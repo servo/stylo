@@ -39,7 +39,6 @@ use crate::parser::{NestingContext, ParserContext};
 use crate::properties::{parse_property_declaration_list, PropertyDeclarationBlock};
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use cssparser::{parse_one_rule, Parser, ParserInput};
 #[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
@@ -48,7 +47,7 @@ use std::borrow::Cow;
 use std::fmt::{self, Write};
 #[cfg(feature = "gecko")]
 use std::mem::{self, ManuallyDrop};
-use style_traits::ParsingMode;
+use style_traits::{CssStringWriter, ParsingMode};
 use to_shmem::{SharedMemoryBuilder, ToShmem};
 
 pub use self::container_rule::ContainerRule;

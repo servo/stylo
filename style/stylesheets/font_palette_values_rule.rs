@@ -17,7 +17,6 @@ use crate::gecko_bindings::{
 };
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::stylesheets::font_feature_values_rule::parse_family_name_list;
 use crate::values::computed::font::FamilyName;
 use crate::values::specified::Color as SpecifiedColor;
@@ -30,7 +29,7 @@ use cssparser::{
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Write};
 use style_traits::{Comma, OneOrMoreSeparated};
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::{CssStringWriter, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 
 #[allow(missing_docs)]
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]

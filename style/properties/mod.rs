@@ -24,7 +24,6 @@ use crate::custom_properties::{self, ComputedCustomProperties};
 use crate::gecko_bindings::structs::{nsCSSPropertyID, AnimatedPropertyID, RefPtr};
 use crate::logical_geometry::WritingMode;
 use crate::parser::ParserContext;
-use crate::str::CssString;
 use crate::stylesheets::CssRuleType;
 use crate::stylesheets::Origin;
 use crate::stylist::Stylist;
@@ -39,7 +38,7 @@ use std::{
     mem,
 };
 use style_traits::{
-    CssWriter, KeywordsCollectFn, ParseError, ParsingMode, SpecifiedValueInfo, ToCss,
+    CssString, CssWriter, KeywordsCollectFn, ParseError, ParsingMode, SpecifiedValueInfo, ToCss,
 };
 
 bitflags! {

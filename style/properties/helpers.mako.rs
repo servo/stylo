@@ -804,7 +804,7 @@
         }
 
         /// Try to serialize a given shorthand to a string.
-        pub fn to_css(declarations: &[&PropertyDeclaration], dest: &mut crate::str::CssStringWriter) -> fmt::Result {
+        pub fn to_css(declarations: &[&PropertyDeclaration], dest: &mut style_traits::CssStringWriter) -> fmt::Result {
             match LonghandsToSerialize::from_iter(declarations.iter().cloned()) {
                 Ok(longhands) => longhands.to_css(&mut CssWriter::new(dest)),
                 Err(_) => Ok(())

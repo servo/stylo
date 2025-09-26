@@ -9,12 +9,12 @@
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use cssparser::SourceLocation;
 #[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
 use servo_arc::Arc;
 use std::fmt::{self, Write};
+use style_traits::CssStringWriter;
 
 macro_rules! margin_rule_types {
     ($($(#[$($meta:tt)+])* $id:ident => $val:literal,)+) => {

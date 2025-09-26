@@ -10,7 +10,6 @@ use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::longhands::font_language_override;
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::values::computed::font::{FamilyName, FontStretch};
 use crate::values::generics::font::FontStyle as GenericFontStyle;
 use crate::values::specified::font::{
@@ -26,7 +25,7 @@ use cssparser::{
 };
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError};
+use style_traits::{CssStringWriter, CssWriter, ParseError};
 use style_traits::{StyleParseErrorKind, ToCss};
 
 /// A source for a font-face rule.

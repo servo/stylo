@@ -5,11 +5,10 @@
 //! The `@namespace` at-rule.
 
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::{Namespace, Prefix};
 use cssparser::SourceLocation;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssStringWriter, CssWriter, ToCss};
 
 /// A `@namespace` rule.
 #[derive(Clone, Debug, PartialEq, ToShmem)]

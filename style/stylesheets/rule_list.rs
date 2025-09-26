@@ -6,7 +6,6 @@
 
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::stylesheets::loader::StylesheetLoader;
 use crate::stylesheets::rule_parser::InsertRuleContext;
 use crate::stylesheets::stylesheet::StylesheetContents;
@@ -15,6 +14,7 @@ use crate::stylesheets::{AllowImportRules, CssRule, CssRuleTypes, RulesMutateErr
 use malloc_size_of::{MallocShallowSizeOf, MallocSizeOfOps};
 use servo_arc::Arc;
 use std::fmt::{self, Write};
+use style_traits::CssStringWriter;
 
 use super::CssRuleType;
 

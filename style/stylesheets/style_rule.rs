@@ -9,7 +9,6 @@ use crate::selector_parser::SelectorImpl;
 use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
-use crate::str::CssStringWriter;
 use crate::stylesheets::{style_or_page_rule_to_css, CssRules};
 use cssparser::SourceLocation;
 #[cfg(feature = "gecko")]
@@ -19,6 +18,7 @@ use malloc_size_of::{
 use selectors::SelectorList;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
+use style_traits::CssStringWriter;
 
 /// A style rule, with selectors and declarations.
 #[derive(Debug, ToShmem)]

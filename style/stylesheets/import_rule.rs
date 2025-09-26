@@ -9,7 +9,6 @@
 use crate::media_queries::MediaList;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{DeepCloneWithLock, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
-use crate::str::CssStringWriter;
 use crate::stylesheets::{
     layer_rule::LayerName, supports_rule::SupportsCondition, CssRule, CssRuleType,
     StylesheetInDocument,
@@ -17,7 +16,7 @@ use crate::stylesheets::{
 use crate::values::CssUrl;
 use cssparser::{Parser, SourceLocation};
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssStringWriter, CssWriter, ToCss};
 use to_shmem::{SharedMemoryBuilder, ToShmem};
 
 /// A sheet that is held from an import rule.

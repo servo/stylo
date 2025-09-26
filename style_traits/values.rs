@@ -227,6 +227,26 @@ where
     }
 }
 
+/// To avoid accidentally instantiating multiple monomorphizations of large
+/// serialization routines, we define explicit concrete types and require
+/// them in those routines. This avoids accidental mixing of String and
+/// nsACString arguments in Gecko, which would cause code size to blow up.
+#[cfg(feature = "gecko")]
+pub type CssStringWriter = ::nsstring::nsACString;
+
+/// String type that coerces to CssStringWriter, used when serialization code
+/// needs to allocate a temporary string.
+#[cfg(feature = "gecko")]
+pub type CssString = ::nsstring::nsCString;
+
+/// String. The comments for the Gecko types explain the need for this abstraction.
+#[cfg(feature = "servo")]
+pub type CssStringWriter = String;
+
+/// String. The comments for the Gecko types explain the need for this abstraction.
+#[cfg(feature = "servo")]
+pub type CssString = String;
+
 /// Convenience wrapper to serialise CSS values separated by a given string.
 pub struct SequenceWriter<'a, 'b: 'a, W: 'b> {
     inner: &'a mut CssWriter<'b, W>,

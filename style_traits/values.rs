@@ -602,9 +602,12 @@ pub mod specified {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub enum TypedValue {
-    /// Temporary marker to satisfy `#[repr(C)]`. This will be replaced by
-    /// concrete value kinds as Typed OM reification support expands.
-    Placeholder,
+    /// A keyword value (e.g. `"block"`, `"none"`, `"thin"`).
+    ///
+    /// Keywords are stored as a `CssString` so they can be represented and
+    /// transferred independently of any specific property. This corresponds
+    /// to `CSSKeywordValue` in the Typed OM specification.
+    Keyword(CssString),
 }
 
 /// Reifies a value into its Typed OM representation.
@@ -614,13 +617,17 @@ pub enum TypedValue {
 /// exposed to the DOM as `CSSStyleValue` subclasses.
 ///
 /// This trait is derivable with `#[derive(ToTyped)]`. The derived
-/// implementation currently does not attempt to reify anything by default; it
-/// simply provides the trait with its default method, which always returns
-/// `None`. This acts as a marker that reification is not yet supported for the
-/// given value.
+/// implementation behaves as follows:
 ///
-/// Over time, the derive may be extended to cover common patterns, similar to
-/// `ToCss`
+/// * For enums whose variants are all unit variants (representing keywords),
+///   it automatically reifies the value as [`TypedValue::Keyword`], using the
+///   same serialization logic as [`ToCss`].
+/// * For all other cases, the derived implementation does not attempt to reify
+///   anything and falls back to the default method (which always returns
+///   `None`).
+///
+/// Over time, the derive may be extended to cover additional common patterns,
+/// similar to how `ToCss` supports multiple attribute annotations.
 pub trait ToTyped {
     /// Attempt to convert `self` into a [`TypedValue`].
     ///

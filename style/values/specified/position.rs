@@ -563,7 +563,7 @@ impl Parse for PositionTryFallbacksTryTactic {
         _context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        let first = input.try_parse(PositionTryFallbacksTryTacticKeyword::parse)?;
+        let first = PositionTryFallbacksTryTacticKeyword::parse(input)?;
         let second = input
             .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
             .unwrap_or_default();

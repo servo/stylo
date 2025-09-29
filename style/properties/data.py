@@ -1084,6 +1084,7 @@ class PropertyRestrictions:
                 "text-emphasis-color",
                 "text-emphasis-position",
                 "text-emphasis-style",
+                "text-orientation",
                 "text-shadow",
                 "text-transform",
                 "unicode-bidi",

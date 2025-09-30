@@ -135,21 +135,6 @@ ${helpers.single_keyword(
     affects="layout",
 )}
 
-% for direction in ["inline", "block"]:
-    ${helpers.predefined_type(
-        "overflow-clip-box-" + direction,
-        "OverflowClipBox",
-        "computed::OverflowClipBox::PaddingBox",
-        engines="gecko",
-        enabled_in="chrome",
-        gecko_pref="layout.css.overflow-clip-box.enabled",
-        animation_type="discrete",
-        spec="Internal, may be standardized in the future: \
-              https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-clip-box",
-        affects="layout",
-    )}
-% endfor
-
 % for (axis, logical) in ALL_AXES:
     <% full_name = "overflow-{}".format(axis) %>
     ${helpers.predefined_type(

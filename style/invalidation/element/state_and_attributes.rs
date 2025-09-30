@@ -11,7 +11,8 @@ use crate::dom::{TElement, TNode};
 use crate::invalidation::element::element_wrapper::{ElementSnapshot, ElementWrapper};
 use crate::invalidation::element::invalidation_map::*;
 use crate::invalidation::element::invalidator::{
-    note_scope_dependency_force_at_subject, DescendantInvalidationLists, InvalidationAddOverride, InvalidationVector, SiblingTraversalMap
+    note_scope_dependency_force_at_subject, DescendantInvalidationLists, InvalidationAddOverride,
+    InvalidationVector, SiblingTraversalMap,
 };
 use crate::invalidation::element::invalidator::{Invalidation, InvalidationProcessor};
 use crate::invalidation::element::restyle_hints::RestyleHint;
@@ -105,8 +106,7 @@ where
     W: selectors::Element<Impl = E::Impl>,
 {
     context.for_invalidation_comparison(|context| {
-        context.nest_for_scope_condition(scope, |context|{
-
+        context.nest_for_scope_condition(scope, |context| {
             let matches_now = matches_selector_kleene(
                 &dependency.selector,
                 dependency.selector_offset,
@@ -230,12 +230,23 @@ where
         true
     }
 
-    fn check_outer_dependency(&mut self, dependency: &Dependency, element: E, scope: Option<OpaqueElement>) -> bool {
+    fn check_outer_dependency(
+        &mut self,
+        dependency: &Dependency,
+        element: E,
+        scope: Option<OpaqueElement>,
+    ) -> bool {
         // We cannot assert about `element` having a snapshot here (in fact it
         // most likely won't), because it may be an arbitrary descendant or
         // later-sibling of the element we started invalidating with.
         let wrapper = ElementWrapper::new(element, &*self.shared_context.snapshot_map);
-        check_dependency(dependency, &element, &wrapper, &mut self.matching_context, scope)
+        check_dependency(
+            dependency,
+            &element,
+            &wrapper,
+            &mut self.matching_context,
+            scope,
+        )
     }
 
     fn matching_context(&mut self) -> &mut MatchingContext<'a, E::Impl> {
@@ -552,7 +563,8 @@ where
             return;
         }
 
-        if self.check_dependency(dependency, set_scope) || matches!(
+        if self.check_dependency(dependency, set_scope)
+            || matches!(
                 dependency.invalidation_kind(),
                 DependencyInvalidationKind::Scope(_)
             )
@@ -564,7 +576,10 @@ where
     fn note_dependency(&mut self, dependency: &'selectors Dependency) {
         debug_assert!(self.dependency_may_be_relevant(dependency));
         let invalidation_kind = dependency.invalidation_kind();
-        if matches!(invalidation_kind, DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element)) {
+        if matches!(
+            invalidation_kind,
+            DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element)
+        ) {
             if let Some(ref next) = dependency.next {
                 // We know something changed in the inner selector, go outwards
                 // now.
@@ -584,28 +599,37 @@ where
                     );
                     for (invalidation, override_type) in invalidations {
                         match override_type {
-                            InvalidationAddOverride::Descendant
-                                => self.descendant_invalidations.dom_descendants.push(invalidation),
-                            InvalidationAddOverride::Sibling
-                                => self.sibling_invalidations.push(invalidation),
+                            InvalidationAddOverride::Descendant => self
+                                .descendant_invalidations
+                                .dom_descendants
+                                .push(invalidation),
+                            InvalidationAddOverride::Sibling => {
+                                self.sibling_invalidations.push(invalidation)
+                            },
                         }
                     }
                     self.invalidates_self = true;
-
-                } else if let Some(ref next) = dependency.next{
-                    for dep in next.as_ref().slice(){
+                } else if let Some(ref next) = dependency.next {
+                    for dep in next.as_ref().slice() {
                         self.scan_dependency(dep, true);
                     }
                 }
             } else {
-                let invalidation =
-                    Invalidation::new(&dependency, self.matching_context.current_host.clone(), None);
+                let invalidation = Invalidation::new(
+                    &dependency,
+                    self.matching_context.current_host.clone(),
+                    None,
+                );
 
-                let combinator = dependency.selector.combinator_at_match_order(dependency.selector_offset - 1);
+                let combinator = dependency
+                    .selector
+                    .combinator_at_match_order(dependency.selector_offset - 1);
                 if combinator.is_sibling() {
                     self.sibling_invalidations.push(invalidation);
                 } else {
-                    self.descendant_invalidations.dom_descendants.push(invalidation);
+                    self.descendant_invalidations
+                        .dom_descendants
+                        .push(invalidation);
                 }
             }
             return;
@@ -614,8 +638,11 @@ where
         debug_assert_ne!(dependency.selector_offset, 0);
         debug_assert_ne!(dependency.selector_offset, dependency.selector.len());
 
-        let invalidation =
-            Invalidation::new(&dependency, self.matching_context.current_host.clone(), self.matching_context.scope_element.clone());
+        let invalidation = Invalidation::new(
+            &dependency,
+            self.matching_context.current_host.clone(),
+            self.matching_context.scope_element.clone(),
+        );
 
         self.invalidates_self |= push_invalidation(
             invalidation,
@@ -629,20 +656,19 @@ where
     /// more elements than what we've already invalidated.
     fn dependency_may_be_relevant(&self, dependency: &Dependency) -> bool {
         match dependency.invalidation_kind() {
-            DependencyInvalidationKind::FullSelector |
-            DependencyInvalidationKind::Relative(_) => unreachable!(),
+            DependencyInvalidationKind::FullSelector | DependencyInvalidationKind::Relative(_) => {
+                unreachable!()
+            },
             DependencyInvalidationKind::Scope(_) => true,
-            DependencyInvalidationKind::Normal(kind) => {
-                match kind {
-                    NormalDependencyInvalidationKind::Element => !self.invalidates_self,
-                    NormalDependencyInvalidationKind::SlottedElements => {
-                        self.element.is_html_slot_element()
-                    },
-                    NormalDependencyInvalidationKind::Parts => self.element.shadow_root().is_some(),
-                    NormalDependencyInvalidationKind::ElementAndDescendants |
-                    NormalDependencyInvalidationKind::Siblings |
-                    NormalDependencyInvalidationKind::Descendants => true,
-                }
+            DependencyInvalidationKind::Normal(kind) => match kind {
+                NormalDependencyInvalidationKind::Element => !self.invalidates_self,
+                NormalDependencyInvalidationKind::SlottedElements => {
+                    self.element.is_html_slot_element()
+                },
+                NormalDependencyInvalidationKind::Parts => self.element.shadow_root().is_some(),
+                NormalDependencyInvalidationKind::ElementAndDescendants
+                | NormalDependencyInvalidationKind::Siblings
+                | NormalDependencyInvalidationKind::Descendants => true,
             },
         }
     }
@@ -661,33 +687,31 @@ pub(crate) fn push_invalidation<'a>(
             descendant_invalidations.dom_descendants.push(invalidation);
             true
         },
-        DependencyInvalidationKind::Normal(kind) => {
-            match kind {
-                NormalDependencyInvalidationKind::Element => unreachable!(),
-                NormalDependencyInvalidationKind::ElementAndDescendants => {
-                    descendant_invalidations.dom_descendants.push(invalidation);
-                    true
-                },
-                NormalDependencyInvalidationKind::Descendants => {
-                    descendant_invalidations.dom_descendants.push(invalidation);
-                    false
-                },
-                NormalDependencyInvalidationKind::Siblings => {
-                    sibling_invalidations.push(invalidation);
-                    false
-                },
-                NormalDependencyInvalidationKind::Parts => {
-                    descendant_invalidations.parts.push(invalidation);
-                    false
-                },
-                NormalDependencyInvalidationKind::SlottedElements => {
-                    descendant_invalidations
+        DependencyInvalidationKind::Normal(kind) => match kind {
+            NormalDependencyInvalidationKind::Element => unreachable!(),
+            NormalDependencyInvalidationKind::ElementAndDescendants => {
+                descendant_invalidations.dom_descendants.push(invalidation);
+                true
+            },
+            NormalDependencyInvalidationKind::Descendants => {
+                descendant_invalidations.dom_descendants.push(invalidation);
+                false
+            },
+            NormalDependencyInvalidationKind::Siblings => {
+                sibling_invalidations.push(invalidation);
+                false
+            },
+            NormalDependencyInvalidationKind::Parts => {
+                descendant_invalidations.parts.push(invalidation);
+                false
+            },
+            NormalDependencyInvalidationKind::SlottedElements => {
+                descendant_invalidations
                     .slotted_descendants
                     .push(invalidation);
                 false
-                },
-            }
-        }
+            },
+        },
     }
 }
 
@@ -700,15 +724,13 @@ pub(crate) fn dependency_may_be_relevant<E: TElement>(
         DependencyInvalidationKind::FullSelector => unreachable!(),
         DependencyInvalidationKind::Relative(_) => unreachable!(),
         DependencyInvalidationKind::Scope(_) => true,
-        DependencyInvalidationKind::Normal(kind) => {
-            match kind {
-                NormalDependencyInvalidationKind::Element => !already_invalidated_self,
-                NormalDependencyInvalidationKind::SlottedElements => element.is_html_slot_element(),
-                NormalDependencyInvalidationKind::Parts => element.shadow_root().is_some(),
-                NormalDependencyInvalidationKind::ElementAndDescendants |
-                NormalDependencyInvalidationKind::Siblings |
-                NormalDependencyInvalidationKind::Descendants => true,
-            }
+        DependencyInvalidationKind::Normal(kind) => match kind {
+            NormalDependencyInvalidationKind::Element => !already_invalidated_self,
+            NormalDependencyInvalidationKind::SlottedElements => element.is_html_slot_element(),
+            NormalDependencyInvalidationKind::Parts => element.shadow_root().is_some(),
+            NormalDependencyInvalidationKind::ElementAndDescendants
+            | NormalDependencyInvalidationKind::Siblings
+            | NormalDependencyInvalidationKind::Descendants => true,
         },
     }
 }

@@ -15,7 +15,7 @@ use selectors::matching::matches_compound_selector_from;
 use selectors::matching::{CompoundSelectorMatchingResult, MatchingContext};
 use selectors::parser::{Combinator, Component};
 use selectors::OpaqueElement;
-use smallvec::{SmallVec, smallvec};
+use smallvec::{smallvec, SmallVec};
 use std::fmt;
 use std::fmt::Write;
 
@@ -130,7 +130,12 @@ where
     ///
     /// Returning true unconditionally here is over-optimistic and may
     /// over-invalidate.
-    fn check_outer_dependency(&mut self, dependency: &Dependency, element: E, scope: Option<OpaqueElement>) -> bool;
+    fn check_outer_dependency(
+        &mut self,
+        dependency: &Dependency,
+        element: E,
+        scope: Option<OpaqueElement>,
+    ) -> bool;
 
     /// The matching context that should be used to process invalidations.
     fn matching_context(&mut self) -> &mut MatchingContext<'b, E::Impl>;
@@ -241,7 +246,7 @@ enum InvalidationKind {
 }
 
 /// The kind of traversal an invalidation requires.
-pub enum InvalidationAddOverride{
+pub enum InvalidationAddOverride {
     /// This invalidation should be added to descendant invalidation
     Descendant,
     /// This invalidation should be added to sibling invalidations
@@ -283,11 +288,17 @@ pub struct Invalidation<'a> {
 
 impl<'a> Invalidation<'a> {
     /// Create a new invalidation for matching a dependency.
-    pub fn new(dependency: &'a Dependency, host: Option<OpaqueElement>, scope: Option<OpaqueElement>) -> Self {
+    pub fn new(
+        dependency: &'a Dependency,
+        host: Option<OpaqueElement>,
+        scope: Option<OpaqueElement>,
+    ) -> Self {
         debug_assert!(
-            dependency.selector_offset == dependency.selector.len() + 1 ||
-                dependency.invalidation_kind() !=
-                    DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element),
+            dependency.selector_offset == dependency.selector.len() + 1
+                || dependency.invalidation_kind()
+                    != DependencyInvalidationKind::Normal(
+                        NormalDependencyInvalidationKind::Element
+                    ),
             "No point to this, if the dependency matched the element we should just invalidate it"
         );
         Self {
@@ -308,10 +319,10 @@ impl<'a> Invalidation<'a> {
     pub fn new_subject_invalidation(
         dependency: &'a Dependency,
         host: Option<OpaqueElement>,
-        scope: Option<OpaqueElement>
+        scope: Option<OpaqueElement>,
     ) -> Self {
         let mut compound_offset = 0;
-        for s in dependency.selector.iter_raw_match_order(){
+        for s in dependency.selector.iter_raw_match_order() {
             if s.is_combinator() {
                 break;
             }
@@ -917,7 +928,7 @@ where
         invalidation: &Invalidation<'b>,
         descendant_invalidations: &mut DescendantInvalidationLists<'b>,
         sibling_invalidations: &mut InvalidationVector<'b>,
-    ) -> (ProcessInvalidationResult, SmallVec<[Invalidation<'b>; 1]>){
+    ) -> (ProcessInvalidationResult, SmallVec<[Invalidation<'b>; 1]>) {
         debug!(" > Invalidation matched completely");
         // We matched completely. If we're an inner selector now we need
         // to go outside our selector and carry on invalidating.
@@ -932,19 +943,19 @@ where
             let mut next_dependencies: SmallVec<[&Dependency; 1]> = SmallVec::new();
 
             while let Some(dependency) = to_process.pop() {
-                if dependency.invalidation_kind() ==
-                    DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ScopeEnd)
+                if dependency.invalidation_kind()
+                    == DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ScopeEnd)
                 {
-                    let invalidations = note_scope_dependency_force_at_subject(
-                        dependency,
-                        invalidation.host,
-                    );
-                    for (invalidation, override_type) in invalidations{
+                    let invalidations =
+                        note_scope_dependency_force_at_subject(dependency, invalidation.host);
+                    for (invalidation, override_type) in invalidations {
                         match override_type {
-                            InvalidationAddOverride::Descendant
-                                => descendant_invalidations.dom_descendants.push(invalidation),
-                            InvalidationAddOverride::Sibling
-                                => sibling_invalidations.push(invalidation),
+                            InvalidationAddOverride::Descendant => {
+                                descendant_invalidations.dom_descendants.push(invalidation)
+                            },
+                            InvalidationAddOverride::Sibling => {
+                                sibling_invalidations.push(invalidation)
+                            },
                         }
                     }
                     continue;
@@ -955,8 +966,7 @@ where
                         result.matched = true;
                     },
                     Some(ref deps) => {
-                        for n in deps.as_ref().slice(){
-
+                        for n in deps.as_ref().slice() {
                             let invalidation_kind = n.invalidation_kind();
                             match invalidation_kind {
                                 DependencyInvalidationKind::FullSelector => unreachable!(),
@@ -979,30 +989,31 @@ where
                 };
             }
 
-
-            for cur_dependency in next_dependencies.as_ref(){
-                let scope = matches!(invalidation.dependency.invalidation_kind(), DependencyInvalidationKind::Scope(_)).then(|| self.element.opaque());
+            for cur_dependency in next_dependencies.as_ref() {
+                let scope = matches!(
+                    invalidation.dependency.invalidation_kind(),
+                    DependencyInvalidationKind::Scope(_)
+                )
+                .then(|| self.element.opaque());
                 debug!(" > Checking outer dependency {:?}", cur_dependency);
 
                 // The inner selector changed, now check if the full
                 // previous part of the selector did, before keeping
                 // checking for descendants.
                 if !self
-                .processor
-                .check_outer_dependency(cur_dependency, self.element, scope)
+                    .processor
+                    .check_outer_dependency(cur_dependency, self.element, scope)
                 {
                     // Dependency is not relevant, do not note it down
                     continue;
                 }
 
                 let invalidation_kind = cur_dependency.invalidation_kind();
-                if matches!(invalidation_kind,
-                    DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element))
-                    || (
-                    matches!(invalidation_kind,
-                        DependencyInvalidationKind::Scope(_))
-                        && cur_dependency.selector_offset == 0
-                    )
+                if matches!(
+                    invalidation_kind,
+                    DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element)
+                ) || (matches!(invalidation_kind, DependencyInvalidationKind::Scope(_))
+                    && cur_dependency.selector_offset == 0)
                 {
                     // Add to dependency stack to process its next dependencies.
                     to_process.push(cur_dependency);
@@ -1010,13 +1021,14 @@ where
                 }
 
                 debug!(" > Generating invalidation");
-                next_invalidations.push(Invalidation::new(cur_dependency, invalidation.host, scope));
+                next_invalidations.push(Invalidation::new(
+                    cur_dependency,
+                    invalidation.host,
+                    scope,
+                ));
             }
         }
-        return (
-            result,
-            next_invalidations
-        );
+        return (result, next_invalidations);
     }
 
     /// Processes a given invalidation, potentially invalidating the style of
@@ -1041,7 +1053,7 @@ where
             let context = self.processor.matching_context();
             context.current_host = invalidation.host;
 
-            context.nest_for_scope_condition(invalidation.scope,|ctx| {
+            context.nest_for_scope_condition(invalidation.scope, |ctx| {
                 matches_compound_selector_from(
                     &invalidation.dependency.selector,
                     invalidation.offset,
@@ -1058,9 +1070,11 @@ where
                     matched: false,
                 }
             },
-            CompoundSelectorMatchingResult::FullyMatched => {
-                self.handle_fully_matched(invalidation, descendant_invalidations, sibling_invalidations)
-            },
+            CompoundSelectorMatchingResult::FullyMatched => self.handle_fully_matched(
+                invalidation,
+                descendant_invalidations,
+                sibling_invalidations,
+            ),
             CompoundSelectorMatchingResult::Matched {
                 next_combinator_offset,
             } => (
@@ -1079,7 +1093,7 @@ where
         };
 
         let mut invalidated_self = result.invalidated_self;
-        for next_invalidation in next_invalidations{
+        for next_invalidation in next_invalidations {
             debug_assert_ne!(
                 next_invalidation.offset, 0,
                 "Rightmost selectors shouldn't generate more invalidations",
@@ -1236,15 +1250,19 @@ pub fn note_scope_dependency_force_at_subject<'selectors>(
     dependency: &'selectors Dependency,
     current_host: Option<OpaqueElement>,
 ) -> Vec<(Invalidation<'selectors>, InvalidationAddOverride)> {
-    let mut invalidations_and_override_types: Vec<(Invalidation, InvalidationAddOverride)> = Vec::new();
+    let mut invalidations_and_override_types: Vec<(Invalidation, InvalidationAddOverride)> =
+        Vec::new();
     if let Some(next) = dependency.next.as_ref() {
         for dep in next.slice() {
-            if dep.selector_offset == 0 { continue; }
+            if dep.selector_offset == 0 {
+                continue;
+            }
 
-            let invalidation =
-                Invalidation::new_subject_invalidation(dep, current_host, None);
+            let invalidation = Invalidation::new_subject_invalidation(dep, current_host, None);
 
-            let combinator = dep.selector.combinator_at_match_order(dep.selector_offset - 1);
+            let combinator = dep
+                .selector
+                .combinator_at_match_order(dep.selector_offset - 1);
 
             let invalidation_override = match combinator.is_sibling() {
                 true => InvalidationAddOverride::Sibling,
@@ -1253,12 +1271,7 @@ pub fn note_scope_dependency_force_at_subject<'selectors>(
 
             invalidations_and_override_types.push((invalidation, invalidation_override));
             invalidations_and_override_types
-            .extend(
-                note_scope_dependency_force_at_subject(
-                    dep,
-                    current_host,
-                )
-            );
+                .extend(note_scope_dependency_force_at_subject(dep, current_host));
         }
     }
     invalidations_and_override_types

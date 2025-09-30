@@ -885,7 +885,7 @@ pub enum PositionAreaKeyword {
     #[css(skip)]
     Span = 1u8 << 5,
     #[css(skip)]
-    SelfWM = 1u8 << 6,  // use target's writing-mode to resolve logical edges
+    SelfWM = 1u8 << 6, // use target's writing-mode to resolve logical edges
 
     // Composite values with Span:
     SpanLeft = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::Left as u8,
@@ -921,18 +921,38 @@ pub enum PositionAreaKeyword {
     SelfEnd = PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::End as u8,
 
     // Values with Span and SelfWM:
-    SpanXSelfStart = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::XStart as u8,
-    SpanXSelfEnd = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::XEnd as u8,
-    SpanYSelfStart = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::YStart as u8,
-    SpanYSelfEnd = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::YEnd as u8,
+    SpanXSelfStart = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::XStart as u8,
+    SpanXSelfEnd = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::XEnd as u8,
+    SpanYSelfStart = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::YStart as u8,
+    SpanYSelfEnd = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::YEnd as u8,
 
-    SpanSelfBlockStart = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::BlockStart as u8,
-    SpanSelfBlockEnd = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::BlockEnd as u8,
-    SpanSelfInlineStart = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::InlineStart as u8,
-    SpanSelfInlineEnd = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::InlineEnd as u8,
+    SpanSelfBlockStart = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::BlockStart as u8,
+    SpanSelfBlockEnd = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::BlockEnd as u8,
+    SpanSelfInlineStart = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::InlineStart as u8,
+    SpanSelfInlineEnd = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::InlineEnd as u8,
 
-    SpanSelfStart = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::Start as u8,
-    SpanSelfEnd = PositionAreaKeyword::Span as u8 | PositionAreaKeyword::SelfWM as u8 | PositionAreaKeyword::End as u8,
+    SpanSelfStart = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::Start as u8,
+    SpanSelfEnd = PositionAreaKeyword::Span as u8
+        | PositionAreaKeyword::SelfWM as u8
+        | PositionAreaKeyword::End as u8,
 }
 
 #[allow(missing_docs)]

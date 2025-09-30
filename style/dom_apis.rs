@@ -162,7 +162,7 @@ where
         true
     }
 
-    fn check_outer_dependency(&mut self, _: &Dependency, _: E, _:Option<OpaqueElement>) -> bool {
+    fn check_outer_dependency(&mut self, _: &Dependency, _: E, _: Option<OpaqueElement>) -> bool {
         debug_assert!(
             false,
             "How? We should only have parent-less dependencies here!"

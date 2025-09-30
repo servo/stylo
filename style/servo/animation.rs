@@ -29,8 +29,8 @@ use crate::values::computed::TimingFunction;
 use crate::values::generics::easing::BeforeFlag;
 use crate::values::specified::TransitionBehavior;
 use crate::Atom;
-use rustc_hash::FxHashMap;
 use parking_lot::RwLock;
+use rustc_hash::FxHashMap;
 use servo_arc::Arc;
 use std::fmt;
 

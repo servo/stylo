@@ -16,10 +16,10 @@ use crate::stylesheets::{CssRule, CssRules, Origin, UrlExtraData};
 use crate::use_counters::UseCounters;
 use crate::{Namespace, Prefix};
 use cssparser::{Parser, ParserInput, StyleSheetParser};
-use rustc_hash::FxHashMap;
 #[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
 use parking_lot::RwLock;
+use rustc_hash::FxHashMap;
 use servo_arc::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use style_traits::ParsingMode;

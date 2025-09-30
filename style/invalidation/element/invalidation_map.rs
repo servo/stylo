@@ -820,7 +820,10 @@ fn next_dependency(
             kind: get_non_relative_invalidation_kind(
                 selector,
                 selector_offset,
-                next_scope_dependencies.is_some().then(|| scope_kind).flatten(),
+                next_scope_dependencies
+                    .is_some()
+                    .then(|| scope_kind)
+                    .flatten(),
             ),
         };
 
@@ -835,7 +838,7 @@ fn next_dependency(
         next_selector,
         &next_outer_dependency,
         &next_scope_dependencies,
-        scope_kind
+        scope_kind,
     )
 }
 
@@ -864,7 +867,10 @@ impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
             kind: get_non_relative_invalidation_kind(
                 self.selector,
                 offset,
-                scope_dependencies.is_some().then(|| self.scope_dependencies.scope_kind).flatten(),
+                scope_dependencies
+                    .is_some()
+                    .then(|| self.scope_dependencies.scope_kind)
+                    .flatten(),
             ),
         }
     }

@@ -507,8 +507,9 @@ where
         for invalidation in self.invalidations {
             match invalidation.dependency.invalidation_kind() {
                 DependencyInvalidationKind::FullSelector => unreachable!(),
-                DependencyInvalidationKind::Normal(_) | DependencyInvalidationKind::Scope(_) =>
-                    unreachable!("Inner selector in invalidation?"),
+                DependencyInvalidationKind::Normal(_) | DependencyInvalidationKind::Scope(_) => {
+                    unreachable!("Inner selector in invalidation?")
+                },
                 DependencyInvalidationKind::Relative(kind) => {
                     if let Some(context) = self.optimization_context.as_ref() {
                         if context.can_be_ignored(
@@ -1003,8 +1004,7 @@ where
         debug_assert!(
             matches!(
                 outer_dependency.invalidation_kind(),
-                DependencyInvalidationKind::Normal(_) |
-                DependencyInvalidationKind::Scope(_)
+                DependencyInvalidationKind::Normal(_) | DependencyInvalidationKind::Scope(_)
             ),
             "Outer selector of relative selector is relative?"
         );
@@ -1048,7 +1048,12 @@ where
         true
     }
 
-    fn check_outer_dependency(&mut self, _dependency: &Dependency, _element: E, _: Option<OpaqueElement>) -> bool {
+    fn check_outer_dependency(
+        &mut self,
+        _dependency: &Dependency,
+        _element: E,
+        _: Option<OpaqueElement>,
+    ) -> bool {
         // At this point, we know a relative selector invalidated, and are ignoring them.
         true
     }
@@ -1084,9 +1089,11 @@ where
             let mut d = self.dependency;
             loop {
                 debug_assert!(
-                    matches!(d.invalidation_kind(),
-                        DependencyInvalidationKind::Normal(_) |
-                        DependencyInvalidationKind::Scope(_)),
+                    matches!(
+                        d.invalidation_kind(),
+                        DependencyInvalidationKind::Normal(_)
+                            | DependencyInvalidationKind::Scope(_)
+                    ),
                     "Unexpected dependency kind"
                 );
                 if !dependency_may_be_relevant(d, &element, false) {
@@ -1102,9 +1109,11 @@ where
                     break false;
                 }
                 let invalidation_kind = d.invalidation_kind();
-                if matches!(invalidation_kind,
-                    DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element) |
-                    DependencyInvalidationKind::Scope(_)){
+                if matches!(
+                    invalidation_kind,
+                    DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element)
+                        | DependencyInvalidationKind::Scope(_)
+                ) {
                     if let Some(ref deps) = d.next {
                         d = &deps.as_ref().slice()[0];
                         continue;
@@ -1268,10 +1277,21 @@ impl<'a, 'b, 'c, E> InvalidationProcessor<'a, 'b, E>
 where
     E: TElement + 'a,
 {
-    fn check_outer_dependency(&mut self, dependency: &Dependency, element: E, _: Option<OpaqueElement>) -> bool {
+    fn check_outer_dependency(
+        &mut self,
+        dependency: &Dependency,
+        element: E,
+        _: Option<OpaqueElement>,
+    ) -> bool {
         if let Some(snapshot_table) = self.snapshot_table {
             let wrapper = ElementWrapper::new(element, snapshot_table);
-            return check_dependency(dependency, &element, &wrapper, &mut self.matching_context, None);
+            return check_dependency(
+                dependency,
+                &element,
+                &wrapper,
+                &mut self.matching_context,
+                None,
+            );
         }
         // Just invalidate if we don't have a snapshot.
         true

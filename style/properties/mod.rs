@@ -39,6 +39,7 @@ use std::{
 };
 use style_traits::{
     CssString, CssWriter, KeywordsCollectFn, ParseError, ParsingMode, SpecifiedValueInfo, ToCss,
+    ToTyped, TypedValue,
 };
 
 bitflags! {
@@ -76,7 +77,9 @@ bitflags! {
 }
 
 /// An enum to represent a CSS Wide keyword.
-#[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(
+    Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
+)]
 pub enum CSSWideKeyword {
     /// The `initial` keyword.
     Initial,
@@ -128,12 +131,20 @@ impl CSSWideKeyword {
 }
 
 /// A declaration using a CSS-wide keyword.
-#[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf, ToTyped)]
+#[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf)]
 pub struct WideKeywordDeclaration {
     #[css(skip)]
     id: LonghandId,
     /// The CSS-wide keyword.
     pub keyword: CSSWideKeyword,
+}
+
+// XXX Switch back to ToTyped derive once it can automatically handle structs
+// Tracking in bug 1991631
+impl ToTyped for WideKeywordDeclaration {
+    fn to_typed(&self) -> Option<TypedValue> {
+        self.keyword.to_typed()
+    }
 }
 
 /// An unparsed declaration that contains `var()` functions.

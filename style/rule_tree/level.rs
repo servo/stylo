@@ -50,6 +50,8 @@ pub enum CascadeLevel {
         ///    https://drafts.csswg.org/css-scoping/#shadow-cascading
         shadow_cascade_order: ShadowCascadeOrder,
     },
+    /// https://drafts.csswg.org/css-anchor-position-1/#position-fallback-origin
+    PositionFallback,
     /// SVG SMIL animations.
     SMILOverride,
     /// CSS animations and script-generated animations.
@@ -80,6 +82,7 @@ impl CascadeLevel {
                 shadow_cascade_order: -shadow_cascade_order,
             },
             Self::PresHints
+            | Self::PositionFallback
             | Self::SMILOverride
             | Self::Animations
             | Self::AuthorImportant { .. }
@@ -100,6 +103,7 @@ impl CascadeLevel {
                 shadow_cascade_order: -shadow_cascade_order,
             },
             Self::PresHints
+            | Self::PositionFallback
             | Self::SMILOverride
             | Self::Animations
             | Self::AuthorNormal { .. }
@@ -165,6 +169,7 @@ impl CascadeLevel {
             Self::UAImportant | Self::UANormal => Origin::UserAgent,
             Self::UserImportant | Self::UserNormal => Origin::User,
             Self::PresHints
+            | Self::PositionFallback { .. }
             | Self::AuthorNormal { .. }
             | Self::AuthorImportant { .. }
             | Self::SMILOverride

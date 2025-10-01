@@ -1079,6 +1079,7 @@ class PropertyRestrictions:
                 "color",
                 "content",
                 "direction",
+                "hyphens",
                 "line-height",
                 "text-combine-upright",
                 "text-emphasis-color",

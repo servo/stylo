@@ -60,6 +60,7 @@ pub enum PseudoElement {
     // elements within an UA shadow DOM, and matching the elements with
     // their appropriate styles.
     ColorSwatch,
+    FileSelectorButton,
     Placeholder,
 
     // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
@@ -93,6 +94,7 @@ impl ToCss for PseudoElement {
             DetailsContent => "::-servo-details-content",
             Marker => "::marker",
             ColorSwatch => "::color-swatch",
+            FileSelectorButton => "::file-selector-button",
             Placeholder => "::placeholder",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
@@ -241,6 +243,7 @@ impl PseudoElement {
             },
             PseudoElement::Backdrop
             | PseudoElement::ColorSwatch
+            | PseudoElement::FileSelectorButton
             | PseudoElement::DetailsSummary
             | PseudoElement::Marker
             | PseudoElement::Placeholder
@@ -641,6 +644,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 DetailsContent
             },
             "color-swatch" => ColorSwatch,
+            "file-selector-button" => FileSelectorButton,
             "placeholder" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))

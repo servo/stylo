@@ -39,6 +39,9 @@ macro_rules! pref {
     ("layout.css.webkit-fill-available.enabled") => {
         true
     };
+    ("layout.css.webkit-fill-available.all-size-properties.enabled") => {
+        true
+    };
     ($string:literal) => {
         false
     };

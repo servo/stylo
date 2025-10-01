@@ -1,6 +1,6 @@
 [package]
 name = "stylo_traits"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["The Servo Project Developers"]
 license = "MPL-2.0"
 repository = "https://github.com/servo/stylo"
@@ -21,12 +21,12 @@ app_units = "0.7"
 bitflags = "2"
 cssparser = "0.35"
 euclid = "0.22"
-malloc_size_of = { version = "0.7", path = "../malloc_size_of", package = "stylo_malloc_size_of" }
+malloc_size_of = { version = "0.8", path = "../malloc_size_of", package = "stylo_malloc_size_of" }
 malloc_size_of_derive = "0.1"
 selectors = { version = "0.31", path = "../selectors" }
 serde = "1.0"
 servo_arc = { version = "0.4", path = "../servo_arc" }
-stylo_atoms = { version = "0.7", path = "../stylo_atoms", optional = true }
+stylo_atoms = { version = "0.8", path = "../stylo_atoms", optional = true }
 thin-vec = "0.2"
 to_shmem = { version = "0.2", path = "../to_shmem" }
 to_shmem_derive = { version = "0.1", path = "../to_shmem_derive" }

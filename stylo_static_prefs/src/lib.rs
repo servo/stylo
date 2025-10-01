@@ -18,12 +18,6 @@ macro_rules! pref {
     ("layout.css.system-ui.enabled") => {
         true
     };
-    ("layout.css.basic-shape-rect.enabled") => {
-        true
-    };
-    ("layout.css.basic-shape-xywh.enabled") => {
-        true
-    };
     ("layout.css.fit-content-function.enabled") => {
         true
     };

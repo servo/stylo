@@ -1063,7 +1063,7 @@ where
             })
         };
 
-        let (result, next_invalidations) = match matching_result {
+        let (mut result, next_invalidations) = match matching_result {
             CompoundSelectorMatchingResult::NotMatched => {
                 return ProcessInvalidationResult {
                     invalidated_self: false,
@@ -1092,7 +1092,6 @@ where
             ),
         };
 
-        let mut invalidated_self = result.invalidated_self;
         for next_invalidation in next_invalidations {
             debug_assert_ne!(
                 next_invalidation.offset, 0,
@@ -1129,7 +1128,7 @@ where
                 // ::selection implementation needs to change significantly anyway
                 // to implement https://github.com/w3c/csswg-drafts/issues/2474 for
                 // example.
-                invalidated_self = true;
+                result.invalidated_self = true;
             }
 
             debug!(
@@ -1229,10 +1228,7 @@ where
             }
         }
 
-        ProcessInvalidationResult {
-            invalidated_self,
-            matched: true,
-        }
+        result
     }
 }
 

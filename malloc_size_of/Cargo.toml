@@ -1,6 +1,6 @@
 [package]
 name = "stylo_malloc_size_of"
-version = "0.8.0"
+version.workspace = true
 authors = ["The Servo Project Developers"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/servo/stylo"

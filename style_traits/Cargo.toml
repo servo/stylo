@@ -1,6 +1,6 @@
 [package]
 name = "stylo_traits"
-version = "0.8.0"
+version.workspace = true
 authors = ["The Servo Project Developers"]
 license = "MPL-2.0"
 repository = "https://github.com/servo/stylo"

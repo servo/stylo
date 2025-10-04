@@ -16,3 +16,6 @@ members = [
     "to_shmem_derive",
 ]
 default-members = ["style"]
+
+[workspace.package]
+version = "0.8.0"

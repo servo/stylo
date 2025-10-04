@@ -13,6 +13,7 @@ name = "style_traits"
 path = "lib.rs"
 
 [features]
+default = ["servo"]
 servo = ["stylo_atoms", "cssparser/serde", "url", "euclid/serde"]
 gecko = []
 

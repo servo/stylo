@@ -645,7 +645,7 @@ macro_rules! lnf_int_feature {
 /// to support new types in these entries and (2) ensuring that either
 /// nsPresContext::MediaFeatureValuesChanged is called when the value that
 /// would be returned by the evaluator function could change.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 58] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 59] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -918,6 +918,7 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 58] = [
     ),
     lnf_int_feature!(atom!("-moz-menubar-drag"), MenuBarDrag),
     lnf_int_feature!(atom!("-moz-mac-big-sur-theme"), MacBigSurTheme),
+    lnf_int_feature!(atom!("-moz-mac-tahoe-theme"), MacTahoeTheme),
     feature!(
         atom!("-moz-mac-rtl"),
         AllowsRanges::No,

@@ -1495,7 +1495,7 @@ pub fn maybe_start_animations<E>(
             continue;
         }
 
-        let keyframe_animation = match context.stylist.lookup_keyframes(name, element) {
+        let keyframe_animation = match context.stylist.get_animation(name, element) {
             Some(animation) => animation,
             None => continue,
         };

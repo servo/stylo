@@ -453,18 +453,6 @@ impl TextTransform {
         // Case bits are exclusive with each other.
         case.is_empty() || case.bits().is_power_of_two()
     }
-
-    /// Returns the corresponding TextTransformCase.
-    pub fn case(&self) -> TextTransformCase {
-        match *self & Self::CASE_TRANSFORMS {
-            Self::NONE => TextTransformCase::None,
-            Self::UPPERCASE => TextTransformCase::Uppercase,
-            Self::LOWERCASE => TextTransformCase::Lowercase,
-            Self::CAPITALIZE => TextTransformCase::Capitalize,
-            Self::MATH_AUTO => TextTransformCase::MathAuto,
-            _ => unreachable!("Case bits are exclusive with each other"),
-        }
-    }
 }
 
 /// Specified and computed value of text-align-last.

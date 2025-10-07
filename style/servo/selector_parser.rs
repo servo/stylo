@@ -380,11 +380,6 @@ impl ToCss for NonTSPseudoClass {
             Self::AnyLink => ":any-link",
             Self::Autofill => ":autofill",
             Self::Checked => ":checked",
-            Self::CustomState(ref state) => {
-                dest.write_str(":state(")?;
-                state.0.to_css(dest)?;
-                return dest.write_char(')');
-            },
             Self::Default => ":default",
             Self::Defined => ":defined",
             Self::Disabled => ":disabled",
@@ -415,7 +410,7 @@ impl ToCss for NonTSPseudoClass {
             Self::UserValid => ":user-valid",
             Self::Valid => ":valid",
             Self::Visited => ":visited",
-            Self::Lang(_) => unreachable!(),
+            Self::Lang(_) | Self::CustomState(_) => unreachable!(),
         })
     }
 }
@@ -602,13 +597,10 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
         parser: &mut CssParser<'i, 't>,
         after_part: bool,
     ) -> Result<NonTSPseudoClass, ParseError<'i>> {
+        use self::NonTSPseudoClass::*;
         let pseudo_class = match_ignore_ascii_case! { &name,
             "lang" if !after_part => {
-                NonTSPseudoClass::Lang(parser.expect_ident_or_string()?.as_ref().into())
-            },
-            "state" => {
-                let result = AtomIdent::from(parser.expect_ident()?.as_ref());
-                NonTSPseudoClass::CustomState(CustomState(result))
+                Lang(parser.expect_ident_or_string()?.as_ref().into())
             },
             _ => return Err(parser.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone()))),
         };

@@ -2041,7 +2041,6 @@ impl ComputedValues {
             PropertyDeclarationId::Longhand(id) => {
                 let context = resolved::Context {
                     style: self,
-                    for_property: id.into(),
                 };
                 let mut s = String::new();
                 self.computed_or_resolved_value(

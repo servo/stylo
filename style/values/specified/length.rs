@@ -2057,6 +2057,7 @@ macro_rules! parse_size_non_length {
                 "fit-content" | "-moz-fit-content" => $size::FitContent,
                 #[cfg(feature = "gecko")]
                 "-moz-available" => $size::MozAvailable,
+                #[cfg(feature = "gecko")]
                 "-webkit-fill-available" if $allow_webkit_fill_available => $size::WebkitFillAvailable,
                 "stretch" if is_stretch_enabled() => $size::Stretch,
                 $auto_or_none => $size::$auto_or_none_ident,
@@ -2068,16 +2069,28 @@ macro_rules! parse_size_non_length {
     }};
 }
 
+#[cfg(feature = "gecko")]
 fn is_webkit_fill_available_enabled_in_width_and_height() -> bool {
     static_prefs::pref!("layout.css.webkit-fill-available.enabled")
 }
 
+#[cfg(feature = "gecko")]
 fn is_webkit_fill_available_enabled_in_all_size_properties() -> bool {
     // For convenience at the callsites, we check both prefs here,
     // since both must be 'true' in order for the keyword to be
     // enabled in all size properties.
     static_prefs::pref!("layout.css.webkit-fill-available.enabled")
         && static_prefs::pref!("layout.css.webkit-fill-available.all-size-properties.enabled")
+}
+
+#[cfg(feature = "servo")]
+fn is_webkit_fill_available_enabled_in_width_and_height() -> bool {
+    false
+}
+
+#[cfg(feature = "servo")]
+fn is_webkit_fill_available_enabled_in_all_size_properties() -> bool {
+    false
 }
 
 fn is_stretch_enabled() -> bool {

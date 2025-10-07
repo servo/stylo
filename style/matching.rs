@@ -691,7 +691,7 @@ trait PrivateMatchMethods: TElement {
         new_values: &Arc<ComputedValues>,
         pseudo_element: Option<PseudoElement>,
     ) -> bool {
-        use crate::animation::{AnimationSetKey, AnimationState};
+        use crate::animation::{self, AnimationSetKey, AnimationState};
 
         // We need to call this before accessing the `ElementAnimationSet` from the
         // map because this call will do a RwLock::read().

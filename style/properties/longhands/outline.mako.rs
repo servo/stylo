@@ -41,8 +41,8 @@ ${helpers.predefined_type(
 
 ${helpers.predefined_type(
     "outline-offset",
-    "Length",
-    "crate::values::computed::Length::new(0.)",
+    "BorderSideOffset",
+    "app_units::Au(0)",
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-ui/#propdef-outline-offset",
     servo_restyle_damage="repaint",

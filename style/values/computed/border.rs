@@ -24,6 +24,9 @@ pub type LineWidth = Au;
 /// A computed value for border-width (and the like).
 pub type BorderSideWidth = Au;
 
+/// A computed value for outline-offset
+pub type BorderSideOffset = Au;
+
 /// A computed value for the `border-image-width` property.
 pub type BorderImageWidth = Rect<BorderImageSideWidth>;
 

@@ -145,7 +145,7 @@ impl Parse for LineWidth {
 }
 
 impl ToComputedValue for LineWidth {
-    type ComputedValue = app_units::Au;
+    type ComputedValue = Au;
 
     #[inline]
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
@@ -199,28 +199,65 @@ impl Parse for BorderSideWidth {
     }
 }
 
+// https://drafts.csswg.org/css-values-4/#snap-a-length-as-a-border-width
+fn snap_as_border_width(len: Au, context: &Context) -> Au {
+    debug_assert!(len >= Au(0));
+
+    // Round `width` down to the nearest device pixel, but any non-zero value that would round
+    // down to zero is clamped to 1 device pixel.
+    if len == Au(0) {
+        return len;
+    }
+
+    let au_per_dev_px = context.device().app_units_per_device_pixel();
+    std::cmp::max(
+        Au(au_per_dev_px),
+        Au(len.0 / au_per_dev_px * au_per_dev_px),
+    )
+}
+
 impl ToComputedValue for BorderSideWidth {
-    type ComputedValue = app_units::Au;
+    type ComputedValue = Au;
 
     #[inline]
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
-        let width = self.0.to_computed_value(context);
-        // Round `width` down to the nearest device pixel, but any non-zero value that would round
-        // down to zero is clamped to 1 device pixel.
-        if width == Au(0) {
-            return width;
-        }
-
-        let au_per_dev_px = context.device().app_units_per_device_pixel();
-        std::cmp::max(
-            Au(au_per_dev_px),
-            Au(width.0 / au_per_dev_px * au_per_dev_px),
-        )
+        snap_as_border_width(self.0.to_computed_value(context), context)
     }
 
     #[inline]
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
         Self(LineWidth::from_computed_value(computed))
+    }
+}
+
+/// A specified value for outline-offset.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, Parse, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
+pub struct BorderSideOffset(Length);
+
+impl ToComputedValue for BorderSideOffset {
+    type ComputedValue = Au;
+
+    #[inline]
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
+        let offset = Au::from_f32_px(self.0.to_computed_value(context).px());
+        let should_snap = match static_prefs::pref!("layout.css.outline-offset.snapping") {
+            1 => true,
+            2 => context.device().chrome_rules_enabled_for_document(),
+            _ => false,
+        };
+        if !should_snap {
+            return offset;
+        }
+        if offset < Au(0) {
+            -snap_as_border_width(-offset, context)
+        } else {
+            snap_as_border_width(offset, context)
+        }
+    }
+
+    #[inline]
+    fn from_computed_value(computed: &Au) -> Self {
+        Self(Length::from_px(computed.to_f32_px()))
     }
 }
 

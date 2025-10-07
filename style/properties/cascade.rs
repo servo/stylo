@@ -1074,7 +1074,6 @@ impl<'b> Cascade<'b> {
             builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_WORD_SPACING);
         }
 
-        #[cfg(feature = "gecko")]
         if self
             .author_specified
             .contains(LonghandId::FontSynthesisWeight)

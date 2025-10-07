@@ -1231,7 +1231,7 @@ impl Stylist {
             inputs.visited_rules = None;
             let rules = inputs.rules.as_ref().unwrap_or(self.rule_tree.root());
             let mut important_rules_changed = false;
-            inputs.rules = self.rule_tree.update_rule_at_level(
+            let new_rules = self.rule_tree.update_rule_at_level(
                 CascadeLevel::PositionFallback,
                 LayerOrder::root(),
                 Some(fallback_block.borrow_arc()),
@@ -1239,6 +1239,13 @@ impl Stylist {
                 guards,
                 &mut important_rules_changed,
             );
+            if new_rules.is_some() {
+                inputs.rules = new_rules;
+            } else {
+                // This will return an identical style to `style`. We could consider optimizing
+                // this a bit more but for now just perform the cascade, this can only happen with
+                // the same position-try name repeated multiple times anyways.
+            }
             inputs
         };
         crate::style_resolver::with_default_parent_styles(element, |parent_style, layout_parent_style| {

@@ -1078,6 +1078,7 @@ class PropertyRestrictions:
             [
                 "color",
                 "content",
+                "cursor",
                 "direction",
                 "hyphens",
                 "line-height",

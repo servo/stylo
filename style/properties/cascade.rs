@@ -29,6 +29,7 @@ use crate::stylesheets::{layer_rule::LayerOrder, Origin};
 use crate::stylist::Stylist;
 #[cfg(feature = "gecko")]
 use crate::values::specified::length::FontBaseSize;
+use crate::values::specified::position::PositionTryFallbacksTryTactic;
 use crate::values::{computed, specified};
 use rustc_hash::FxHashMap;
 use servo_arc::Arc;
@@ -70,6 +71,7 @@ pub fn cascade<E>(
     parent_style: Option<&ComputedValues>,
     layout_parent_style: Option<&ComputedValues>,
     first_line_reparenting: FirstLineReparenting,
+    try_tactic: PositionTryFallbacksTryTactic,
     visited_rules: Option<&StrongRuleNode>,
     cascade_input_flags: ComputedValueFlags,
     rule_cache: Option<&RuleCache>,
@@ -87,6 +89,7 @@ where
         parent_style,
         layout_parent_style,
         first_line_reparenting,
+        try_tactic,
         CascadeMode::Unvisited { visited_rules },
         cascade_input_flags,
         rule_cache,
@@ -186,6 +189,7 @@ fn cascade_rules<E>(
     parent_style: Option<&ComputedValues>,
     layout_parent_style: Option<&ComputedValues>,
     first_line_reparenting: FirstLineReparenting,
+    try_tactic: PositionTryFallbacksTryTactic,
     cascade_mode: CascadeMode,
     cascade_input_flags: ComputedValueFlags,
     rule_cache: Option<&RuleCache>,
@@ -204,6 +208,7 @@ where
         parent_style,
         layout_parent_style,
         first_line_reparenting,
+        try_tactic,
         cascade_mode,
         cascade_input_flags,
         rule_cache,
@@ -260,6 +265,7 @@ pub fn apply_declarations<'a, E, I>(
     parent_style: Option<&'a ComputedValues>,
     layout_parent_style: Option<&ComputedValues>,
     first_line_reparenting: FirstLineReparenting<'a>,
+    try_tactic: PositionTryFallbacksTryTactic,
     cascade_mode: CascadeMode,
     cascade_input_flags: ComputedValueFlags,
     rule_cache: Option<&'a RuleCache>,
@@ -299,7 +305,7 @@ where
 
     let using_cached_reset_properties;
     let ignore_colors = context.builder.device.forced_colors().is_active();
-    let mut cascade = Cascade::new(first_line_reparenting, ignore_colors);
+    let mut cascade = Cascade::new(first_line_reparenting, try_tactic, ignore_colors);
     let mut declarations = Default::default();
     let mut shorthand_cache = ShorthandsWithPropertyReferencesCache::default();
     let properties_to_apply = match cascade_mode {
@@ -626,6 +632,7 @@ impl<'a> Declarations<'a> {
 
 struct Cascade<'b> {
     first_line_reparenting: FirstLineReparenting<'b>,
+    try_tactic: PositionTryFallbacksTryTactic,
     ignore_colors: bool,
     seen: LonghandIdSet,
     author_specified: LonghandIdSet,
@@ -635,9 +642,10 @@ struct Cascade<'b> {
 }
 
 impl<'b> Cascade<'b> {
-    fn new(first_line_reparenting: FirstLineReparenting<'b>, ignore_colors: bool) -> Self {
+    fn new(first_line_reparenting: FirstLineReparenting<'b>, try_tactic: PositionTryFallbacksTryTactic, ignore_colors: bool) -> Self {
         Self {
             first_line_reparenting,
+            try_tactic,
             ignore_colors,
             seen: LonghandIdSet::default(),
             author_specified: LonghandIdSet::default(),
@@ -861,6 +869,9 @@ impl<'b> Cascade<'b> {
                     .set_writing_mode_dependency(wm);
                 longhand_id = longhand_id.to_physical(wm);
             }
+            if !self.try_tactic.is_empty() {
+                longhand_id = self.try_tactic.apply_to_property(longhand_id, context.builder.writing_mode);
+            }
             self.apply_one_longhand(
                 context,
                 longhand_id,
@@ -1022,6 +1033,7 @@ impl<'b> Cascade<'b> {
             visited_parent!(parent_style),
             visited_parent!(layout_parent_style),
             self.first_line_reparenting,
+            self.try_tactic,
             CascadeMode::Visited {
                 unvisited_context: &*context,
             },

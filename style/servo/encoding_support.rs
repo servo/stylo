@@ -78,26 +78,4 @@ impl Stylesheet {
             AllowImportRules::Yes,
         )
     }
-
-    /// Updates an empty stylesheet with a set of bytes that reached over the
-    /// network.
-    pub fn update_from_bytes(
-        existing: &Stylesheet,
-        bytes: &[u8],
-        protocol_encoding_label: Option<&str>,
-        environment_encoding: Option<&'static encoding_rs::Encoding>,
-        url_data: UrlExtraData,
-        stylesheet_loader: Option<&dyn StylesheetLoader>,
-        error_reporter: Option<&dyn ParseErrorReporter>,
-    ) {
-        let string = decode_stylesheet_bytes(bytes, protocol_encoding_label, environment_encoding);
-        Self::update_from_str(
-            existing,
-            &string,
-            url_data,
-            stylesheet_loader,
-            error_reporter,
-            AllowImportRules::Yes,
-        )
-    }
 }

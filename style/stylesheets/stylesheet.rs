@@ -125,12 +125,13 @@ impl StylesheetContents {
     /// An empty namespace map should be fine, as it is only used for parsing,
     /// not serialization of existing selectors.  Since UA sheets are read only,
     /// we should never need the namespace map.
-    pub fn from_data(
+    pub fn from_shared_data(
         rules: Arc<Locked<CssRules>>,
         origin: Origin,
         url_data: UrlExtraData,
         quirks_mode: QuirksMode,
     ) -> Arc<Self> {
+        debug_assert!(rules.is_static());
         Arc::new(Self {
             rules,
             origin,
@@ -142,17 +143,6 @@ impl StylesheetContents {
             use_counters: UseCounters::default(),
             _forbid_construction: (),
         })
-    }
-
-    /// Same as above, but ensuring that the rules are static.
-    pub fn from_shared_data(
-        rules: Arc<Locked<CssRules>>,
-        origin: Origin,
-        url_data: UrlExtraData,
-        quirks_mode: QuirksMode,
-    ) -> Arc<Self> {
-        debug_assert!(rules.is_static());
-        Self::from_data(rules, origin, url_data, quirks_mode)
     }
 
     /// Returns a reference to the list of rules.

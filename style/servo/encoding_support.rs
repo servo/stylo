@@ -7,7 +7,7 @@
 use crate::context::QuirksMode;
 use crate::error_reporting::ParseErrorReporter;
 use crate::media_queries::MediaList;
-use crate::shared_lock::SharedRwLock;
+use crate::shared_lock::{Locked, SharedRwLock};
 use crate::stylesheets::{AllowImportRules, Origin, Stylesheet, StylesheetLoader, UrlExtraData};
 use cssparser::{stylesheet_encoding, EncodingSupport};
 use servo_arc::Arc;
@@ -59,7 +59,7 @@ impl Stylesheet {
         protocol_encoding_label: Option<&str>,
         environment_encoding: Option<&'static encoding_rs::Encoding>,
         origin: Origin,
-        media: MediaList,
+        media: Arc<Locked<MediaList>>,
         shared_lock: SharedRwLock,
         stylesheet_loader: Option<&dyn StylesheetLoader>,
         error_reporter: Option<&dyn ParseErrorReporter>,
@@ -70,7 +70,7 @@ impl Stylesheet {
             &string,
             url_data,
             origin,
-            Arc::new(shared_lock.wrap(media)),
+            media,
             shared_lock,
             stylesheet_loader,
             error_reporter,

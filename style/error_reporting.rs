@@ -9,7 +9,7 @@
 use crate::selector_parser::SelectorImpl;
 use crate::stylesheets::UrlExtraData;
 use cssparser::{BasicParseErrorKind, ParseErrorKind, SourceLocation, Token};
-use selectors::parser::{Component, RelativeSelector, Selector};
+use selectors::parser::{Combinator, Component, RelativeSelector, Selector};
 use selectors::visitor::{SelectorListKind, SelectorVisitor};
 use selectors::SelectorList;
 use std::fmt;
@@ -282,6 +282,9 @@ pub enum SelectorWarningKind {
     /// Relative Selector with not enough constraint, either outside or inside the selector. e.g. `*:has(.a)`, `.a:has(*)`.
     /// May cause expensive invalidations for every element inserted and/or removed.
     UnconstraintedRelativeSelector,
+    /// `:scope` can have 3 meanings, but in all cases, the relationship is defined strictly by an ancestor-descendant
+    /// relationship. This means that any presence of sibling selectors to its right would make it never match.
+    SiblingCombinatorAfterScopeSelector,
 }
 
 impl SelectorWarningKind {
@@ -290,6 +293,9 @@ impl SelectorWarningKind {
         let mut result = vec![];
         if UnconstrainedRelativeSelectorVisitor::has_warning(selector, 0, false) {
             result.push(SelectorWarningKind::UnconstraintedRelativeSelector);
+        }
+        if SiblingCombinatorAfterScopeSelectorVisitor::has_warning(selector) {
+            result.push(SelectorWarningKind::SiblingCombinatorAfterScopeSelector);
         }
         result
     }
@@ -445,4 +451,68 @@ impl SelectorVisitor for UnconstrainedRelativeSelectorVisitor {
         }
         true
     }
+}
+
+struct SiblingCombinatorAfterScopeSelectorVisitor {
+    right_combinator_is_sibling: bool,
+    found: bool,
+}
+
+impl SiblingCombinatorAfterScopeSelectorVisitor {
+    fn new(right_combinator_is_sibling: bool) -> Self {
+        Self {
+            right_combinator_is_sibling,
+            found: false,
+        }
+    }
+    fn has_warning(selector: &Selector<SelectorImpl>) -> bool {
+        if !selector.has_scope_selector() {
+            return false;
+        }
+        let visitor = SiblingCombinatorAfterScopeSelectorVisitor::new(false);
+        visitor.find_never_matching_scope_selector(selector)
+    }
+
+    fn find_never_matching_scope_selector(mut self, selector: &Selector<SelectorImpl>) -> bool {
+        selector.visit(&mut self);
+        self.found
+    }
+}
+
+impl SelectorVisitor for SiblingCombinatorAfterScopeSelectorVisitor {
+    type Impl = SelectorImpl;
+
+    fn visit_simple_selector(&mut self, c: &Component<Self::Impl>) -> bool {
+        if !matches!(c, Component::Scope | Component::ImplicitScope) {
+            return true;
+        }
+        // e.g. `:scope ~ .a` will never match.
+        if self.right_combinator_is_sibling {
+            self.found = true;
+        }
+        true
+    }
+
+    fn visit_selector_list(
+        &mut self,
+        _list_kind: SelectorListKind,
+        list: &[Selector<Self::Impl>],
+    ) -> bool {
+        for s in list {
+            let list_visitor = Self::new(self.right_combinator_is_sibling);
+            self.found |= list_visitor.find_never_matching_scope_selector(s);
+        }
+        true
+    }
+
+    fn visit_complex_selector(&mut self, combinator_to_right: Option<Combinator>) -> bool {
+        if let Some(c) = combinator_to_right {
+            // Subject compounds' state is determined by the outer visitor. e.g: When there's `:is(.a .b) ~ .c`,
+            // the inner visitor is assumed to be constructed with right_combinator_is_sibling == true.
+            self.right_combinator_is_sibling = c.is_sibling();
+        }
+        true
+    }
+
+    // It's harder to discern if use of :scope <sibling-combinator> is invalid - at least for now, defer.
 }

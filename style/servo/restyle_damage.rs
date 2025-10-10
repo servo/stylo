@@ -59,9 +59,13 @@ impl ServoRestyleDamage {
         old: &ComputedValues,
         new: &ComputedValues,
     ) -> StyleDifference {
-        let styles_may_differ = old.styles_may_differ(&new);
-        let mut damage = compute_damage(old, new, styles_may_differ);
-        if damage.is_empty() && !styles_may_differ {
+        let mut damage = if std::ptr::eq(old, new) {
+            ServoRestyleDamage::empty()
+        } else {
+            compute_damage(old, new)
+        };
+
+        if damage.is_empty() {
             return StyleDifference {
                 damage,
                 change: StyleChange::Unchanged,
@@ -145,30 +149,22 @@ fn augmented_restyle_damage_rebuild_stacking_context(
     restyle_damage_rebuild_stacking_context(old, new)
         || old.guarantees_stacking_context() != new.guarantees_stacking_context()
 }
-
-fn compute_damage(
-    old: &ComputedValues,
-    new: &ComputedValues,
-    styles_may_differ: bool,
-) -> ServoRestyleDamage {
+fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDamage {
     let mut damage = ServoRestyleDamage::empty();
 
     // Damage flags higher up the if-else chain imply damage flags lower down the if-else chain,
     // so we can skip the diffing process for later flags if an earlier flag is true
-    if styles_may_differ {
-        if augmented_restyle_damage_rebuild_box(old, new) {
-            damage.insert(ServoRestyleDamage::RELAYOUT)
-        } else if restyle_damage_recalculate_overflow(old, new) {
-            damage.insert(ServoRestyleDamage::RECALCULATE_OVERFLOW)
-        } else if augmented_restyle_damage_rebuild_stacking_context(old, new) {
-            damage.insert(ServoRestyleDamage::REBUILD_STACKING_CONTEXT);
-        } else if restyle_damage_repaint(old, new) {
-            damage.insert(ServoRestyleDamage::REPAINT);
-        }
+    if augmented_restyle_damage_rebuild_box(old, new) {
+        damage.insert(ServoRestyleDamage::RELAYOUT)
+    } else if restyle_damage_recalculate_overflow(old, new) {
+        damage.insert(ServoRestyleDamage::RECALCULATE_OVERFLOW)
+    } else if augmented_restyle_damage_rebuild_stacking_context(old, new) {
+        damage.insert(ServoRestyleDamage::REBUILD_STACKING_CONTEXT);
+    } else if restyle_damage_repaint(old, new) {
+        damage.insert(ServoRestyleDamage::REPAINT);
     }
-
     // Paint worklets may depend on custom properties, so if they have changed we should repaint.
-    if !damage.is_empty() && !old.custom_properties_equal(new) {
+    else if !old.custom_properties_equal(new) {
         damage.insert(ServoRestyleDamage::REPAINT);
     }
 

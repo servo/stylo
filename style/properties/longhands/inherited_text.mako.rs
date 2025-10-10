@@ -176,6 +176,7 @@ ${helpers.predefined_type(
     ignored_when_colors_disabled=True,
     simple_vector_bindings=True,
     spec="https://drafts.csswg.org/css-text-decor-3/#text-shadow-property",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 
@@ -333,6 +334,7 @@ ${helpers.predefined_type(
     "computed::LengthPercentageOrAuto::auto()",
     engines="gecko",
     spec="https://drafts.csswg.org/css-text-decor-4/#underline-offset",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 
@@ -344,6 +346,7 @@ ${helpers.predefined_type(
     engines="gecko",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text-decor-3/#text-underline-position-property",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 
@@ -355,6 +358,7 @@ ${helpers.predefined_type(
     engines="gecko",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text-decor-4/#text-decoration-skip-ink-property",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 

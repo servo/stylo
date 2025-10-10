@@ -27,6 +27,7 @@
         logical_group="border-color",
         allow_quirks="No" if is_logical else "Yes",
         ignored_when_colors_disabled=True,
+        servo_restyle_damage="repaint",
         affects="paint",
     )}
 
@@ -78,6 +79,7 @@
         boxed=True,
         logical_group="border-radius",
         logical=is_logical,
+        servo_restyle_damage="repaint",
         affects="paint",
     )}
 % endfor

@@ -7,7 +7,7 @@
 use crate::context::QuirksMode;
 use crate::error_reporting::ParseErrorReporter;
 use crate::media_queries::MediaList;
-use crate::shared_lock::{Locked, SharedRwLock};
+use crate::shared_lock::SharedRwLock;
 use crate::stylesheets::{AllowImportRules, Origin, Stylesheet, StylesheetLoader, UrlExtraData};
 use cssparser::{stylesheet_encoding, EncodingSupport};
 use servo_arc::Arc;
@@ -59,7 +59,7 @@ impl Stylesheet {
         protocol_encoding_label: Option<&str>,
         environment_encoding: Option<&'static encoding_rs::Encoding>,
         origin: Origin,
-        media: Arc<Locked<MediaList>>,
+        media: MediaList,
         shared_lock: SharedRwLock,
         stylesheet_loader: Option<&dyn StylesheetLoader>,
         error_reporter: Option<&dyn ParseErrorReporter>,
@@ -70,11 +70,33 @@ impl Stylesheet {
             &string,
             url_data,
             origin,
-            media,
+            Arc::new(shared_lock.wrap(media)),
             shared_lock,
             stylesheet_loader,
             error_reporter,
             quirks_mode,
+            AllowImportRules::Yes,
+        )
+    }
+
+    /// Updates an empty stylesheet with a set of bytes that reached over the
+    /// network.
+    pub fn update_from_bytes(
+        existing: &Stylesheet,
+        bytes: &[u8],
+        protocol_encoding_label: Option<&str>,
+        environment_encoding: Option<&'static encoding_rs::Encoding>,
+        url_data: UrlExtraData,
+        stylesheet_loader: Option<&dyn StylesheetLoader>,
+        error_reporter: Option<&dyn ParseErrorReporter>,
+    ) {
+        let string = decode_stylesheet_bytes(bytes, protocol_encoding_label, environment_encoding);
+        Self::update_from_str(
+            existing,
+            &string,
+            url_data,
+            stylesheet_loader,
+            error_reporter,
             AllowImportRules::Yes,
         )
     }

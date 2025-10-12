@@ -6,6 +6,7 @@
 //! for `@import` rules.
 
 use crate::media_queries::MediaList;
+use crate::parser::ParserContext;
 use crate::shared_lock::{Locked, SharedRwLock};
 use crate::stylesheets::import_rule::{ImportLayer, ImportRule, ImportSupportsCondition};
 use crate::values::CssUrl;
@@ -21,6 +22,7 @@ pub trait StylesheetLoader {
         &self,
         url: CssUrl,
         location: SourceLocation,
+        context: &ParserContext,
         lock: &SharedRwLock,
         media: Arc<Locked<MediaList>>,
         supports: Option<ImportSupportsCondition>,

@@ -424,7 +424,6 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
                 let import_rule = loader.request_stylesheet(
                     url,
                     start.source_location(),
-                    &self.context,
                     &self.shared_lock,
                     media,
                     supports,

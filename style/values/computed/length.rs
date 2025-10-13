@@ -103,16 +103,6 @@ macro_rules! computed_length_percentage_or_auto {
                 Self::LengthPercentage(ref lp) => Some(lp.to_used_value(percentage_basis)),
             }
         }
-
-        /// Returns true if the computed value is absolute 0 or 0%.
-        #[inline]
-        pub fn is_definitely_zero(&self) -> bool {
-            use crate::values::generics::length::LengthPercentageOrAuto::*;
-            match *self {
-                LengthPercentage(ref l) => l.is_definitely_zero(),
-                Auto => false,
-            }
-        }
     };
 }
 

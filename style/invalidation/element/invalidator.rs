@@ -13,8 +13,8 @@ use crate::invalidation::element::invalidation_map::{
 };
 use selectors::matching::matches_compound_selector_from;
 use selectors::matching::{CompoundSelectorMatchingResult, MatchingContext};
-use selectors::parser::{Combinator, Component};
-use selectors::OpaqueElement;
+use selectors::parser::{Combinator, Component, Selector, SelectorVisitor};
+use selectors::{OpaqueElement, SelectorImpl};
 use smallvec::{smallvec, SmallVec};
 use std::fmt;
 use std::fmt::Write;
@@ -284,6 +284,12 @@ pub struct Invalidation<'a> {
     /// this one if the generated invalidation is effective for all the siblings
     /// or descendants after us.
     matched_by_any_previous: bool,
+    /// Whether this incalidation should always be pushed to next invalidations.
+    ///
+    /// This is useful for overriding invalidations we would otherwise skip.
+    ///  e.g @scope(.a){:not(:scope)} where we would need the :not(:scope)
+    /// invalidation to traverse down for all children of the scope root
+    always_effective_for_next: bool,
 }
 
 impl<'a> Invalidation<'a> {
@@ -308,6 +314,7 @@ impl<'a> Invalidation<'a> {
             // + 1 to go past the combinator.
             offset: dependency.selector.len() + 1 - dependency.selector_offset,
             matched_by_any_previous: false,
+            always_effective_for_next: false,
         }
     }
 
@@ -335,13 +342,24 @@ impl<'a> Invalidation<'a> {
             scope,
             offset: dependency.selector.len() - compound_offset,
             matched_by_any_previous: false,
+            always_effective_for_next: true,
         }
+    }
+
+    /// Return the combinator to the right of the currently invalidating compound
+    /// Useful for determining whether this invalidation should be pushed to
+    /// sibling or descendant invalidations.
+    pub fn combinator_to_right(&self) -> Combinator {
+        debug_assert_ne!(self.dependency.selector_offset, 0);
+        self.dependency
+            .selector
+            .combinator_at_match_order(self.dependency.selector.len() - self.offset)
     }
 
     /// Whether this invalidation is effective for the next sibling or
     /// descendant after us.
     fn effective_for_next(&self) -> bool {
-        if self.offset == 0 {
+        if self.offset == 0 || self.always_effective_for_next {
             return true;
         }
 
@@ -382,6 +400,126 @@ impl<'a> Invalidation<'a> {
             Combinator::NextSibling | Combinator::LaterSibling => InvalidationKind::Sibling,
         }
     }
+}
+
+
+/// A struct that visits a selector and determines if there is a `:scope`
+/// component nested withing a negation. eg. :not(:scope)
+struct NegationScopeVisitor {
+    /// Have we found a negation list yet
+    in_negation: bool,
+    /// Have we found a :scope inside a negation yet
+    found_scope_in_negation: bool,
+}
+
+impl NegationScopeVisitor {
+    /// Create a new NegationScopeVisitor
+    fn new() -> Self {
+        Self {
+            in_negation: false,
+            found_scope_in_negation: false,
+        }
+    }
+
+    fn traverse_selector(
+        mut self,
+        selector: &Selector<<NegationScopeVisitor as SelectorVisitor>::Impl>,
+    ) -> bool {
+        selector.visit(&mut self);
+        self.found_scope_in_negation
+    }
+
+    /// Traverse all the next dependencies in an outer dependency until we reach
+    /// 1. :not(* :scope *)
+    /// 2. a scope or relative dependency
+    /// 3. the end of the chain of dependencies
+    /// Return whether or not we encountered :not(* :scope *)
+    fn traverse_dependency(mut self, dependency: &Dependency) -> bool {
+        if dependency.next.is_none()
+            || !matches!(
+                dependency.invalidation_kind(),
+                DependencyInvalidationKind::Normal(..)
+            )
+        {
+            return dependency.selector.visit(&mut self);
+        }
+
+        let nested_visitor = Self {
+            in_negation: self.in_negation,
+            found_scope_in_negation: false,
+        };
+        dependency.selector.visit(&mut self);
+        // Has to be normal dependency and next.is_some()
+        nested_visitor.traverse_dependency(&dependency.next.as_ref().unwrap().slice()[0])
+    }
+}
+
+impl SelectorVisitor for NegationScopeVisitor {
+    type Impl = crate::selector_parser::SelectorImpl;
+
+    fn visit_attribute_selector(
+        &mut self,
+        _namespace: &selectors::attr::NamespaceConstraint<
+            &<Self::Impl as SelectorImpl>::NamespaceUrl,
+        >,
+        _local_name: &<Self::Impl as SelectorImpl>::LocalName,
+        _local_name_lower: &<Self::Impl as SelectorImpl>::LocalName,
+    ) -> bool {
+        true
+    }
+
+    fn visit_simple_selector(&mut self, component: &Component<Self::Impl>) -> bool {
+        if self.in_negation {
+            match component {
+                Component::Scope => {
+                    self.found_scope_in_negation = true;
+                },
+                _ => {},
+            }
+        }
+        true
+    }
+
+    fn visit_relative_selector_list(
+        &mut self,
+        _list: &[selectors::parser::RelativeSelector<Self::Impl>],
+    ) -> bool {
+        true
+    }
+
+    fn visit_selector_list(
+        &mut self,
+        list_kind: selectors::visitor::SelectorListKind,
+        list: &[selectors::parser::Selector<Self::Impl>],
+    ) -> bool {
+        for nested in list {
+            let nested_visitor = Self {
+                in_negation: list_kind.in_negation(),
+                found_scope_in_negation: false,
+            };
+
+            self.found_scope_in_negation |= nested_visitor.traverse_selector(nested);
+        }
+        true
+    }
+
+    fn visit_complex_selector(&mut self, _combinator_to_right: Option<Combinator>) -> bool {
+        true
+    }
+}
+
+/// Determines if we can find a selector in the form of :not(:scope)
+/// anywhere down the chain of dependencies.
+pub fn any_next_has_scope_in_negation(dependency: &Dependency) -> bool {
+    let next = match dependency.next.as_ref() {
+        None => return false,
+        Some(l) => l,
+    };
+
+    next.slice().iter().any(|dep| {
+        let visitor = NegationScopeVisitor::new();
+        visitor.traverse_dependency(dep)
+    })
 }
 
 impl<'a> fmt::Debug for Invalidation<'a> {
@@ -942,20 +1080,26 @@ where
             let mut next_dependencies: SmallVec<[&Dependency; 1]> = SmallVec::new();
 
             while let Some(dependency) = to_process.pop() {
-                if dependency.invalidation_kind()
-                    == DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ScopeEnd)
+                if let DependencyInvalidationKind::Scope(scope_kind) =
+                    dependency.invalidation_kind()
                 {
-                    let invalidations = note_scope_dependency_force_at_subject(
-                        dependency,
-                        invalidation.host,
-                        invalidation.scope,
-                        false,
-                    );
-                    for invalidation in invalidations{
-                        descendant_invalidations.dom_descendants.push(invalidation);
+                    let force_add = any_next_has_scope_in_negation(dependency);
+                    if scope_kind == ScopeDependencyInvalidationKind::ScopeEnd || force_add {
+                        let invalidations = note_scope_dependency_force_at_subject(
+                            dependency,
+                            invalidation.host,
+                            invalidation.scope,
+                            force_add,
+                        );
+
+                        for invalidation in invalidations {
+                            descendant_invalidations.dom_descendants.push(invalidation);
+                        }
+
+                        continue;
                     }
-                    continue;
                 }
+
                 match dependency.next {
                     None => {
                         result.invalidated_self = true;
@@ -1066,10 +1210,9 @@ where
                     matched: false,
                 }
             },
-            CompoundSelectorMatchingResult::FullyMatched => self.handle_fully_matched(
-                invalidation,
-                descendant_invalidations,
-            ),
+            CompoundSelectorMatchingResult::FullyMatched => {
+                self.handle_fully_matched(invalidation, descendant_invalidations)
+            },
             CompoundSelectorMatchingResult::Matched {
                 next_combinator_offset,
             } => (
@@ -1083,6 +1226,7 @@ where
                     scope: invalidation.scope,
                     offset: next_combinator_offset + 1,
                     matched_by_any_previous: false,
+                    always_effective_for_next: false,
                 }],
             ),
         };
@@ -1243,8 +1387,7 @@ pub fn note_scope_dependency_force_at_subject<'selectors>(
     scope: Option<OpaqueElement>,
     traversed_non_subject: bool,
 ) -> Vec<Invalidation<'selectors>> {
-    let mut invalidations: Vec<Invalidation> =
-        Vec::new();
+    let mut invalidations: Vec<Invalidation> = Vec::new();
     if let Some(next) = dependency.next.as_ref() {
         for dep in next.slice() {
             if dep.selector_offset == 0 && !traversed_non_subject {
@@ -1252,18 +1395,16 @@ pub fn note_scope_dependency_force_at_subject<'selectors>(
             }
 
             if dep.next.is_some() {
-                invalidations
-                .extend(
-                    note_scope_dependency_force_at_subject(
-                        dep,
-                        current_host,
-                        scope,
-                        true,
-                    )
-                );
+                invalidations.extend(note_scope_dependency_force_at_subject(
+                    dep,
+                    current_host,
+                    scope,
+                    // Force add from now on because we
+                    // passed through a non-subject compound
+                    true,
+                ));
             } else {
-                let invalidation =
-                    Invalidation::new_subject_invalidation(dep, current_host, scope);
+                let invalidation = Invalidation::new_subject_invalidation(dep, current_host, scope);
 
                 invalidations.push(invalidation);
             }

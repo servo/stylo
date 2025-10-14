@@ -1509,12 +1509,13 @@ impl Animate for ComputedRotate {
                     Quaternion::animate(&fq, &tq, procedure)?
                 };
 
-                debug_assert!(rq.3 <= 1.0 && rq.3 >= -1.0, "Invalid cosine value");
                 let (x, y, z, angle) = transform::get_normalized_vector_and_angle(
                     rq.0 as f32,
                     rq.1 as f32,
                     rq.2 as f32,
-                    rq.3.acos() as f32 * 2.0,
+                    // Due to floating point precision issues, the quaternion may contain values
+                    // slightly larger out of the [-1.0, 1.0] range - Clamp to avoid NaN.
+                    rq.3.clamp(-1.0, 1.0).acos() as f32 * 2.0,
                 );
 
                 Ok(Rotate::Rotate3D(x, y, z, Angle::from_radians(angle)))

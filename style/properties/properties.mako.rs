@@ -3009,19 +3009,15 @@ pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &Compute
         let old_${style_struct.name_lower} = old.get_${style_struct.name_lower}();
         let new_${style_struct.name_lower} = new.get_${style_struct.name_lower}();
         if !std::ptr::eq(old_${style_struct.name_lower}, new_${style_struct.name_lower}) {
-        % if all(longhands_affected):
-            return true;
-        % else:
             if 
-        % for longhand in style_struct.longhands:
+            % for longhand in style_struct.longhands:
             % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:
                 old_${style_struct.name_lower}.${longhand.ident} != new_${style_struct.name_lower}.${longhand.ident} ||
             % endif
-        % endfor
+            % endfor
             false {
                 return true;
             }
-        % endif
         }
         % endif
     % endfor

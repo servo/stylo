@@ -157,7 +157,7 @@ ${helpers.single_keyword(
 ${helpers.predefined_type(
     "text-autospace",
     "TextAutospace",
-    "computed::text::TextAutospace::NORMAL",
+    "computed::text::TextAutospace::NO_AUTOSPACE",
     engines="gecko",
     animation_type="discrete",
     gecko_pref="layout.css.text-autospace.enabled",

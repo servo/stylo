@@ -11,7 +11,7 @@ use crate::dom::{TElement, TNode};
 use crate::invalidation::element::element_wrapper::{ElementSnapshot, ElementWrapper};
 use crate::invalidation::element::invalidation_map::*;
 use crate::invalidation::element::invalidator::{
-    note_scope_dependency_force_at_subject, DescendantInvalidationLists, InvalidationAddOverride,
+    note_scope_dependency_force_at_subject, DescendantInvalidationLists,
     InvalidationVector, SiblingTraversalMap,
 };
 use crate::invalidation::element::invalidator::{Invalidation, InvalidationProcessor};
@@ -569,11 +569,11 @@ where
                 DependencyInvalidationKind::Scope(_)
             )
         {
-            return self.note_dependency(dependency);
+            return self.note_dependency(dependency, set_scope);
         }
     }
 
-    fn note_dependency(&mut self, dependency: &'selectors Dependency) {
+    fn note_dependency(&mut self, dependency: &'selectors Dependency, set_scope: bool) {
         debug_assert!(self.dependency_may_be_relevant(dependency));
         let invalidation_kind = dependency.invalidation_kind();
         if matches!(
@@ -583,7 +583,7 @@ where
             if let Some(ref next) = dependency.next {
                 // We know something changed in the inner selector, go outwards
                 // now.
-                self.scan_dependency(&next.as_ref().slice()[0], false);
+                self.scan_dependency(&next.as_ref().slice()[0], set_scope);
             } else {
                 self.invalidates_self = true;
             }
@@ -596,17 +596,11 @@ where
                     let invalidations = note_scope_dependency_force_at_subject(
                         dependency,
                         self.matching_context.current_host.clone(),
+                        self.matching_context.scope_element,
+                        false,
                     );
-                    for (invalidation, override_type) in invalidations {
-                        match override_type {
-                            InvalidationAddOverride::Descendant => self
-                                .descendant_invalidations
-                                .dom_descendants
-                                .push(invalidation),
-                            InvalidationAddOverride::Sibling => {
-                                self.sibling_invalidations.push(invalidation)
-                            },
-                        }
+                    for invalidation in invalidations {
+                        self.descendant_invalidations.dom_descendants.push(invalidation);
                     }
                     self.invalidates_self = true;
                 } else if let Some(ref next) = dependency.next {

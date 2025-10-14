@@ -927,7 +927,6 @@ where
         &mut self,
         invalidation: &Invalidation<'b>,
         descendant_invalidations: &mut DescendantInvalidationLists<'b>,
-        sibling_invalidations: &mut InvalidationVector<'b>,
     ) -> (ProcessInvalidationResult, SmallVec<[Invalidation<'b>; 1]>) {
         debug!(" > Invalidation matched completely");
         // We matched completely. If we're an inner selector now we need
@@ -946,17 +945,14 @@ where
                 if dependency.invalidation_kind()
                     == DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ScopeEnd)
                 {
-                    let invalidations =
-                        note_scope_dependency_force_at_subject(dependency, invalidation.host);
-                    for (invalidation, override_type) in invalidations {
-                        match override_type {
-                            InvalidationAddOverride::Descendant => {
-                                descendant_invalidations.dom_descendants.push(invalidation)
-                            },
-                            InvalidationAddOverride::Sibling => {
-                                sibling_invalidations.push(invalidation)
-                            },
-                        }
+                    let invalidations = note_scope_dependency_force_at_subject(
+                        dependency,
+                        invalidation.host,
+                        invalidation.scope,
+                        false,
+                    );
+                    for invalidation in invalidations{
+                        descendant_invalidations.dom_descendants.push(invalidation);
                     }
                     continue;
                 }
@@ -1073,7 +1069,6 @@ where
             CompoundSelectorMatchingResult::FullyMatched => self.handle_fully_matched(
                 invalidation,
                 descendant_invalidations,
-                sibling_invalidations,
             ),
             CompoundSelectorMatchingResult::Matched {
                 next_combinator_offset,
@@ -1245,30 +1240,34 @@ where
 pub fn note_scope_dependency_force_at_subject<'selectors>(
     dependency: &'selectors Dependency,
     current_host: Option<OpaqueElement>,
-) -> Vec<(Invalidation<'selectors>, InvalidationAddOverride)> {
-    let mut invalidations_and_override_types: Vec<(Invalidation, InvalidationAddOverride)> =
+    scope: Option<OpaqueElement>,
+    traversed_non_subject: bool,
+) -> Vec<Invalidation<'selectors>> {
+    let mut invalidations: Vec<Invalidation> =
         Vec::new();
     if let Some(next) = dependency.next.as_ref() {
         for dep in next.slice() {
-            if dep.selector_offset == 0 {
+            if dep.selector_offset == 0 && !traversed_non_subject {
                 continue;
             }
 
-            let invalidation = Invalidation::new_subject_invalidation(dep, current_host, None);
+            if dep.next.is_some() {
+                invalidations
+                .extend(
+                    note_scope_dependency_force_at_subject(
+                        dep,
+                        current_host,
+                        scope,
+                        true,
+                    )
+                );
+            } else {
+                let invalidation =
+                    Invalidation::new_subject_invalidation(dep, current_host, scope);
 
-            let combinator = dep
-                .selector
-                .combinator_at_match_order(dep.selector_offset - 1);
-
-            let invalidation_override = match combinator.is_sibling() {
-                true => InvalidationAddOverride::Sibling,
-                false => InvalidationAddOverride::Descendant,
-            };
-
-            invalidations_and_override_types.push((invalidation, invalidation_override));
-            invalidations_and_override_types
-                .extend(note_scope_dependency_force_at_subject(dep, current_host));
+                invalidations.push(invalidation);
+            }
         }
     }
-    invalidations_and_override_types
+    invalidations
 }

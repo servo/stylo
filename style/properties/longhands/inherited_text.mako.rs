@@ -176,6 +176,7 @@ ${helpers.predefined_type(
     ignored_when_colors_disabled=True,
     simple_vector_bindings=True,
     spec="https://drafts.csswg.org/css-text-decor-3/#text-shadow-property",
+    servo_restyle_damage="repaint",
     affects="overflow",
 )}
 

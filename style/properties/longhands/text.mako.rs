@@ -36,7 +36,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::TextDecorationLine::none()",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text-decor/#propdef-text-decoration-line",
-    servo_restyle_damage="rebuild_box",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 
@@ -47,6 +47,7 @@ ${helpers.single_keyword(
     gecko_enum_prefix="StyleTextDecorationStyle",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text-decor/#propdef-text-decoration-style",
+    servo_restyle_damage="recalculate_overflow",
     affects="overflow",
 )}
 
@@ -70,6 +71,7 @@ ${helpers.predefined_type(
     initial_specified_value="specified::Color::currentcolor()",
     ignored_when_colors_disabled=True,
     spec="https://drafts.csswg.org/css-text-decor/#propdef-text-decoration-color",
+    servo_restyle_damage="recalculate_overflow",
     affects="paint",
 )}
 

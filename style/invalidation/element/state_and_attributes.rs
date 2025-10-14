@@ -11,7 +11,8 @@ use crate::dom::{TElement, TNode};
 use crate::invalidation::element::element_wrapper::{ElementSnapshot, ElementWrapper};
 use crate::invalidation::element::invalidation_map::*;
 use crate::invalidation::element::invalidator::{
-    any_next_has_scope_in_negation, note_scope_dependency_force_at_subject, DescendantInvalidationLists, InvalidationVector, SiblingTraversalMap
+    any_next_has_scope_in_negation, note_scope_dependency_force_at_subject,
+    DescendantInvalidationLists, InvalidationVector, SiblingTraversalMap,
 };
 use crate::invalidation::element::invalidator::{Invalidation, InvalidationProcessor};
 use crate::invalidation::element::restyle_hints::RestyleHint;
@@ -562,12 +563,7 @@ where
             return;
         }
 
-        if self.check_dependency(dependency, set_scope)
-            || matches!(
-                dependency.invalidation_kind(),
-                DependencyInvalidationKind::Scope(_)
-            )
-        {
+        if self.check_dependency(dependency, set_scope) {
             return self.note_dependency(dependency, set_scope);
         }
     }
@@ -663,6 +659,8 @@ pub(crate) fn push_invalidation<'a>(
         DependencyInvalidationKind::FullSelector => unreachable!(),
         DependencyInvalidationKind::Relative(_) => unreachable!(),
         DependencyInvalidationKind::Scope(_) => {
+            // Scope invalidation kind matters only upon reaching the subject.
+            // Examine the combinator to the right of the compound.
             let combinator = invalidation.combinator_to_right();
             if combinator.is_sibling() {
                 sibling_invalidations.push(invalidation);

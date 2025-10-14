@@ -402,7 +402,6 @@ impl<'a> Invalidation<'a> {
     }
 }
 
-
 /// A struct that visits a selector and determines if there is a `:scope`
 /// component nested withing a negation. eg. :not(:scope)
 struct NegationScopeVisitor {
@@ -1064,7 +1063,6 @@ where
     fn handle_fully_matched(
         &mut self,
         invalidation: &Invalidation<'b>,
-        descendant_invalidations: &mut DescendantInvalidationLists<'b>,
     ) -> (ProcessInvalidationResult, SmallVec<[Invalidation<'b>; 1]>) {
         debug!(" > Invalidation matched completely");
         // We matched completely. If we're an inner selector now we need
@@ -1092,9 +1090,7 @@ where
                             force_add,
                         );
 
-                        for invalidation in invalidations {
-                            descendant_invalidations.dom_descendants.push(invalidation);
-                        }
+                        next_invalidations.extend(invalidations);
 
                         continue;
                     }
@@ -1210,9 +1206,7 @@ where
                     matched: false,
                 }
             },
-            CompoundSelectorMatchingResult::FullyMatched => {
-                self.handle_fully_matched(invalidation, descendant_invalidations)
-            },
+            CompoundSelectorMatchingResult::FullyMatched => self.handle_fully_matched(invalidation),
             CompoundSelectorMatchingResult::Matched {
                 next_combinator_offset,
             } => (
@@ -1394,7 +1388,14 @@ pub fn note_scope_dependency_force_at_subject<'selectors>(
                 continue;
             }
 
-            if dep.next.is_some() {
+            // Follow the normal dependencies as far as we can, leaving
+            // other kinds to their own invalidation mechanisms elsewhere
+            if dep.next.is_some()
+                && matches!(
+                    dep.invalidation_kind(),
+                    DependencyInvalidationKind::Normal(_)
+                )
+            {
                 invalidations.extend(note_scope_dependency_force_at_subject(
                     dep,
                     current_host,

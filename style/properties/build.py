@@ -77,6 +77,7 @@ def main():
             write(doc_servo, "css-properties.html", as_html)
             write(doc_servo, "css-properties.json", as_json)
             write(OUT_DIR, "css-properties.json", as_json)
+            write(OUT_DIR, "css-properties.html", as_html)
     elif output == "geckolib":
         if len(sys.argv) < 4:
             abort(usage)

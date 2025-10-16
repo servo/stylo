@@ -78,6 +78,13 @@ impl AlignFlags {
         *self & !AlignFlags::FLAG_BITS
     }
 
+    /// Returns an updated value with the same flags.
+    #[inline]
+    pub fn with_value(&self, value: AlignFlags) -> Self {
+        debug_assert!(!value.intersects(Self::FLAG_BITS));
+        value | self.flags()
+    }
+
     /// Returns the flags stored in the upper 3 bits.
     #[inline]
     pub fn flags(&self) -> Self {
@@ -90,10 +97,9 @@ impl ToCss for AlignFlags {
     where
         W: Write,
     {
-        let extra_flags = *self & AlignFlags::FLAG_BITS;
+        let flags = self.flags();
         let value = self.value();
-
-        match extra_flags {
+        match flags {
             AlignFlags::LEGACY => {
                 dest.write_str("legacy")?;
                 if value.is_empty() {
@@ -104,7 +110,7 @@ impl ToCss for AlignFlags {
             AlignFlags::SAFE => dest.write_str("safe ")?,
             AlignFlags::UNSAFE => dest.write_str("unsafe ")?,
             _ => {
-                debug_assert_eq!(extra_flags, AlignFlags::empty());
+                debug_assert_eq!(flags, AlignFlags::empty());
             },
         }
 
@@ -364,6 +370,43 @@ impl SelfAlignment {
         list_auto_normal_stretch(f);
         list_overflow_position_keywords(f);
         list_self_position_keywords(f, axis);
+    }
+
+    /// Performs a flip of the position, that is, for self-start we return self-end, for left
+    /// we return right, etc.
+    pub fn flip_position(self) -> Self {
+        let flipped_value = match self.0.value() {
+            AlignFlags::START => AlignFlags::END,
+            AlignFlags::END => AlignFlags::START,
+            AlignFlags::FLEX_START => AlignFlags::FLEX_END,
+            AlignFlags::FLEX_END => AlignFlags::FLEX_START,
+            AlignFlags::LEFT => AlignFlags::RIGHT,
+            AlignFlags::RIGHT => AlignFlags::LEFT,
+            AlignFlags::SELF_START => AlignFlags::SELF_END,
+            AlignFlags::SELF_END => AlignFlags::SELF_START,
+
+            AlignFlags::AUTO |
+            AlignFlags::NORMAL |
+            AlignFlags::BASELINE |
+            AlignFlags::LAST_BASELINE |
+            AlignFlags::STRETCH |
+            AlignFlags::CENTER |
+            AlignFlags::SPACE_BETWEEN |
+            AlignFlags::SPACE_AROUND |
+            AlignFlags::SPACE_EVENLY |
+            AlignFlags::ANCHOR_CENTER => return self,
+            _ => {
+                debug_assert!(false, "Unexpected alignment enumeration value");
+                return self;
+            }
+        };
+        self.with_value(flipped_value)
+    }
+
+    /// Returns a fixed-up alignment value.
+    #[inline]
+    pub fn with_value(self, value: AlignFlags) -> Self {
+        Self(self.0.with_value(value))
     }
 }
 

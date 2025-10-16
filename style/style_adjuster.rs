@@ -17,6 +17,10 @@ use crate::properties::longhands::{
     overflow_x::computed_value::T as Overflow,
 };
 use crate::properties::{self, ComputedValues, StyleBuilder};
+use crate::values::specified::align::AlignFlags;
+use crate::values::specified::position::{
+    PositionTryFallbacksTryTactic, PositionTryFallbacksTryTacticKeyword,
+};
 
 #[cfg(feature = "gecko")]
 use selectors::parser::PseudoElement;
@@ -800,7 +804,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
 
         let parent_justify_items = self.style.get_parent_position().clone_justify_items();
 
-        if !parent_justify_items.computed.contains(align::AlignFlags::LEGACY) {
+        if !parent_justify_items.computed.contains(AlignFlags::LEGACY) {
             return;
         }
 
@@ -904,14 +908,83 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         }
     }
 
-    /// Adjusts the style to account for various fixups that don't fit naturally
-    /// into the cascade.
+    /// Performs adjustments for position-try-fallbacks. The properties that need adjustments here
+    /// are luckily not affected by previous adjustments nor by other computed-value-time effects,
+    /// so we can just perform them here.
     ///
-    /// When comparing to Gecko, this is similar to the work done by
-    /// `ComputedStyle::ApplyStyleFixups`, plus some parts of
-    /// `nsStyleSet::GetContext`.
-    pub fn adjust<E>(&mut self, layout_parent_style: &ComputedValues, element: Option<E>)
-    where
+    /// NOTE(emilio): If we ever perform the interleaving dance, this could / should probably move
+    /// around to the specific properties' to_computed_value implementations, but that seems
+    /// overkill for now.
+    fn adjust_for_try_tactic(&mut self, tactic: PositionTryFallbacksTryTactic) {
+        debug_assert!(!tactic.is_empty());
+        // TODO: Flip inset / margin / sizes percentages and anchor lookup sides as necessary.
+        for tactic in tactic.into_iter() {
+            match tactic {
+                PositionTryFallbacksTryTacticKeyword::None => break,
+                PositionTryFallbacksTryTacticKeyword::FlipBlock => {
+                    self.flip_self_alignment(/* block = */ true);
+                },
+                PositionTryFallbacksTryTacticKeyword::FlipInline => {
+                    self.flip_self_alignment(/* block = */ false);
+                },
+                PositionTryFallbacksTryTacticKeyword::FlipStart => {
+                    self.flip_alignment_start();
+                },
+            }
+        }
+    }
+
+    fn flip_alignment_start(&mut self) {
+        let pos = self.style.get_position();
+        let align = pos.clone_align_self();
+        let mut justify = pos.clone_justify_self();
+        if align == justify {
+            return;
+        }
+
+        // Fix-up potential justify-self: {left, right} values which might end up as alignment
+        // values.
+        if matches!(justify.value(), AlignFlags::LEFT | AlignFlags::RIGHT) {
+            let left = justify.value() == AlignFlags::LEFT;
+            let ltr = self.style.writing_mode.is_bidi_ltr();
+            justify = justify.with_value(if left == ltr {
+                AlignFlags::SELF_START
+            } else {
+                AlignFlags::SELF_END
+            });
+        }
+
+        let pos = self.style.mutate_position();
+        pos.set_align_self(justify);
+        pos.set_justify_self(align);
+    }
+
+    fn flip_self_alignment(&mut self, block: bool) {
+        let pos = self.style.get_position();
+        let cur = if block {
+            pos.clone_align_self()
+        } else {
+            pos.clone_justify_self()
+        };
+        let flipped = cur.flip_position();
+        if flipped == cur {
+            return;
+        }
+        let pos = self.style.mutate_position();
+        if block {
+            pos.set_align_self(flipped);
+        } else {
+            pos.set_justify_self(flipped);
+        }
+    }
+
+    /// Adjusts the style to account for various fixups that don't fit naturally into the cascade.
+    pub fn adjust<E>(
+        &mut self,
+        layout_parent_style: &ComputedValues,
+        element: Option<E>,
+        try_tactic: PositionTryFallbacksTryTactic,
+    ) where
         E: TElement,
     {
         if cfg!(debug_assertions) {
@@ -968,6 +1041,9 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             self.adjust_for_ruby(layout_parent_style, element);
             self.adjust_for_appearance(element);
             self.adjust_for_marker_pseudo();
+        }
+        if !try_tactic.is_empty() {
+            self.adjust_for_try_tactic(try_tactic);
         }
         self.set_bits();
     }

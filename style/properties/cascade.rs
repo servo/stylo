@@ -384,7 +384,7 @@ where
 
     if matches!(cascade_mode, CascadeMode::Unvisited { .. }) {
         StyleAdjuster::new(&mut context.builder)
-            .adjust(layout_parent_style.unwrap_or(inherited_style), element);
+            .adjust(layout_parent_style.unwrap_or(inherited_style), element, try_tactic);
     }
 
     if context.builder.modified_reset() || using_cached_reset_properties {

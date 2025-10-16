@@ -609,11 +609,6 @@ impl PositionTryFallbacksTryTactic {
     fn flip_start(id: LonghandId, wm: WritingMode) -> LonghandId {
         use LonghandId::*;
         let (physical_side, is_margin) = match id {
-            // TODO(emilio): Needs some work to use the same cascade implementation for these.
-            // Also to make justify-self: left | right map to align-self properly.
-            // AlignSelf => return JustifySelf,
-            // JustifySelf => return AlignSelf,
-
             Width => return Height,
             Height => return Width,
             MinWidth => return MinHeight,
@@ -641,13 +636,19 @@ impl PositionTryFallbacksTryTactic {
         }
     }
 
+    /// Iterates over the fallbacks in order.
+    #[inline]
+    pub fn into_iter(&self) -> impl IntoIterator<Item = PositionTryFallbacksTryTacticKeyword> {
+        [self.0, self.1, self.2]
+    }
+
     /// Applies a try tactic to a given property.
     pub fn apply_to_property(&self, mut id: LonghandId, wm: WritingMode) -> LonghandId {
         debug_assert!(!id.is_logical(), "Logical props should've been replaced already");
         debug_assert!(!self.is_empty(), "Should have something to do");
         // TODO(emilio): Consider building a LonghandIdSet to check for unaffected properties, and
         // bailing out earlier?
-        for tactic in [self.0, self.1, self.2] {
+        for tactic in self.into_iter() {
             id = match tactic {
                 PositionTryFallbacksTryTacticKeyword::None => break,
                 PositionTryFallbacksTryTacticKeyword::FlipInline |

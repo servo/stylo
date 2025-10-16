@@ -868,9 +868,9 @@ trait PrivateMatchMethods: TElement {
             let new_justify_items = new_values.get_position().clone_justify_items();
 
             let was_legacy_justify_items =
-                old_justify_items.computed.0.contains(AlignFlags::LEGACY);
+                old_justify_items.computed.contains(AlignFlags::LEGACY);
 
-            let is_legacy_justify_items = new_justify_items.computed.0.contains(AlignFlags::LEGACY);
+            let is_legacy_justify_items = new_justify_items.computed.contains(AlignFlags::LEGACY);
 
             if is_legacy_justify_items != was_legacy_justify_items {
                 return ChildRestyleRequirement::MustCascadeChildren;

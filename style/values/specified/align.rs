@@ -145,6 +145,7 @@ pub enum AxisDirection {
 /// Shared value for the `align-content` and `justify-content` properties.
 ///
 /// <https://drafts.csswg.org/css-align/#content-distribution>
+/// <https://drafts.csswg.org/css-align/#propdef-align-content>
 #[derive(
     Clone,
     Copy,
@@ -156,6 +157,7 @@ pub enum AxisDirection {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
@@ -198,8 +200,23 @@ impl ContentDistribution {
         self.primary
     }
 
-    /// Parse a value for align-content / justify-content.
-    pub fn parse<'i, 't>(
+    /// Parse a value for align-content
+    pub fn parse_block<'i>(
+        _: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        Self::parse(input, AxisDirection::Block)
+    }
+
+    /// Parse a value for justify-content
+    pub fn parse_inline<'i>(
+        _: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        Self::parse(input, AxisDirection::Inline)
+    }
+
+    fn parse<'i, 't>(
         input: &mut Parser<'i, 't>,
         axis: AxisDirection,
     ) -> Result<Self, ParseError<'i>> {
@@ -245,106 +262,28 @@ impl ContentDistribution {
             content_position | overflow_position,
         ))
     }
+}
 
-    fn list_keywords(f: KeywordsCollectFn, axis: AxisDirection) {
+impl SpecifiedValueInfo for ContentDistribution {
+    fn collect_completion_keywords(f: KeywordsCollectFn) {
         f(&["normal"]);
-        if axis == AxisDirection::Block {
-            list_baseline_keywords(f);
-        }
+        list_baseline_keywords(f); // block-axis only
         list_content_distribution_keywords(f);
         list_overflow_position_keywords(f);
         f(&["start", "end", "flex-start", "flex-end", "center"]);
-        if axis == AxisDirection::Inline {
-            f(&["left", "right"]);
-        }
+        f(&["left", "right"]); // inline-axis only
     }
 }
 
-/// Value for the `align-content` property.
+/// The specified value of the {align,justify}-self properties.
 ///
-/// <https://drafts.csswg.org/css-align/#propdef-align-content>
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-    ToTyped,
-)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-#[repr(transparent)]
-pub struct AlignContent(pub ContentDistribution);
-
-impl Parse for AlignContent {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        // NOTE Please also update `impl SpecifiedValueInfo` below when
-        //      this function is updated.
-        Ok(AlignContent(ContentDistribution::parse(
-            input,
-            AxisDirection::Block,
-        )?))
-    }
-}
-
-impl SpecifiedValueInfo for AlignContent {
-    fn collect_completion_keywords(f: KeywordsCollectFn) {
-        ContentDistribution::list_keywords(f, AxisDirection::Block);
-    }
-}
-
-/// Value for the `justify-content` property.
-///
-/// <https://drafts.csswg.org/css-align/#propdef-justify-content>
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-    ToTyped,
-)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-#[repr(transparent)]
-pub struct JustifyContent(pub ContentDistribution);
-
-impl Parse for JustifyContent {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        // NOTE Please also update `impl SpecifiedValueInfo` below when
-        //      this function is updated.
-        Ok(JustifyContent(ContentDistribution::parse(
-            input,
-            AxisDirection::Inline,
-        )?))
-    }
-}
-
-impl SpecifiedValueInfo for JustifyContent {
-    fn collect_completion_keywords(f: KeywordsCollectFn) {
-        ContentDistribution::list_keywords(f, AxisDirection::Inline);
-    }
-}
-
 /// <https://drafts.csswg.org/css-align/#self-alignment>
+/// <https://drafts.csswg.org/css-align/#propdef-align-self>
 #[derive(
     Clone,
     Copy,
     Debug,
+    Deref,
     Eq,
     MallocSizeOf,
     PartialEq,
@@ -352,9 +291,10 @@ impl SpecifiedValueInfo for JustifyContent {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-#[repr(transparent)]
+#[repr(C)]
 pub struct SelfAlignment(pub AlignFlags);
 
 impl SelfAlignment {
@@ -374,8 +314,24 @@ impl SelfAlignment {
         }
     }
 
-    /// Parse a self-alignment value on one of the axis.
-    pub fn parse<'i, 't>(
+    /// Parse self-alignment on the block axis (for align-self)
+    pub fn parse_block<'i, 't>(
+        _: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        Self::parse(input, AxisDirection::Block)
+    }
+
+    /// Parse self-alignment on the block axis (for align-self)
+    pub fn parse_inline<'i, 't>(
+        _: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        Self::parse(input, AxisDirection::Inline)
+    }
+
+    /// Parse a self-alignment value on one of the axes.
+    fn parse<'i, 't>(
         input: &mut Parser<'i, 't>,
         axis: AxisDirection,
     ) -> Result<Self, ParseError<'i>> {
@@ -411,93 +367,23 @@ impl SelfAlignment {
     }
 }
 
-/// The specified value of the align-self property.
-///
-/// <https://drafts.csswg.org/css-align/#propdef-align-self>
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-    ToTyped,
-)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-#[repr(C)]
-pub struct AlignSelf(pub SelfAlignment);
-
-impl Parse for AlignSelf {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        // NOTE Please also update `impl SpecifiedValueInfo` below when
-        //      this function is updated.
-        Ok(AlignSelf(SelfAlignment::parse(
-            input,
-            AxisDirection::Block,
-        )?))
-    }
-}
-
-impl SpecifiedValueInfo for AlignSelf {
+impl SpecifiedValueInfo for SelfAlignment {
     fn collect_completion_keywords(f: KeywordsCollectFn) {
-        SelfAlignment::list_keywords(f, AxisDirection::Block);
+        // TODO: This technically lists left/right for align-self. Not amazing but also not sure
+        // worth fixing here, could be special-cased on the caller.
+        Self::list_keywords(f, AxisDirection::Block);
     }
 }
 
-/// The specified value of the justify-self property.
-///
-/// <https://drafts.csswg.org/css-align/#propdef-justify-self>
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-    ToTyped,
-)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-#[repr(C)]
-pub struct JustifySelf(pub SelfAlignment);
-
-impl Parse for JustifySelf {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        // NOTE Please also update `impl SpecifiedValueInfo` below when
-        //      this function is updated.
-        Ok(JustifySelf(SelfAlignment::parse(
-            input,
-            AxisDirection::Inline,
-        )?))
-    }
-}
-
-impl SpecifiedValueInfo for JustifySelf {
-    fn collect_completion_keywords(f: KeywordsCollectFn) {
-        SelfAlignment::list_keywords(f, AxisDirection::Inline);
-    }
-}
-
-/// Value of the `align-items` property
+/// Value of the `align-items` and `justify-items` properties
 ///
 /// <https://drafts.csswg.org/css-align/#propdef-align-items>
+/// <https://drafts.csswg.org/css-align/#propdef-justify-items>
 #[derive(
     Clone,
     Copy,
     Debug,
+    Deref,
     Eq,
     MallocSizeOf,
     PartialEq,
@@ -509,45 +395,67 @@ impl SpecifiedValueInfo for JustifySelf {
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
-pub struct AlignItems(pub AlignFlags);
+pub struct ItemPlacement(pub AlignFlags);
 
-impl AlignItems {
-    /// The initial value 'normal'
+impl ItemPlacement {
+    /// The value 'normal'
     #[inline]
     pub fn normal() -> Self {
-        AlignItems(AlignFlags::NORMAL)
+        Self(AlignFlags::NORMAL)
     }
 }
 
-impl Parse for AlignItems {
-    // normal | stretch | <baseline-position> |
-    // <overflow-position>? <self-position>
-    fn parse<'i, 't>(
+impl ItemPlacement {
+    /// Parse a value for align-items
+    pub fn parse_block<'i>(
         _: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        Self::parse(input, AxisDirection::Block)
+    }
+
+    /// Parse a value for justify-items
+    pub fn parse_inline<'i>(
+        _: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        Self::parse(input, AxisDirection::Inline)
+    }
+
+    fn parse<'i, 't>(
         input: &mut Parser<'i, 't>,
+        axis: AxisDirection,
     ) -> Result<Self, ParseError<'i>> {
         // NOTE Please also update `impl SpecifiedValueInfo` below when
         //      this function is updated.
 
         // <baseline-position>
         if let Ok(baseline) = input.try_parse(parse_baseline) {
-            return Ok(AlignItems(baseline));
+            return Ok(Self(baseline));
         }
 
         // normal | stretch
         if let Ok(value) = input.try_parse(parse_normal_stretch) {
-            return Ok(AlignItems(value));
+            return Ok(Self(value));
         }
+
+        if axis == AxisDirection::Inline {
+            // legacy | [ legacy && [ left | right | center ] ]
+            if let Ok(value) = input.try_parse(parse_legacy) {
+                return Ok(Self(value));
+            }
+        }
+
         // <overflow-position>? <self-position>
         let overflow = input
             .try_parse(parse_overflow_position)
             .unwrap_or(AlignFlags::empty());
-        let self_position = parse_self_position(input, AxisDirection::Block)?;
-        Ok(AlignItems(self_position | overflow))
+        let self_position = parse_self_position(input, axis)?;
+        Ok(ItemPlacement(self_position | overflow))
     }
 }
 
-impl SpecifiedValueInfo for AlignItems {
+impl SpecifiedValueInfo for ItemPlacement {
     fn collect_completion_keywords(f: KeywordsCollectFn) {
         list_baseline_keywords(f);
         list_normal_stretch(f);
@@ -560,68 +468,39 @@ impl SpecifiedValueInfo for AlignItems {
 ///
 /// <https://drafts.csswg.org/css-align/#justify-items-property>
 #[derive(
-    Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem, ToTyped,
+    Clone, Copy, Debug, Deref, Eq, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem, ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
-pub struct JustifyItems(pub AlignFlags);
+pub struct JustifyItems(pub ItemPlacement);
 
 impl JustifyItems {
     /// The initial value 'legacy'
     #[inline]
     pub fn legacy() -> Self {
-        JustifyItems(AlignFlags::LEGACY)
+        Self(ItemPlacement(AlignFlags::LEGACY))
     }
 
     /// The value 'normal'
     #[inline]
     pub fn normal() -> Self {
-        JustifyItems(AlignFlags::NORMAL)
+        Self(ItemPlacement::normal())
     }
 }
 
 impl Parse for JustifyItems {
     fn parse<'i, 't>(
-        _: &ParserContext,
+        context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        // NOTE Please also update `impl SpecifiedValueInfo` below when
-        //      this function is updated.
-
-        // <baseline-position>
-        //
-        // It's weird that this accepts <baseline-position>, but not
-        // justify-content...
-        if let Ok(baseline) = input.try_parse(parse_baseline) {
-            return Ok(JustifyItems(baseline));
-        }
-
-        // normal | stretch
-        if let Ok(value) = input.try_parse(parse_normal_stretch) {
-            return Ok(JustifyItems(value));
-        }
-
-        // legacy | [ legacy && [ left | right | center ] ]
-        if let Ok(value) = input.try_parse(parse_legacy) {
-            return Ok(JustifyItems(value));
-        }
-
-        // <overflow-position>? <self-position>
-        let overflow = input
-            .try_parse(parse_overflow_position)
-            .unwrap_or(AlignFlags::empty());
-        let self_position = parse_self_position(input, AxisDirection::Inline)?;
-        Ok(JustifyItems(overflow | self_position))
+        ItemPlacement::parse_inline(context, input).map(Self)
     }
 }
 
 impl SpecifiedValueInfo for JustifyItems {
     fn collect_completion_keywords(f: KeywordsCollectFn) {
-        list_baseline_keywords(f);
-        list_normal_stretch(f);
-        list_legacy_keywords(f);
-        list_overflow_position_keywords(f);
-        list_self_position_keywords(f, AxisDirection::Inline);
+        ItemPlacement::collect_completion_keywords(f);
+        list_legacy_keywords(f); // Inline axis only
     }
 }
 

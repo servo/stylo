@@ -9,10 +9,7 @@
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::specified;
 
-pub use super::specified::{
-    AlignContent, AlignItems, ContentDistribution, JustifyContent, SelfAlignment,
-};
-pub use super::specified::{AlignSelf, JustifySelf};
+pub use super::specified::{ContentDistribution, ItemPlacement, SelfAlignment};
 
 /// The computed value for the `justify-items` property.
 ///
@@ -67,7 +64,7 @@ impl ToComputedValue for specified::JustifyItems {
     fn to_computed_value(&self, _context: &Context) -> JustifyItems {
         use crate::values::specified::align;
         let specified = *self;
-        let computed = if self.0 != align::AlignFlags::LEGACY {
+        let computed = if (self.0).0 != align::AlignFlags::LEGACY {
             *self
         } else {
             // If the inherited value of `justify-items` includes the

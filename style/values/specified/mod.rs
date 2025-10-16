@@ -25,8 +25,7 @@ use std::ops::Add;
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 
-pub use self::align::{AlignContent, AlignItems, AlignSelf, ContentDistribution};
-pub use self::align::{JustifyContent, JustifyItems, JustifySelf, SelfAlignment};
+pub use self::align::{ContentDistribution, ItemPlacement, SelfAlignment, JustifyItems};
 pub use self::angle::{AllowUnitlessZeroAngle, Angle};
 pub use self::animation::{
     AnimationComposition, AnimationDirection, AnimationDuration, AnimationFillMode,

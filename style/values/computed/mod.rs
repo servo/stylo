@@ -37,8 +37,7 @@ use std::cmp;
 use std::f32;
 use std::ops::{Add, Sub};
 
-pub use self::align::{AlignContent, AlignItems, JustifyContent, JustifyItems, SelfAlignment};
-pub use self::align::{AlignSelf, JustifySelf};
+pub use self::align::{SelfAlignment, ContentDistribution, ItemPlacement, JustifyItems};
 pub use self::angle::Angle;
 pub use self::animation::{
     AnimationComposition, AnimationDirection, AnimationDuration, AnimationFillMode,

@@ -617,7 +617,7 @@ fn static_assert() {
 
 <%self:impl_trait style_struct_name="Position">
     pub fn set_computed_justify_items(&mut self, v: values::specified::JustifyItems) {
-        debug_assert_ne!(v.0, crate::values::specified::align::AlignFlags::LEGACY);
+        debug_assert_ne!(v, values::specified::JustifyItems::legacy());
         self.mJustifyItems.computed = v;
     }
 </%self:impl_trait>

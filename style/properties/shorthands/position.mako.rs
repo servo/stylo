@@ -723,18 +723,14 @@
     sub_properties="align-content justify-content"
     spec="https://drafts.csswg.org/css-align/#propdef-place-content"
 >
-    use crate::values::specified::align::{AlignContent, JustifyContent, ContentDistribution, AxisDirection};
+    use crate::values::specified::align::ContentDistribution;
 
     pub fn parse_value<'i, 't>(
-        _: &ParserContext,
+        context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
-        let align_content =
-            ContentDistribution::parse(input, AxisDirection::Block)?;
-
-        let justify_content = input.try_parse(|input| {
-            ContentDistribution::parse(input, AxisDirection::Inline)
-        });
+        let align_content = ContentDistribution::parse_block(context, input)?;
+        let justify_content = input.try_parse(|input| ContentDistribution::parse_inline(context, input));
 
         let justify_content = match justify_content {
             Ok(v) => v,
@@ -755,15 +751,15 @@
         };
 
         Ok(expanded! {
-            align_content: AlignContent(align_content),
-            justify_content: JustifyContent(justify_content),
+            align_content: align_content,
+            justify_content: justify_content,
         })
     }
 
     impl<'a> ToCss for LonghandsToSerialize<'a> {
         fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
             self.align_content.to_css(dest)?;
-            if self.align_content.0 != self.justify_content.0 {
+            if self.align_content != self.justify_content {
                 dest.write_char(' ')?;
                 self.justify_content.to_css(dest)?;
             }
@@ -779,14 +775,14 @@
     spec="https://drafts.csswg.org/css-align/#place-self-property"
     rule_types_allowed="Style PositionTry"
 >
-    use crate::values::specified::align::{AlignSelf, JustifySelf, SelfAlignment, AxisDirection};
+    use crate::values::specified::align::SelfAlignment;
 
     pub fn parse_value<'i, 't>(
-        _: &ParserContext,
+        context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
-        let align = SelfAlignment::parse(input, AxisDirection::Block)?;
-        let justify = input.try_parse(|input| SelfAlignment::parse(input, AxisDirection::Inline));
+        let align = SelfAlignment::parse_block(context, input)?;
+        let justify = input.try_parse(|input| SelfAlignment::parse_inline(context, input));
 
         let justify = match justify {
             Ok(v) => v,
@@ -797,14 +793,14 @@
         };
 
         Ok(expanded! {
-            align_self: AlignSelf(align),
-            justify_self: JustifySelf(justify),
+            align_self: align,
+            justify_self: justify,
         })
     }
     impl<'a> ToCss for LonghandsToSerialize<'a> {
         fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
             self.align_self.to_css(dest)?;
-            if self.align_self.0 != self.justify_self.0 {
+            if self.align_self != self.justify_self {
                 dest.write_char(' ')?;
                 self.justify_self.to_css(dest)?;
             }
@@ -819,38 +815,30 @@
     sub_properties="align-items justify-items"
     spec="https://drafts.csswg.org/css-align/#place-items-property"
 >
-    use crate::values::specified::align::{AlignItems, JustifyItems};
-    use crate::parser::Parse;
-
-    impl From<AlignItems> for JustifyItems {
-        fn from(align: AlignItems) -> JustifyItems {
-            JustifyItems(align.0)
-        }
-    }
+    use crate::values::specified::align::{ItemPlacement, JustifyItems};
 
     pub fn parse_value<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
-        let align = AlignItems::parse(context, input)?;
+        let align = ItemPlacement::parse_block(context, input)?;
         let justify =
-            input.try_parse(|input| JustifyItems::parse(context, input))
-                 .unwrap_or_else(|_| JustifyItems::from(align));
+            input.try_parse(|input| ItemPlacement::parse_inline(context, input))
+                 .unwrap_or_else(|_| align.clone());
 
         Ok(expanded! {
             align_items: align,
-            justify_items: justify,
+            justify_items: JustifyItems(justify),
         })
     }
 
     impl<'a> ToCss for LonghandsToSerialize<'a> {
         fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
             self.align_items.to_css(dest)?;
-            if self.align_items.0 != self.justify_items.0 {
+            if *self.align_items != self.justify_items.0 {
                 dest.write_char(' ')?;
                 self.justify_items.to_css(dest)?;
             }
-
             Ok(())
         }
     }

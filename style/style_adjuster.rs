@@ -794,17 +794,13 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     fn adjust_for_justify_items(&mut self) {
         use crate::values::specified::align;
         let justify_items = self.style.get_position().clone_justify_items();
-        if justify_items.specified.0 != align::AlignFlags::LEGACY {
+        if justify_items.specified != align::JustifyItems::legacy() {
             return;
         }
 
         let parent_justify_items = self.style.get_parent_position().clone_justify_items();
 
-        if !parent_justify_items
-            .computed
-            .0
-            .contains(align::AlignFlags::LEGACY)
-        {
+        if !parent_justify_items.computed.contains(align::AlignFlags::LEGACY) {
             return;
         }
 

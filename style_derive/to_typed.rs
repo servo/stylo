@@ -104,16 +104,16 @@ fn derive_variant_arm(variant: &synstructure::VariantInfo) -> TokenStream {
     let identifier = &ast.ident;
 
     // Parse any #[css(...)] attributes attached to this variant.
-    let variant_attrs = cg::parse_variant_attrs_from_ast::<CssVariantAttrs>(&ast);
+    let css_variant_attrs = cg::parse_variant_attrs_from_ast::<CssVariantAttrs>(&ast);
 
     // If the variant is explicitly marked #[css(skip)], don’t generate
     // anything for it, always return None.
-    if variant_attrs.skip {
+    if css_variant_attrs.skip {
         return quote!(None);
     }
 
     assert!(
-        variant_attrs.keyword.is_none(),
+        css_variant_attrs.keyword.is_none(),
         "Unhandled keyword attribute"
     );
 

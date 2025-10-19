@@ -82,7 +82,7 @@ pub fn derive_specified_value_info(stream: TokenStream) -> TokenStream {
     specified_value_info::derive(input).into()
 }
 
-#[proc_macro_derive(ToTyped, attributes(css))]
+#[proc_macro_derive(ToTyped, attributes(css, typed_value))]
 pub fn derive_to_typed(stream: TokenStream) -> TokenStream {
     let input = syn::parse(stream).unwrap();
     to_typed::derive(input).into()

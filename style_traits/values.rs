@@ -617,17 +617,28 @@ pub enum TypedValue {
 /// exposed to the DOM as `CSSStyleValue` subclasses.
 ///
 /// This trait is derivable with `#[derive(ToTyped)]`. The derived
-/// implementation behaves as follows:
+/// implementation currently supports:
 ///
-/// * For enums whose variants are all unit variants (representing keywords),
-///   it automatically reifies the value as [`TypedValue::Keyword`], using the
-///   same serialization logic as [`ToCss`].
-/// * For all other cases, the derived implementation does not attempt to reify
-///   anything and falls back to the default method (which always returns
-///   `None`).
+/// * Keyword enums: Enums whose variants are all unit variants are
+///   automatically reified as [`TypedValue::Keyword`], using the same
+///   serialization logic as [`ToCss`].
 ///
-/// Over time, the derive may be extended to cover additional common patterns,
-/// similar to how `ToCss` supports multiple attribute annotations.
+/// * Structs and data-carrying variants: When the
+///   `#[typed_value(derive_fields)]` attribute is present, the derive attempts
+///   to call `.to_typed()` recursively on inner fields or variant payloads,
+///   producing a nested [`TypedValue`] representation when possible.
+///
+/// * Other cases: If no automatic mapping is defined or recursion is not
+///   enabled, the derived implementation falls back to the default method,
+///   returning `None`.
+///
+/// The `derive_fields` attribute is intentionally opt-in for now to avoid
+/// forcing types that do not participate in reification to implement
+/// [`ToTyped`]. Once Typed OM coverage stabilizes, this behavior is expected
+/// to become the default (see the corresponding follow-up bug).
+///
+/// Over time, the derive may be extended to handle additional CSS value
+/// categories such as numeric, color, and transform types.
 pub trait ToTyped {
     /// Attempt to convert `self` into a [`TypedValue`].
     ///

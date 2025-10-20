@@ -569,8 +569,8 @@ impl CssRule {
         loader: Option<&dyn StylesheetLoader>,
         allow_import_rules: AllowImportRules,
     ) -> Result<Self, RulesMutateError> {
-        let url_data = parent_stylesheet_contents.url_data.read();
-        let namespaces = parent_stylesheet_contents.namespaces.read();
+        let url_data = &parent_stylesheet_contents.url_data;
+        let namespaces = &parent_stylesheet_contents.namespaces;
         let mut context = ParserContext::new(
             parent_stylesheet_contents.origin,
             &url_data,

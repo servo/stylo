@@ -204,8 +204,8 @@ impl Keyframe {
         parent_stylesheet_contents: &StylesheetContents,
         lock: &SharedRwLock,
     ) -> Result<Arc<Locked<Self>>, ParseError<'i>> {
-        let url_data = parent_stylesheet_contents.url_data.read();
-        let namespaces = parent_stylesheet_contents.namespaces.read();
+        let url_data = &parent_stylesheet_contents.url_data;
+        let namespaces = &parent_stylesheet_contents.namespaces;
         let mut context = ParserContext::new(
             parent_stylesheet_contents.origin,
             &url_data,

@@ -32,8 +32,10 @@ use style_traits::{CssWriter, ToCss};
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
+#[typed_value(derive_fields)]
 pub enum ShapeGeometryBox {
     /// Depending on which kind of element this style value applied on, the
     /// default value of the reference-box can be different.  For an HTML
@@ -83,6 +85,7 @@ fn is_default_box_for_clip_path(b: &ShapeGeometryBox) -> bool {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum ShapeBox {
@@ -117,11 +120,17 @@ impl Default for ShapeBox {
 )]
 #[animation(no_bound(U))]
 #[repr(u8)]
+#[typed_value(derive_fields)]
 pub enum GenericClipPath<BasicShape, U> {
     #[animation(error)]
     None,
     #[animation(error)]
+    // XXX This will likely change to skip since it seems Typed OM Level 1
+    // won't be updated to cover this case even though there's some preparation
+    // in WPT tests for this.
+    #[typed_value(todo)]
     Url(U),
+    #[typed_value(skip)]
     Shape(
         Box<BasicShape>,
         #[css(skip_if = "is_default_box_for_clip_path")] ShapeGeometryBox,

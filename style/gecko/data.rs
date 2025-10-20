@@ -45,7 +45,7 @@ impl fmt::Debug for GeckoStyleSheet {
         formatter
             .debug_struct("GeckoStyleSheet")
             .field("origin", &contents.origin)
-            .field("url_data", &*contents.url_data.read())
+            .field("url_data", &contents.url_data)
             .finish()
     }
 }

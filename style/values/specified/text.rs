@@ -28,7 +28,7 @@ use style_traits::{KeywordsCollectFn, SpecifiedValueInfo};
 pub type InitialLetter = GenericInitialLetter<Number, Integer>;
 
 /// A spacing value used by either the `letter-spacing` or `word-spacing` properties.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 pub enum Spacing {
     /// `normal`
     Normal,
@@ -55,6 +55,7 @@ impl Parse for Spacing {
 #[derive(
     Clone, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
+#[typed_value(derive_fields)]
 pub struct LetterSpacing(pub Spacing);
 
 impl ToComputedValue for LetterSpacing {

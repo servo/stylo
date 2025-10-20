@@ -15,7 +15,7 @@ use crate::values::specified::text::{TextEmphasisFillMode, TextEmphasisShapeKeyw
 use crate::values::{CSSFloat, CSSInteger};
 use crate::Zero;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssString, CssWriter, ToCss, ToTyped, TypedValue};
 
 pub use crate::values::specified::text::{
     HyphenateCharacter, LineBreak, MozControlCharacterVisibility, OverflowWrap, RubyPosition,
@@ -66,7 +66,6 @@ impl HyphenateLimitChars {
     ToAnimatedValue,
     ToAnimatedZero,
     ToResolvedValue,
-    ToTyped,
 )]
 pub struct GenericLetterSpacing<L>(pub L);
 /// This is generic just to make the #[derive()] code do the right thing for lengths.
@@ -93,6 +92,23 @@ impl ToCss for LetterSpacing {
             return dest.write_str("normal");
         }
         self.0.to_css(dest)
+    }
+}
+
+impl ToTyped for LetterSpacing {
+    // XXX The specification does not currently define how this property should
+    // be reified into Typed OM. The current behavior follows existing WPT
+    // coverage (letter-spacing.html). We may file a spec issue once more data
+    // is collected to update the Property-specific Rules section to align with
+    // observed test expectations.
+    fn to_typed(&self) -> Option<TypedValue> {
+        if self.0.is_zero() {
+            return Some(TypedValue::Keyword(CssString::from("normal")));
+        }
+        // XXX According to the test, should return TypedValue::Numeric with
+        // unit "px" or "percent" once that variant is available. Tracked in
+        // bug 1990419.
+        None
     }
 }
 

@@ -12,7 +12,9 @@ use crate::values::computed::angle::Angle;
 use crate::values::computed::url::ComputedUrl;
 use crate::values::computed::{Image, LengthPercentage, NonNegativeLengthPercentage, Position};
 use crate::values::generics::basic_shape as generic;
+use crate::values::generics::position::Position as GenericPosition;
 use crate::values::specified::svg_path::{CoordPair, PathCommand};
+use crate::values::CSSFloat;
 
 /// A computed alias for FillRule.
 pub use crate::values::generics::basic_shape::FillRule;
@@ -55,6 +57,9 @@ pub type PathOrShapeFunction = generic::GenericPathOrShapeFunction<Angle, Length
 
 /// The computed value of `CoordinatePair`.
 pub type CoordinatePair = generic::CoordinatePair<LengthPercentage>;
+
+/// The computed value of 'CommandEndPoint'.
+pub type CommandEndPoint = generic::CommandEndPoint<LengthPercentage>;
 
 /// Animate from `Shape` to `Path`, and vice versa.
 macro_rules! animate_shape {
@@ -141,12 +146,10 @@ impl From<&PathCommand> for ShapeCommand {
         use crate::values::computed::CSSPixelLength;
         match path {
             &PathCommand::Close => Self::Close,
-            &PathCommand::Move { by_to, ref point } => Self::Move {
-                by_to,
+            &PathCommand::Move { ref point } => Self::Move {
                 point: point.into(),
             },
-            &PathCommand::Line { by_to, ref point } => Self::Move {
-                by_to,
+            &PathCommand::Line { ref point } => Self::Move {
                 point: point.into(),
             },
             &PathCommand::HLine { by_to, x } => Self::HLine {
@@ -158,47 +161,38 @@ impl From<&PathCommand> for ShapeCommand {
                 y: LengthPercentage::new_length(CSSPixelLength::new(y)),
             },
             &PathCommand::CubicCurve {
-                by_to,
                 ref point,
                 ref control1,
                 ref control2,
             } => Self::CubicCurve {
-                by_to,
                 point: point.into(),
                 control1: control1.into(),
                 control2: control2.into(),
             },
             &PathCommand::QuadCurve {
-                by_to,
                 ref point,
                 ref control1,
             } => Self::QuadCurve {
-                by_to,
                 point: point.into(),
                 control1: control1.into(),
             },
             &PathCommand::SmoothCubic {
-                by_to,
                 ref point,
                 ref control2,
             } => Self::SmoothCubic {
-                by_to,
                 point: point.into(),
                 control2: control2.into(),
             },
-            &PathCommand::SmoothQuad { by_to, ref point } => Self::SmoothQuad {
-                by_to,
+            &PathCommand::SmoothQuad { ref point } => Self::SmoothQuad {
                 point: point.into(),
             },
             &PathCommand::Arc {
-                by_to,
                 ref point,
                 ref radii,
                 arc_sweep,
                 arc_size,
                 rotate,
             } => Self::Arc {
-                by_to,
                 point: point.into(),
                 radii: radii.into(),
                 arc_sweep,
@@ -217,5 +211,30 @@ impl From<&CoordPair> for CoordinatePair {
             LengthPercentage::new_length(CSSPixelLength::new(p.x)),
             LengthPercentage::new_length(CSSPixelLength::new(p.y)),
         )
+    }
+}
+
+impl From<&GenericPosition<CSSFloat, CSSFloat>> for Position {
+    #[inline]
+    fn from(p: &GenericPosition<CSSFloat, CSSFloat>) -> Self {
+        use crate::values::computed::CSSPixelLength;
+        Self::new(
+            LengthPercentage::new_length(CSSPixelLength::new(p.horizontal)),
+            LengthPercentage::new_length(CSSPixelLength::new(p.vertical)),
+        )
+    }
+}
+
+impl From<&generic::CommandEndPoint<CSSFloat>> for CommandEndPoint {
+    #[inline]
+    fn from(p: &generic::CommandEndPoint<CSSFloat>) -> Self {
+        match p {
+            generic::CommandEndPoint::<CSSFloat>::ToPosition(pos) => {
+                CommandEndPoint::ToPosition(pos.into())
+            },
+            generic::CommandEndPoint::<CSSFloat>::ByCoordinate(coord) => {
+                CommandEndPoint::ByCoordinate(coord.into())
+            },
+        }
     }
 }

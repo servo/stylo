@@ -11,6 +11,7 @@
 <%namespace name="helpers" file="/helpers.mako.rs" />
 
 use crate::Atom;
+use crate::logical_geometry::PhysicalSide;
 use app_units::Au;
 use crate::computed_value_flags::*;
 use crate::custom_properties::ComputedCustomProperties;
@@ -270,6 +271,25 @@ impl ComputedValuesInner {
     #[allow(non_snake_case)]
     pub fn clone_${ident}(&self) -> longhands::${ident}::computed_value::T {
         From::from(self.${gecko_ffi_name}.clone())
+    }
+</%def>
+
+<%def name="impl_physical_sides(ident, props)">
+    pub fn get_${ident}(&self, s: PhysicalSide) -> &longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T {
+        match s {
+            PhysicalSide::Top => &self.${data.longhands_by_name[props[0]].gecko_ffi_name},
+            PhysicalSide::Right => &self.${data.longhands_by_name[props[1]].gecko_ffi_name},
+            PhysicalSide::Bottom => &self.${data.longhands_by_name[props[2]].gecko_ffi_name},
+            PhysicalSide::Left => &self.${data.longhands_by_name[props[3]].gecko_ffi_name},
+        }
+    }
+    pub fn set_${ident}(&mut self, s: PhysicalSide, v: longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T) {
+        match s {
+            PhysicalSide::Top => self.set_${data.longhands_by_name[props[0]].ident}(v),
+            PhysicalSide::Right => self.set_${data.longhands_by_name[props[1]].ident}(v),
+            PhysicalSide::Bottom => self.set_${data.longhands_by_name[props[2]].ident}(v),
+            PhysicalSide::Left => self.set_${data.longhands_by_name[props[3]].ident}(v),
+        }
     }
 </%def>
 
@@ -611,11 +631,14 @@ fn static_assert() {
     % endfor
 </%self:impl_trait>
 
-<%self:impl_trait style_struct_name="Margin"></%self:impl_trait>
+<%self:impl_trait style_struct_name="Margin">
+    ${impl_physical_sides("margin", ["margin-top", "margin-right", "margin-bottom", "margin-left"])}
+</%self:impl_trait>
 <%self:impl_trait style_struct_name="Padding"></%self:impl_trait>
 <%self:impl_trait style_struct_name="Page"></%self:impl_trait>
 
 <%self:impl_trait style_struct_name="Position">
+    ${impl_physical_sides("inset", ["top", "right", "bottom", "left"])}
     pub fn set_computed_justify_items(&mut self, v: values::specified::JustifyItems) {
         debug_assert_ne!(v, values::specified::JustifyItems::legacy());
         self.mJustifyItems.computed = v;

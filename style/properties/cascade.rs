@@ -383,8 +383,11 @@ where
     context.builder.clear_modified_reset();
 
     if matches!(cascade_mode, CascadeMode::Unvisited { .. }) {
-        StyleAdjuster::new(&mut context.builder)
-            .adjust(layout_parent_style.unwrap_or(inherited_style), element, try_tactic);
+        StyleAdjuster::new(&mut context.builder).adjust(
+            layout_parent_style.unwrap_or(inherited_style),
+            element,
+            try_tactic,
+        );
     }
 
     if context.builder.modified_reset() || using_cached_reset_properties {
@@ -642,7 +645,11 @@ struct Cascade<'b> {
 }
 
 impl<'b> Cascade<'b> {
-    fn new(first_line_reparenting: FirstLineReparenting<'b>, try_tactic: PositionTryFallbacksTryTactic, ignore_colors: bool) -> Self {
+    fn new(
+        first_line_reparenting: FirstLineReparenting<'b>,
+        try_tactic: PositionTryFallbacksTryTactic,
+        ignore_colors: bool,
+    ) -> Self {
         Self {
             first_line_reparenting,
             try_tactic,
@@ -868,9 +875,6 @@ impl<'b> Cascade<'b> {
                     .borrow_mut()
                     .set_writing_mode_dependency(wm);
                 longhand_id = longhand_id.to_physical(wm);
-            }
-            if !self.try_tactic.is_empty() {
-                longhand_id = self.try_tactic.apply_to_property(longhand_id, context.builder.writing_mode);
             }
             self.apply_one_longhand(
                 context,

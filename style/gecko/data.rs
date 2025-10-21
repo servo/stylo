@@ -9,7 +9,6 @@ use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs::{
     self, ServoStyleSetSizes, StyleSheet as DomStyleSheet, StyleSheetInfo,
 };
-use crate::invalidation::media_queries::{MediaListKey, ToMediaListKey};
 use crate::media_queries::{Device, MediaList};
 use crate::properties::ComputedValues;
 use crate::selector_parser::SnapshotMap;
@@ -47,13 +46,6 @@ impl fmt::Debug for GeckoStyleSheet {
             .field("origin", &contents.origin)
             .field("url_data", &contents.url_data)
             .finish()
-    }
-}
-
-impl ToMediaListKey for crate::gecko::data::GeckoStyleSheet {
-    fn to_media_list_key(&self) -> MediaListKey {
-        use std::mem;
-        unsafe { MediaListKey::from_raw(mem::transmute(self.0)) }
     }
 }
 

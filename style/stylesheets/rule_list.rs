@@ -120,11 +120,9 @@ impl CssRules {
         }
         dest.write_str("\n}")
     }
-}
 
-/// A trait to implement helpers for `Arc<Locked<CssRules>>`.
-pub trait CssRulesHelpers {
-    /// <https://drafts.csswg.org/cssom/#insert-a-css-rule>
+    /// Parses a rule for <https://drafts.csswg.org/cssom/#insert-a-css-rule>. Caller is
+    /// responsible for calling insert() afterwards.
     ///
     /// Written in this funky way because parsing an @import rule may cause us
     /// to clone a stylesheet from the same document due to caching in the CSS
@@ -132,21 +130,7 @@ pub trait CssRulesHelpers {
     ///
     /// TODO(emilio): We could also pass the write guard down into the loader
     /// instead, but that seems overkill.
-    fn insert_rule(
-        &self,
-        lock: &SharedRwLock,
-        rule: &str,
-        parent_stylesheet_contents: &StylesheetContents,
-        index: usize,
-        nested: CssRuleTypes,
-        parse_relative_rule_type: Option<CssRuleType>,
-        loader: Option<&dyn StylesheetLoader>,
-        allow_import_rules: AllowImportRules,
-    ) -> Result<CssRule, RulesMutateError>;
-}
-
-impl CssRulesHelpers for Locked<CssRules> {
-    fn insert_rule(
+    pub fn parse_rule_for_insert(
         &self,
         lock: &SharedRwLock,
         rule: &str,
@@ -157,39 +141,26 @@ impl CssRulesHelpers for Locked<CssRules> {
         loader: Option<&dyn StylesheetLoader>,
         allow_import_rules: AllowImportRules,
     ) -> Result<CssRule, RulesMutateError> {
-        let new_rule = {
-            let read_guard = lock.read();
-            let rules = self.read_with(&read_guard);
-
-            // Step 1, 2
-            if index > rules.0.len() {
-                return Err(RulesMutateError::IndexSize);
-            }
-
-            let insert_rule_context = InsertRuleContext {
-                rule_list: &rules.0,
-                index,
-                containing_rule_types,
-                parse_relative_rule_type,
-            };
-
-            // Steps 3, 4, 5, 6
-            CssRule::parse(
-                &rule,
-                insert_rule_context,
-                parent_stylesheet_contents,
-                lock,
-                loader,
-                allow_import_rules,
-            )?
-        };
-
-        {
-            let mut write_guard = lock.write();
-            let rules = self.write_with(&mut write_guard);
-            rules.0.insert(index, new_rule.clone());
+        // Step 1, 2
+        if index > self.0.len() {
+            return Err(RulesMutateError::IndexSize);
         }
 
-        Ok(new_rule)
+        let insert_rule_context = InsertRuleContext {
+            rule_list: &self.0,
+            index,
+            containing_rule_types,
+            parse_relative_rule_type,
+        };
+
+        // Steps 3, 4, 5, 6
+        CssRule::parse(
+            &rule,
+            insert_rule_context,
+            parent_stylesheet_contents,
+            lock,
+            loader,
+            allow_import_rules,
+        )
     }
 }

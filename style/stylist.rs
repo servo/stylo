@@ -3386,15 +3386,15 @@ impl CascadeData {
         }
 
         debug!(" + {:?}", stylesheet);
-        let contents = stylesheet.contents();
+        let contents = stylesheet.contents(guard);
         results.push(contents.to_media_list_key());
 
         // Safety: StyleSheetContents are reference-counted with Arc.
         contents_list.push(StylesheetContentsPtr(unsafe {
-            Arc::from_raw_addrefed(contents)
+            Arc::from_raw_addrefed(&*contents)
         }));
 
-        for rule in stylesheet.effective_rules(device, guard) {
+        for rule in stylesheet.contents(guard).effective_rules(device, guard) {
             match *rule {
                 CssRule::Import(ref lock) => {
                     let import_rule = lock.read_with(guard);
@@ -4073,10 +4073,9 @@ impl CascadeData {
             return Ok(());
         }
 
-        let contents = stylesheet.contents();
-
+        let contents = stylesheet.contents(guard);
         if rebuild_kind.should_rebuild_invalidation() {
-            self.effective_media_query_results.saw_effective(contents);
+            self.effective_media_query_results.saw_effective(&*contents);
         }
 
         let mut state = ContainingRuleState::default();
@@ -4111,9 +4110,8 @@ impl CascadeData {
 
         let effective_now = stylesheet.is_effective_for_device(device, guard);
 
-        let effective_then = self
-            .effective_media_query_results
-            .was_effective(stylesheet.contents());
+        let contents = stylesheet.contents(guard);
+        let effective_then = self.effective_media_query_results.was_effective(contents);
 
         if effective_now != effective_then {
             debug!(
@@ -4129,8 +4127,7 @@ impl CascadeData {
             return true;
         }
 
-        let mut iter = stylesheet.iter_rules::<PotentiallyEffectiveMediaRules>(device, guard);
-
+        let mut iter = contents.iter_rules::<PotentiallyEffectiveMediaRules>(device, guard);
         while let Some(rule) = iter.next() {
             match *rule {
                 CssRule::Style(..)

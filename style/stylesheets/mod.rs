@@ -68,7 +68,7 @@ pub use self::origin::{Origin, OriginSet, OriginSetIterator, PerOrigin, PerOrigi
 pub use self::page_rule::{PagePseudoClassFlags, PageRule, PageSelector, PageSelectors};
 pub use self::position_try_rule::PositionTryRule;
 pub use self::property_rule::PropertyRule;
-pub use self::rule_list::{CssRules, CssRulesHelpers};
+pub use self::rule_list::CssRules;
 pub use self::rule_parser::{InsertRuleContext, State, TopLevelRuleParser};
 pub use self::rules_iterator::{AllRules, EffectiveRules};
 pub use self::rules_iterator::{

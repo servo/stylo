@@ -41,7 +41,7 @@ unsafe impl Sync for GeckoStyleSheet {}
 
 impl fmt::Debug for GeckoStyleSheet {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let contents = self.contents();
+        let contents = self.raw_contents();
         formatter
             .debug_struct("GeckoStyleSheet")
             .field("origin", &contents.origin)
@@ -89,6 +89,11 @@ impl GeckoStyleSheet {
     fn inner(&self) -> &StyleSheetInfo {
         unsafe { &*(self.raw().mInner as *const StyleSheetInfo) }
     }
+
+    fn raw_contents(&self) -> &StylesheetContents {
+        debug_assert!(!self.inner().mContents.mRawPtr.is_null());
+        unsafe { &*self.inner().mContents.mRawPtr }
+    }
 }
 
 impl Drop for GeckoStyleSheet {
@@ -125,9 +130,8 @@ impl StylesheetInDocument for GeckoStyleSheet {
     }
 
     #[inline]
-    fn contents(&self) -> &StylesheetContents {
-        debug_assert!(!self.inner().mContents.mRawPtr.is_null());
-        unsafe { &*self.inner().mContents.mRawPtr }
+    fn contents<'a>(&'a self, _: &'a SharedRwLockReadGuard) -> &'a StylesheetContents {
+        self.raw_contents()
     }
 
     fn implicit_scope_root(&self) -> Option<ImplicitScopeRoot> {

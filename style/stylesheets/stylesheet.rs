@@ -160,6 +160,30 @@ impl StylesheetContents {
         self.rules.unconditional_shallow_size_of(ops)
             + self.rules.read_with(guard).size_of(guard, ops)
     }
+
+    /// Return an iterator using the condition `C`.
+    #[inline]
+    pub fn iter_rules<'a, 'b, C>(
+        &'a self,
+        device: &'a Device,
+        guard: &'a SharedRwLockReadGuard<'b>,
+    ) -> RulesIterator<'a, 'b, C>
+    where
+        C: NestedRuleIterationCondition,
+    {
+        RulesIterator::new(device, self.quirks_mode, guard, self.rules(guard).iter())
+    }
+
+    /// Return an iterator over the effective rules within the style-sheet, as
+    /// according to the supplied `Device`.
+    #[inline]
+    pub fn effective_rules<'a, 'b>(
+        &'a self,
+        device: &'a Device,
+        guard: &'a SharedRwLockReadGuard<'b>,
+    ) -> EffectiveRulesIterator<'a, 'b> {
+        self.iter_rules::<EffectiveRules>(device, guard)
+    }
 }
 
 impl DeepCloneWithLock for StylesheetContents {
@@ -188,7 +212,7 @@ impl DeepCloneWithLock for StylesheetContents {
 #[derive(Debug)]
 pub struct Stylesheet {
     /// The contents of this stylesheet.
-    pub contents: Arc<StylesheetContents>,
+    pub contents: Locked<Arc<StylesheetContents>>,
     /// The lock used for objects inside this stylesheet
     pub shared_lock: SharedRwLock,
     /// List of media associated with the Stylesheet.
@@ -205,50 +229,15 @@ pub trait StylesheetInDocument: ::std::fmt::Debug {
     /// Get the media associated with this stylesheet.
     fn media<'a>(&'a self, guard: &'a SharedRwLockReadGuard) -> Option<&'a MediaList>;
 
-    /// Returns a reference to the list of rules in this stylesheet.
-    fn rules<'a, 'b: 'a>(&'a self, guard: &'b SharedRwLockReadGuard) -> &'a [CssRule] {
-        self.contents().rules(guard)
-    }
-
     /// Returns a reference to the contents of the stylesheet.
-    fn contents(&self) -> &StylesheetContents;
-
-    /// Return an iterator using the condition `C`.
-    #[inline]
-    fn iter_rules<'a, 'b, C>(
-        &'a self,
-        device: &'a Device,
-        guard: &'a SharedRwLockReadGuard<'b>,
-    ) -> RulesIterator<'a, 'b, C>
-    where
-        C: NestedRuleIterationCondition,
-    {
-        let contents = self.contents();
-        RulesIterator::new(
-            device,
-            contents.quirks_mode,
-            guard,
-            contents.rules(guard).iter(),
-        )
-    }
+    fn contents<'a>(&'a self, guard: &'a SharedRwLockReadGuard) -> &'a StylesheetContents;
 
     /// Returns whether the style-sheet applies for the current device.
     fn is_effective_for_device(&self, device: &Device, guard: &SharedRwLockReadGuard) -> bool {
         match self.media(guard) {
-            Some(medialist) => medialist.evaluate(device, self.contents().quirks_mode),
+            Some(medialist) => medialist.evaluate(device, self.contents(guard).quirks_mode),
             None => true,
         }
-    }
-
-    /// Return an iterator over the effective rules within the style-sheet, as
-    /// according to the supplied `Device`.
-    #[inline]
-    fn effective_rules<'a, 'b>(
-        &'a self,
-        device: &'a Device,
-        guard: &'a SharedRwLockReadGuard<'b>,
-    ) -> EffectiveRulesIterator<'a, 'b> {
-        self.iter_rules::<EffectiveRules>(device, guard)
     }
 
     /// Return the implicit scope root for this stylesheet, if one exists.
@@ -265,8 +254,8 @@ impl StylesheetInDocument for Stylesheet {
     }
 
     #[inline]
-    fn contents(&self) -> &StylesheetContents {
-        &self.contents
+    fn contents<'a>(&'a self, guard: &'a SharedRwLockReadGuard) -> &'a StylesheetContents {
+        self.contents.read_with(guard)
     }
 
     fn implicit_scope_root(&self) -> Option<ImplicitScopeRoot> {
@@ -298,8 +287,8 @@ impl StylesheetInDocument for DocumentStyleSheet {
     }
 
     #[inline]
-    fn contents(&self) -> &StylesheetContents {
-        self.0.contents()
+    fn contents<'a>(&'a self, guard: &'a SharedRwLockReadGuard) -> &'a StylesheetContents {
+        self.0.contents(guard)
     }
 
     fn implicit_scope_root(&self) -> Option<ImplicitScopeRoot> {
@@ -499,7 +488,7 @@ impl Stylesheet {
         );
 
         Stylesheet {
-            contents,
+            contents: shared_lock.wrap(contents),
             shared_lock,
             media,
             disabled: AtomicBool::new(false),
@@ -534,7 +523,11 @@ impl Clone for Stylesheet {
         // Make a deep clone of the media, using the new lock.
         let media = self.media.read_with(&guard).clone();
         let media = Arc::new(lock.wrap(media));
-        let contents = Arc::new(self.contents.deep_clone_with_lock(&lock, &guard));
+        let contents = lock.wrap(Arc::new(
+            self.contents
+                .read_with(&guard)
+                .deep_clone_with_lock(&lock, &guard),
+        ));
 
         Stylesheet {
             contents,

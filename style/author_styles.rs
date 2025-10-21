@@ -6,7 +6,6 @@
 //! ones used for ShadowRoot.
 
 use crate::dom::TElement;
-use crate::invalidation::media_queries::ToMediaListKey;
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::stylesheet_set::AuthorStylesheetSet;
 use crate::stylesheets::StylesheetInDocument;
@@ -56,7 +55,6 @@ where
     pub fn flush<E>(&mut self, stylist: &mut Stylist, guard: &SharedRwLockReadGuard)
     where
         E: TElement,
-        S: ToMediaListKey,
     {
         let flusher = self
             .stylesheets

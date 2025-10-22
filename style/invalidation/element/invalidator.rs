@@ -440,7 +440,8 @@ impl NegationScopeVisitor {
                 DependencyInvalidationKind::Normal(..)
             )
         {
-            return dependency.selector.visit(&mut self);
+            dependency.selector.visit(&mut self);
+            return self.found_scope_in_negation;
         }
 
         let nested_visitor = Self {

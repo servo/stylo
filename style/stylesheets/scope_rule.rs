@@ -127,10 +127,6 @@ fn parse_scope<'a>(
             return Ok(None);
         }
         input.parse_nested_block(|input| {
-            if input.is_exhausted() {
-                // `@scope () {}` is valid.
-                return Ok(None);
-            }
             let selector_parser = SelectorParser {
                 stylesheet_origin: context.stylesheet_origin,
                 namespaces: &context.namespaces,

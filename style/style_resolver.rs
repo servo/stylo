@@ -389,7 +389,7 @@ where
             parent_style,
             layout_parent_style,
             FirstLineReparenting::No,
-            /* try_tactic = */ Default::default(),
+            /* try_tactic = */ &Default::default(),
             Some(&self.context.thread_local.rule_cache),
             &mut conditions,
         );

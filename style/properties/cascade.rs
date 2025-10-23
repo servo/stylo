@@ -71,7 +71,7 @@ pub fn cascade<E>(
     parent_style: Option<&ComputedValues>,
     layout_parent_style: Option<&ComputedValues>,
     first_line_reparenting: FirstLineReparenting,
-    try_tactic: PositionTryFallbacksTryTactic,
+    try_tactic: &PositionTryFallbacksTryTactic,
     visited_rules: Option<&StrongRuleNode>,
     cascade_input_flags: ComputedValueFlags,
     rule_cache: Option<&RuleCache>,
@@ -189,7 +189,7 @@ fn cascade_rules<E>(
     parent_style: Option<&ComputedValues>,
     layout_parent_style: Option<&ComputedValues>,
     first_line_reparenting: FirstLineReparenting,
-    try_tactic: PositionTryFallbacksTryTactic,
+    try_tactic: &PositionTryFallbacksTryTactic,
     cascade_mode: CascadeMode,
     cascade_input_flags: ComputedValueFlags,
     rule_cache: Option<&RuleCache>,
@@ -265,7 +265,7 @@ pub fn apply_declarations<'a, E, I>(
     parent_style: Option<&'a ComputedValues>,
     layout_parent_style: Option<&ComputedValues>,
     first_line_reparenting: FirstLineReparenting<'a>,
-    try_tactic: PositionTryFallbacksTryTactic,
+    try_tactic: &'a PositionTryFallbacksTryTactic,
     cascade_mode: CascadeMode,
     cascade_input_flags: ComputedValueFlags,
     rule_cache: Option<&'a RuleCache>,
@@ -635,7 +635,7 @@ impl<'a> Declarations<'a> {
 
 struct Cascade<'b> {
     first_line_reparenting: FirstLineReparenting<'b>,
-    try_tactic: PositionTryFallbacksTryTactic,
+    try_tactic: &'b PositionTryFallbacksTryTactic,
     ignore_colors: bool,
     seen: LonghandIdSet,
     author_specified: LonghandIdSet,
@@ -647,7 +647,7 @@ struct Cascade<'b> {
 impl<'b> Cascade<'b> {
     fn new(
         first_line_reparenting: FirstLineReparenting<'b>,
-        try_tactic: PositionTryFallbacksTryTactic,
+        try_tactic: &'b PositionTryFallbacksTryTactic,
         ignore_colors: bool,
     ) -> Self {
         Self {

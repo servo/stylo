@@ -32,6 +32,7 @@ use std::fmt::{self, Write};
 use style_traits::arc_slice::ArcSlice;
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use thin_vec::ThinVec;
 
 /// The specified value of a CSS `<position>`
 pub type Position = GenericPosition<HorizontalPosition, VerticalPosition>;
@@ -499,7 +500,6 @@ impl PositionAnchor {
     Clone,
     Copy,
     Debug,
-    Default,
     Eq,
     MallocSizeOf,
     Parse,
@@ -514,10 +514,6 @@ impl PositionAnchor {
 #[repr(u8)]
 /// How to swap values for the automatically-generated position tactic.
 pub enum PositionTryFallbacksTryTacticKeyword {
-    /// Magic value for no change.
-    #[css(skip)]
-    #[default]
-    None,
     /// Swap the values in the block axis.
     FlipBlock,
     /// Swap the values in the inline axis.
@@ -530,38 +526,26 @@ pub enum PositionTryFallbacksTryTacticKeyword {
     FlipY,
 }
 
-impl PositionTryFallbacksTryTacticKeyword {
-    fn is_none(&self) -> bool {
-        *self == Self::None
-    }
-}
-
 #[derive(
     Clone,
-    Copy,
     Debug,
     Default,
     Eq,
     MallocSizeOf,
     PartialEq,
-    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
     ToResolvedValue,
     ToShmem,
 )]
-#[repr(C)]
+#[repr(transparent)]
 /// Changes for the automatically-generated position option.
 /// Note that this is order-dependent - e.g. `flip-start flip-inline` != `flip-inline flip-start`.
 ///
 /// https://drafts.csswg.org/css-anchor-position-1/#typedef-position-try-fallbacks-try-tactic
 pub struct PositionTryFallbacksTryTactic(
-    pub PositionTryFallbacksTryTacticKeyword,
-    pub PositionTryFallbacksTryTacticKeyword,
-    pub PositionTryFallbacksTryTacticKeyword,
-    pub PositionTryFallbacksTryTacticKeyword,
-    pub PositionTryFallbacksTryTacticKeyword,
+    #[css(iterable)] pub ThinVec<PositionTryFallbacksTryTacticKeyword>,
 );
 
 impl Parse for PositionTryFallbacksTryTactic {
@@ -569,30 +553,22 @@ impl Parse for PositionTryFallbacksTryTactic {
         _context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        let kw = [
-            PositionTryFallbacksTryTacticKeyword::parse(input)?,
-            input
-                .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
-                .unwrap_or_default(),
-            input
-                .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
-                .unwrap_or_default(),
-            input
-                .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
-                .unwrap_or_default(),
-            input
-                .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
-                .unwrap_or_default(),
-        ];
-        for i in 0..kw.len() - 1 {
-            if kw[i].is_none() {
+        let mut result = ThinVec::with_capacity(5);
+        // Collect up to 5 keywords, disallowing duplicates.
+        for _ in 0..5 {
+            if let Ok(kw) = input.try_parse(PositionTryFallbacksTryTacticKeyword::parse) {
+                if result.contains(&kw) {
+                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                }
+                result.push(kw);
+            } else {
                 break;
             }
-            if kw[i + 1..].contains(&kw[i]) {
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-            }
         }
-        Ok(Self(kw[0], kw[1], kw[2], kw[3], kw[4]))
+        if result.is_empty() {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+        Ok(Self(result))
     }
 }
 
@@ -600,13 +576,13 @@ impl PositionTryFallbacksTryTactic {
     /// Returns whether there's any tactic.
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.0.is_none()
+        self.0.is_empty()
     }
 
     /// Iterates over the fallbacks in order.
     #[inline]
-    pub fn into_iter(&self) -> impl IntoIterator<Item = PositionTryFallbacksTryTacticKeyword> {
-        [self.0, self.1, self.2, self.3, self.4]
+    pub fn iter(&self) -> impl Iterator<Item = &PositionTryFallbacksTryTacticKeyword> {
+        self.0.iter()
     }
 }
 

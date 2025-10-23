@@ -1206,7 +1206,7 @@ impl Stylist {
             parent_style,
             parent_style,
             FirstLineReparenting::No,
-            PositionTryFallbacksTryTactic::default(),
+            &PositionTryFallbacksTryTactic::default(),
             /* rule_cache = */ None,
             &mut RuleCacheConditions::default(),
         )
@@ -1270,7 +1270,7 @@ impl Stylist {
                     parent_style,
                     layout_parent_style,
                     FirstLineReparenting::No,
-                    name_and_try_tactic.try_tactic,
+                    &name_and_try_tactic.try_tactic,
                     /* rule_cache = */ None,
                     &mut RuleCacheConditions::default(),
                 ))
@@ -1299,7 +1299,7 @@ impl Stylist {
         parent_style: Option<&ComputedValues>,
         layout_parent_style: Option<&ComputedValues>,
         first_line_reparenting: FirstLineReparenting,
-        try_tactic: PositionTryFallbacksTryTactic,
+        try_tactic: &PositionTryFallbacksTryTactic,
         rule_cache: Option<&RuleCache>,
         rule_cache_conditions: &mut RuleCacheConditions,
     ) -> Arc<ComputedValues>
@@ -1803,7 +1803,7 @@ impl Stylist {
             Some(parent_style),
             Some(parent_style),
             FirstLineReparenting::No,
-            PositionTryFallbacksTryTactic::default(),
+            &PositionTryFallbacksTryTactic::default(),
             CascadeMode::Unvisited {
                 visited_rules: None,
             },

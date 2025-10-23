@@ -524,6 +524,10 @@ pub enum PositionTryFallbacksTryTacticKeyword {
     FlipInline,
     /// Swap the values in the start properties.
     FlipStart,
+    /// Swap the values in the X axis.
+    FlipX,
+    /// Swap the values in the Y axis.
+    FlipY,
 }
 
 impl PositionTryFallbacksTryTacticKeyword {
@@ -556,6 +560,8 @@ pub struct PositionTryFallbacksTryTactic(
     pub PositionTryFallbacksTryTacticKeyword,
     pub PositionTryFallbacksTryTacticKeyword,
     pub PositionTryFallbacksTryTacticKeyword,
+    pub PositionTryFallbacksTryTacticKeyword,
+    pub PositionTryFallbacksTryTacticKeyword,
 );
 
 impl Parse for PositionTryFallbacksTryTactic {
@@ -563,17 +569,30 @@ impl Parse for PositionTryFallbacksTryTactic {
         _context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        let first = PositionTryFallbacksTryTacticKeyword::parse(input)?;
-        let second = input
-            .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
-            .unwrap_or_default();
-        let third = input
-            .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
-            .unwrap_or_default();
-        if first == second || first == third || (!second.is_none() && second == third) {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        let kw = [
+            PositionTryFallbacksTryTacticKeyword::parse(input)?,
+            input
+                .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
+                .unwrap_or_default(),
+            input
+                .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
+                .unwrap_or_default(),
+            input
+                .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
+                .unwrap_or_default(),
+            input
+                .try_parse(PositionTryFallbacksTryTacticKeyword::parse)
+                .unwrap_or_default(),
+        ];
+        for i in 0..kw.len() - 1 {
+            if kw[i].is_none() {
+                break;
+            }
+            if kw[i + 1..].contains(&kw[i]) {
+                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            }
         }
-        Ok(Self(first, second, third))
+        Ok(Self(kw[0], kw[1], kw[2], kw[3], kw[4]))
     }
 }
 
@@ -587,7 +606,7 @@ impl PositionTryFallbacksTryTactic {
     /// Iterates over the fallbacks in order.
     #[inline]
     pub fn into_iter(&self) -> impl IntoIterator<Item = PositionTryFallbacksTryTacticKeyword> {
-        [self.0, self.1, self.2]
+        [self.0, self.1, self.2, self.3, self.4]
     }
 }
 

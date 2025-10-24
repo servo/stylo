@@ -586,6 +586,27 @@ where
         }
 
         if let DependencyInvalidationKind::Scope(scope_kind) = invalidation_kind {
+            if scope_kind == ScopeDependencyInvalidationKind::ImplicitScope {
+                if let Some(ref next) = dependency.next {
+                    // When we reach an implicit scope dependency, we know there's an
+                    // element matching that implicit scope somewhere in the descendant.
+                    // We need to go find it so that we can continue the invalidation from
+                    // its next dependencies.
+                    for dep in next.as_ref().slice() {
+                        let invalidation = Invalidation::new_always_effective_for_next_descendant(
+                            dep,
+                            self.matching_context.current_host.clone(),
+                            self.matching_context.scope_element,
+                        );
+
+                        self.descendant_invalidations
+                            .dom_descendants
+                            .push(invalidation);
+                    }
+                    return;
+                }
+            }
+
             if dependency.selector_offset == 0 {
                 let force_add = any_next_has_scope_in_negation(dependency);
                 if scope_kind == ScopeDependencyInvalidationKind::ScopeEnd || force_add {

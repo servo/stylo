@@ -21,7 +21,6 @@ use crate::values::generics::position::ZIndex as GenericZIndex;
 use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericAnchorSide};
 use crate::values::generics::position::{GenericAnchorFunction, GenericInset};
 use crate::values::specified;
-use crate::values::specified::align::AlignFlags;
 use crate::values::specified::{AllowQuirks, Integer, LengthPercentage, NonNegativeNumber};
 use crate::values::DashedIdent;
 use crate::{Atom, Zero};
@@ -1184,28 +1183,6 @@ impl PositionAreaKeyword {
         };
         let new_track = old_track.flip();
         Self::from_u8((self as u8 & !TRACK_MASK) | new_track as u8).unwrap()
-    }
-
-    /// Returns a value for the self-alignment properties in order to resolve
-    /// `normal`.
-    ///
-    /// <https://drafts.csswg.org/css-anchor-position/#position-area-alignment>
-    pub fn to_self_alignment(self) -> Option<AlignFlags> {
-        self.track().map(|track| match track {
-            // "If the only the center track in an axis is selected, the default alignment in that axis is center."
-            PositionAreaTrack::Center => AlignFlags::CENTER,
-            // "If all three tracks are selected, the default alignment in that axis is anchor-center."
-            PositionAreaTrack::SpanAll => AlignFlags::ANCHOR_CENTER,
-            // "Otherwise, the default alignment in that axis is toward the non-specified side track: if it’s
-            // specifying the “start” track of its axis, the default alignment in that axis is end; etc."
-            _ => {
-                if track.start() {
-                    AlignFlags::END
-                } else {
-                    AlignFlags::START
-                }
-            },
-        })
     }
 }
 

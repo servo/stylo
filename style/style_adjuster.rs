@@ -961,7 +961,20 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
                     self.flip_start();
                 },
             }
+            self.apply_position_area_tactic(*tactic);
         }
+    }
+
+    fn apply_position_area_tactic(&mut self, tactic: PositionTryFallbacksTryTacticKeyword) {
+        let pos = self.style.get_position();
+        let old = pos.clone_position_area();
+        let wm = self.style.writing_mode;
+        let new = old.with_tactic(wm, tactic);
+        if new == old {
+            return;
+        }
+        let pos = self.style.mutate_position();
+        pos.set_position_area(new);
     }
 
     fn swap_insets(&mut self, a_side: PhysicalSide, b_side: PhysicalSide) {

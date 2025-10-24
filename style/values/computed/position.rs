@@ -20,8 +20,8 @@ use crate::values::generics::position::{
 use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericInset};
 pub use crate::values::specified::position::{
     AnchorName, AnchorScope, DashedIdentAndOrTryTactic, PositionAnchor, PositionArea,
-    PositionAreaKeyword, PositionAreaType, PositionTryFallbacks, PositionTryOrder,
-    PositionVisibility,
+    PositionAreaAxis, PositionAreaKeyword, PositionAreaType, PositionTryFallbacks,
+    PositionTryOrder, PositionVisibility,
 };
 pub use crate::values::specified::position::{GridAutoFlow, GridTemplateAreas, MasonryAutoFlow};
 use crate::Zero;
@@ -143,61 +143,24 @@ impl GenericPositionComponent for LengthPercentage {
 
 #[inline]
 fn block_or_inline_to_inferred(keyword: PositionAreaKeyword) -> PositionAreaKeyword {
-    match keyword {
-        PositionAreaKeyword::BlockStart | PositionAreaKeyword::InlineStart => {
-            PositionAreaKeyword::Start
-        },
-        PositionAreaKeyword::BlockEnd | PositionAreaKeyword::InlineEnd => PositionAreaKeyword::End,
-        PositionAreaKeyword::SpanBlockStart | PositionAreaKeyword::SpanInlineStart => {
-            PositionAreaKeyword::SpanStart
-        },
-        PositionAreaKeyword::SpanBlockEnd | PositionAreaKeyword::SpanInlineEnd => {
-            PositionAreaKeyword::SpanEnd
-        },
-        PositionAreaKeyword::SelfBlockStart | PositionAreaKeyword::SelfInlineStart => {
-            PositionAreaKeyword::SelfStart
-        },
-        PositionAreaKeyword::SelfBlockEnd | PositionAreaKeyword::SelfInlineEnd => {
-            PositionAreaKeyword::SelfEnd
-        },
-        PositionAreaKeyword::SpanSelfBlockStart | PositionAreaKeyword::SpanSelfInlineStart => {
-            PositionAreaKeyword::SpanSelfStart
-        },
-        PositionAreaKeyword::SpanSelfBlockEnd | PositionAreaKeyword::SpanSelfInlineEnd => {
-            PositionAreaKeyword::SpanSelfEnd
-        },
-        other => other,
+    if matches!(
+        keyword.axis(),
+        PositionAreaAxis::Block | PositionAreaAxis::Inline
+    ) {
+        keyword.with_axis(PositionAreaAxis::Inferred)
+    } else {
+        keyword
     }
 }
 
 #[inline]
 fn inferred_to_block(keyword: PositionAreaKeyword) -> PositionAreaKeyword {
-    match keyword {
-        PositionAreaKeyword::Start => PositionAreaKeyword::BlockStart,
-        PositionAreaKeyword::End => PositionAreaKeyword::BlockEnd,
-        PositionAreaKeyword::SpanStart => PositionAreaKeyword::SpanBlockStart,
-        PositionAreaKeyword::SpanEnd => PositionAreaKeyword::SpanBlockEnd,
-        PositionAreaKeyword::SelfStart => PositionAreaKeyword::SelfBlockStart,
-        PositionAreaKeyword::SelfEnd => PositionAreaKeyword::SelfBlockEnd,
-        PositionAreaKeyword::SpanSelfStart => PositionAreaKeyword::SpanSelfBlockStart,
-        PositionAreaKeyword::SpanSelfEnd => PositionAreaKeyword::SpanSelfBlockEnd,
-        other => other,
-    }
+    keyword.with_inferred_axis(PositionAreaAxis::Block)
 }
 
 #[inline]
 fn inferred_to_inline(keyword: PositionAreaKeyword) -> PositionAreaKeyword {
-    match keyword {
-        PositionAreaKeyword::Start => PositionAreaKeyword::InlineStart,
-        PositionAreaKeyword::End => PositionAreaKeyword::InlineEnd,
-        PositionAreaKeyword::SpanStart => PositionAreaKeyword::SpanInlineStart,
-        PositionAreaKeyword::SpanEnd => PositionAreaKeyword::SpanInlineEnd,
-        PositionAreaKeyword::SelfStart => PositionAreaKeyword::SelfInlineStart,
-        PositionAreaKeyword::SelfEnd => PositionAreaKeyword::SelfInlineEnd,
-        PositionAreaKeyword::SpanSelfStart => PositionAreaKeyword::SpanSelfInlineStart,
-        PositionAreaKeyword::SpanSelfEnd => PositionAreaKeyword::SpanSelfInlineEnd,
-        other => other,
-    }
+    keyword.with_inferred_axis(PositionAreaAxis::Inline)
 }
 
 // This exists because the spec currently says that further simplifications
@@ -207,13 +170,11 @@ fn inferred_to_inline(keyword: PositionAreaKeyword) -> PositionAreaKeyword {
 // PositionArea::parse_internal().
 // See also https://github.com/w3c/csswg-drafts/issues/12759
 impl ToComputedValue for PositionArea {
-    type ComputedValue = PositionArea;
+    type ComputedValue = Self;
 
-    fn to_computed_value(&self, _context: &Context) -> Self::ComputedValue {
+    fn to_computed_value(&self, _context: &Context) -> Self {
         let mut computed = self.clone();
-
         let pair_type = self.get_type();
-
         if pair_type == PositionAreaType::Logical || pair_type == PositionAreaType::SelfLogical {
             if computed.second != PositionAreaKeyword::None {
                 computed.first = block_or_inline_to_inferred(computed.first);
@@ -237,11 +198,10 @@ impl ToComputedValue for PositionArea {
         if computed.first == computed.second {
             computed.second = PositionAreaKeyword::None;
         }
-
         computed
     }
 
-    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+    fn from_computed_value(computed: &Self) -> Self {
         computed.clone()
     }
 }

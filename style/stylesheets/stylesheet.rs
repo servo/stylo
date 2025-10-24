@@ -184,27 +184,33 @@ impl StylesheetContents {
     ) -> EffectiveRulesIterator<'a, 'b> {
         self.iter_rules::<EffectiveRules>(device, guard)
     }
-}
 
-impl DeepCloneWithLock for StylesheetContents {
-    fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
+    /// Perform a deep clone, of this stylesheet, with an explicit URL data if needed.
+    pub fn deep_clone(
+        &self,
+        lock: &SharedRwLock,
+        url_data: Option<&UrlExtraData>,
+        guard: &SharedRwLockReadGuard,
+    ) -> Arc<Self> {
         // Make a deep clone of the rules, using the new lock.
         let rules = self
             .rules
             .read_with(guard)
             .deep_clone_with_lock(lock, guard);
 
-        Self {
+        let url_data = url_data.cloned().unwrap_or_else(|| self.url_data.clone());
+
+        Arc::new(Self {
             rules: Arc::new(lock.wrap(rules)),
             quirks_mode: self.quirks_mode,
             origin: self.origin,
-            url_data: self.url_data.clone(),
+            url_data,
             namespaces: self.namespaces.clone(),
             source_map_url: self.source_map_url.clone(),
             source_url: self.source_url.clone(),
             use_counters: self.use_counters.clone(),
             _forbid_construction: (),
-        }
+        })
     }
 }
 

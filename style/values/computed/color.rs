@@ -34,6 +34,11 @@ impl ToCss for Color {
             Self::ColorFunction(ref color_function) => color_function.to_css(dest),
             Self::CurrentColor => dest.write_str("currentcolor"),
             Self::ColorMix(ref m) => m.to_css(dest),
+            Self::ContrastColor(ref c) => {
+                dest.write_str("contrast-color(")?;
+                c.to_css(dest)?;
+                dest.write_char(')')
+            },
         }
     }
 }
@@ -81,6 +86,42 @@ impl Color {
                     mix.flags,
                 )
             },
+            Self::ContrastColor(ref c) => {
+                let bg_color = c.resolve_to_absolute(current_color);
+                if Self::contrast_ratio(&bg_color, &AbsoluteColor::BLACK)
+                    > Self::contrast_ratio(&bg_color, &AbsoluteColor::WHITE)
+                {
+                    AbsoluteColor::BLACK
+                } else {
+                    AbsoluteColor::WHITE
+                }
+            },
+        }
+    }
+
+    fn contrast_ratio(a: &AbsoluteColor, b: &AbsoluteColor) -> f32 {
+        // TODO: This just implements the WCAG 2.1 algorithm,
+        // https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio
+        // Consider using a more sophisticated contrast algorithm, e.g. see
+        // https://apcacontrast.com
+        let compute = |c| -> f32 {
+            if c <= 0.04045 {
+                c / 12.92
+            } else {
+                f32::powf((c + 0.055) / 1.055, 2.4)
+            }
+        };
+        let luminance = |r, g, b| -> f32 { 0.2126 * r + 0.7152 * g + 0.0722 * b };
+        let a = a.into_srgb_legacy();
+        let b = b.into_srgb_legacy();
+        let a = a.raw_components();
+        let b = b.raw_components();
+        let la = luminance(compute(a[0]), compute(a[1]), compute(a[2])) + 0.05;
+        let lb = luminance(compute(b[0]), compute(b[1]), compute(b[2])) + 0.05;
+        if la > lb {
+            la / lb
+        } else {
+            lb / la
         }
     }
 }

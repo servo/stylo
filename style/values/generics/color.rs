@@ -24,6 +24,8 @@ pub enum GenericColor<Percentage> {
     CurrentColor,
     /// The color-mix() function.
     ColorMix(Box<GenericColorMix<Self, Percentage>>),
+    /// The contrast-color() function.
+    ContrastColor(Box<Self>),
 }
 
 /// Flags used to modify the calculation of a color mix result.

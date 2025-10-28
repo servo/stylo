@@ -487,6 +487,28 @@ impl ColorSpaceConversion for DisplayP3 {
     }
 }
 
+/// The Display-P3-linear color space. This is basically display-p3 without gamma encoding.
+pub struct DisplayP3Linear;
+impl ColorSpaceConversion for DisplayP3Linear {
+    const WHITE_POINT: WhitePoint = DisplayP3::WHITE_POINT;
+
+    fn to_linear_light(from: &ColorComponents) -> ColorComponents {
+        *from
+    }
+
+    fn to_xyz(from: &ColorComponents) -> ColorComponents {
+        DisplayP3::to_xyz(from)
+    }
+
+    fn from_xyz(from: &ColorComponents) -> ColorComponents {
+        DisplayP3::from_xyz(from)
+    }
+
+    fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
+        *from
+    }
+}
+
 /// The a98-rgb color space.
 /// https://drafts.csswg.org/css-color-4/#predefined-a98-rgb
 pub struct A98Rgb;

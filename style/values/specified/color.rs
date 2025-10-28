@@ -125,6 +125,8 @@ pub enum Color {
     ColorMix(Box<ColorMix>),
     /// A light-dark() color.
     LightDark(Box<GenericLightDark<Self>>),
+    /// The contrast-color function.
+    ContrastColor(Box<Color>),
     /// Quirksmode-only rule for inheriting color from the body
     #[cfg(feature = "gecko")]
     InheritFromBodyQuirk,
@@ -455,6 +457,17 @@ impl Color {
                     return Ok(Color::LightDark(Box::new(ld)));
                 }
 
+                if static_prefs::pref!("layout.css.contrast-color.enabled") {
+                    if let Ok(c) = input.try_parse(|i| {
+                        i.expect_function_matching("contrast-color")?;
+                        i.parse_nested_block(|i| {
+                            Self::parse_internal(context, i, preserve_authored)
+                        })
+                    }) {
+                        return Ok(Color::ContrastColor(Box::new(c)));
+                    }
+                }
+
                 match e.kind {
                     ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(t)) => {
                         Err(e.location.new_custom_error(StyleParseErrorKind::ValueError(
@@ -529,6 +542,11 @@ impl ToCss for Color {
             Color::ColorFunction(ref color_function) => color_function.to_css(dest),
             Color::ColorMix(ref mix) => mix.to_css(dest),
             Color::LightDark(ref ld) => ld.to_css(dest),
+            Color::ContrastColor(ref c) => {
+                dest.write_str("contrast-color(")?;
+                c.to_css(dest)?;
+                dest.write_char(')')
+            },
             #[cfg(feature = "gecko")]
             Color::System(system) => system.to_css(dest),
             #[cfg(feature = "gecko")]
@@ -563,6 +581,7 @@ impl Color {
                 mix.left.honored_in_forced_colors_mode(allow_transparent)
                     && mix.right.honored_in_forced_colors_mode(allow_transparent)
             },
+            Self::ContrastColor(ref c) => c.honored_in_forced_colors_mode(allow_transparent),
         }
     }
 
@@ -768,6 +787,9 @@ impl Color {
                     flags: mix.flags,
                 })
             },
+            Color::ContrastColor(ref c) => {
+                ComputedColor::ContrastColor(Box::new(c.to_computed_color(context)?))
+            },
             #[cfg(feature = "gecko")]
             Color::System(system) => system.compute(context?),
             #[cfg(feature = "gecko")]
@@ -803,6 +825,9 @@ impl ToComputedValue for Color {
             ComputedColor::ColorMix(ref mix) => {
                 Color::ColorMix(Box::new(ToComputedValue::from_computed_value(&**mix)))
             },
+            ComputedColor::ContrastColor(ref c) => {
+                Self::ContrastColor(Box::new(ToComputedValue::from_computed_value(&**c)))
+            },
         }
     }
 }
@@ -830,6 +855,7 @@ impl SpecifiedValueInfo for Color {
             "oklab",
             "oklch",
             "color-mix",
+            "contrast-color",
             "light-dark",
         ]);
     }

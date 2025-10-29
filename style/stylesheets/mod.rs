@@ -419,6 +419,79 @@ impl CssRule {
     }
 }
 
+// These aliases are required on Gecko side to avoid generating bindings for `Locked`.
+/// Alias for a locked style rule.
+pub type LockedStyleRule = Locked<StyleRule>;
+/// Alias for a locked import rule.
+pub type LockedImportRule = Locked<ImportRule>;
+/// Alias for a locked font-face rule.
+pub type LockedFontFaceRule = Locked<FontFaceRule>;
+/// Alias for a locked counter-style rule.
+pub type LockedCounterStyleRule = Locked<CounterStyleRule>;
+/// Alias for a locked keyframes rule.
+pub type LockedKeyframesRule = Locked<KeyframesRule>;
+/// Alias for a locked page rule.
+pub type LockedPageRule = Locked<PageRule>;
+/// Alias for a locked position-try rule.
+pub type LockedPositionTryRule = Locked<PositionTryRule>;
+/// Alias for a locked nested declarations rule.
+pub type LockedNestedDeclarationsRule = Locked<NestedDeclarationsRule>;
+
+/// A CSS rule reference. Should mirror `CssRule`.
+#[repr(C)]
+#[allow(missing_docs)]
+pub enum CssRuleRef<'a> {
+    Style(&'a LockedStyleRule),
+    Namespace(&'a NamespaceRule),
+    Import(&'a LockedImportRule),
+    Media(&'a MediaRule),
+    Container(&'a ContainerRule),
+    FontFace(&'a LockedFontFaceRule),
+    FontFeatureValues(&'a FontFeatureValuesRule),
+    FontPaletteValues(&'a FontPaletteValuesRule),
+    CounterStyle(&'a LockedCounterStyleRule),
+    Keyframes(&'a LockedKeyframesRule),
+    Margin(&'a MarginRule),
+    Supports(&'a SupportsRule),
+    Page(&'a LockedPageRule),
+    Property(&'a PropertyRule),
+    Document(&'a DocumentRule),
+    LayerBlock(&'a LayerBlockRule),
+    LayerStatement(&'a LayerStatementRule),
+    Scope(&'a ScopeRule),
+    StartingStyle(&'a StartingStyleRule),
+    PositionTry(&'a LockedPositionTryRule),
+    NestedDeclarations(&'a LockedNestedDeclarationsRule),
+}
+
+impl<'a> From<&'a CssRule> for CssRuleRef<'a> {
+    fn from(value: &'a CssRule) -> Self {
+        match value {
+            CssRule::Style(r) => CssRuleRef::Style(r.as_ref()),
+            CssRule::Namespace(r) => CssRuleRef::Namespace(r.as_ref()),
+            CssRule::Import(r) => CssRuleRef::Import(r.as_ref()),
+            CssRule::Media(r) => CssRuleRef::Media(r.as_ref()),
+            CssRule::Container(r) => CssRuleRef::Container(r.as_ref()),
+            CssRule::FontFace(r) => CssRuleRef::FontFace(r.as_ref()),
+            CssRule::FontFeatureValues(r) => CssRuleRef::FontFeatureValues(r.as_ref()),
+            CssRule::FontPaletteValues(r) => CssRuleRef::FontPaletteValues(r.as_ref()),
+            CssRule::CounterStyle(r) => CssRuleRef::CounterStyle(r.as_ref()),
+            CssRule::Keyframes(r) => CssRuleRef::Keyframes(r.as_ref()),
+            CssRule::Margin(r) => CssRuleRef::Margin(r.as_ref()),
+            CssRule::Supports(r) => CssRuleRef::Supports(r.as_ref()),
+            CssRule::Page(r) => CssRuleRef::Page(r.as_ref()),
+            CssRule::Property(r) => CssRuleRef::Property(r.as_ref()),
+            CssRule::Document(r) => CssRuleRef::Document(r.as_ref()),
+            CssRule::LayerBlock(r) => CssRuleRef::LayerBlock(r.as_ref()),
+            CssRule::LayerStatement(r) => CssRuleRef::LayerStatement(r.as_ref()),
+            CssRule::Scope(r) => CssRuleRef::Scope(r.as_ref()),
+            CssRule::StartingStyle(r) => CssRuleRef::StartingStyle(r.as_ref()),
+            CssRule::PositionTry(r) => CssRuleRef::PositionTry(r.as_ref()),
+            CssRule::NestedDeclarations(r) => CssRuleRef::NestedDeclarations(r.as_ref()),
+        }
+    }
+}
+
 /// https://drafts.csswg.org/cssom-1/#dom-cssrule-type
 #[allow(missing_docs)]
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq)]

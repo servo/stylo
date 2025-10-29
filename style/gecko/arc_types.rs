@@ -14,10 +14,13 @@ use crate::properties::{ComputedValues, PropertyDeclarationBlock};
 use crate::shared_lock::Locked;
 use crate::stylesheets::keyframes_rule::Keyframe;
 use crate::stylesheets::{
-    ContainerRule, CounterStyleRule, CssRules, DocumentRule, FontFaceRule, FontFeatureValuesRule,
-    FontPaletteValuesRule, ImportRule, KeyframesRule, LayerBlockRule, LayerStatementRule,
-    MarginRule, MediaRule, NamespaceRule, NestedDeclarationsRule, PageRule, PositionTryRule,
-    PropertyRule, ScopeRule, StartingStyleRule, StyleRule, StylesheetContents, SupportsRule,
+    ContainerRule, CssRules, DocumentRule, FontFeatureValuesRule, FontPaletteValuesRule,
+    LayerBlockRule, LayerStatementRule, MarginRule, MediaRule, NamespaceRule, PropertyRule,
+    ScopeRule, StartingStyleRule, StylesheetContents, SupportsRule,
+};
+pub use crate::stylesheets::{
+    LockedCounterStyleRule, LockedFontFaceRule, LockedImportRule, LockedKeyframesRule,
+    LockedNestedDeclarationsRule, LockedPageRule, LockedPositionTryRule, LockedStyleRule,
 };
 use servo_arc::Arc;
 
@@ -55,14 +58,12 @@ impl_locked_arc_ffi!(
     Servo_DeclarationBlock_AddRef,
     Servo_DeclarationBlock_Release
 );
-impl_locked_arc_ffi!(
-    StyleRule,
+impl_simple_arc_ffi!(
     LockedStyleRule,
     Servo_StyleRule_AddRef,
     Servo_StyleRule_Release
 );
-impl_locked_arc_ffi!(
-    ImportRule,
+impl_simple_arc_ffi!(
     LockedImportRule,
     Servo_ImportRule_AddRef,
     Servo_ImportRule_Release
@@ -73,8 +74,7 @@ impl_locked_arc_ffi!(
     Servo_Keyframe_AddRef,
     Servo_Keyframe_Release
 );
-impl_locked_arc_ffi!(
-    KeyframesRule,
+impl_simple_arc_ffi!(
     LockedKeyframesRule,
     Servo_KeyframesRule_AddRef,
     Servo_KeyframesRule_Release
@@ -106,8 +106,7 @@ impl_simple_arc_ffi!(
     Servo_MarginRule_AddRef,
     Servo_MarginRule_Release
 );
-impl_locked_arc_ffi!(
-    PageRule,
+impl_simple_arc_ffi!(
     LockedPageRule,
     Servo_PageRule_AddRef,
     Servo_PageRule_Release
@@ -142,14 +141,12 @@ impl_simple_arc_ffi!(
     Servo_FontPaletteValuesRule_AddRef,
     Servo_FontPaletteValuesRule_Release
 );
-impl_locked_arc_ffi!(
-    FontFaceRule,
+impl_simple_arc_ffi!(
     LockedFontFaceRule,
     Servo_FontFaceRule_AddRef,
     Servo_FontFaceRule_Release
 );
-impl_locked_arc_ffi!(
-    CounterStyleRule,
+impl_simple_arc_ffi!(
     LockedCounterStyleRule,
     Servo_CounterStyleRule_AddRef,
     Servo_CounterStyleRule_Release
@@ -182,14 +179,12 @@ impl_simple_arc_ffi!(
     Servo_StartingStyleRule_Release
 );
 
-impl_locked_arc_ffi!(
-    PositionTryRule,
+impl_simple_arc_ffi!(
     LockedPositionTryRule,
     Servo_PositionTryRule_AddRef,
     Servo_PositionTryRule_Release
 );
-impl_locked_arc_ffi!(
-    NestedDeclarationsRule,
+impl_simple_arc_ffi!(
     LockedNestedDeclarationsRule,
     Servo_NestedDeclarationsRule_AddRef,
     Servo_NestedDeclarationsRule_Release

@@ -52,8 +52,7 @@ use crate::stylesheets::{
     PagePseudoClassFlags, PositionTryRule,
 };
 use crate::stylesheets::{
-    CssRule, EffectiveRulesIterator, Origin, OriginSet, PageRule, PerOrigin, PerOriginIter,
-    StylesheetContents, StylesheetInDocument,
+    CssRule, CssRuleRef, EffectiveRulesIterator, Origin, OriginSet, PageRule, PerOrigin, PerOriginIter, StylesheetContents, StylesheetInDocument
 };
 use crate::values::computed::DashedIdentAndOrTryTactic;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
@@ -977,9 +976,16 @@ impl Stylist {
         rule: &CssRule,
         guard: &SharedRwLockReadGuard,
         change_kind: RuleChangeKind,
+        ancestors: &[CssRuleRef],
     ) {
-        self.stylesheets
-            .rule_changed(Some(&self.device), sheet, rule, guard, change_kind)
+        self.stylesheets.rule_changed(
+            Some(&self.device),
+            sheet,
+            rule,
+            guard,
+            change_kind,
+            ancestors,
+        )
     }
 
     /// Appends a new stylesheet to the current set.

@@ -15,7 +15,7 @@ use crate::media_queries::Device;
 use crate::selector_parser::{SelectorImpl, Snapshot, SnapshotMap};
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::simple_buckets_map::SimpleBucketsMap;
-use crate::stylesheets::{CssRule, StylesheetInDocument};
+use crate::stylesheets::{CssRule, CssRuleRef, StylesheetInDocument};
 use crate::stylesheets::{EffectiveRules, EffectiveRulesIterator};
 use crate::values::AtomIdent;
 use crate::LocalName as SelectorLocalName;
@@ -153,6 +153,8 @@ impl StylesheetInvalidationSet {
                 device,
                 quirks_mode,
                 /* is_generic_change = */ false,
+                // Note(dshin): Technically, the iterator should provide the ancestor chain as it traverses down, but it shouldn't make a difference.
+                &[],
             );
             if self.fully_invalid {
                 break;
@@ -525,6 +527,7 @@ impl StylesheetInvalidationSet {
         device: &Device,
         quirks_mode: QuirksMode,
         change_kind: RuleChangeKind,
+        ancestors: &[CssRuleRef],
     ) where
         S: StylesheetInDocument,
     {
@@ -538,17 +541,34 @@ impl StylesheetInvalidationSet {
             return; // Nothing to do here.
         }
 
+        if ancestors
+            .iter()
+            .any(|r| !EffectiveRules::is_effective(guard, device, quirks_mode, r))
+        {
+            debug!(" > Ancestor rules not effective");
+            return;
+        }
+
         // If the change is generic, we don't have the old rule information to know e.g., the old
         // media condition, or the old selector text, so we might need to invalidate more
         // aggressively. That only applies to the changed rules, for other rules we can just
         // collect invalidations as normal.
         let is_generic_change = change_kind == RuleChangeKind::Generic;
-        self.collect_invalidations_for_rule(rule, guard, device, quirks_mode, is_generic_change);
+        self.collect_invalidations_for_rule(
+            rule,
+            guard,
+            device,
+            quirks_mode,
+            is_generic_change,
+            ancestors,
+        );
         if self.fully_invalid {
             return;
         }
 
-        if !is_generic_change && !EffectiveRules::is_effective(guard, device, quirks_mode, rule) {
+        if !is_generic_change
+            && !EffectiveRules::is_effective(guard, device, quirks_mode, &rule.into())
+        {
             return;
         }
 
@@ -560,6 +580,8 @@ impl StylesheetInvalidationSet {
                 device,
                 quirks_mode,
                 /* is_generic_change = */ false,
+                // Note(dshin): Technically, the iterator should provide the ancestor chain as it traverses down, which sould be appended to `ancestors`, but it shouldn't matter.
+                &[],
             );
             if self.fully_invalid {
                 break;
@@ -575,6 +597,7 @@ impl StylesheetInvalidationSet {
         device: &Device,
         quirks_mode: QuirksMode,
         is_generic_change: bool,
+        ancestors: &[CssRuleRef],
     ) {
         use crate::stylesheets::CssRule::*;
         debug!("StylesheetInvalidationSet::collect_invalidations_for_rule");
@@ -600,7 +623,9 @@ impl StylesheetInvalidationSet {
                 }
             },
             NestedDeclarations(..) => {
-                // Our containing style rule would handle invalidation for us.
+                if ancestors.iter().any(|r| matches!(r, CssRuleRef::Scope(_))) {
+                    self.fully_invalid = true;
+                }
             },
             Namespace(..) => {
                 // It's not clear what handling changes for this correctly would

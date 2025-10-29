@@ -7,7 +7,7 @@
 use crate::context::QuirksMode;
 use crate::media_queries::Device;
 use crate::shared_lock::SharedRwLockReadGuard;
-use crate::stylesheets::{CssRule, DocumentRule, ImportRule, MediaRule, SupportsRule};
+use crate::stylesheets::{CssRule, CssRuleRef, DocumentRule, ImportRule, MediaRule, SupportsRule};
 use smallvec::SmallVec;
 use std::slice;
 
@@ -214,20 +214,20 @@ impl EffectiveRules {
         guard: &SharedRwLockReadGuard,
         device: &Device,
         quirks_mode: QuirksMode,
-        rule: &CssRule,
+        rule: &CssRuleRef,
     ) -> bool {
         match *rule {
-            CssRule::Import(ref import_rule) => {
+            CssRuleRef::Import(import_rule) => {
                 let import_rule = import_rule.read_with(guard);
                 Self::process_import(guard, device, quirks_mode, import_rule)
             },
-            CssRule::Document(ref doc_rule) => {
+            CssRuleRef::Document(doc_rule) => {
                 Self::process_document(guard, device, quirks_mode, doc_rule)
             },
-            CssRule::Media(ref media_rule) => {
+            CssRuleRef::Media(media_rule) => {
                 Self::process_media(guard, device, quirks_mode, media_rule)
             },
-            CssRule::Supports(ref supports_rule) => {
+            CssRuleRef::Supports(supports_rule) => {
                 Self::process_supports(guard, device, quirks_mode, supports_rule)
             },
             _ => true,

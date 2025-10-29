@@ -9,7 +9,7 @@ use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet
 use crate::media_queries::Device;
 use crate::selector_parser::SnapshotMap;
 use crate::shared_lock::SharedRwLockReadGuard;
-use crate::stylesheets::{CssRule, Origin, OriginSet, PerOrigin, StylesheetInDocument};
+use crate::stylesheets::{CssRule, CssRuleRef, Origin, OriginSet, PerOrigin, StylesheetInDocument};
 use std::mem;
 
 /// Entry for a StylesheetSet.
@@ -403,6 +403,7 @@ macro_rules! sheet_set_methods {
             rule: &CssRule,
             guard: &SharedRwLockReadGuard,
             change_kind: RuleChangeKind,
+            ancestors: &[CssRuleRef],
         ) {
             if let Some(device) = device {
                 let quirks_mode = device.quirks_mode();
@@ -413,6 +414,7 @@ macro_rules! sheet_set_methods {
                     device,
                     quirks_mode,
                     change_kind,
+                    ancestors,
                 );
             }
 

@@ -267,6 +267,14 @@ impl<T> Optional<T> {
             Self::None => None,
         }
     }
+
+    /// See Option::map.
+    pub fn map<U>(self, map: impl FnOnce(T) -> U) -> Optional<U> {
+        match self {
+            Self::Some(v) => Optional::Some(map(v)),
+            Self::None => Optional::None,
+        }
+    }
 }
 
 impl<T> From<Option<T>> for Optional<T> {

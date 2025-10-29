@@ -4,7 +4,9 @@
 
 //! Generic types for CSS values related to length.
 
+use crate::logical_geometry::PhysicalSide;
 use crate::parser::{Parse, ParserContext};
+use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::generics::box_::PositionProperty;
 use crate::values::generics::Optional;
 use crate::values::DashedIdent;
@@ -402,6 +404,16 @@ pub struct GenericAnchorSizeFunction<Fallback> {
     pub fallback: Optional<Fallback>,
 }
 
+impl<Fallback: TryTacticAdjustment> TryTacticAdjustment for GenericAnchorSizeFunction<Fallback> {
+    fn try_tactic_adjustment(mut self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        self.size = self.size.try_tactic_adjustment(old_side, new_side);
+        self.fallback = self
+            .fallback
+            .map(|f| f.try_tactic_adjustment(old_side, new_side));
+        self
+    }
+}
+
 impl<Fallback> ToCss for GenericAnchorSizeFunction<Fallback>
 where
     Fallback: ToCss,
@@ -552,6 +564,23 @@ pub enum AnchorSizeKeyword {
     SelfBlock,
     /// Same as `Inline`, resolved against the positioned element's writing mode.
     SelfInline,
+}
+
+impl TryTacticAdjustment for AnchorSizeKeyword {
+    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        if old_side.parallel_to(new_side) {
+            return self;
+        }
+        match self {
+            Self::None => Self::None,
+            Self::Width => Self::Height,
+            Self::Height => Self::Width,
+            Self::Block => Self::Inline,
+            Self::Inline => Self::Block,
+            Self::SelfBlock => Self::SelfInline,
+            Self::SelfInline => Self::SelfBlock,
+        }
+    }
 }
 
 /// Specified type for `margin` properties, which allows

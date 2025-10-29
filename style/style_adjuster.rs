@@ -18,10 +18,10 @@ use crate::properties::longhands::{
     overflow_x::computed_value::T as Overflow,
 };
 use crate::properties::{self, ComputedValues, StyleBuilder};
-use crate::values::specified::align::AlignFlags;
-use crate::values::specified::position::{
-    PositionTryFallbacksTryTactic, PositionTryFallbacksTryTacticKeyword,
+use crate::values::computed::position::{
+    PositionTryFallbacksTryTactic, PositionTryFallbacksTryTacticKeyword, TryTacticAdjustment,
 };
+use crate::values::specified::align::AlignFlags;
 
 #[cfg(feature = "gecko")]
 use selectors::parser::PseudoElement;
@@ -985,8 +985,8 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         if a == b {
             return;
         }
-        let a = a.clone();
-        let b = b.clone();
+        let a = a.clone().try_tactic_adjustment(a_side, b_side);
+        let b = b.clone().try_tactic_adjustment(b_side, a_side);
         let pos = self.style.mutate_position();
         pos.set_inset(a_side, b);
         pos.set_inset(b_side, a);
@@ -1000,8 +1000,8 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         if a == b {
             return;
         }
-        let a = a.clone();
-        let b = b.clone();
+        let a = a.clone().try_tactic_adjustment(a_side, b_side);
+        let b = b.clone().try_tactic_adjustment(b_side, a_side);
         let margin = self.style.mutate_margin();
         margin.set_margin(a_side, b);
         margin.set_margin(b_side, a);
@@ -1049,44 +1049,11 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
 
     fn flip_insets_and_margins(&mut self, horizontal: bool) {
         if horizontal {
-            // TODO: Avoid the clone here?
-            flip_property!(
-                self,
-                get_position,
-                mutate_position,
-                clone_left,
-                set_left,
-                clone_right,
-                set_right
-            );
-            flip_property!(
-                self,
-                get_margin,
-                mutate_margin,
-                clone_margin_left,
-                set_margin_left,
-                clone_margin_right,
-                set_margin_right
-            );
+            self.swap_insets(PhysicalSide::Left, PhysicalSide::Right);
+            self.swap_margins(PhysicalSide::Left, PhysicalSide::Right);
         } else {
-            flip_property!(
-                self,
-                get_position,
-                mutate_position,
-                clone_top,
-                set_top,
-                clone_bottom,
-                set_bottom
-            );
-            flip_property!(
-                self,
-                get_margin,
-                mutate_margin,
-                clone_margin_top,
-                set_margin_top,
-                clone_margin_bottom,
-                set_margin_bottom
-            );
+            self.swap_insets(PhysicalSide::Top, PhysicalSide::Bottom);
+            self.swap_margins(PhysicalSide::Top, PhysicalSide::Bottom);
         }
     }
 

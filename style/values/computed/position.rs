@@ -21,7 +21,8 @@ use crate::values::generics::position::{AspectRatio as GenericAspectRatio, Gener
 pub use crate::values::specified::position::{
     AnchorName, AnchorScope, DashedIdentAndOrTryTactic, PositionAnchor, PositionArea,
     PositionAreaAxis, PositionAreaKeyword, PositionAreaType, PositionTryFallbacks,
-    PositionTryOrder, PositionVisibility,
+    PositionTryFallbacksTryTactic, PositionTryFallbacksTryTacticKeyword, PositionTryOrder,
+    PositionVisibility,
 };
 pub use crate::values::specified::position::{GridAutoFlow, GridTemplateAreas, MasonryAutoFlow};
 use crate::Zero;
@@ -101,8 +102,69 @@ impl AnchorFunction {
     }
 }
 
+/// Perform the adjustment of a given value for a given try tactic, as per:
+/// https://drafts.csswg.org/css-anchor-position-1/#swap-due-to-a-try-tactic
+pub(crate) trait TryTacticAdjustment {
+    /// Performs the adjustments necessary given an old side we're relative to, and a new side
+    /// we're relative to.
+    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self;
+}
+
+impl<T: TryTacticAdjustment> TryTacticAdjustment for Box<T> {
+    fn try_tactic_adjustment(mut self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        *self = (*self).try_tactic_adjustment(old_side, new_side);
+        self
+    }
+}
+
+impl TryTacticAdjustment for GenericAnchorSide<Percentage> {
+    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        match self {
+            Self::Percentage(p) => Self::Percentage(p.try_tactic_adjustment(old_side, new_side)),
+            Self::Keyword(side) => Self::Keyword(side.try_tactic_adjustment(old_side, new_side)),
+        }
+    }
+}
+
+impl<Fallback: TryTacticAdjustment> TryTacticAdjustment
+    for GenericAnchorFunction<Percentage, Fallback>
+{
+    fn try_tactic_adjustment(mut self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        self.side = self.side.try_tactic_adjustment(old_side, new_side);
+        self.fallback = self
+            .fallback
+            .map(|f| f.try_tactic_adjustment(old_side, new_side));
+        self
+    }
+}
+
 /// A computed type for `inset` properties.
 pub type Inset = GenericInset<Percentage, LengthPercentage>;
+impl TryTacticAdjustment for Inset {
+    // https://drafts.csswg.org/css-anchor-position-1/#swap-due-to-a-try-tactic:
+    //
+    //     For inset properties, change the specified side in anchor() functions to maintain the
+    //     same relative relationship to the new direction that they had to the old.
+    //
+    //     If a <percentage> is used, and directions are opposing, change it to 100% minus the
+    //     original percentage.
+    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        match self {
+            Self::Auto => self,
+            Self::LengthPercentage(lp) => {
+                Self::LengthPercentage(lp.try_tactic_adjustment(old_side, new_side))
+            },
+            Self::AnchorFunction(anchor) => {
+                Self::AnchorFunction(anchor.try_tactic_adjustment(old_side, new_side))
+            },
+            Self::AnchorSizeFunction(anchor) => {
+                Self::AnchorSizeFunction(anchor.try_tactic_adjustment(old_side, new_side))
+            },
+            // TODO
+            Self::AnchorContainingCalcFunction(..) => self,
+        }
+    }
+}
 
 impl Position {
     /// `50% 50%`

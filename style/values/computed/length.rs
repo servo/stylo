@@ -5,8 +5,10 @@
 //! `<length>` computed values, and related ones.
 
 use super::{Context, Number, ToComputedValue};
+use crate::logical_geometry::PhysicalSide;
 use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
-use crate::values::computed::{NonNegativeNumber, Zoom};
+use crate::values::computed::position::TryTacticAdjustment;
+use crate::values::computed::{NonNegativeNumber, Percentage, Zoom};
 use crate::values::generics::length as generics;
 use crate::values::generics::length::{
     GenericLengthOrNumber, GenericLengthPercentageOrNormal, GenericMaxSize, GenericSize,
@@ -558,3 +560,37 @@ pub fn resolve_anchor_size(
 
 /// A computed type for `margin` properties.
 pub type Margin = generics::GenericMargin<LengthPercentage>;
+
+impl TryTacticAdjustment for Percentage {
+    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        if old_side.parallel_to(new_side) {
+            return Self(1.0 - self.0)
+        }
+        self
+    }
+}
+
+impl TryTacticAdjustment for LengthPercentage {
+    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        if let Some(p) = self.to_percentage() {
+            return Self::new_percent(p.try_tactic_adjustment(old_side, new_side));
+        }
+        self
+    }
+}
+
+impl TryTacticAdjustment for Margin {
+    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+        match self {
+            Self::Auto => self,
+            Self::LengthPercentage(lp) => {
+                Self::LengthPercentage(lp.try_tactic_adjustment(old_side, new_side))
+            },
+            Self::AnchorSizeFunction(anchor) => {
+                Self::AnchorSizeFunction(anchor.try_tactic_adjustment(old_side, new_side))
+            },
+            // TODO
+            Self::AnchorContainingCalcFunction(..) => self,
+        }
+    }
+}

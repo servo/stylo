@@ -10,8 +10,8 @@ use crate::values::computed;
 use crate::values::computed::text::TextEmphasisStyle as ComputedTextEmphasisStyle;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::text::{
-    GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationLength,
-    GenericTextDecorationTrim, GenericTextIndent,
+    GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationInset,
+    GenericTextDecorationLength, GenericTextIndent,
 };
 use crate::values::generics::NumberOrAuto;
 use crate::values::specified::length::{Length, LengthPercentage};
@@ -1093,24 +1093,24 @@ impl TextDecorationLength {
     }
 }
 
-/// Implements type for `text-decoration-trim` property
-pub type TextDecorationTrim = GenericTextDecorationTrim<Length>;
+/// Implements type for `text-decoration-inset` property
+pub type TextDecorationInset = GenericTextDecorationInset<Length>;
 
-impl TextDecorationTrim {
+impl TextDecorationInset {
     /// `Auto` value.
     #[inline]
     pub fn auto() -> Self {
-        GenericTextDecorationTrim::Auto
+        GenericTextDecorationInset::Auto
     }
 
     /// Whether this is the `Auto` value.
     #[inline]
     pub fn is_auto(&self) -> bool {
-        matches!(*self, GenericTextDecorationTrim::Auto)
+        matches!(*self, GenericTextDecorationInset::Auto)
     }
 }
 
-impl Parse for TextDecorationTrim {
+impl Parse for TextDecorationInset {
     fn parse<'i, 't>(
         ctx: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -1118,10 +1118,10 @@ impl Parse for TextDecorationTrim {
         if let Ok(start) = input.try_parse(|i| Length::parse(ctx, i)) {
             let end = input.try_parse(|i| Length::parse(ctx, i));
             let end = end.unwrap_or_else(|_| start.clone());
-            return Ok(TextDecorationTrim::Length { start, end });
+            return Ok(TextDecorationInset::Length { start, end });
         }
         input.expect_ident_matching("auto")?;
-        Ok(TextDecorationTrim::Auto)
+        Ok(TextDecorationInset::Auto)
     }
 }
 

@@ -26,10 +26,11 @@ use crate::stylesheets::layer_rule::{LayerBlockRule, LayerName, LayerStatementRu
 use crate::stylesheets::scope_rule::{ScopeBounds, ScopeRule};
 use crate::stylesheets::supports_rule::SupportsCondition;
 use crate::stylesheets::{
-    AllowImportRules, CorsMode, CssRule, CssRuleType, CssRuleTypes, CssRules, DocumentRule,
-    FontFeatureValuesRule, FontPaletteValuesRule, KeyframesRule, MarginRule, MarginRuleType,
-    MediaRule, NamespaceRule, NestedDeclarationsRule, PageRule, PageSelectors, PositionTryRule,
-    RulesMutateError, StartingStyleRule, StyleRule, StylesheetLoader, SupportsRule,
+    AllowImportRules, CorsMode, CssRule, CssRuleType, CssRuleTypes, CssRules, CustomMediaCondition,
+    CustomMediaRule, DocumentRule, FontFeatureValuesRule, FontPaletteValuesRule, KeyframesRule,
+    MarginRule, MarginRuleType, MediaRule, NamespaceRule, NestedDeclarationsRule, PageRule,
+    PageSelectors, PositionTryRule, RulesMutateError, StartingStyleRule, StyleRule,
+    StylesheetLoader, SupportsRule,
 };
 use crate::values::computed::font::FamilyName;
 use crate::values::{CssUrl, CustomIdent, DashedIdent, KeyframesName};
@@ -285,6 +286,8 @@ pub enum AtRulePrelude {
     StartingStyle,
     /// A @position-try prelude for Anchor Positioning.
     PositionTry(DashedIdent),
+    /// A @custom-media prelude.
+    CustomMedia(DashedIdent, CustomMediaCondition),
 }
 
 impl AtRulePrelude {
@@ -295,6 +298,7 @@ impl AtRulePrelude {
             Self::FontPaletteValues(..) => "font-palette-values",
             Self::CounterStyle(..) => "counter-style",
             Self::Media(..) => "media",
+            Self::CustomMedia(..) => "custom-media",
             Self::Container(..) => "container",
             Self::Supports(..) => "supports",
             Self::Keyframes(..) => "keyframes",
@@ -521,6 +525,7 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
             | AtRulePrelude::Container(..)
             | AtRulePrelude::Document(..)
             | AtRulePrelude::Layer(..)
+            | AtRulePrelude::CustomMedia(..)
             | AtRulePrelude::Scope(..)
             | AtRulePrelude::StartingStyle => true,
 
@@ -770,6 +775,15 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 let name = DashedIdent::parse(&self.context, input)?;
                 AtRulePrelude::PositionTry(name)
             },
+            "custom-media" if static_prefs::pref!("layout.css.custom-media.enabled") => {
+                let name = DashedIdent::parse(&self.context, input)?;
+                let condition = input.try_parse(CustomMediaCondition::parse_keyword).unwrap_or_else(|_| {
+                    CustomMediaCondition::MediaList(Arc::new(self.shared_lock.wrap(
+                        MediaList::parse(&self.context, input)
+                    )))
+                });
+                AtRulePrelude::CustomMedia(name, condition)
+            },
             _ => {
                 if static_prefs::pref!("layout.css.margin-rules.enabled") {
                     if let Some(margin_rule_type) = MarginRuleType::match_name(&name) {
@@ -917,7 +931,9 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                     source_location,
                 }))
             },
-            AtRulePrelude::Import(..) | AtRulePrelude::Namespace(..) => {
+            AtRulePrelude::CustomMedia(..)
+            | AtRulePrelude::Import(..)
+            | AtRulePrelude::Namespace(..) => {
                 // These rules don't have blocks.
                 return Err(input.new_unexpected_token_error(cssparser::Token::CurlyBracketBlock));
             },
@@ -956,6 +972,13 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
         }
         let source_location = start.source_location();
         let rule = match prelude {
+            AtRulePrelude::CustomMedia(name, condition) => {
+                CssRule::CustomMedia(Arc::new(CustomMediaRule {
+                    name,
+                    condition,
+                    source_location,
+                }))
+            },
             AtRulePrelude::Layer(names) => {
                 if names.is_empty() {
                     return Err(());

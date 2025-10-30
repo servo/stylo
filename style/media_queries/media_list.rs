@@ -10,6 +10,7 @@ use super::{Device, MediaQuery, Qualifier};
 use crate::context::QuirksMode;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::ParserContext;
+use crate::stylesheets::CustomMediaEvaluator;
 use crate::values::computed;
 use cssparser::{Delimiter, Parser};
 use cssparser::{ParserInput, Token};
@@ -73,29 +74,41 @@ impl MediaList {
     }
 
     /// Evaluate a whole `MediaList` against `Device`.
-    pub fn evaluate(&self, device: &Device, quirks_mode: QuirksMode) -> bool {
+    pub fn evaluate(
+        &self,
+        device: &Device,
+        quirks_mode: QuirksMode,
+        custom: &mut CustomMediaEvaluator,
+    ) -> bool {
+        computed::Context::for_media_query_evaluation(device, quirks_mode, |context| {
+            self.matches(context, custom).to_bool(/* unknown = */ false)
+        })
+    }
+
+    /// Evaluate the current `MediaList` with a pre-existing context and custom-media evaluator.
+    pub fn matches(
+        &self,
+        context: &computed::Context,
+        custom: &mut CustomMediaEvaluator,
+    ) -> KleeneValue {
         // Check if it is an empty media query list or any queries match.
         // https://drafts.csswg.org/mediaqueries-4/#mq-list
         if self.media_queries.is_empty() {
-            return true;
+            return KleeneValue::True;
         }
-
-        computed::Context::for_media_query_evaluation(device, quirks_mode, |context| {
-            self.media_queries.iter().any(|mq| {
-                let mut query_match = if mq.media_type.matches(device.media_type()) {
-                    mq.condition
-                        .as_ref()
-                        .map_or(KleeneValue::True, |c| c.matches(context))
-                } else {
-                    KleeneValue::False
-                };
-
-                // Apply the logical NOT qualifier to the result
-                if matches!(mq.qualifier, Some(Qualifier::Not)) {
-                    query_match = !query_match;
-                }
-                query_match.to_bool(/* unknown = */ false)
-            })
+        KleeneValue::any(self.media_queries.iter(), |mq| {
+            let mut query_match = if mq.media_type.matches(context.device().media_type()) {
+                mq.condition
+                    .as_ref()
+                    .map_or(KleeneValue::True, |c| c.matches(context, custom))
+            } else {
+                KleeneValue::False
+            };
+            // Apply the logical NOT qualifier to the result
+            if matches!(mq.qualifier, Some(Qualifier::Not)) {
+                query_match = !query_match;
+            }
+            query_match
         })
     }
 

@@ -9,7 +9,8 @@
 
 use super::{FeatureFlags, FeatureType, QueryFeatureExpression};
 use crate::custom_properties;
-use crate::values::{computed, AtomString};
+use crate::stylesheets::CustomMediaEvaluator;
+use crate::values::{computed, AtomString, DashedIdent};
 use crate::{error_reporting::ContextualParseError, parser::ParserContext};
 use cssparser::{Parser, SourcePosition, Token};
 use selectors::kleene_value::KleeneValue;
@@ -218,6 +219,8 @@ impl ToCss for MozPrefFeature {
 pub enum QueryCondition {
     /// A simple feature expression, implicitly parenthesized.
     Feature(QueryFeatureExpression),
+    /// A custom media query reference in a boolean context, implicitly parenthesized.
+    Custom(DashedIdent),
     /// A negation of a condition.
     Not(Box<QueryCondition>),
     /// A set of joint operations.
@@ -241,6 +244,11 @@ impl ToCss for QueryCondition {
             // NOTE(emilio): QueryFeatureExpression already includes the
             // parenthesis.
             QueryCondition::Feature(ref f) => f.to_css(dest),
+            QueryCondition::Custom(ref name) => {
+                dest.write_char('(')?;
+                name.to_css(dest)?;
+                dest.write_char(')')
+            },
             QueryCondition::Not(ref c) => {
                 dest.write_str("not ")?;
                 c.to_css(dest)
@@ -297,8 +305,11 @@ impl QueryCondition {
     {
         visitor(self);
         match *self {
-            Self::Feature(..) | Self::GeneralEnclosed(..) | Self::Style(..) | Self::MozPref(..) => {
-            },
+            Self::Custom(..)
+            | Self::Feature(..)
+            | Self::GeneralEnclosed(..)
+            | Self::Style(..)
+            | Self::MozPref(..) => {},
             Self::Not(ref cond) => cond.visit(visitor),
             Self::Operation(ref conds, _op) => {
                 for cond in conds.iter() {
@@ -475,36 +486,27 @@ impl QueryCondition {
     /// https://drafts.csswg.org/mediaqueries/#typedef-general-enclosed
     /// Kleene 3-valued logic is adopted here due to the introduction of
     /// <general-enclosed>.
-    pub fn matches(&self, context: &computed::Context) -> KleeneValue {
+    pub fn matches(
+        &self,
+        context: &computed::Context,
+        custom: &mut CustomMediaEvaluator,
+    ) -> KleeneValue {
         match *self {
+            QueryCondition::Custom(ref f) => custom.matches(f, context),
             QueryCondition::Feature(ref f) => f.matches(context),
             QueryCondition::GeneralEnclosed(_) => KleeneValue::Unknown,
-            QueryCondition::InParens(ref c) => c.matches(context),
-            QueryCondition::Not(ref c) => !c.matches(context),
+            QueryCondition::InParens(ref c) => c.matches(context, custom),
+            QueryCondition::Not(ref c) => !c.matches(context, custom),
             QueryCondition::Style(ref c) => c.matches(context),
             QueryCondition::MozPref(ref c) => c.matches(context),
             QueryCondition::Operation(ref conditions, op) => {
                 debug_assert!(!conditions.is_empty(), "We never create an empty op");
                 match op {
                     Operator::And => {
-                        let mut result = KleeneValue::True;
-                        for c in conditions.iter() {
-                            result &= c.matches(context);
-                            if result == KleeneValue::False {
-                                break;
-                            }
-                        }
-                        result
+                        KleeneValue::any_false(conditions.iter(), |c| c.matches(context, custom))
                     },
                     Operator::Or => {
-                        let mut result = KleeneValue::False;
-                        for c in conditions.iter() {
-                            result |= c.matches(context);
-                            if result == KleeneValue::True {
-                                break;
-                            }
-                        }
-                        result
+                        KleeneValue::any(conditions.iter(), |c| c.matches(context, custom))
                     },
                 }
             },

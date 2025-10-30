@@ -12,7 +12,9 @@ use crate::stylesheets::loader::StylesheetLoader;
 use crate::stylesheets::rule_parser::{State, TopLevelRuleParser};
 use crate::stylesheets::rules_iterator::{EffectiveRules, EffectiveRulesIterator};
 use crate::stylesheets::rules_iterator::{NestedRuleIterationCondition, RulesIterator};
-use crate::stylesheets::{CssRule, CssRules, Origin, UrlExtraData};
+use crate::stylesheets::{
+    CssRule, CssRules, CustomMediaEvaluator, CustomMediaMap, Origin, UrlExtraData,
+};
 use crate::use_counters::UseCounters;
 use crate::{Namespace, Prefix};
 use cssparser::{Parser, ParserInput, StyleSheetParser};
@@ -20,6 +22,7 @@ use cssparser::{Parser, ParserInput, StyleSheetParser};
 use malloc_size_of::{MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
 use rustc_hash::FxHashMap;
 use servo_arc::Arc;
+use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, Ordering};
 use style_traits::ParsingMode;
 
@@ -163,26 +166,35 @@ impl StylesheetContents {
 
     /// Return an iterator using the condition `C`.
     #[inline]
-    pub fn iter_rules<'a, 'b, C>(
+    pub fn iter_rules<'a, 'b, C, CMM>(
         &'a self,
         device: &'a Device,
+        custom_media: CMM,
         guard: &'a SharedRwLockReadGuard<'b>,
-    ) -> RulesIterator<'a, 'b, C>
+    ) -> RulesIterator<'a, 'b, C, CMM>
     where
         C: NestedRuleIterationCondition,
+        CMM: Deref<Target = CustomMediaMap>,
     {
-        RulesIterator::new(device, self.quirks_mode, guard, self.rules(guard).iter())
+        RulesIterator::new(
+            device,
+            self.quirks_mode,
+            custom_media,
+            guard,
+            self.rules(guard).iter(),
+        )
     }
 
     /// Return an iterator over the effective rules within the style-sheet, as
     /// according to the supplied `Device`.
     #[inline]
-    pub fn effective_rules<'a, 'b>(
+    pub fn effective_rules<'a, 'b, CMM: Deref<Target = CustomMediaMap>>(
         &'a self,
         device: &'a Device,
+        custom_media: CMM,
         guard: &'a SharedRwLockReadGuard<'b>,
-    ) -> EffectiveRulesIterator<'a, 'b> {
-        self.iter_rules::<EffectiveRules>(device, guard)
+    ) -> EffectiveRulesIterator<'a, 'b, CMM> {
+        self.iter_rules::<EffectiveRules, CMM>(device, custom_media, guard)
     }
 
     /// Perform a deep clone, of this stylesheet, with an explicit URL data if needed.
@@ -239,11 +251,21 @@ pub trait StylesheetInDocument: ::std::fmt::Debug {
     fn contents<'a>(&'a self, guard: &'a SharedRwLockReadGuard) -> &'a StylesheetContents;
 
     /// Returns whether the style-sheet applies for the current device.
-    fn is_effective_for_device(&self, device: &Device, guard: &SharedRwLockReadGuard) -> bool {
-        match self.media(guard) {
-            Some(medialist) => medialist.evaluate(device, self.contents(guard).quirks_mode),
-            None => true,
-        }
+    fn is_effective_for_device(
+        &self,
+        device: &Device,
+        custom_media: &CustomMediaMap,
+        guard: &SharedRwLockReadGuard,
+    ) -> bool {
+        let media = match self.media(guard) {
+            Some(m) => m,
+            None => return true,
+        };
+        media.evaluate(
+            device,
+            self.contents(guard).quirks_mode,
+            &mut CustomMediaEvaluator::new(custom_media, guard),
+        )
     }
 
     /// Return the implicit scope root for this stylesheet, if one exists.
@@ -334,6 +356,7 @@ impl SanitizationKind {
         match *rule {
             CssRule::Document(..) |
             CssRule::Media(..) |
+            CssRule::CustomMedia(..) |
             CssRule::Supports(..) |
             CssRule::Import(..) |
             CssRule::Container(..) |

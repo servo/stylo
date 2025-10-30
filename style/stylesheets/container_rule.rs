@@ -17,7 +17,7 @@ use crate::queries::{FeatureType, QueryCondition};
 use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
-use crate::stylesheets::CssRules;
+use crate::stylesheets::{CssRules, CustomMediaEvaluator};
 use crate::stylist::Stylist;
 use crate::values::computed::{CSSPixelLength, ContainerType, Context, Ratio};
 use crate::values::specified::ContainerName;
@@ -270,7 +270,9 @@ impl ContainerCondition {
             info,
             size_query_container_lookup,
             |context| {
-                let matches = self.condition.matches(context);
+                let matches = self
+                    .condition
+                    .matches(context, &mut CustomMediaEvaluator::none());
                 if context
                     .style()
                     .flags()

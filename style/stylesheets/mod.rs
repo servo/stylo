@@ -61,7 +61,9 @@ pub use self::keyframes_rule::KeyframesRule;
 pub use self::layer_rule::{LayerBlockRule, LayerStatementRule};
 pub use self::loader::StylesheetLoader;
 pub use self::margin_rule::{MarginRule, MarginRuleType};
-pub use self::media_rule::MediaRule;
+pub use self::media_rule::{
+    CustomMediaCondition, CustomMediaEvaluator, CustomMediaMap, CustomMediaRule, MediaRule,
+};
 pub use self::namespace_rule::NamespaceRule;
 pub use self::nested_declarations_rule::NestedDeclarationsRule;
 pub use self::origin::{Origin, OriginSet, OriginSetIterator, PerOrigin, PerOriginIter};
@@ -331,6 +333,7 @@ pub enum CssRule {
     Namespace(Arc<NamespaceRule>),
     Import(Arc<Locked<ImportRule>>),
     Media(Arc<MediaRule>),
+    CustomMedia(Arc<CustomMediaRule>),
     Container(Arc<ContainerRule>),
     FontFace(Arc<Locked<FontFaceRule>>),
     FontFeatureValues(Arc<FontFeatureValuesRule>),
@@ -368,6 +371,10 @@ impl CssRule {
             },
             CssRule::Media(ref arc) => {
                 arc.unconditional_shallow_size_of(ops) + arc.size_of(guard, ops)
+            },
+            CssRule::CustomMedia(ref arc) => {
+                // Measurement of other fields might be added later.
+                arc.unconditional_shallow_size_of(ops)
             },
             CssRule::Container(ref arc) => {
                 arc.unconditional_shallow_size_of(ops) + arc.size_of(guard, ops)
@@ -445,6 +452,7 @@ pub enum CssRuleRef<'a> {
     Namespace(&'a NamespaceRule),
     Import(&'a LockedImportRule),
     Media(&'a MediaRule),
+    CustomMedia(&'a CustomMediaRule),
     Container(&'a ContainerRule),
     FontFace(&'a LockedFontFaceRule),
     FontFeatureValues(&'a FontFeatureValuesRule),
@@ -471,6 +479,7 @@ impl<'a> From<&'a CssRule> for CssRuleRef<'a> {
             CssRule::Namespace(r) => CssRuleRef::Namespace(r.as_ref()),
             CssRule::Import(r) => CssRuleRef::Import(r.as_ref()),
             CssRule::Media(r) => CssRuleRef::Media(r.as_ref()),
+            CssRule::CustomMedia(r) => CssRuleRef::CustomMedia(r.as_ref()),
             CssRule::Container(r) => CssRuleRef::Container(r.as_ref()),
             CssRule::FontFace(r) => CssRuleRef::FontFace(r.as_ref()),
             CssRule::FontFeatureValues(r) => CssRuleRef::FontFeatureValues(r.as_ref()),
@@ -533,6 +542,7 @@ pub enum CssRuleType {
     PositionTry = 23,
     // https://drafts.csswg.org/css-nesting-1/#nested-declarations-rule
     NestedDeclarations = 24,
+    CustomMedia = 25,
 }
 
 impl CssRuleType {
@@ -610,6 +620,7 @@ impl CssRule {
             CssRule::Style(_) => CssRuleType::Style,
             CssRule::Import(_) => CssRuleType::Import,
             CssRule::Media(_) => CssRuleType::Media,
+            CssRule::CustomMedia(_) => CssRuleType::CustomMedia,
             CssRule::FontFace(_) => CssRuleType::FontFace,
             CssRule::FontFeatureValues(_) => CssRuleType::FontFeatureValues,
             CssRule::FontPaletteValues(_) => CssRuleType::FontPaletteValues,
@@ -731,6 +742,9 @@ impl DeepCloneWithLock for CssRule {
             CssRule::Media(ref arc) => {
                 CssRule::Media(Arc::new(arc.deep_clone_with_lock(lock, guard)))
             },
+            CssRule::CustomMedia(ref arc) => {
+                CssRule::CustomMedia(Arc::new(arc.deep_clone_with_lock(lock, guard)))
+            },
             CssRule::FontFace(ref arc) => {
                 let rule = arc.read_with(guard);
                 CssRule::FontFace(Arc::new(lock.wrap(rule.clone())))
@@ -799,6 +813,7 @@ impl ToCssWithGuard for CssRule {
             CssRule::Keyframes(ref lock) => lock.read_with(guard).to_css(guard, dest),
             CssRule::Margin(ref rule) => rule.to_css(guard, dest),
             CssRule::Media(ref rule) => rule.to_css(guard, dest),
+            CssRule::CustomMedia(ref rule) => rule.to_css(guard, dest),
             CssRule::Supports(ref rule) => rule.to_css(guard, dest),
             CssRule::Page(ref lock) => lock.read_with(guard).to_css(guard, dest),
             CssRule::Property(ref rule) => rule.to_css(guard, dest),

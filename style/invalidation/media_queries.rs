@@ -7,7 +7,7 @@
 use crate::context::QuirksMode;
 use crate::media_queries::Device;
 use crate::shared_lock::SharedRwLockReadGuard;
-use crate::stylesheets::{DocumentRule, ImportRule, MediaRule};
+use crate::stylesheets::{CustomMediaMap, DocumentRule, ImportRule, MediaRule};
 use crate::stylesheets::{NestedRuleIterationCondition, StylesheetContents, SupportsRule};
 use rustc_hash::FxHashSet;
 
@@ -97,12 +97,19 @@ impl NestedRuleIterationCondition for PotentiallyEffectiveMediaRules {
         _: &SharedRwLockReadGuard,
         _: &Device,
         _: QuirksMode,
+        _: &CustomMediaMap,
         _: &ImportRule,
     ) -> bool {
         true
     }
 
-    fn process_media(_: &SharedRwLockReadGuard, _: &Device, _: QuirksMode, _: &MediaRule) -> bool {
+    fn process_media(
+        _: &SharedRwLockReadGuard,
+        _: &Device,
+        _: QuirksMode,
+        _: &CustomMediaMap,
+        _: &MediaRule,
+    ) -> bool {
         true
     }
 

@@ -7,6 +7,7 @@
 use crate::media_queries::Device;
 use crate::parser::{Parse, ParserContext};
 use crate::queries::{FeatureType, QueryCondition};
+use crate::stylesheets::CustomMediaEvaluator;
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::specified::{Length, NoCalcLength, ViewportPercentageLength};
 use app_units::Au;
@@ -58,7 +59,7 @@ impl SourceSizeList {
             let matching_source_size = self.source_sizes.iter().find(|source_size| {
                 source_size
                     .condition
-                    .matches(context)
+                    .matches(context, &mut CustomMediaEvaluator::none())
                     .to_bool(/* unknown = */ false)
             });
 

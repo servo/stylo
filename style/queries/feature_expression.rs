@@ -371,22 +371,6 @@ impl QueryFeatureExpression {
         self.feature().flags
     }
 
-    /// Parse a feature expression of the form:
-    ///
-    /// ```
-    /// (media-feature: media-value)
-    /// ```
-    pub fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-        feature_type: FeatureType,
-    ) -> Result<Self, ParseError<'i>> {
-        input.expect_parenthesis_block()?;
-        input.parse_nested_block(|input| {
-            Self::parse_in_parenthesis_block(context, input, feature_type)
-        })
-    }
-
     fn parse_feature_name<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,

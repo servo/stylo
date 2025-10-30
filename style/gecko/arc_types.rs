@@ -14,9 +14,9 @@ use crate::properties::{ComputedValues, PropertyDeclarationBlock};
 use crate::shared_lock::Locked;
 use crate::stylesheets::keyframes_rule::Keyframe;
 use crate::stylesheets::{
-    ContainerRule, CssRules, DocumentRule, FontFeatureValuesRule, FontPaletteValuesRule,
-    LayerBlockRule, LayerStatementRule, MarginRule, MediaRule, NamespaceRule, PropertyRule,
-    ScopeRule, StartingStyleRule, StylesheetContents, SupportsRule,
+    ContainerRule, CssRules, CustomMediaRule, DocumentRule, FontFeatureValuesRule,
+    FontPaletteValuesRule, LayerBlockRule, LayerStatementRule, MarginRule, MediaRule,
+    NamespaceRule, PropertyRule, ScopeRule, StartingStyleRule, StylesheetContents, SupportsRule,
 };
 pub use crate::stylesheets::{
     LockedCounterStyleRule, LockedFontFaceRule, LockedImportRule, LockedKeyframesRule,
@@ -96,6 +96,11 @@ impl_locked_arc_ffi!(
     Servo_MediaList_Release
 );
 impl_simple_arc_ffi!(MediaRule, Servo_MediaRule_AddRef, Servo_MediaRule_Release);
+impl_simple_arc_ffi!(
+    CustomMediaRule,
+    Servo_CustomMediaRule_AddRef,
+    Servo_CustomMediaRule_Release
+);
 impl_simple_arc_ffi!(
     NamespaceRule,
     Servo_NamespaceRule_AddRef,

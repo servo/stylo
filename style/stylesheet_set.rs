@@ -9,7 +9,9 @@ use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet
 use crate::media_queries::Device;
 use crate::selector_parser::SnapshotMap;
 use crate::shared_lock::SharedRwLockReadGuard;
-use crate::stylesheets::{CssRule, CssRuleRef, Origin, OriginSet, PerOrigin, StylesheetInDocument};
+use crate::stylesheets::{
+    CssRule, CssRuleRef, CustomMediaMap, Origin, OriginSet, PerOrigin, StylesheetInDocument,
+};
 use std::mem;
 
 /// Entry for a StylesheetSet.
@@ -341,12 +343,13 @@ macro_rules! sheet_set_methods {
         fn collect_invalidations_for(
             &mut self,
             device: Option<&Device>,
+            custom_media: &CustomMediaMap,
             sheet: &S,
             guard: &SharedRwLockReadGuard,
         ) {
             if let Some(device) = device {
                 self.invalidations
-                    .collect_invalidations_for(device, sheet, guard);
+                    .collect_invalidations_for(device, custom_media, sheet, guard);
             }
         }
 
@@ -356,11 +359,12 @@ macro_rules! sheet_set_methods {
         pub fn append_stylesheet(
             &mut self,
             device: Option<&Device>,
+            custom_media: &CustomMediaMap,
             sheet: S,
             guard: &SharedRwLockReadGuard,
         ) {
             debug!(concat!($set_name, "::append_stylesheet"));
-            self.collect_invalidations_for(device, &sheet, guard);
+            self.collect_invalidations_for(device, custom_media, &sheet, guard);
             let collection = self.collection_for(&sheet, guard);
             collection.append(sheet);
         }
@@ -369,12 +373,13 @@ macro_rules! sheet_set_methods {
         pub fn insert_stylesheet_before(
             &mut self,
             device: Option<&Device>,
+            custom_media: &CustomMediaMap,
             sheet: S,
             before_sheet: S,
             guard: &SharedRwLockReadGuard,
         ) {
             debug!(concat!($set_name, "::insert_stylesheet_before"));
-            self.collect_invalidations_for(device, &sheet, guard);
+            self.collect_invalidations_for(device, custom_media, &sheet, guard);
 
             let collection = self.collection_for(&sheet, guard);
             collection.insert_before(sheet, &before_sheet);
@@ -384,11 +389,12 @@ macro_rules! sheet_set_methods {
         pub fn remove_stylesheet(
             &mut self,
             device: Option<&Device>,
+            custom_media: &CustomMediaMap,
             sheet: S,
             guard: &SharedRwLockReadGuard,
         ) {
             debug!(concat!($set_name, "::remove_stylesheet"));
-            self.collect_invalidations_for(device, &sheet, guard);
+            self.collect_invalidations_for(device, custom_media, &sheet, guard);
 
             let collection = self.collection_for(&sheet, guard);
             collection.remove(&sheet)
@@ -399,6 +405,7 @@ macro_rules! sheet_set_methods {
         pub fn rule_changed(
             &mut self,
             device: Option<&Device>,
+            custom_media: &CustomMediaMap,
             sheet: &S,
             rule: &CssRule,
             guard: &SharedRwLockReadGuard,
@@ -413,6 +420,7 @@ macro_rules! sheet_set_methods {
                     guard,
                     device,
                     quirks_mode,
+                    custom_media,
                     change_kind,
                     ancestors,
                 );

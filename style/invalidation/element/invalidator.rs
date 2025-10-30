@@ -355,7 +355,7 @@ impl<'a> Invalidation<'a> {
         host: Option<OpaqueElement>,
         scope: Option<OpaqueElement>,
     ) -> Self {
-        if dependency.selector_offset == 0 {
+        if dependency.selector.is_rightmost(dependency.selector_offset) {
             return Self::new_subject_invalidation(dependency, host, scope);
         }
 
@@ -1189,7 +1189,7 @@ where
                     invalidation_kind,
                     DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element)
                 ) || (matches!(invalidation_kind, DependencyInvalidationKind::Scope(_))
-                    && cur_dependency.selector_offset == 0)
+                    && cur_dependency.selector.is_rightmost(cur_dependency.selector_offset))
                 {
                     // Add to dependency stack to process its next dependencies.
                     to_process.push(cur_dependency);
@@ -1429,7 +1429,7 @@ pub fn note_scope_dependency_force_at_subject<'selectors>(
     let mut invalidations: Vec<Invalidation> = Vec::new();
     if let Some(next) = dependency.next.as_ref() {
         for dep in next.slice() {
-            if dep.selector_offset == 0 && !traversed_non_subject {
+            if dep.selector.is_rightmost(dep.selector_offset) && !traversed_non_subject {
                 continue;
             }
 

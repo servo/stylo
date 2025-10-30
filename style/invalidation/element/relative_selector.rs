@@ -1123,7 +1123,7 @@ where
                 let invalidation_kind = d.invalidation_kind();
 
                 if let DependencyInvalidationKind::Scope(scope_kind) = invalidation_kind {
-                    if d.selector_offset == 0 {
+                    if d.selector.is_rightmost(d.selector_offset) {
                         if scope_kind == ScopeDependencyInvalidationKind::ScopeEnd {
                             let invalidations = note_scope_dependency_force_at_subject(
                                 d,

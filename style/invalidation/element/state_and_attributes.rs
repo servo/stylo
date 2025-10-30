@@ -607,7 +607,7 @@ where
                 }
             }
 
-            if dependency.selector_offset == 0 {
+            if dependency.selector.is_rightmost(dependency.selector_offset) {
                 let force_add = any_next_has_scope_in_negation(dependency);
                 if scope_kind == ScopeDependencyInvalidationKind::ScopeEnd || force_add {
                     let invalidations = note_scope_dependency_force_at_subject(

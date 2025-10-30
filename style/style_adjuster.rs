@@ -26,23 +26,6 @@ use crate::values::specified::align::AlignFlags;
 #[cfg(feature = "gecko")]
 use selectors::parser::PseudoElement;
 
-macro_rules! flip_property {
-    ($adjuster:ident, $struct_getter:ident, $struct_setter:ident, $a_getter:ident, $a_setter:ident, $b_getter:ident, $b_setter:ident) => {{
-        loop {
-            let s = $adjuster.style.$struct_getter();
-            let a = s.$a_getter();
-            let b = s.$b_getter();
-            if a == b {
-                break;
-            }
-            let s = $adjuster.style.$struct_setter();
-            s.$b_setter(a);
-            s.$a_setter(b);
-            break;
-        }
-    }};
-}
-
 /// A struct that implements all the adjustment methods.
 ///
 /// NOTE(emilio): If new adjustments are introduced that depend on reset
@@ -977,17 +960,14 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         pos.set_position_area(new);
     }
 
+    // TODO: Could avoid some clones here and below.
     fn swap_insets(&mut self, a_side: PhysicalSide, b_side: PhysicalSide) {
         debug_assert_ne!(a_side, b_side);
-        let pos = self.style.get_position();
-        let a = pos.get_inset(a_side);
-        let b = pos.get_inset(b_side);
-        if a == b {
-            return;
-        }
-        let a = a.clone().try_tactic_adjustment(a_side, b_side);
-        let b = b.clone().try_tactic_adjustment(b_side, a_side);
         let pos = self.style.mutate_position();
+        let mut a = pos.get_inset(a_side).clone();
+        a.try_tactic_adjustment(a_side, b_side);
+        let mut b = pos.get_inset(b_side).clone();
+        b.try_tactic_adjustment(b_side, a_side);
         pos.set_inset(a_side, b);
         pos.set_inset(b_side, a);
     }
@@ -995,51 +975,47 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     fn swap_margins(&mut self, a_side: PhysicalSide, b_side: PhysicalSide) {
         debug_assert_ne!(a_side, b_side);
         let margin = self.style.get_margin();
-        let a = margin.get_margin(a_side);
-        let b = margin.get_margin(b_side);
-        if a == b {
-            return;
-        }
-        let a = a.clone().try_tactic_adjustment(a_side, b_side);
-        let b = b.clone().try_tactic_adjustment(b_side, a_side);
+        let mut a = margin.get_margin(a_side).clone();
+        a.try_tactic_adjustment(a_side, b_side);
+        let mut b = margin.get_margin(b_side).clone();
+        b.try_tactic_adjustment(b_side, a_side);
         let margin = self.style.mutate_margin();
         margin.set_margin(a_side, b);
         margin.set_margin(b_side, a);
     }
 
+    fn swap_sizes(&mut self, block_start: PhysicalSide, inline_start: PhysicalSide) {
+        let pos = self.style.mutate_position();
+        let mut min_width = pos.clone_min_width();
+        min_width.try_tactic_adjustment(inline_start, block_start);
+        let mut max_width = pos.clone_max_width();
+        max_width.try_tactic_adjustment(inline_start, block_start);
+        let mut width = pos.clone_width();
+        width.try_tactic_adjustment(inline_start, block_start);
+
+        let mut min_height = pos.clone_min_height();
+        min_height.try_tactic_adjustment(block_start, inline_start);
+        let mut max_height = pos.clone_max_height();
+        max_height.try_tactic_adjustment(block_start, inline_start);
+        let mut height = pos.clone_height();
+        height.try_tactic_adjustment(block_start, inline_start);
+
+        let pos = self.style.mutate_position();
+        pos.set_width(height);
+        pos.set_height(width);
+        pos.set_max_width(max_height);
+        pos.set_max_height(max_width);
+        pos.set_min_width(min_height);
+        pos.set_min_height(min_width);
+    }
+
     fn flip_start(&mut self) {
-        flip_property!(
-            self,
-            get_position,
-            mutate_position,
-            clone_width,
-            set_width,
-            clone_height,
-            set_height
-        );
-        flip_property!(
-            self,
-            get_position,
-            mutate_position,
-            clone_min_width,
-            set_min_width,
-            clone_min_height,
-            set_min_height
-        );
-        flip_property!(
-            self,
-            get_position,
-            mutate_position,
-            clone_max_width,
-            set_max_width,
-            clone_max_height,
-            set_max_height
-        );
         let wm = self.style.writing_mode;
         let bs = wm.block_start_physical_side();
         let is = wm.inline_start_physical_side();
         let be = wm.block_end_physical_side();
         let ie = wm.inline_end_physical_side();
+        self.swap_sizes(bs, is);
         self.swap_insets(bs, is);
         self.swap_insets(ie, be);
         self.swap_margins(bs, is);

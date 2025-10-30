@@ -405,12 +405,11 @@ pub struct GenericAnchorSizeFunction<Fallback> {
 }
 
 impl<Fallback: TryTacticAdjustment> TryTacticAdjustment for GenericAnchorSizeFunction<Fallback> {
-    fn try_tactic_adjustment(mut self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
-        self.size = self.size.try_tactic_adjustment(old_side, new_side);
-        self.fallback = self
-            .fallback
-            .map(|f| f.try_tactic_adjustment(old_side, new_side));
-        self
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        self.size.try_tactic_adjustment(old_side, new_side);
+        if let Some(fallback) = self.fallback.as_mut() {
+            fallback.try_tactic_adjustment(old_side, new_side);
+        }
     }
 }
 
@@ -567,11 +566,11 @@ pub enum AnchorSizeKeyword {
 }
 
 impl TryTacticAdjustment for AnchorSizeKeyword {
-    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
         if old_side.parallel_to(new_side) {
-            return self;
+            return;
         }
-        match self {
+        *self = match *self {
             Self::None => Self::None,
             Self::Width => Self::Height,
             Self::Height => Self::Width,

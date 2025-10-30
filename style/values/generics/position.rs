@@ -462,25 +462,26 @@ impl AnchorSideKeyword {
 }
 
 impl TryTacticAdjustment for AnchorSideKeyword {
-    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
         if !old_side.parallel_to(new_side) {
-            if let Some(s) = self.physical_side() {
-                return Self::from_physical_side(if s == new_side {
-                    old_side
-                } else if s == old_side {
-                    new_side
-                } else if s == new_side.opposite_side() {
-                    old_side.opposite_side()
-                } else {
-                    debug_assert_eq!(s, old_side.opposite_side());
-                    new_side.opposite_side()
-                });
-            }
-            return self;
+            let Some(s) = self.physical_side() else {
+                return;
+            };
+            *self = Self::from_physical_side(if s == new_side {
+                old_side
+            } else if s == old_side {
+                new_side
+            } else if s == new_side.opposite_side() {
+                old_side.opposite_side()
+            } else {
+                debug_assert_eq!(s, old_side.opposite_side());
+                new_side.opposite_side()
+            });
+            return;
         }
 
-        match self {
-            Self::Center | Self::Inside | Self::Outside => self,
+        *self = match self {
+            Self::Center | Self::Inside | Self::Outside => *self,
             Self::SelfStart => Self::SelfEnd,
             Self::SelfEnd => Self::SelfStart,
             Self::Start => Self::End,

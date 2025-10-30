@@ -31,6 +31,7 @@ use crate::logical_geometry::{PhysicalAxis, PhysicalSide};
 use crate::values::animated::{
     Animate, Context as AnimatedContext, Procedure, ToAnimatedValue, ToAnimatedZero,
 };
+use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::calc::{CalcUnits, PositivePercentageBasis};
 #[cfg(feature = "gecko")]
@@ -1329,5 +1330,31 @@ impl NonNegativeLengthPercentage {
     pub fn maybe_to_used_value(&self, containing_length: Option<Au>) -> Option<Au> {
         let resolved = self.0.maybe_to_used_value(containing_length)?;
         Some(std::cmp::max(resolved, Au(0)))
+    }
+}
+
+impl TryTacticAdjustment for LengthPercentage {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        match self.unpack_mut() {
+            UnpackedMut::Calc(calc) => calc.node.try_tactic_adjustment(old_side, new_side),
+            UnpackedMut::Percentage(mut p) => {
+                p.try_tactic_adjustment(old_side, new_side);
+                *self = Self::new_percent(p);
+            },
+            UnpackedMut::Length(..) => {},
+        }
+    }
+}
+
+impl TryTacticAdjustment for CalcNode {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        self.visit_depth_first(|node| match node {
+            Self::Leaf(CalcLengthPercentageLeaf::Percentage(p)) => {
+                p.try_tactic_adjustment(old_side, new_side)
+            },
+            Self::Anchor(a) => a.try_tactic_adjustment(old_side, new_side),
+            Self::AnchorSize(a) => a.try_tactic_adjustment(old_side, new_side),
+            _ => {},
+        });
     }
 }

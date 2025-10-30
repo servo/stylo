@@ -10,21 +10,18 @@
 use crate::values::computed::{
     Context, Integer, LengthPercentage, NonNegativeNumber, Percentage, ToComputedValue,
 };
-use crate::values::generics::position::Position as GenericPosition;
-use crate::values::generics::position::PositionComponent as GenericPositionComponent;
-use crate::values::generics::position::PositionOrAuto as GenericPositionOrAuto;
-use crate::values::generics::position::ZIndex as GenericZIndex;
+use crate::values::generics;
 use crate::values::generics::position::{
-    AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide,
+    AnchorSideKeyword, AspectRatio as GenericAspectRatio, GenericAnchorFunction, GenericAnchorSide,
+    GenericInset, Position as GenericPosition, PositionComponent as GenericPositionComponent,
+    PositionOrAuto as GenericPositionOrAuto, ZIndex as GenericZIndex,
 };
-use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericInset};
 pub use crate::values::specified::position::{
-    AnchorName, AnchorScope, DashedIdentAndOrTryTactic, PositionAnchor, PositionArea,
-    PositionAreaAxis, PositionAreaKeyword, PositionAreaType, PositionTryFallbacks,
-    PositionTryFallbacksTryTactic, PositionTryFallbacksTryTacticKeyword, PositionTryOrder,
-    PositionVisibility,
+    AnchorName, AnchorScope, DashedIdentAndOrTryTactic, GridAutoFlow, GridTemplateAreas,
+    MasonryAutoFlow, PositionAnchor, PositionArea, PositionAreaAxis, PositionAreaKeyword,
+    PositionAreaType, PositionTryFallbacks, PositionTryFallbacksTryTactic,
+    PositionTryFallbacksTryTacticKeyword, PositionTryOrder, PositionVisibility,
 };
-pub use crate::values::specified::position::{GridAutoFlow, GridTemplateAreas, MasonryAutoFlow};
 use crate::Zero;
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ToCss};
@@ -107,34 +104,38 @@ impl AnchorFunction {
 pub(crate) trait TryTacticAdjustment {
     /// Performs the adjustments necessary given an old side we're relative to, and a new side
     /// we're relative to.
-    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self;
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide);
 }
 
 impl<T: TryTacticAdjustment> TryTacticAdjustment for Box<T> {
-    fn try_tactic_adjustment(mut self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
-        *self = (*self).try_tactic_adjustment(old_side, new_side);
-        self
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        (**self).try_tactic_adjustment(old_side, new_side);
     }
 }
 
-impl TryTacticAdjustment for GenericAnchorSide<Percentage> {
-    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+impl<T: TryTacticAdjustment> TryTacticAdjustment for generics::NonNegative<T> {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        self.0.try_tactic_adjustment(old_side, new_side);
+    }
+}
+
+impl<Percentage: TryTacticAdjustment> TryTacticAdjustment for GenericAnchorSide<Percentage> {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
         match self {
-            Self::Percentage(p) => Self::Percentage(p.try_tactic_adjustment(old_side, new_side)),
-            Self::Keyword(side) => Self::Keyword(side.try_tactic_adjustment(old_side, new_side)),
+            Self::Percentage(p) => p.try_tactic_adjustment(old_side, new_side),
+            Self::Keyword(side) => side.try_tactic_adjustment(old_side, new_side),
         }
     }
 }
 
-impl<Fallback: TryTacticAdjustment> TryTacticAdjustment
+impl<Percentage: TryTacticAdjustment, Fallback: TryTacticAdjustment> TryTacticAdjustment
     for GenericAnchorFunction<Percentage, Fallback>
 {
-    fn try_tactic_adjustment(mut self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
-        self.side = self.side.try_tactic_adjustment(old_side, new_side);
-        self.fallback = self
-            .fallback
-            .map(|f| f.try_tactic_adjustment(old_side, new_side));
-        self
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        self.side.try_tactic_adjustment(old_side, new_side);
+        if let Some(fallback) = self.fallback.as_mut() {
+            fallback.try_tactic_adjustment(old_side, new_side);
+        }
     }
 }
 
@@ -148,20 +149,14 @@ impl TryTacticAdjustment for Inset {
     //
     //     If a <percentage> is used, and directions are opposing, change it to 100% minus the
     //     original percentage.
-    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
         match self {
-            Self::Auto => self,
-            Self::LengthPercentage(lp) => {
-                Self::LengthPercentage(lp.try_tactic_adjustment(old_side, new_side))
+            Self::Auto => {},
+            Self::AnchorContainingCalcFunction(lp) | Self::LengthPercentage(lp) => {
+                lp.try_tactic_adjustment(old_side, new_side)
             },
-            Self::AnchorFunction(anchor) => {
-                Self::AnchorFunction(anchor.try_tactic_adjustment(old_side, new_side))
-            },
-            Self::AnchorSizeFunction(anchor) => {
-                Self::AnchorSizeFunction(anchor.try_tactic_adjustment(old_side, new_side))
-            },
-            // TODO
-            Self::AnchorContainingCalcFunction(..) => self,
+            Self::AnchorFunction(anchor) => anchor.try_tactic_adjustment(old_side, new_side),
+            Self::AnchorSizeFunction(anchor) => anchor.try_tactic_adjustment(old_side, new_side),
         }
     }
 }

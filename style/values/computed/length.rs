@@ -561,36 +561,70 @@ pub fn resolve_anchor_size(
 /// A computed type for `margin` properties.
 pub type Margin = generics::GenericMargin<LengthPercentage>;
 
-impl TryTacticAdjustment for Percentage {
-    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
-        if old_side.parallel_to(new_side) {
-            return Self(1.0 - self.0)
+impl TryTacticAdjustment for MaxSize {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        debug_assert!(
+            old_side.orthogonal_to(new_side),
+            "Sizes should only change axes"
+        );
+        match self {
+            Self::FitContentFunction(lp)
+            | Self::LengthPercentage(lp)
+            | Self::AnchorContainingCalcFunction(lp) => {
+                lp.try_tactic_adjustment(old_side, new_side);
+            },
+            Self::AnchorSizeFunction(s) => s.try_tactic_adjustment(old_side, new_side),
+            Self::None
+            | Self::MaxContent
+            | Self::MinContent
+            | Self::FitContent
+            | Self::MozAvailable
+            | Self::WebkitFillAvailable
+            | Self::Stretch => {},
         }
-        self
     }
 }
 
-impl TryTacticAdjustment for LengthPercentage {
-    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
-        if let Some(p) = self.to_percentage() {
-            return Self::new_percent(p.try_tactic_adjustment(old_side, new_side));
+impl TryTacticAdjustment for Size {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        debug_assert!(
+            old_side.orthogonal_to(new_side),
+            "Sizes should only change axes"
+        );
+        match self {
+            Self::FitContentFunction(lp)
+            | Self::LengthPercentage(lp)
+            | Self::AnchorContainingCalcFunction(lp) => {
+                lp.try_tactic_adjustment(old_side, new_side);
+            },
+            Self::AnchorSizeFunction(s) => s.try_tactic_adjustment(old_side, new_side),
+            Self::Auto
+            | Self::MaxContent
+            | Self::MinContent
+            | Self::FitContent
+            | Self::MozAvailable
+            | Self::WebkitFillAvailable
+            | Self::Stretch => {},
         }
-        self
+    }
+}
+
+impl TryTacticAdjustment for Percentage {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        if old_side.parallel_to(new_side) {
+            self.0 = 1.0 - self.0;
+        }
     }
 }
 
 impl TryTacticAdjustment for Margin {
-    fn try_tactic_adjustment(self, old_side: PhysicalSide, new_side: PhysicalSide) -> Self {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
         match self {
-            Self::Auto => self,
-            Self::LengthPercentage(lp) => {
-                Self::LengthPercentage(lp.try_tactic_adjustment(old_side, new_side))
+            Self::Auto => {},
+            Self::LengthPercentage(lp) | Self::AnchorContainingCalcFunction(lp) => {
+                lp.try_tactic_adjustment(old_side, new_side)
             },
-            Self::AnchorSizeFunction(anchor) => {
-                Self::AnchorSizeFunction(anchor.try_tactic_adjustment(old_side, new_side))
-            },
-            // TODO
-            Self::AnchorContainingCalcFunction(..) => self,
+            Self::AnchorSizeFunction(anchor) => anchor.try_tactic_adjustment(old_side, new_side),
         }
     }
 }

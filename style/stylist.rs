@@ -651,6 +651,61 @@ enum NestedDeclarationsContext {
     Scope,
 }
 
+/// A struct containing state related to scope rules
+struct ContainingScopeRuleState {
+    id: ScopeConditionId,
+    inner_dependencies: Vec<Dependency>,
+    matches_shadow_host: ScopeMatchesShadowHost,
+}
+
+impl Default for ContainingScopeRuleState {
+    fn default() -> Self {
+        Self {
+            id: ScopeConditionId::none(),
+            inner_dependencies: Vec::new(),
+            matches_shadow_host: Default::default(),
+        }
+    }
+}
+
+impl ContainingScopeRuleState {
+    fn save(&self) -> SavedContainingScopeRuleState {
+        SavedContainingScopeRuleState {
+            id: self.id,
+            matches_shadow_host: self.matches_shadow_host,
+            inner_dependencies_len: self.inner_dependencies.len(),
+        }
+    }
+
+    fn restore(
+        &mut self,
+        saved: &SavedContainingScopeRuleState,
+    ) -> Option<(Vec<Dependency>, ScopeConditionId)> {
+        debug_assert!(self.inner_dependencies.len() >= saved.inner_dependencies_len);
+
+        if self.id == saved.id {
+            return None;
+        }
+
+        let scope_id = self.id;
+        let inner_deps = self
+            .inner_dependencies
+            .drain(saved.inner_dependencies_len..)
+            .collect();
+
+        self.id = saved.id;
+        self.matches_shadow_host = saved.matches_shadow_host;
+
+        Some((inner_deps, scope_id))
+    }
+}
+
+struct SavedContainingScopeRuleState {
+    id: ScopeConditionId,
+    matches_shadow_host: ScopeMatchesShadowHost,
+    inner_dependencies_len: usize,
+}
+
 /// A struct containing state from ancestor rules like @layer / @import /
 /// @container / nesting / @scope.
 struct ContainingRuleState {
@@ -658,8 +713,7 @@ struct ContainingRuleState {
     layer_id: LayerId,
     container_condition_id: ContainerConditionId,
     in_starting_style: bool,
-    scope_condition_id: ScopeConditionId,
-    scope_matches_shadow_host: ScopeMatchesShadowHost,
+    containing_scope_rule_state: ContainingScopeRuleState,
     ancestor_selector_lists: SmallVec<[SelectorList<SelectorImpl>; 2]>,
     nested_declarations_context: NestedDeclarationsContext,
 }
@@ -672,8 +726,7 @@ impl Default for ContainingRuleState {
             container_condition_id: ContainerConditionId::none(),
             in_starting_style: false,
             ancestor_selector_lists: Default::default(),
-            scope_condition_id: ScopeConditionId::none(),
-            scope_matches_shadow_host: Default::default(),
+            containing_scope_rule_state: Default::default(),
             nested_declarations_context: NestedDeclarationsContext::Style,
         }
     }
@@ -685,8 +738,7 @@ struct SavedContainingRuleState {
     layer_id: LayerId,
     container_condition_id: ContainerConditionId,
     in_starting_style: bool,
-    scope_condition_id: ScopeConditionId,
-    scope_matches_shadow_host: ScopeMatchesShadowHost,
+    saved_containing_scope_rule_state: SavedContainingScopeRuleState,
     nested_declarations_context: NestedDeclarationsContext,
 }
 
@@ -698,24 +750,32 @@ impl ContainingRuleState {
             layer_id: self.layer_id,
             container_condition_id: self.container_condition_id,
             in_starting_style: self.in_starting_style,
-            scope_condition_id: self.scope_condition_id,
-            scope_matches_shadow_host: self.scope_matches_shadow_host,
+            saved_containing_scope_rule_state: self.containing_scope_rule_state.save(),
             nested_declarations_context: self.nested_declarations_context,
         }
     }
 
-    fn restore(&mut self, saved: &SavedContainingRuleState) {
+    fn restore(
+        &mut self,
+        saved: &SavedContainingRuleState,
+    ) -> Option<(Vec<Dependency>, ScopeConditionId)> {
         debug_assert!(self.layer_name.0.len() >= saved.layer_name_len);
         debug_assert!(self.ancestor_selector_lists.len() >= saved.ancestor_selector_lists_len);
+
         self.ancestor_selector_lists
             .truncate(saved.ancestor_selector_lists_len);
         self.layer_name.0.truncate(saved.layer_name_len);
         self.layer_id = saved.layer_id;
         self.container_condition_id = saved.container_condition_id;
         self.in_starting_style = saved.in_starting_style;
-        self.scope_condition_id = saved.scope_condition_id;
-        self.scope_matches_shadow_host = saved.scope_matches_shadow_host;
         self.nested_declarations_context = saved.nested_declarations_context;
+
+        self.containing_scope_rule_state
+            .restore(&saved.saved_containing_scope_rule_state)
+    }
+
+    fn scope_is_effective(&self) -> bool {
+        self.containing_scope_rule_state.id != ScopeConditionId::none()
     }
 }
 
@@ -3531,45 +3591,6 @@ impl CascadeData {
         }
     }
 
-    fn note_scope_selector_for_invalidation(
-        &mut self,
-        quirks_mode: QuirksMode,
-        inner_scope_dependencies: &Option<Arc<servo_arc::HeaderSlice<(), Dependency>>>,
-        dependency_vector: &mut Vec<Dependency>,
-        s: &Selector<SelectorImpl>,
-        scope_kind: ScopeDependencyInvalidationKind,
-    ) -> Result<(), AllocErr> {
-        let mut new_inner_dependencies = note_selector_for_invalidation(
-            &s.clone(),
-            quirks_mode,
-            &mut self.invalidation_map,
-            &mut self.relative_selector_invalidation_map,
-            &mut self.additional_relative_selector_invalidation_map,
-            inner_scope_dependencies.as_ref(),
-            Some(scope_kind),
-        )?;
-        let mut _unused = false;
-        let mut visitor = StylistSelectorVisitor {
-            needs_revalidation: &mut _unused,
-            passed_rightmost_selector: true,
-            in_selector_list_of: SelectorListKind::default(),
-            mapped_ids: &mut self.mapped_ids,
-            nth_of_mapped_ids: &mut self.nth_of_mapped_ids,
-            attribute_dependencies: &mut self.attribute_dependencies,
-            nth_of_class_dependencies: &mut self.nth_of_class_dependencies,
-            nth_of_attribute_dependencies: &mut self.nth_of_attribute_dependencies,
-            nth_of_custom_state_dependencies: &mut self.nth_of_custom_state_dependencies,
-            state_dependencies: &mut self.state_dependencies,
-            nth_of_state_dependencies: &mut self.nth_of_state_dependencies,
-            document_state_dependencies: &mut self.document_state_dependencies,
-        };
-        s.visit(&mut visitor);
-        new_inner_dependencies.as_mut().map(|dep| {
-            dependency_vector.append(dep);
-        });
-        Ok(())
-    }
-
     fn add_styles(
         &mut self,
         selectors: &SelectorList<SelectorImpl>,
@@ -3581,6 +3602,7 @@ impl CascadeData {
         rebuild_kind: SheetRebuildKind,
         mut precomputed_pseudo_element_decls: Option<&mut PrecomputedPseudoElementDeclarations>,
         quirks_mode: QuirksMode,
+        mut collected_scope_dependencies: Option<&mut Vec<Dependency>>,
     ) -> Result<(), AllocErr> {
         self.num_declarations += declarations.read_with(guard).len();
         for selector in selectors.slice() {
@@ -3594,10 +3616,7 @@ impl CascadeData {
                     debug_assert!(ancestor_selectors.is_none());
                     debug_assert_eq!(containing_rule_state.layer_id, LayerId::root());
                     // Because we precompute pseudos, we cannot possibly calculate scope proximity.
-                    debug_assert_eq!(
-                        containing_rule_state.scope_condition_id,
-                        ScopeConditionId::none()
-                    );
+                    debug_assert!(!containing_rule_state.scope_is_effective());
                     precomputed_pseudo_element_decls
                         .as_mut()
                         .expect("Expected precomputed declarations for the UA level")
@@ -3639,7 +3658,7 @@ impl CascadeData {
                 containing_rule_state.layer_id,
                 containing_rule_state.container_condition_id,
                 containing_rule_state.in_starting_style,
-                containing_rule_state.scope_condition_id,
+                containing_rule_state.containing_scope_rule_state.id,
             );
 
             if let Some(ref mut replaced_selectors) = replaced_selectors {
@@ -3647,7 +3666,7 @@ impl CascadeData {
             }
 
             if rebuild_kind.should_rebuild_invalidation() {
-                let innermost_dependency = note_selector_for_invalidation(
+                let mut scope_dependencies = note_selector_for_invalidation(
                     &rule.selector,
                     quirks_mode,
                     &mut self.invalidation_map,
@@ -3683,55 +3702,14 @@ impl CascadeData {
                     )?;
                 }
 
-                let mut scope_idx = containing_rule_state.scope_condition_id;
-                let mut inner_scope_dependencies: Option<ThinArc<(), Dependency>> =
-                    innermost_dependency
-                        .map(|dep_vec| ThinArc::from_header_and_iter((), dep_vec.into_iter()));
-
-                while scope_idx != ScopeConditionId::none() {
-                    let cur_scope = self.scope_conditions[scope_idx.0 as usize].clone();
-
-                    if let Some(cond) = cur_scope.condition.as_ref() {
-                        let mut dependency_vector: Vec<Dependency> = Vec::new();
-
-                        if cond.start.is_none() {
-                            dependency_vector.push(Dependency::new(
-                                IMPLICIT_SCOPE.slice()[0].clone(),
-                                0,
-                                inner_scope_dependencies.clone(),
-                                DependencyInvalidationKind::Scope(
-                                    ScopeDependencyInvalidationKind::ImplicitScope,
-                                ),
-                            ));
-                        }
-
-                        for s in cond.start_selectors() {
-                            self.note_scope_selector_for_invalidation(
-                                quirks_mode,
-                                &inner_scope_dependencies,
-                                &mut dependency_vector,
-                                s,
-                                ScopeDependencyInvalidationKind::ExplicitScope,
-                            )?;
-                        }
-
-                        // End-Scope selectors require special handling
-                        for s in cond.end_selectors() {
-                            self.note_scope_selector_for_invalidation(
-                                quirks_mode,
-                                &inner_scope_dependencies,
-                                &mut dependency_vector,
-                                s,
-                                ScopeDependencyInvalidationKind::ScopeEnd,
-                            )?;
-                        }
-
-                        inner_scope_dependencies = Some(ThinArc::from_header_and_iter(
-                            (),
-                            dependency_vector.into_iter(),
-                        ));
-                    }
-                    scope_idx = cur_scope.parent;
+                match (
+                    scope_dependencies.as_mut(),
+                    collected_scope_dependencies.as_mut(),
+                ) {
+                    (Some(inner_scope_deps), Some(scope_deps)) => {
+                        scope_deps.append(inner_scope_deps)
+                    },
+                    _ => {},
                 }
             }
 
@@ -3754,8 +3732,10 @@ impl CascadeData {
                 vec.try_reserve(1)?;
                 vec.push(rule);
             } else {
-                let scope_matches_shadow_host =
-                    containing_rule_state.scope_matches_shadow_host == ScopeMatchesShadowHost::Yes;
+                let scope_matches_shadow_host = containing_rule_state
+                    .containing_scope_rule_state
+                    .matches_shadow_host
+                    == ScopeMatchesShadowHost::Yes;
                 let matches_featureless_host_only = match rule
                     .selector
                     .matches_featureless_host(scope_matches_shadow_host)
@@ -3823,11 +3803,13 @@ impl CascadeData {
                     let ancestor_selectors = containing_rule_state.ancestor_selector_lists.last();
                     let collect_replaced_selectors =
                         has_nested_rules && ancestor_selectors.is_some();
+                    let mut inner_dependencies: Option<Vec<Dependency>> =
+                        containing_rule_state.scope_is_effective().then(|| Vec::new());
                     self.add_styles(
                         &style_rule.selectors,
                         &style_rule.block,
                         ancestor_selectors,
-                        &containing_rule_state,
+                        containing_rule_state,
                         if collect_replaced_selectors {
                             Some(&mut replaced_selectors)
                         } else {
@@ -3837,7 +3819,14 @@ impl CascadeData {
                         rebuild_kind,
                         precomputed_pseudo_element_decls.as_deref_mut(),
                         quirks_mode,
+                        inner_dependencies.as_mut(),
                     )?;
+                    if let Some(mut scope_dependencies) = inner_dependencies {
+                        containing_rule_state
+                            .containing_scope_rule_state
+                            .inner_dependencies
+                            .append(&mut scope_dependencies);
+                    }
                     if has_nested_rules {
                         handled = false;
                         list_for_nested_rules = Some(if collect_replaced_selectors {
@@ -3856,11 +3845,13 @@ impl CascadeData {
                             NestedDeclarationsContext::Style => ancestor_selectors,
                             NestedDeclarationsContext::Scope => &*IMPLICIT_SCOPE,
                         };
+                        let mut inner_dependencies: Option<Vec<Dependency>> =
+                            containing_rule_state.scope_is_effective().then(|| Vec::new());
                         self.add_styles(
                             selectors,
                             decls,
                             /* ancestor_selectors = */ None,
-                            &containing_rule_state,
+                            containing_rule_state,
                             /* replaced_selectors = */ None,
                             guard,
                             // We don't need to rebuild invalidation data, since our ancestor style
@@ -3868,7 +3859,14 @@ impl CascadeData {
                             SheetRebuildKind::CascadeOnly,
                             precomputed_pseudo_element_decls.as_deref_mut(),
                             quirks_mode,
+                            inner_dependencies.as_mut(),
                         )?;
+                        if let Some(mut scope_dependencies) = inner_dependencies {
+                            containing_rule_state
+                                .containing_scope_rule_state
+                                .inner_dependencies
+                                .append(&mut scope_dependencies);
+                        }
                     }
                 },
                 CssRule::Keyframes(ref keyframes_rule) => {
@@ -4152,15 +4150,21 @@ impl CascadeData {
 
                     let is_trivial = replaced.is_trivial();
                     self.scope_conditions.push(ScopeConditionReference {
-                        parent: containing_rule_state.scope_condition_id,
+                        parent: containing_rule_state.containing_scope_rule_state.id,
                         condition: Some(replaced),
                         implicit_scope_root,
                         is_trivial,
                     });
+
                     containing_rule_state
-                        .scope_matches_shadow_host
+                        .containing_scope_rule_state
+                        .matches_shadow_host
                         .nest_for_scope(matches_shadow_host);
-                    containing_rule_state.scope_condition_id = id;
+                    containing_rule_state.containing_scope_rule_state.id = id;
+                    containing_rule_state
+                        .containing_scope_rule_state
+                        .inner_dependencies
+                        .reserve(children.iter().len());
                 },
                 // We don't care about any other rule.
                 _ => {},
@@ -4180,7 +4184,45 @@ impl CascadeData {
                 )?;
             }
 
-            containing_rule_state.restore(&saved_containing_rule_state);
+            if let Some(scope_restore_data) =
+                containing_rule_state.restore(&saved_containing_rule_state)
+            {
+                let (cur_scope_inner_dependencies, scope_idx) = scope_restore_data;
+                let cur_scope = &self.scope_conditions[scope_idx.0 as usize];
+                if let Some(cond) = cur_scope.condition.as_ref() {
+                    let mut _unused = false;
+                    let visitor = StylistSelectorVisitor {
+                        needs_revalidation: &mut _unused,
+                        passed_rightmost_selector: true,
+                        in_selector_list_of: SelectorListKind::default(),
+                        mapped_ids: &mut self.mapped_ids,
+                        nth_of_mapped_ids: &mut self.nth_of_mapped_ids,
+                        attribute_dependencies: &mut self.attribute_dependencies,
+                        nth_of_class_dependencies: &mut self.nth_of_class_dependencies,
+                        nth_of_attribute_dependencies: &mut self.nth_of_attribute_dependencies,
+                        nth_of_custom_state_dependencies: &mut self
+                            .nth_of_custom_state_dependencies,
+                        state_dependencies: &mut self.state_dependencies,
+                        nth_of_state_dependencies: &mut self.nth_of_state_dependencies,
+                        document_state_dependencies: &mut self.document_state_dependencies,
+                    };
+
+                    let dependency_vector = build_scope_dependencies(
+                        quirks_mode,
+                        cur_scope_inner_dependencies,
+                        visitor,
+                        cond,
+                        &mut self.invalidation_map,
+                        &mut self.relative_selector_invalidation_map,
+                        &mut self.additional_relative_selector_invalidation_map,
+                    )?;
+
+                    containing_rule_state
+                        .containing_scope_rule_state
+                        .inner_dependencies
+                        .extend(dependency_vector);
+                }
+            }
         }
 
         Ok(())
@@ -4435,6 +4477,86 @@ impl CascadeData {
         self.effective_media_query_results.clear();
         self.scope_subject_map.clear();
     }
+}
+
+fn note_scope_selector_for_invalidation(
+    quirks_mode: QuirksMode,
+    scope_dependencies: &Option<Arc<servo_arc::HeaderSlice<(), Dependency>>>,
+    dependency_vector: &mut Vec<Dependency>,
+    invalidation_map: &mut InvalidationMap,
+    relative_selector_invalidation_map: &mut InvalidationMap,
+    additional_relative_selector_invalidation_map: &mut AdditionalRelativeSelectorInvalidationMap,
+    visitor: &mut StylistSelectorVisitor<'_>,
+    scope_kind: ScopeDependencyInvalidationKind,
+    s: &Selector<SelectorImpl>,
+) -> Result<(), AllocErr> {
+    let mut new_inner_dependencies = note_selector_for_invalidation(
+        &s.clone(),
+        quirks_mode,
+        invalidation_map,
+        relative_selector_invalidation_map,
+        additional_relative_selector_invalidation_map,
+        scope_dependencies.as_ref(),
+        Some(scope_kind),
+    )?;
+    s.visit(visitor);
+    new_inner_dependencies.as_mut().map(|dep| {
+        dependency_vector.append(dep);
+    });
+    Ok(())
+}
+
+fn build_scope_dependencies(
+    quirks_mode: QuirksMode,
+    cur_scope_inner_dependencies: Vec<Dependency>,
+    mut visitor: StylistSelectorVisitor<'_>,
+    cond: &ScopeBoundsWithHashes,
+    mut invalidation_map: &mut InvalidationMap,
+    mut relative_selector_invalidation_map: &mut InvalidationMap,
+    mut additional_relative_selector_invalidation_map: &mut AdditionalRelativeSelectorInvalidationMap,
+) -> Result<Vec<Dependency>, AllocErr> {
+    let mut dependency_vector = Vec::new();
+    let inner_scope_dependencies = Some(ThinArc::from_header_and_iter(
+        (),
+        cur_scope_inner_dependencies.into_iter(),
+    ));
+
+    for s in cond.start_selectors() {
+        note_scope_selector_for_invalidation(
+            quirks_mode,
+            &inner_scope_dependencies,
+            &mut dependency_vector,
+            &mut invalidation_map,
+            &mut relative_selector_invalidation_map,
+            &mut additional_relative_selector_invalidation_map,
+            &mut visitor,
+            ScopeDependencyInvalidationKind::ExplicitScope,
+            s,
+        )?;
+    }
+    for s in cond.end_selectors() {
+        note_scope_selector_for_invalidation(
+            quirks_mode,
+            &inner_scope_dependencies,
+            &mut dependency_vector,
+            &mut invalidation_map,
+            &mut relative_selector_invalidation_map,
+            &mut additional_relative_selector_invalidation_map,
+            &mut visitor,
+            ScopeDependencyInvalidationKind::ScopeEnd,
+            s,
+        )?;
+    }
+    if cond.start.is_none() {
+        dependency_vector.push(Dependency::new(
+            IMPLICIT_SCOPE.slice()[0].clone(),
+            0,
+            inner_scope_dependencies,
+            DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ImplicitScope),
+        ));
+    }
+
+    Ok(dependency_vector)
 }
 
 impl CascadeDataCacheEntry for CascadeData {

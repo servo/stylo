@@ -4481,7 +4481,7 @@ impl CascadeData {
 
 fn note_scope_selector_for_invalidation(
     quirks_mode: QuirksMode,
-    scope_dependencies: &Option<Arc<servo_arc::HeaderSlice<(), Dependency>>>,
+    scope_dependencies: &Arc<servo_arc::HeaderSlice<(), Dependency>>,
     dependency_vector: &mut Vec<Dependency>,
     invalidation_map: &mut InvalidationMap,
     relative_selector_invalidation_map: &mut InvalidationMap,
@@ -4496,7 +4496,7 @@ fn note_scope_selector_for_invalidation(
         invalidation_map,
         relative_selector_invalidation_map,
         additional_relative_selector_invalidation_map,
-        scope_dependencies.as_ref(),
+        Some(&scope_dependencies),
         Some(scope_kind),
     )?;
     s.visit(visitor);
@@ -4508,55 +4508,59 @@ fn note_scope_selector_for_invalidation(
 
 fn build_scope_dependencies(
     quirks_mode: QuirksMode,
-    cur_scope_inner_dependencies: Vec<Dependency>,
+    mut cur_scope_inner_dependencies: Vec<Dependency>,
     mut visitor: StylistSelectorVisitor<'_>,
     cond: &ScopeBoundsWithHashes,
     mut invalidation_map: &mut InvalidationMap,
     mut relative_selector_invalidation_map: &mut InvalidationMap,
     mut additional_relative_selector_invalidation_map: &mut AdditionalRelativeSelectorInvalidationMap,
 ) -> Result<Vec<Dependency>, AllocErr> {
-    let mut dependency_vector = Vec::new();
-    let inner_scope_dependencies = Some(ThinArc::from_header_and_iter(
-        (),
-        cur_scope_inner_dependencies.into_iter(),
-    ));
+    if cond.end.is_some() {
+        let deps =
+            ThinArc::from_header_and_iter((), cur_scope_inner_dependencies.clone().into_iter());
+        let mut end_dependency_vector = Vec::new();
+        for s in cond.end_selectors() {
+            note_scope_selector_for_invalidation(
+                quirks_mode,
+                &deps,
+                &mut end_dependency_vector,
+                &mut invalidation_map,
+                &mut relative_selector_invalidation_map,
+                &mut additional_relative_selector_invalidation_map,
+                &mut visitor,
+                ScopeDependencyInvalidationKind::ScopeEnd,
+                s,
+            )?;
+        }
+        cur_scope_inner_dependencies.append(&mut end_dependency_vector);
+    }
+    let inner_scope_dependencies =
+        ThinArc::from_header_and_iter((), cur_scope_inner_dependencies.into_iter());
 
-    for s in cond.start_selectors() {
-        note_scope_selector_for_invalidation(
-            quirks_mode,
-            &inner_scope_dependencies,
-            &mut dependency_vector,
-            &mut invalidation_map,
-            &mut relative_selector_invalidation_map,
-            &mut additional_relative_selector_invalidation_map,
-            &mut visitor,
-            ScopeDependencyInvalidationKind::ExplicitScope,
-            s,
-        )?;
-    }
-    for s in cond.end_selectors() {
-        note_scope_selector_for_invalidation(
-            quirks_mode,
-            &inner_scope_dependencies,
-            &mut dependency_vector,
-            &mut invalidation_map,
-            &mut relative_selector_invalidation_map,
-            &mut additional_relative_selector_invalidation_map,
-            &mut visitor,
-            ScopeDependencyInvalidationKind::ScopeEnd,
-            s,
-        )?;
-    }
-    if cond.start.is_none() {
-        dependency_vector.push(Dependency::new(
+    Ok(if cond.start.is_some() {
+        let mut dependency_vector = Vec::new();
+        for s in cond.start_selectors() {
+            note_scope_selector_for_invalidation(
+                quirks_mode,
+                &inner_scope_dependencies,
+                &mut dependency_vector,
+                &mut invalidation_map,
+                &mut relative_selector_invalidation_map,
+                &mut additional_relative_selector_invalidation_map,
+                &mut visitor,
+                ScopeDependencyInvalidationKind::ExplicitScope,
+                s,
+            )?;
+        }
+        dependency_vector
+    } else {
+        vec![Dependency::new(
             IMPLICIT_SCOPE.slice()[0].clone(),
             0,
-            inner_scope_dependencies,
+            Some(inner_scope_dependencies),
             DependencyInvalidationKind::Scope(ScopeDependencyInvalidationKind::ImplicitScope),
-        ));
-    }
-
-    Ok(dependency_vector)
+        )]
+    })
 }
 
 impl CascadeDataCacheEntry for CascadeData {

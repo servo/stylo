@@ -58,6 +58,12 @@ pub type PathOrShapeFunction = generic::GenericPathOrShapeFunction<Angle, Length
 /// The computed value of `CoordinatePair`.
 pub type CoordinatePair = generic::CoordinatePair<LengthPercentage>;
 
+/// The computed value of 'ControlPoint'.
+pub type ControlPoint = generic::ControlPoint<LengthPercentage>;
+
+/// The computed value of 'RelativeControlPoint'.
+pub type RelativeControlPoint = generic::RelativeControlPoint<LengthPercentage>;
+
 /// The computed value of 'CommandEndPoint'.
 pub type CommandEndPoint = generic::CommandEndPoint<LengthPercentage>;
 
@@ -229,12 +235,21 @@ impl From<&generic::CommandEndPoint<CSSFloat>> for CommandEndPoint {
     #[inline]
     fn from(p: &generic::CommandEndPoint<CSSFloat>) -> Self {
         match p {
-            generic::CommandEndPoint::<CSSFloat>::ToPosition(pos) => {
-                CommandEndPoint::ToPosition(pos.into())
-            },
-            generic::CommandEndPoint::<CSSFloat>::ByCoordinate(coord) => {
-                CommandEndPoint::ByCoordinate(coord.into())
-            },
+            generic::CommandEndPoint::ToPosition(pos) => Self::ToPosition(pos.into()),
+            generic::CommandEndPoint::ByCoordinate(coord) => Self::ByCoordinate(coord.into()),
+        }
+    }
+}
+
+impl From<&generic::ControlPoint<CSSFloat>> for ControlPoint {
+    #[inline]
+    fn from(p: &generic::ControlPoint<CSSFloat>) -> Self {
+        match p {
+            generic::ControlPoint::Position(pos) => Self::Position(pos.into()),
+            generic::ControlPoint::Relative(point) => Self::Relative(RelativeControlPoint {
+                coord: CoordinatePair::from(&point.coord),
+                reference: point.reference,
+            }),
         }
     }
 }

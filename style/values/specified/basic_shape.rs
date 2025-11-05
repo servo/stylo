@@ -797,7 +797,7 @@ impl Parse for ShapeCommand {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
         use crate::values::generics::basic_shape::{
-            ArcSize, ArcSweep, ByTo, CommandEndPoint, CoordinatePair,
+            ArcSize, ArcSweep, ByTo, CommandEndPoint, ControlPoint, CoordinatePair,
         };
 
         // <shape-command> = <move-command> | <line-command> | <hv-line-command> |
@@ -841,9 +841,9 @@ impl Parse for ShapeCommand {
                 let by_to = ByTo::parse(input)?;
                 let point = CommandEndPoint::parse(context, input, by_to)?;
                 input.expect_ident_matching("with")?;
-                let control1 = CoordinatePair::parse(context, input)?;
+                let control1 = ControlPoint::parse(context, input, by_to)?;
                 if input.expect_delim('/').is_ok() {
-                    let control2 = CoordinatePair::parse(context, input)?;
+                    let control2 = ControlPoint::parse(context, input, by_to)?;
                     Self::CubicCurve {
                         point,
                         control1,
@@ -860,7 +860,7 @@ impl Parse for ShapeCommand {
                 let by_to = ByTo::parse(input)?;
                 let point = CommandEndPoint::parse(context, input, by_to)?;
                 if input.try_parse(|i| i.expect_ident_matching("with")).is_ok() {
-                    let control2 = CoordinatePair::parse(context, input)?;
+                    let control2 = ControlPoint::parse(context, input, by_to)?;
                     Self::SmoothCubic {
                         point,
                         control2,
@@ -928,6 +928,34 @@ impl Parse for generic::CoordinatePair<LengthPercentage> {
     }
 }
 
+impl generic::ControlPoint<LengthPercentage> {
+    /// Parse <control-point> = [ <position> | <relative-control-point> ]
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        by_to: generic::ByTo,
+    ) -> Result<Self, ParseError<'i>> {
+        let coord = input.try_parse(|i| generic::CoordinatePair::parse(context, i));
+
+        // Parse <position>
+        if by_to.is_abs() && coord.is_err() {
+            let pos = parse_to_position(context, input)?;
+            return Ok(Self::Position(pos));
+        }
+
+        // Parse <relative-control-point> = <coordinate-pair> [from [ start | end | origin ]]?
+        let coord = coord?;
+        let mut reference = generic::ControlReference::None;
+        if input.try_parse(|i| i.expect_ident_matching("from")).is_ok() {
+            reference = generic::ControlReference::parse(input)?;
+        }
+        Ok(Self::Relative(generic::RelativeControlPoint {
+            coord,
+            reference,
+        }))
+    }
+}
+
 impl generic::CommandEndPoint<LengthPercentage> {
     /// Parse <command-end-point> = to <position> | by <coordinate-pair>
     pub fn parse<'i, 't>(
@@ -937,10 +965,10 @@ impl generic::CommandEndPoint<LengthPercentage> {
     ) -> Result<Self, ParseError<'i>> {
         if by_to.is_abs() {
             let point = parse_to_position(context, input)?;
-            Ok(generic::CommandEndPoint::ToPosition(point))
+            Ok(Self::ToPosition(point))
         } else {
             let point = generic::CoordinatePair::parse(context, input)?;
-            Ok(generic::CommandEndPoint::ByCoordinate(point))
+            Ok(Self::ByCoordinate(point))
         }
     }
 }

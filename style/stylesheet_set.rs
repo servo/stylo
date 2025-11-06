@@ -9,10 +9,8 @@ use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet
 use crate::media_queries::Device;
 use crate::selector_parser::SnapshotMap;
 use crate::shared_lock::SharedRwLockReadGuard;
-use crate::stylesheets::{
-    CssRule, Origin, OriginSet, OriginSetIterator, PerOrigin, StylesheetInDocument,
-};
-use std::{mem, slice};
+use crate::stylesheets::{CssRule, Origin, OriginSet, PerOrigin, StylesheetInDocument};
+use std::mem;
 
 /// Entry for a StylesheetSet.
 #[derive(MallocSizeOf)]
@@ -35,75 +33,6 @@ where
         Self {
             sheet,
             committed: false,
-        }
-    }
-}
-
-/// A iterator over the stylesheets of a list of entries in the StylesheetSet.
-pub struct StylesheetCollectionIterator<'a, S>(slice::Iter<'a, StylesheetSetEntry<S>>)
-where
-    S: StylesheetInDocument + PartialEq + 'static;
-
-impl<'a, S> Clone for StylesheetCollectionIterator<'a, S>
-where
-    S: StylesheetInDocument + PartialEq + 'static,
-{
-    fn clone(&self) -> Self {
-        StylesheetCollectionIterator(self.0.clone())
-    }
-}
-
-impl<'a, S> Iterator for StylesheetCollectionIterator<'a, S>
-where
-    S: StylesheetInDocument + PartialEq + 'static,
-{
-    type Item = &'a S;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|entry| &entry.sheet)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        self.0.size_hint()
-    }
-}
-
-/// An iterator over the flattened view of the stylesheet collections.
-#[derive(Clone)]
-pub struct StylesheetIterator<'a, S>
-where
-    S: StylesheetInDocument + PartialEq + 'static,
-{
-    origins: OriginSetIterator,
-    collections: &'a PerOrigin<SheetCollection<S>>,
-    current: Option<(Origin, StylesheetCollectionIterator<'a, S>)>,
-}
-
-impl<'a, S> Iterator for StylesheetIterator<'a, S>
-where
-    S: StylesheetInDocument + PartialEq + 'static,
-{
-    type Item = (&'a S, Origin);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if self.current.is_none() {
-                let next_origin = self.origins.next()?;
-
-                self.current = Some((
-                    next_origin,
-                    self.collections.borrow_for_origin(&next_origin).iter(),
-                ));
-            }
-
-            {
-                let (origin, ref mut iter) = *self.current.as_mut().unwrap();
-                if let Some(s) = iter.next() {
-                    return Some((s, origin));
-                }
-            }
-
-            self.current = None;
         }
     }
 }
@@ -166,8 +95,8 @@ where
     /// Returns the list of stylesheets for `origin`.
     ///
     /// Only used for UA sheets.
-    pub fn origin_sheets(&mut self, origin: Origin) -> StylesheetCollectionIterator<'_, S> {
-        self.collections.borrow_mut_for_origin(&origin).iter()
+    pub fn origin_sheets(&self, origin: Origin) -> impl Iterator<Item = &S> {
+        self.collections.borrow_for_origin(&origin).iter()
     }
 
     /// Returns whether any DOM invalidations were processed as a result of the
@@ -367,8 +296,13 @@ where
     }
 
     /// Returns an iterator over the current list of stylesheets.
-    fn iter(&self) -> StylesheetCollectionIterator<'_, S> {
-        StylesheetCollectionIterator(self.entries.iter())
+    fn iter(&self) -> impl Iterator<Item = &S> {
+        self.entries.iter().map(|e| &e.sheet)
+    }
+
+    /// Returns a mutable iterator over the current list of stylesheets.
+    fn iter_mut(&mut self) -> impl Iterator<Item = &mut S> {
+        self.entries.iter_mut().map(|e| &mut e.sheet)
     }
 
     fn flush(&mut self) -> SheetCollectionFlusher<'_, S> {
@@ -427,7 +361,7 @@ macro_rules! sheet_set_methods {
         ) {
             debug!(concat!($set_name, "::append_stylesheet"));
             self.collect_invalidations_for(device, &sheet, guard);
-            let collection = self.collection_for(&sheet);
+            let collection = self.collection_for(&sheet, guard);
             collection.append(sheet);
         }
 
@@ -442,7 +376,7 @@ macro_rules! sheet_set_methods {
             debug!(concat!($set_name, "::insert_stylesheet_before"));
             self.collect_invalidations_for(device, &sheet, guard);
 
-            let collection = self.collection_for(&sheet);
+            let collection = self.collection_for(&sheet, guard);
             collection.insert_before(sheet, &before_sheet);
         }
 
@@ -456,7 +390,7 @@ macro_rules! sheet_set_methods {
             debug!(concat!($set_name, "::remove_stylesheet"));
             self.collect_invalidations_for(device, &sheet, guard);
 
-            let collection = self.collection_for(&sheet);
+            let collection = self.collection_for(&sheet, guard);
             collection.remove(&sheet)
         }
 
@@ -506,7 +440,7 @@ macro_rules! sheet_set_methods {
                 RuleChangeKind::StyleRuleDeclarations => DataValidity::FullyInvalid,
             };
 
-            let collection = self.collection_for(&sheet);
+            let collection = self.collection_for(&sheet, guard);
             collection.set_data_validity_at_least(validity);
         }
     };
@@ -524,8 +458,12 @@ where
         }
     }
 
-    fn collection_for(&mut self, sheet: &S) -> &mut SheetCollection<S> {
-        let origin = sheet.contents().origin;
+    fn collection_for(
+        &mut self,
+        sheet: &S,
+        guard: &SharedRwLockReadGuard,
+    ) -> &mut SheetCollection<S> {
+        let origin = sheet.contents(guard).origin;
         self.collections.borrow_mut_for_origin(&origin)
     }
 
@@ -597,12 +535,17 @@ where
     }
 
     /// Return an iterator over the flattened view of all the stylesheets.
-    pub fn iter(&self) -> StylesheetIterator<'_, S> {
-        StylesheetIterator {
-            origins: OriginSet::all().iter_origins(),
-            collections: &self.collections,
-            current: None,
-        }
+    pub fn iter(&self) -> impl Iterator<Item = (&S, Origin)> {
+        self.collections
+            .iter_origins()
+            .flat_map(|(c, o)| c.iter().map(move |s| (s, o)))
+    }
+
+    /// Return an iterator over the flattened view of all the stylesheets, mutably.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&mut S, Origin)> {
+        self.collections
+            .iter_mut_origins()
+            .flat_map(|(c, o)| c.iter_mut().map(move |s| (s, o)))
     }
 
     /// Mark the stylesheets for the specified origin as dirty, because
@@ -674,15 +617,20 @@ where
         self.collection.len()
     }
 
-    fn collection_for(&mut self, _sheet: &S) -> &mut SheetCollection<S> {
+    fn collection_for(&mut self, _: &S, _: &SharedRwLockReadGuard) -> &mut SheetCollection<S> {
         &mut self.collection
     }
 
     sheet_set_methods!("AuthorStylesheetSet");
 
     /// Iterate over the list of stylesheets.
-    pub fn iter(&self) -> StylesheetCollectionIterator<'_, S> {
+    pub fn iter(&self) -> impl Iterator<Item = &S> {
         self.collection.iter()
+    }
+
+    /// Returns a mutable iterator over the current list of stylesheets.
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut S> {
+        self.collection.iter_mut()
     }
 
     /// Mark the sheet set dirty, as appropriate.

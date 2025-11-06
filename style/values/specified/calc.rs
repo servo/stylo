@@ -523,15 +523,19 @@ impl GenericAnchorFunction<Box<CalcNode>, Box<CalcNode>> {
             let fallback = i
                 .try_parse(|i| {
                     i.expect_comma()?;
-                    let node = CalcNode::parse_argument(
-                        context,
-                        i,
-                        AllowParse {
-                            units: CalcUnits::LENGTH_PERCENTAGE,
-                            additional_functions,
-                        },
-                    )?;
-                    Ok::<Box<CalcNode>, ParseError<'i>>(Box::new(node))
+                    Ok::<Box<CalcNode>, ParseError<'i>>(Box::new(
+                        CalcNode::parse_argument(
+                            context,
+                            i,
+                            AllowParse {
+                                units: CalcUnits::LENGTH_PERCENTAGE,
+                                additional_functions,
+                            },
+                        )?
+                        .into_length_or_percentage(AllowedNumericType::All)
+                        .map_err(|_| i.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
+                        .node,
+                    ))
                 })
                 .ok();
             Ok(Self {
@@ -552,8 +556,14 @@ impl GenericAnchorSizeFunction<Box<CalcNode>> {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
         GenericAnchorSizeFunction::parse_inner(context, input, |i| {
-            CalcNode::parse_argument(context, i, AllowParse::new(CalcUnits::LENGTH_PERCENTAGE))
-                .map(|r| Box::new(r))
+            Ok(Box::new(CalcNode::parse_argument(
+                context,
+                i,
+                AllowParse::new(CalcUnits::LENGTH_PERCENTAGE),
+            )?
+            .into_length_or_percentage(AllowedNumericType::All)
+            .map_err(|_| i.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
+            .node))
         })
     }
 }

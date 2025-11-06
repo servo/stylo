@@ -9,7 +9,8 @@ use crate::values::animated::{lists, Animate, Procedure};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::basic_shape::GenericShapeCommand;
 use crate::values::generics::basic_shape::{
-    ArcSize, ArcSweep, ByTo, CommandEndPoint, CoordinatePair,
+    ArcSize, ArcSweep, ByTo, CommandEndPoint, ControlPoint, ControlReference, CoordinatePair,
+    RelativeControlPoint,
 };
 use crate::values::generics::position::GenericPosition as Position;
 use crate::values::CSSFloat;
@@ -20,6 +21,9 @@ use std::ops;
 use std::slice;
 use style_traits::values::SequenceWriter;
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+
+/// A specified value for `<position>`.
+pub type ShapePosition = Position<CSSFloat, CSSFloat>;
 
 /// Whether to allow empty string in the parser.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -222,10 +226,7 @@ impl PathCommand {
                 Close
             },
             Move { mut point } => {
-                if !point.is_abs() {
-                    point += state.pos;
-                    point = point.to_abs();
-                }
+                point = point.to_abs(state.pos);
                 state.pos = point.into();
                 state.subpath_start = point.into();
                 if reduce {
@@ -234,10 +235,7 @@ impl PathCommand {
                 Move { point }
             },
             Line { mut point } => {
-                if !point.is_abs() {
-                    point += state.pos;
-                    point = point.to_abs();
-                }
+                point = point.to_abs(state.pos);
                 state.pos = point.into();
                 if reduce {
                     state.last_command = *self;
@@ -277,16 +275,13 @@ impl PathCommand {
                 mut control1,
                 mut control2,
             } => {
-                if !point.is_abs() {
-                    point += state.pos;
-                    point = point.to_abs();
-                    control1 += state.pos;
-                    control2 += state.pos;
-                }
+                control1 = control1.to_abs(state.pos, point);
+                control2 = control2.to_abs(state.pos, point);
+                point = point.to_abs(state.pos);
                 state.pos = point.into();
                 if reduce {
                     state.last_command = *self;
-                    state.last_control = control2;
+                    state.last_control = control2.into();
                 }
                 CubicCurve {
                     point,
@@ -298,21 +293,19 @@ impl PathCommand {
                 mut point,
                 mut control1,
             } => {
-                if !point.is_abs() {
-                    point += state.pos;
-                    point = point.to_abs();
-                    control1 += state.pos;
-                }
+                control1 = control1.to_abs(state.pos, point);
+                point = point.to_abs(state.pos);
                 if reduce {
-                    let c1 = state.pos + 2. * (control1 - state.pos) / 3.;
-                    let control2 = CoordPair::from(point) + 2. * (control1 - point.into()) / 3.;
+                    let c1 = state.pos + 2. * (CoordPair::from(control1) - state.pos) / 3.;
+                    let control2 = CoordPair::from(point)
+                        + 2. * (CoordPair::from(control1) - point.into()) / 3.;
                     state.pos = point.into();
                     state.last_command = *self;
-                    state.last_control = control1;
+                    state.last_control = control1.into();
                     CubicCurve {
                         point,
-                        control1: c1,
-                        control2,
+                        control1: ControlPoint::Position(c1.into()),
+                        control2: ControlPoint::Position(control2.into()),
                     }
                 } else {
                     state.pos = point.into();
@@ -323,11 +316,8 @@ impl PathCommand {
                 mut point,
                 mut control2,
             } => {
-                if !point.is_abs() {
-                    point += state.pos;
-                    point = point.to_abs();
-                    control2 += state.pos;
-                }
+                control2 = control2.to_abs(state.pos, point);
+                point = point.to_abs(state.pos);
                 if reduce {
                     let control1 = match state.last_command {
                         PathCommand::CubicCurve {
@@ -342,11 +332,11 @@ impl PathCommand {
                         _ => state.pos,
                     };
                     state.pos = point.into();
-                    state.last_control = control2;
+                    state.last_control = control2.into();
                     state.last_command = *self;
                     CubicCurve {
                         point,
-                        control1,
+                        control1: ControlPoint::Position(control1.into()),
                         control2,
                     }
                 } else {
@@ -355,10 +345,7 @@ impl PathCommand {
                 }
             },
             SmoothQuad { mut point } => {
-                if !point.is_abs() {
-                    point += state.pos;
-                    point = point.to_abs();
-                }
+                point = point.to_abs(state.pos);
                 if reduce {
                     let control = match state.last_command {
                         PathCommand::QuadCurve {
@@ -377,8 +364,8 @@ impl PathCommand {
                     state.last_control = control;
                     CubicCurve {
                         point,
-                        control1,
-                        control2,
+                        control1: ControlPoint::Position(control1.into()),
+                        control2: ControlPoint::Position(control2.into()),
                     }
                 } else {
                     state.pos = point.into();
@@ -392,18 +379,16 @@ impl PathCommand {
                 arc_size,
                 rotate,
             } => {
-                if !point.is_abs() {
-                    point += state.pos;
-                    point = point.to_abs();
-                }
+                point = point.to_abs(state.pos);
                 state.pos = point.into();
                 if reduce {
                     state.last_command = *self;
                     if radii.x == 0. && radii.y == 0. {
+                        let end_point = CoordPair::from(point);
                         CubicCurve {
                             point: CommandEndPoint::ToPosition(state.pos.into()),
-                            control1: point.into(),
-                            control2: point.into(),
+                            control1: ControlPoint::Position(end_point.into()),
+                            control2: ControlPoint::Position(end_point.into()),
                         }
                     } else {
                         Arc {
@@ -452,16 +437,16 @@ impl PathCommand {
             } => {
                 dest.write_char(if point.is_abs() { 'C' } else { 'c' })?;
                 dest.write_char(' ')?;
-                control1.to_css(dest)?;
+                control1.to_css(dest, point.is_abs())?;
                 dest.write_char(' ')?;
-                control2.to_css(dest)?;
+                control2.to_css(dest, point.is_abs())?;
                 dest.write_char(' ')?;
                 CoordPair::from(point).to_css(dest)
             },
             QuadCurve { point, control1 } => {
                 dest.write_char(if point.is_abs() { 'Q' } else { 'q' })?;
                 dest.write_char(' ')?;
-                control1.to_css(dest)?;
+                control1.to_css(dest, point.is_abs())?;
                 dest.write_char(' ')?;
                 CoordPair::from(point).to_css(dest)
             },
@@ -497,7 +482,7 @@ impl PathCommand {
             SmoothCubic { point, control2 } => {
                 dest.write_char(if point.is_abs() { 'S' } else { 's' })?;
                 dest.write_char(' ')?;
-                control2.to_css(dest)?;
+                control2.to_css(dest, point.is_abs())?;
                 dest.write_char(' ')?;
                 CoordPair::from(point).to_css(dest)
             },
@@ -567,16 +552,54 @@ impl ops::Div<CSSFloat> for CoordPair {
 
 impl CommandEndPoint<CSSFloat> {
     /// Converts <command-end-point> into absolutely positioned type.
-    pub fn to_abs(self) -> CommandEndPoint<CSSFloat> {
+    pub fn to_abs(self, state_pos: CoordPair) -> CommandEndPoint<CSSFloat> {
         // Consume self value.
         match self {
             CommandEndPoint::ToPosition(_) => self,
             CommandEndPoint::ByCoordinate(coord) => {
                 let pos = Position {
-                    horizontal: coord.x,
-                    vertical: coord.y,
+                    horizontal: coord.x + state_pos.x,
+                    vertical: coord.y + state_pos.y,
                 };
                 CommandEndPoint::ToPosition(pos)
+            },
+        }
+    }
+}
+
+impl ControlPoint<CSSFloat> {
+    /// Converts <control-point> into absolutely positioned control point type.
+    pub fn to_abs(
+        self,
+        state_pos: CoordPair,
+        end_point: CommandEndPoint<CSSFloat>,
+    ) -> ControlPoint<CSSFloat> {
+        // Consume self value.
+        match self {
+            ControlPoint::Position(_) => self,
+            ControlPoint::Relative(point) => {
+                let mut pos = Position {
+                    horizontal: point.coord.x,
+                    vertical: point.coord.y,
+                };
+
+                match point.reference {
+                    ControlReference::None if !end_point.is_abs() => {
+                        pos.horizontal += state_pos.x;
+                        pos.vertical += state_pos.y;
+                    },
+                    ControlReference::Start => {
+                        pos.horizontal += state_pos.x;
+                        pos.vertical += state_pos.y;
+                    },
+                    ControlReference::End => {
+                        let end = CoordPair::from(end_point);
+                        pos.horizontal += end.x;
+                        pos.vertical += end.y;
+                    },
+                    _ => (),
+                }
+                ControlPoint::Position(pos)
             },
         }
     }
@@ -595,6 +618,24 @@ impl From<CommandEndPoint<CSSFloat>> for CoordPair {
     }
 }
 
+impl From<ControlPoint<CSSFloat>> for CoordPair {
+    #[inline]
+    fn from(point: ControlPoint<CSSFloat>) -> Self {
+        match point {
+            ControlPoint::Position(pos) => CoordPair {
+                x: pos.horizontal,
+                y: pos.vertical,
+            },
+            ControlPoint::Relative(_) => {
+                panic!(
+                    "Attempted to convert a relative ControlPoint to CoordPair, which is lossy. \
+                        Consider converting it to absolute type first using `.to_abs()`."
+                )
+            },
+        }
+    }
+}
+
 impl From<CoordPair> for CommandEndPoint<CSSFloat> {
     #[inline]
     fn from(coord: CoordPair) -> Self {
@@ -609,6 +650,17 @@ impl From<CoordPair> for Position<CSSFloat, CSSFloat> {
             horizontal: coord.x,
             vertical: coord.y,
         }
+    }
+}
+
+impl ToCss for ShapePosition {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        self.horizontal.to_css(dest)?;
+        dest.write_char(' ')?;
+        self.vertical.to_css(dest)
     }
 }
 
@@ -752,11 +804,11 @@ impl<'a> PathParser<'a> {
     fn parse_curveto(&mut self, by_to: ByTo) -> Result<(), ()> {
         if by_to.is_abs() {
             parse_arguments!(self, CubicCurve, [
-                control1 => parse_coord, control2 => parse_coord, point => parse_command_point_abs
+                control1 => parse_control_point, control2 => parse_control_point, point => parse_command_point_abs
             ])
         } else {
             parse_arguments!(self, CubicCurve, [
-                control1 => parse_coord, control2 => parse_coord, point => parse_command_point_rel
+                control1 => parse_control_point, control2 => parse_control_point, point => parse_command_point_rel
             ])
         }
     }
@@ -765,11 +817,11 @@ impl<'a> PathParser<'a> {
     fn parse_smooth_curveto(&mut self, by_to: ByTo) -> Result<(), ()> {
         if by_to.is_abs() {
             parse_arguments!(self, SmoothCubic, [
-                control2 => parse_coord, point => parse_command_point_abs
+                control2 => parse_control_point, point => parse_command_point_abs
             ])
         } else {
             parse_arguments!(self, SmoothCubic, [
-                control2 => parse_coord, point => parse_command_point_rel
+                control2 => parse_control_point, point => parse_command_point_rel
             ])
         }
     }
@@ -778,11 +830,11 @@ impl<'a> PathParser<'a> {
     fn parse_quadratic_bezier_curveto(&mut self, by_to: ByTo) -> Result<(), ()> {
         if by_to.is_abs() {
             parse_arguments!(self, QuadCurve, [
-                control1 => parse_coord, point => parse_command_point_abs
+                control1 => parse_control_point, point => parse_command_point_abs
             ])
         } else {
             parse_arguments!(self, QuadCurve, [
-                control1 => parse_coord, point => parse_command_point_rel
+                control1 => parse_control_point, point => parse_command_point_rel
             ])
         }
     }
@@ -851,6 +903,20 @@ fn parse_command_point_rel(
 ) -> Result<CommandEndPoint<f32>, ()> {
     let coord = parse_coord(iter)?;
     Ok(CommandEndPoint::ByCoordinate(coord))
+}
+
+/// Parse a pair of values that describe the curve control point.
+///
+/// Note: when the reference is None, the <control-point>'s reference
+/// defaults to the commands coordinate mode (absolute or relative).
+fn parse_control_point(
+    iter: &mut Peekable<Cloned<slice::Iter<u8>>>,
+) -> Result<ControlPoint<f32>, ()> {
+    let coord = parse_coord(iter)?;
+    Ok(ControlPoint::Relative(RelativeControlPoint {
+        coord,
+        reference: ControlReference::None,
+    }))
 }
 
 /// This is a special version which parses the number for SVG Path. e.g. "M 0.6.5" should be parsed

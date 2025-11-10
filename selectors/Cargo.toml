@@ -21,7 +21,7 @@ to_shmem = ["dep:to_shmem", "dep:to_shmem_derive"]
 
 [dependencies]
 bitflags = "2"
-cssparser = "0.35"
+cssparser = "0.36"
 derive_more = { version = "2", features = ["add", "add_assign"] }
 rustc-hash = "2.1.1"
 log = "0.4"

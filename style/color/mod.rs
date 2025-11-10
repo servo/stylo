@@ -630,6 +630,7 @@ impl From<PredefinedColorSpace> for ColorSpace {
             PredefinedColorSpace::Srgb => ColorSpace::Srgb,
             PredefinedColorSpace::SrgbLinear => ColorSpace::SrgbLinear,
             PredefinedColorSpace::DisplayP3 => ColorSpace::DisplayP3,
+            PredefinedColorSpace::DisplayP3Linear => todo!(),
             PredefinedColorSpace::A98Rgb => ColorSpace::A98Rgb,
             PredefinedColorSpace::ProphotoRgb => ColorSpace::ProphotoRgb,
             PredefinedColorSpace::Rec2020 => ColorSpace::Rec2020,

@@ -56,6 +56,7 @@ use crate::stylesheets::{
     PerOriginIter, StylesheetContents, StylesheetInDocument,
 };
 use crate::stylesheets::{CustomMediaEvaluator, CustomMediaMap};
+#[cfg(feature = "gecko")]
 use crate::values::computed::DashedIdentAndOrTryTactic;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
 use crate::values::{computed, AtomIdent};

@@ -1411,7 +1411,29 @@ pub mod style_structs {
     use rustc_hash::FxHasher;
     use super::longhands;
     use std::hash::{Hash, Hasher};
+    use crate::logical_geometry::PhysicalSide;
     use crate::values::specified::color::ColorSchemeFlags;
+
+    <%def name="impl_physical_sides(ident, props)">
+        /// Gets the value of the longhand of `${ident}` on the `s` side`.
+        pub fn get_${ident}(&self, s: PhysicalSide) -> &longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T {
+            match s {
+                PhysicalSide::Top => &self.${data.longhands_by_name[props[0]].ident},
+                PhysicalSide::Right => &self.${data.longhands_by_name[props[1]].ident},
+                PhysicalSide::Bottom => &self.${data.longhands_by_name[props[2]].ident},
+                PhysicalSide::Left => &self.${data.longhands_by_name[props[3]].ident},
+            }
+        }
+        /// Sets the value of the longhand of `${ident}` on the `s` side to `v`.
+        pub fn set_${ident}(&mut self, s: PhysicalSide, v: longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T) {
+            match s {
+                PhysicalSide::Top => self.set_${data.longhands_by_name[props[0]].ident}(v),
+                PhysicalSide::Right => self.set_${data.longhands_by_name[props[1]].ident}(v),
+                PhysicalSide::Bottom => self.set_${data.longhands_by_name[props[2]].ident}(v),
+                PhysicalSide::Left => self.set_${data.longhands_by_name[props[3]].ident}(v),
+            }
+        }
+    </%def>
 
     % for style_struct in data.active_style_structs():
         % if style_struct.name == "Font":
@@ -1577,6 +1599,10 @@ pub mod style_structs {
                         self.original_display = dpy;
                     }
                 }
+            % elif style_struct.name == "Margin":
+                ${impl_physical_sides("margin", ["margin-top", "margin-right", "margin-bottom", "margin-left"])}
+            % elif style_struct.name == "Position":
+                ${impl_physical_sides("inset", ["top", "right", "bottom", "left"])}
             % endif
         }
 

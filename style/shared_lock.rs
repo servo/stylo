@@ -5,16 +5,10 @@
 //! Different objects protected by the same lock
 
 use crate::stylesheets::Origin;
-#[cfg(feature = "gecko")]
 use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
-#[cfg(feature = "servo")]
-use parking_lot::RwLock;
 use servo_arc::Arc;
 use std::cell::UnsafeCell;
 use std::fmt;
-#[cfg(feature = "servo")]
-use std::mem;
-#[cfg(feature = "gecko")]
 use std::ptr;
 use style_traits::{CssString, CssStringWriter};
 use to_shmem::{SharedMemoryBuilder, ToShmem};
@@ -36,15 +30,10 @@ use to_shmem::{SharedMemoryBuilder, ToShmem};
 #[derive(Clone)]
 #[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub struct SharedRwLock {
-    #[cfg(feature = "servo")]
     #[cfg_attr(feature = "servo", ignore_malloc_size_of = "Arc")]
-    arc: Arc<RwLock<()>>,
-
-    #[cfg(feature = "gecko")]
     cell: Option<Arc<AtomicRefCell<SomethingZeroSizedButTyped>>>,
 }
 
-#[cfg(feature = "gecko")]
 struct SomethingZeroSizedButTyped;
 
 impl fmt::Debug for SharedRwLock {
@@ -54,32 +43,14 @@ impl fmt::Debug for SharedRwLock {
 }
 
 impl SharedRwLock {
-    /// Create a new shared lock (servo).
-    #[cfg(feature = "servo")]
-    pub fn new() -> Self {
-        SharedRwLock {
-            arc: Arc::new(RwLock::new(())),
-        }
-    }
-
-    /// Create a new shared lock (gecko).
-    #[cfg(feature = "gecko")]
+    /// Create a new shared lock.
     pub fn new() -> Self {
         SharedRwLock {
             cell: Some(Arc::new(AtomicRefCell::new(SomethingZeroSizedButTyped))),
         }
     }
 
-    /// Create a new global shared lock (servo).
-    #[cfg(feature = "servo")]
-    pub fn new_leaked() -> Self {
-        SharedRwLock {
-            arc: Arc::new_leaked(RwLock::new(())),
-        }
-    }
-
-    /// Create a new global shared lock (gecko).
-    #[cfg(feature = "gecko")]
+    /// Create a new global shared lock.
     pub fn new_leaked() -> Self {
         SharedRwLock {
             cell: Some(Arc::new_leaked(AtomicRefCell::new(
@@ -94,7 +65,6 @@ impl SharedRwLock {
         SharedRwLock { cell: None }
     }
 
-    #[cfg(feature = "gecko")]
     #[inline]
     fn ptr(&self) -> *const SomethingZeroSizedButTyped {
         self.cell
@@ -111,51 +81,22 @@ impl SharedRwLock {
         }
     }
 
-    /// Obtain the lock for reading (servo).
-    #[cfg(feature = "servo")]
-    pub fn read(&self) -> SharedRwLockReadGuard<'_> {
-        mem::forget(self.arc.read());
-        SharedRwLockReadGuard(self)
-    }
-
-    /// Obtain the lock for reading (gecko).
-    #[cfg(feature = "gecko")]
+    /// Obtain the lock for reading.
     pub fn read(&self) -> SharedRwLockReadGuard<'_> {
         SharedRwLockReadGuard(self.cell.as_ref().map(|cell| cell.borrow()))
     }
 
-    /// Obtain the lock for writing (servo).
-    #[cfg(feature = "servo")]
-    pub fn write(&self) -> SharedRwLockWriteGuard<'_> {
-        mem::forget(self.arc.write());
-        SharedRwLockWriteGuard(self)
-    }
-
-    /// Obtain the lock for writing (gecko).
-    #[cfg(feature = "gecko")]
+    /// Obtain the lock for writing.
     pub fn write(&self) -> SharedRwLockWriteGuard<'_> {
         SharedRwLockWriteGuard(self.cell.as_ref().unwrap().borrow_mut())
     }
 }
 
-/// Proof that a shared lock was obtained for reading (servo).
-#[cfg(feature = "servo")]
-pub struct SharedRwLockReadGuard<'a>(&'a SharedRwLock);
-/// Proof that a shared lock was obtained for reading (gecko).
-#[cfg(feature = "gecko")]
+/// Proof that a shared lock was obtained for reading.
 pub struct SharedRwLockReadGuard<'a>(Option<AtomicRef<'a, SomethingZeroSizedButTyped>>);
-#[cfg(feature = "servo")]
-impl<'a> Drop for SharedRwLockReadGuard<'a> {
-    fn drop(&mut self) {
-        // Unsafe: self.lock is private to this module, only ever set after `read()`,
-        // and never copied or cloned (see `compile_time_assert` below).
-        unsafe { self.0.arc.force_unlock_read() }
-    }
-}
 
 impl<'a> SharedRwLockReadGuard<'a> {
     #[inline]
-    #[cfg(feature = "gecko")]
     fn ptr(&self) -> *const SomethingZeroSizedButTyped {
         self.0
             .as_ref()
@@ -164,20 +105,8 @@ impl<'a> SharedRwLockReadGuard<'a> {
     }
 }
 
-/// Proof that a shared lock was obtained for writing (servo).
-#[cfg(feature = "servo")]
-pub struct SharedRwLockWriteGuard<'a>(&'a SharedRwLock);
-/// Proof that a shared lock was obtained for writing (gecko).
-#[cfg(feature = "gecko")]
+/// Proof that a shared lock was obtained for writing.
 pub struct SharedRwLockWriteGuard<'a>(AtomicRefMut<'a, SomethingZeroSizedButTyped>);
-#[cfg(feature = "servo")]
-impl<'a> Drop for SharedRwLockWriteGuard<'a> {
-    fn drop(&mut self) {
-        // Unsafe: self.lock is private to this module, only ever set after `write()`,
-        // and never copied or cloned (see `compile_time_assert` below).
-        unsafe { self.0.arc.force_unlock_write() }
-    }
-}
 
 /// Data protect by a shared lock.
 pub struct Locked<T> {
@@ -204,12 +133,6 @@ impl<T> Locked<T> {
         self.shared_lock.cell.is_none()
     }
 
-    #[cfg(feature = "servo")]
-    fn same_lock_as(&self, lock: &SharedRwLock) -> bool {
-        Arc::ptr_eq(&self.shared_lock.arc, &lock.arc)
-    }
-
-    #[cfg(feature = "gecko")]
     fn same_lock_as(&self, ptr: *const SomethingZeroSizedButTyped) -> bool {
         ptr::eq(self.shared_lock.ptr(), ptr)
     }
@@ -224,7 +147,7 @@ impl<T> Locked<T> {
             guard.ptr(),
         );
         #[cfg(not(feature = "gecko"))]
-        assert!(self.same_lock_as(&guard.0));
+        assert!(self.same_lock_as(guard.ptr()));
 
         let ptr = self.data.get();
 
@@ -252,7 +175,7 @@ impl<T> Locked<T> {
             "Locked::write_with called with a guard from a read only or unrelated SharedRwLock"
         );
         #[cfg(not(feature = "gecko"))]
-        assert!(self.same_lock_as(&guard.0));
+        assert!(self.same_lock_as(&*guard.0));
 
         let ptr = self.data.get();
 

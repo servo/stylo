@@ -2103,6 +2103,12 @@ macro_rules! parse_fit_content_function {
     };
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ParseAnchorFunctions {
+    Yes,
+    No,
+}
+
 impl Size {
     /// Parses, with quirks.
     pub fn parse_quirky<'i, 't>(
@@ -2111,7 +2117,27 @@ impl Size {
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
         let allow_webkit_fill_available = is_webkit_fill_available_enabled_in_all_size_properties();
-        Self::parse_quirky_internal(context, input, allow_quirks, allow_webkit_fill_available)
+        Self::parse_quirky_internal(
+            context,
+            input,
+            allow_quirks,
+            allow_webkit_fill_available,
+            ParseAnchorFunctions::Yes,
+        )
+    }
+
+    /// Parses for flex-basis: <width>
+    pub fn parse_size_for_flex_basis_width<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        Self::parse_quirky_internal(
+            context,
+            input,
+            AllowQuirks::No,
+            true,
+            ParseAnchorFunctions::No,
+        )
     }
 
     /// Parses, with quirks and configurable support for
@@ -2123,18 +2149,19 @@ impl Size {
         input: &mut Parser<'i, 't>,
         allow_quirks: AllowQuirks,
         allow_webkit_fill_available: bool,
+        allow_anchor_functions: ParseAnchorFunctions,
     ) -> Result<Self, ParseError<'i>> {
         parse_size_non_length!(Size, input, allow_webkit_fill_available,
                                "auto" => Auto);
         parse_fit_content_function!(Size, input, context, allow_quirks);
 
+        let allow_anchor = allow_anchor_functions == ParseAnchorFunctions::Yes
+            && static_prefs::pref!("layout.css.anchor-positioning.enabled");
         match input
             .try_parse(|i| NonNegativeLengthPercentage::parse_quirky(context, i, allow_quirks))
         {
             Ok(length) => return Ok(GenericSize::LengthPercentage(length)),
-            Err(e) if !static_prefs::pref!("layout.css.anchor-positioning.enabled") => {
-                return Err(e.into())
-            },
+            Err(e) if !allow_anchor => return Err(e.into()),
             Err(_) => (),
         };
         if let Ok(length) = input.try_parse(|i| {
@@ -2162,7 +2189,13 @@ impl Size {
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
         let allow_webkit_fill_available = is_webkit_fill_available_enabled_in_width_and_height();
-        Self::parse_quirky_internal(context, input, allow_quirks, allow_webkit_fill_available)
+        Self::parse_quirky_internal(
+            context,
+            input,
+            allow_quirks,
+            allow_webkit_fill_available,
+            ParseAnchorFunctions::Yes,
+        )
     }
 
     /// Parse a size for width or height, where -webkit-fill-available
@@ -2175,7 +2208,13 @@ impl Size {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
         let allow_webkit_fill_available = is_webkit_fill_available_enabled_in_width_and_height();
-        Self::parse_quirky_internal(context, input, AllowQuirks::No, allow_webkit_fill_available)
+        Self::parse_quirky_internal(
+            context,
+            input,
+            AllowQuirks::No,
+            allow_webkit_fill_available,
+            ParseAnchorFunctions::Yes,
+        )
     }
 
     /// Returns `0%`.

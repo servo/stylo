@@ -21,6 +21,9 @@ macro_rules! pref {
     ("layout.css.fit-content-function.enabled") => {
         true
     };
+    ("layout.css.outline-offset.snapping") => {
+        1
+    };
     ("layout.css.relative-color-syntax.enabled") => {
         true
     };

@@ -21,6 +21,6 @@ selectors = { workspace = true }
 servo_arc = { workspace = true }
 smallbitvec = "2.3.0"
 smallvec = "1.13"
-string_cache = { version = "0.8", optional = true }
+string_cache = { version = "0.9", optional = true }
 thin-vec = { version = "0.2.13" }
 void = "1.0.2"

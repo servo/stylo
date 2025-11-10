@@ -73,7 +73,7 @@ lazy_static = "1"
 log = "0.4"
 malloc_size_of = { workspace = true }
 malloc_size_of_derive = "0.1"
-web_atoms = { version = "0.1.3", optional = true }
+web_atoms = { version = "0.1.4", optional = true }
 matches = "0.1"
 mime = { version = "0.3.13", optional = true }
 num_cpus = {version = "1.1.0"}
@@ -92,7 +92,7 @@ smallbitvec = "2.3.0"
 smallvec = "1.0"
 static_assertions = "1.1"
 static_prefs = { workspace = true}
-string_cache = { version = "0.8", optional = true }
+string_cache = { version = "0.9", optional = true }
 style_config = { workspace = true, optional = true }
 style_derive = { workspace = true }
 style_traits = { workspace = true }

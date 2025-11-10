@@ -14,7 +14,7 @@ readme = "../README.md"
 path = "lib.rs"
 
 [dependencies]
-string_cache = "0.8"
+string_cache = "0.9"
 
 [build-dependencies]
-string_cache_codegen = "0.5"
+string_cache_codegen = "0.6.1"

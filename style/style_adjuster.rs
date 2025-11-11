@@ -17,7 +17,7 @@ use crate::properties::longhands::{
     content_visibility::computed_value::T as ContentVisibility,
     overflow_x::computed_value::T as Overflow,
 };
-use crate::properties::{self, ComputedValues, StyleBuilder};
+use crate::properties::{ComputedValues, StyleBuilder};
 use crate::values::computed::position::{
     PositionTryFallbacksTryTactic, PositionTryFallbacksTryTacticKeyword, TryTacticAdjustment,
 };
@@ -405,45 +405,6 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
                 self.style.mutate_box().set_display(Display::InlineBlock);
             }
         }
-    }
-
-    /// The initial value of border-*-width may be changed at computed value
-    /// time.
-    ///
-    /// This is moved to properties.rs for convenience.
-    fn adjust_for_border_width(&mut self) {
-        properties::adjust_border_width(self.style);
-    }
-
-    /// column-rule-style: none causes a computed column-rule-width of zero
-    /// at computed value time.
-    #[cfg(feature = "gecko")]
-    fn adjust_for_column_rule_width(&mut self) {
-        let column_style = self.style.get_column();
-        if !column_style.clone_column_rule_style().none_or_hidden() {
-            return;
-        }
-        if !column_style.column_rule_has_nonzero_width() {
-            return;
-        }
-        self.style
-            .mutate_column()
-            .set_column_rule_width(crate::Zero::zero());
-    }
-
-    /// outline-style: none causes a computed outline-width of zero at computed
-    /// value time.
-    fn adjust_for_outline_width(&mut self) {
-        let outline = self.style.get_outline();
-        if !outline.clone_outline_style().none_or_hidden() {
-            return;
-        }
-        if !outline.outline_has_nonzero_width() {
-            return;
-        }
-        self.style
-            .mutate_outline()
-            .set_outline_width(crate::Zero::zero());
     }
 
     /// CSS overflow-x and overflow-y require some fixup as well in some cases.
@@ -1130,10 +1091,6 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             self.adjust_for_justify_items();
         }
         self.adjust_for_table_text_align();
-        self.adjust_for_border_width();
-        #[cfg(feature = "gecko")]
-        self.adjust_for_column_rule_width();
-        self.adjust_for_outline_width();
         self.adjust_for_writing_mode(layout_parent_style);
         #[cfg(feature = "gecko")]
         {

@@ -12,7 +12,6 @@
 
 use crate::Atom;
 use crate::logical_geometry::PhysicalSide;
-use app_units::Au;
 use crate::computed_value_flags::*;
 use crate::custom_properties::ComputedCustomProperties;
 use crate::gecko_bindings::bindings;
@@ -36,7 +35,7 @@ use servo_arc::{Arc, UniqueArc};
 use std::mem::{forget, MaybeUninit, ManuallyDrop};
 use std::{ops, ptr};
 use crate::values;
-use crate::values::computed::{BorderStyle, Time, Zoom};
+use crate::values::computed::{Time, Zoom};
 use crate::values::computed::font::FontSize;
 
 
@@ -568,67 +567,7 @@ fn static_assert() {
 }
 
 
-<% skip_border_longhands = " ".join(["border-{0}-{1}".format(x.ident, y)
-                                     for x in SIDES
-                                     for y in ["style", "width"]]) %>
-
-<%self:impl_trait style_struct_name="Border"
-                  skip_longhands="${skip_border_longhands}">
-    % for side in SIDES:
-    pub fn set_border_${side.ident}_style(&mut self, v: BorderStyle) {
-        self.mBorderStyle[${side.index}] = v;
-
-        // This is needed because the initial mComputedBorder value is set to
-        // zero.
-        //
-        // In order to compute stuff, we start from the initial struct, and keep
-        // going down the tree applying properties.
-        //
-        // That means, effectively, that when we set border-style to something
-        // non-hidden, we should use the initial border instead.
-        //
-        // Servo stores the initial border-width in the initial struct, and then
-        // adjusts as needed in the fixup phase. This means that the initial
-        // struct is technically not valid without fixups, and that you lose
-        // pretty much any sharing of the initial struct, which is kind of
-        // unfortunate.
-        //
-        // Gecko has two fields for this, one that stores the "specified"
-        // border, and other that stores the actual computed one. That means
-        // that when we set border-style, border-width may change and we need to
-        // sync back to the specified one. This is what this function does.
-        //
-        // Note that this doesn't impose any dependency in the order of
-        // computation of the properties. This is only relevant if border-style
-        // is specified, but border-width isn't. If border-width is specified at
-        // some point, the two mBorder and mComputedBorder fields would be the
-        // same already.
-        //
-        // Once we're here, we know that we'll run style fixups, so it's fine to
-        // just copy the specified border here, we'll adjust it if it's
-        // incorrect later.
-        self.mComputedBorder.${side.ident} = self.mBorder.${side.ident};
-    }
-
-    pub fn copy_border_${side.ident}_style_from(&mut self, other: &Self) {
-        self.set_border_${side.ident}_style(other.mBorderStyle[${side.index}]);
-    }
-
-    pub fn reset_border_${side.ident}_style(&mut self, other: &Self) {
-        self.copy_border_${side.ident}_style_from(other);
-    }
-
-    #[inline]
-    pub fn clone_border_${side.ident}_style(&self) -> BorderStyle {
-        self.mBorderStyle[${side.index}]
-    }
-
-    ${impl_border_width("border_%s_width" % side.ident, "mComputedBorder.%s" % side.ident, "mBorder.%s" % side.ident)}
-
-    pub fn border_${side.ident}_has_nonzero_width(&self) -> bool {
-        self.mComputedBorder.${side.ident} != 0
-    }
-    % endfor
+<%self:impl_trait style_struct_name="Border">
 </%self:impl_trait>
 
 <%self:impl_trait style_struct_name="Margin">
@@ -645,34 +584,7 @@ fn static_assert() {
     }
 </%self:impl_trait>
 
-<%self:impl_trait style_struct_name="Outline"
-                  skip_longhands="outline-style outline-width">
-
-    pub fn set_outline_style(&mut self, v: longhands::outline_style::computed_value::T) {
-        self.mOutlineStyle = v;
-        // NB: This is needed to correctly handling the initial value of
-        // outline-width when outline-style changes, see the
-        // update_border_${side.ident} comment for more details.
-        self.mActualOutlineWidth = self.mOutlineWidth;
-    }
-
-    pub fn copy_outline_style_from(&mut self, other: &Self) {
-        self.set_outline_style(other.mOutlineStyle);
-    }
-
-    pub fn reset_outline_style(&mut self, other: &Self) {
-        self.copy_outline_style_from(other)
-    }
-
-    pub fn clone_outline_style(&self) -> longhands::outline_style::computed_value::T {
-        self.mOutlineStyle.clone()
-    }
-
-    ${impl_border_width("outline_width", "mActualOutlineWidth", "mOutlineWidth")}
-
-    pub fn outline_has_nonzero_width(&self) -> bool {
-        self.mActualOutlineWidth != 0
-    }
+<%self:impl_trait style_struct_name="Outline">
 </%self:impl_trait>
 
 <% skip_font_longhands = """font-size -x-lang font-feature-settings font-variation-settings""" %>
@@ -1273,33 +1185,7 @@ mask-mode mask-repeat mask-clip mask-origin mask-composite mask-position-x mask-
     }
 </%self:impl_trait>
 
-<%self:impl_trait style_struct_name="Column"
-                  skip_longhands="column-rule-width column-rule-style">
-    pub fn set_column_rule_style(&mut self, v: longhands::column_rule_style::computed_value::T) {
-        self.mColumnRuleStyle = v;
-        // NB: This is needed to correctly handling the initial value of
-        // column-rule-width when colun-rule-style changes, see the
-        // update_border_${side.ident} comment for more details.
-        self.mActualColumnRuleWidth = self.mColumnRuleWidth;
-    }
-
-    pub fn copy_column_rule_style_from(&mut self, other: &Self) {
-        self.set_column_rule_style(other.mColumnRuleStyle);
-    }
-
-    pub fn reset_column_rule_style(&mut self, other: &Self) {
-        self.copy_column_rule_style_from(other)
-    }
-
-    pub fn clone_column_rule_style(&self) -> longhands::column_rule_style::computed_value::T {
-        self.mColumnRuleStyle.clone()
-    }
-
-    ${impl_border_width("column_rule_width", "mActualColumnRuleWidth", "mColumnRuleWidth")}
-
-    pub fn column_rule_has_nonzero_width(&self) -> bool {
-        self.mActualColumnRuleWidth != 0
-    }
+<%self:impl_trait style_struct_name="Column">
 </%self:impl_trait>
 
 <%self:impl_trait style_struct_name="Counters">

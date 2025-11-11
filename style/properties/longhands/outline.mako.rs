@@ -31,7 +31,7 @@ ${helpers.predefined_type(
 ${helpers.predefined_type(
     "outline-width",
     "BorderSideWidth",
-    "app_units::Au::from_px(3)",
+    "computed::BorderSideWidth::medium()",
     engines="gecko servo",
     initial_specified_value="specified::BorderSideWidth::medium()",
     spec="https://drafts.csswg.org/css-ui/#propdef-outline-width",

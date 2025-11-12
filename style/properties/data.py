@@ -344,8 +344,8 @@ class Property(object):
     def is_prioritary(self):
         return self.name in PRIORITARY_PROPERTIES
 
-    def nscsspropertyid(self):
-        return "nsCSSPropertyID::eCSSProperty_" + self.ident
+    def noncustomcsspropertyid(self):
+        return "NonCustomCSSPropertyId::eCSSProperty_" + self.ident
 
 
 class Longhand(Property):
@@ -761,8 +761,8 @@ class Alias(object):
     def enabled_in_content(self):
         return self.enabled_in == "content"
 
-    def nscsspropertyid(self):
-        return "nsCSSPropertyID::eCSSPropertyAlias_%s" % self.ident
+    def noncustomcsspropertyid(self):
+        return "NonCustomCSSPropertyId::eCSSPropertyAlias_%s" % self.ident
 
 
 class Method(object):

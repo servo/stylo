@@ -11,7 +11,7 @@ use std::{ops, ptr};
 use std::{fmt, mem};
 
 #[cfg(feature = "servo")] use euclid::SideOffsets2D;
-#[cfg(feature = "gecko")] use crate::gecko_bindings::structs::{self, nsCSSPropertyID};
+#[cfg(feature = "gecko")] use crate::gecko_bindings::structs::{self, NonCustomCSSPropertyId};
 #[cfg(feature = "servo")] use crate::logical_geometry::LogicalMargin;
 #[cfg(feature = "servo")] use crate::computed_values;
 use crate::logical_geometry::WritingMode;
@@ -475,9 +475,9 @@ pub mod property_counts {
 
 % if engine == "gecko":
 #[allow(dead_code)]
-unsafe fn static_assert_nscsspropertyid() {
+unsafe fn static_assert_noncustomcsspropertyid() {
     % for i, property in enumerate(data.longhands + data.shorthands + data.all_aliases()):
-    std::mem::transmute::<[u8; ${i}], [u8; ${property.nscsspropertyid()} as usize]>([0; ${i}]); // ${property.name}
+    std::mem::transmute::<[u8; ${i}], [u8; ${property.noncustomcsspropertyid()} as usize]>([0; ${i}]); // ${property.name}
     % endfor
 }
 % endif

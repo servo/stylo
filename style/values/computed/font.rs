@@ -19,7 +19,6 @@ use crate::values::specified::font::{
     self as specified, KeywordInfo, MAX_FONT_WEIGHT, MIN_FONT_WEIGHT,
 };
 use crate::values::specified::length::{FontBaseSize, LineHeightBase, NoCalcLength};
-use crate::values::CSSInteger;
 use crate::Atom;
 use cssparser::{serialize_identifier, CssStringWriter, Parser};
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
@@ -1098,21 +1097,6 @@ impl ToComputedValue for specified::MathDepth {
     fn from_computed_value(other: &i8) -> Self {
         let computed_value = *other as i32;
         specified::MathDepth::Absolute(SpecifiedInteger::from_computed_value(&computed_value))
-    }
-}
-
-impl ToAnimatedValue for MathDepth {
-    type AnimatedValue = CSSInteger;
-
-    #[inline]
-    fn to_animated_value(self, _: &crate::values::animated::Context) -> Self::AnimatedValue {
-        self.into()
-    }
-
-    #[inline]
-    fn from_animated_value(animated: Self::AnimatedValue) -> Self {
-        use std::{cmp, i8};
-        cmp::min(animated, i8::MAX as i32) as i8
     }
 }
 

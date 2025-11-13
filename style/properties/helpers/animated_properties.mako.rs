@@ -695,7 +695,7 @@ impl Animate for AnimatedFilter {
             % endfor
             % for func in ['Brightness', 'Contrast', 'Opacity', 'Saturate']:
             (&Filter::${func}(this), &Filter::${func}(other)) => {
-                Ok(Filter::${func}(animate_multiplicative_factor(this, other, procedure)?))
+                Ok(Filter::${func}(animate_multiplicative_factor(this.0, other.0, procedure)?.into()))
             },
             % endfor
             _ => Err(()),
@@ -711,7 +711,7 @@ impl ToAnimatedZero for AnimatedFilter {
             Filter::${func}(ref this) => Ok(Filter::${func}(this.to_animated_zero()?)),
             % endfor
             % for func in ['Brightness', 'Contrast', 'Opacity', 'Saturate']:
-            Filter::${func}(_) => Ok(Filter::${func}(1.)),
+            Filter::${func}(_) => Ok(Filter::${func}(1.0.into())),
             % endfor
             _ => Err(()),
         }

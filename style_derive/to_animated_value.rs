@@ -2,7 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-use crate::to_computed_value;
+use crate::animate::AnimationFieldAttrs;
+use crate::{cg, to_computed_value};
 use proc_macro2::TokenStream;
 use syn::DeriveInput;
 use synstructure::BindStyle;
@@ -27,7 +28,13 @@ pub fn derive(input: DeriveInput) -> TokenStream {
         parse_quote!(crate::values::animated::ToAnimatedValue),
         parse_quote!(AnimatedValue),
         BindStyle::Move,
-        |_| Default::default(),
+        |binding| {
+            let attrs = cg::parse_field_attrs::<AnimationFieldAttrs>(&binding.ast());
+            to_computed_value::ToValueAttrs {
+                field_bound: attrs.field_bound,
+                no_field_bound: false,
+            }
+        },
         |binding| quote!(crate::values::animated::ToAnimatedValue::from_animated_value(#binding)),
         |binding| quote!(crate::values::animated::ToAnimatedValue::to_animated_value(#binding, context)),
         trait_impl,

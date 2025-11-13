@@ -4,8 +4,7 @@
 
 //! Computed percentages.
 
-use crate::values::animated::ToAnimatedValue;
-use crate::values::generics::NonNegative;
+use crate::values::generics::{ClampToNonNegative, NonNegative};
 use crate::values::specified::percentage::ToPercentage;
 use crate::values::{serialize_normalized_percentage, CSSFloat};
 use crate::Zero;
@@ -36,6 +35,13 @@ use style_traits::{CssWriter, ToCss};
 #[repr(C)]
 pub struct Percentage(pub CSSFloat);
 
+impl ClampToNonNegative for Percentage {
+    #[inline]
+    fn clamp_to_non_negative(self) -> Self {
+        Percentage(self.0.max(0.))
+    }
+}
+
 impl Percentage {
     /// 100%
     #[inline]
@@ -47,12 +53,6 @@ impl Percentage {
     #[inline]
     pub fn abs(&self) -> Self {
         Percentage(self.0.abs())
-    }
-
-    /// Clamps this percentage to a non-negative percentage.
-    #[inline]
-    pub fn clamp_to_non_negative(self) -> Self {
-        Percentage(self.0.max(0.))
     }
 }
 
@@ -119,19 +119,5 @@ impl NonNegativePercentage {
     #[inline]
     pub fn hundred() -> Self {
         NonNegative(Percentage::hundred())
-    }
-}
-
-impl ToAnimatedValue for NonNegativePercentage {
-    type AnimatedValue = Percentage;
-
-    #[inline]
-    fn to_animated_value(self, _: &crate::values::animated::Context) -> Self::AnimatedValue {
-        self.0
-    }
-
-    #[inline]
-    fn from_animated_value(animated: Self::AnimatedValue) -> Self {
-        NonNegative(animated.clamp_to_non_negative())
     }
 }

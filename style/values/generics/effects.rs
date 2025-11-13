@@ -4,6 +4,8 @@
 
 //! Generic types for CSS values related to effects.
 
+use crate::values::generics::{NonNegative, ZeroToOne};
+
 /// A generic value for a single `box-shadow`.
 #[derive(
     Animate,
@@ -50,34 +52,34 @@ pub use self::GenericBoxShadow as BoxShadow;
 )]
 #[animation(no_bound(U))]
 #[repr(C, u8)]
-pub enum GenericFilter<Angle, NonNegativeFactor, ZeroToOneFactor, Length, Shadow, U> {
+pub enum GenericFilter<Angle, Factor, Length, Shadow, U> {
     /// `blur(<length>)`
     #[css(function)]
-    Blur(Length),
+    Blur(#[animation(field_bound)] NonNegative<Length>),
     /// `brightness(<factor>)`
     #[css(function)]
-    Brightness(NonNegativeFactor),
+    Brightness(#[animation(field_bound)] NonNegative<Factor>),
     /// `contrast(<factor>)`
     #[css(function)]
-    Contrast(NonNegativeFactor),
+    Contrast(#[animation(field_bound)] NonNegative<Factor>),
     /// `grayscale(<factor>)`
     #[css(function)]
-    Grayscale(ZeroToOneFactor),
+    Grayscale(#[animation(field_bound)] ZeroToOne<Factor>),
     /// `hue-rotate(<angle>)`
     #[css(function)]
     HueRotate(Angle),
     /// `invert(<factor>)`
     #[css(function)]
-    Invert(ZeroToOneFactor),
+    Invert(#[animation(field_bound)] ZeroToOne<Factor>),
     /// `opacity(<factor>)`
     #[css(function)]
-    Opacity(ZeroToOneFactor),
+    Opacity(#[animation(field_bound)] ZeroToOne<Factor>),
     /// `saturate(<factor>)`
     #[css(function)]
-    Saturate(NonNegativeFactor),
+    Saturate(#[animation(field_bound)] NonNegative<Factor>),
     /// `sepia(<factor>)`
     #[css(function)]
-    Sepia(ZeroToOneFactor),
+    Sepia(#[animation(field_bound)] ZeroToOne<Factor>),
     /// `drop-shadow(...)`
     #[css(function)]
     DropShadow(Shadow),

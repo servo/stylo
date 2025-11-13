@@ -12,7 +12,7 @@ use crate::values::computed::position::Position;
 use crate::values::computed::url::ComputedUrl;
 use crate::values::computed::{Angle, Color, Context};
 use crate::values::computed::{
-    AngleOrPercentage, LengthPercentage, NonNegativeLength, NonNegativeLengthPercentage,
+    AngleOrPercentage, Length, LengthPercentage, NonNegativeLength, NonNegativeLengthPercentage,
     Resolution, ToComputedValue,
 };
 use crate::values::generics::image::{self as generic, GradientCompatMode};
@@ -38,9 +38,8 @@ size_of_test!(Image, 24);
 /// <https://drafts.csswg.org/css-images/#gradients>
 pub type Gradient = generic::GenericGradient<
     LineDirection,
+    Length,
     LengthPercentage,
-    NonNegativeLength,
-    NonNegativeLengthPercentage,
     Position,
     Angle,
     AngleOrPercentage,

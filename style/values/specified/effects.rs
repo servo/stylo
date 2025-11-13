@@ -14,17 +14,18 @@ use crate::values::computed::CSSPixelLength as ComputedCSSPixelLength;
 use crate::values::computed::Filter as ComputedFilter;
 use crate::values::computed::NonNegativeLength as ComputedNonNegativeLength;
 use crate::values::computed::NonNegativeNumber as ComputedNonNegativeNumber;
+use crate::values::computed::Number as ComputedNumber;
 use crate::values::computed::ZeroToOneNumber as ComputedZeroToOneNumber;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::effects::BoxShadow as GenericBoxShadow;
 use crate::values::generics::effects::Filter as GenericFilter;
 use crate::values::generics::effects::SimpleShadow as GenericSimpleShadow;
-use crate::values::generics::NonNegative;
+use crate::values::generics::{NonNegative, ZeroToOne};
 use crate::values::specified::color::Color;
 use crate::values::specified::length::{Length, NonNegativeLength};
 #[cfg(feature = "gecko")]
 use crate::values::specified::url::SpecifiedUrl;
-use crate::values::specified::{Angle, Number, NumberOrPercentage};
+use crate::values::specified::{Angle, NonNegativeNumberOrPercentage, Number, NumberOrPercentage};
 #[cfg(feature = "servo")]
 use crate::values::Impossible;
 use crate::Zero;
@@ -37,35 +38,33 @@ pub type BoxShadow =
 
 /// A specified value for a single `filter`.
 #[cfg(feature = "gecko")]
-pub type SpecifiedFilter = GenericFilter<
-    Angle,
-    NonNegativeFactor,
-    ZeroToOneFactor,
-    NonNegativeLength,
-    SimpleShadow,
-    SpecifiedUrl,
->;
+pub type SpecifiedFilter = GenericFilter<Angle, FilterFactor, Length, SimpleShadow, SpecifiedUrl>;
 
 /// A specified value for a single `filter`.
 #[cfg(feature = "servo")]
-pub type SpecifiedFilter = GenericFilter<
-    Angle,
-    NonNegativeFactor,
-    ZeroToOneFactor,
-    NonNegativeLength,
-    SimpleShadow,
-    Impossible,
->;
+pub type SpecifiedFilter = GenericFilter<Angle, FilterFactor, Length, SimpleShadow, Impossible>;
 
 pub use self::SpecifiedFilter as Filter;
 
-/// A value for the `<factor>` parts in `Filter`.
+/// The factor for a filter function.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
-pub struct NonNegativeFactor(NumberOrPercentage);
+pub struct FilterFactor(NumberOrPercentage);
 
-/// A value for the `<factor>` parts in `Filter` which clamps to one.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
-pub struct ZeroToOneFactor(NumberOrPercentage);
+impl FilterFactor {
+    fn to_number(&self) -> Number {
+        self.0.to_number()
+    }
+}
+
+impl ToComputedValue for FilterFactor {
+    type ComputedValue = ComputedNumber;
+    fn to_computed_value(&self, _: &Context) -> Self::ComputedValue {
+        self.0.to_number().get()
+    }
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        Self(NumberOrPercentage::Number(Number::new(*computed)))
+    }
+}
 
 /// Clamp the value to 1 if the value is over 100%.
 #[inline]
@@ -78,46 +77,28 @@ fn clamp_to_one(number: NumberOrPercentage) -> NumberOrPercentage {
     }
 }
 
-macro_rules! factor_impl_common {
-    ($ty:ty, $computed_ty:ty) => {
-        impl $ty {
-            #[inline]
-            fn one() -> Self {
-                Self(NumberOrPercentage::Number(Number::new(1.)))
-            }
-        }
-
-        impl ToComputedValue for $ty {
-            type ComputedValue = $computed_ty;
-
-            #[inline]
-            fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
-                use crate::values::computed::NumberOrPercentage;
-                match self.0.to_computed_value(context) {
-                    NumberOrPercentage::Number(n) => n.into(),
-                    NumberOrPercentage::Percentage(p) => p.0.into(),
-                }
-            }
-
-            #[inline]
-            fn from_computed_value(computed: &Self::ComputedValue) -> Self {
-                Self(NumberOrPercentage::Number(
-                    ToComputedValue::from_computed_value(&computed.0),
-                ))
-            }
-        }
-    };
+type NonNegativeFactor = NonNegative<FilterFactor>;
+impl NonNegativeFactor {
+    fn one() -> Self {
+        Self(FilterFactor(NumberOrPercentage::Number(Number::new(1.))))
+    }
 }
-factor_impl_common!(NonNegativeFactor, ComputedNonNegativeNumber);
-factor_impl_common!(ZeroToOneFactor, ComputedZeroToOneNumber);
 
 impl Parse for NonNegativeFactor {
-    #[inline]
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        NumberOrPercentage::parse_non_negative(context, input).map(Self)
+        Ok(Self(FilterFactor(
+            NonNegativeNumberOrPercentage::parse(context, input)?.0,
+        )))
+    }
+}
+
+type ZeroToOneFactor = ZeroToOne<FilterFactor>;
+impl ZeroToOneFactor {
+    fn one() -> Self {
+        Self(FilterFactor(NumberOrPercentage::Number(Number::new(1.))))
     }
 }
 
@@ -127,9 +108,9 @@ impl Parse for ZeroToOneFactor {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        NumberOrPercentage::parse_non_negative(context, input)
-            .map(clamp_to_one)
-            .map(Self)
+        Ok(Self(FilterFactor(clamp_to_one(
+            NumberOrPercentage::parse_non_negative(context, input)?,
+        ))))
     }
 }
 

@@ -37,7 +37,7 @@ use crate::values::generics::calc::{CalcUnits, PositivePercentageBasis};
 #[cfg(feature = "gecko")]
 use crate::values::generics::length::AnchorResolutionResult;
 use crate::values::generics::position::{AnchorSideKeyword, GenericAnchorSide};
-use crate::values::generics::{calc, NonNegative};
+use crate::values::generics::{calc, ClampToNonNegative, NonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 use crate::values::specified::length::{FontBaseSize, LineHeightBase};
 use crate::values::{specified, CSSFloat};
@@ -544,10 +544,12 @@ impl LengthPercentage {
         }
         Some(self.resolve(container_len?))
     }
+}
 
+impl ClampToNonNegative for LengthPercentage {
     /// Returns the clamped non-negative values.
     #[inline]
-    pub fn clamp_to_non_negative(mut self) -> Self {
+    fn clamp_to_non_negative(mut self) -> Self {
         match self.unpack_mut() {
             UnpackedMut::Length(l) => Self::new_length(l.clamp_to_non_negative()),
             UnpackedMut::Percentage(p) => Self::new_percent(p.clamp_to_non_negative()),
@@ -1302,20 +1304,6 @@ impl Animate for LengthPercentage {
 
 /// A wrapper of LengthPercentage, whose value must be >= 0.
 pub type NonNegativeLengthPercentage = NonNegative<LengthPercentage>;
-
-impl ToAnimatedValue for NonNegativeLengthPercentage {
-    type AnimatedValue = LengthPercentage;
-
-    #[inline]
-    fn to_animated_value(self, context: &AnimatedContext) -> Self::AnimatedValue {
-        self.0.to_animated_value(context)
-    }
-
-    #[inline]
-    fn from_animated_value(animated: Self::AnimatedValue) -> Self {
-        NonNegative(animated.clamp_to_non_negative())
-    }
-}
 
 impl NonNegativeLengthPercentage {
     /// Returns the used value.

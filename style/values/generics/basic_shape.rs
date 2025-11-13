@@ -7,9 +7,12 @@
 
 use crate::values::animated::{lists, Animate, Procedure, ToAnimatedZero};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
-use crate::values::generics::border::GenericBorderRadius;
-use crate::values::generics::position::{GenericPosition, GenericPositionOrAuto};
-use crate::values::generics::rect::Rect;
+use crate::values::generics::{
+    border::GenericBorderRadius,
+    position::{GenericPosition, GenericPositionOrAuto},
+    rect::Rect,
+    NonNegative,
+};
 use crate::values::specified::svg_path::{PathCommand, SVGPathData};
 use crate::Zero;
 use std::fmt::{self, Write};
@@ -136,7 +139,7 @@ pub enum GenericClipPath<BasicShape, U> {
     Url(U),
     #[typed_value(skip)]
     Shape(
-        Box<BasicShape>,
+        #[animation(field_bound)] Box<BasicShape>,
         #[css(skip_if = "is_default_box_for_clip_path")] ShapeGeometryBox,
     ),
     #[animation(error)]
@@ -196,26 +199,22 @@ pub use self::GenericShapeOutside as ShapeOutside;
     ToShmem,
 )]
 #[repr(C, u8)]
-pub enum GenericBasicShape<
-    Angle,
-    Position,
-    LengthPercentage,
-    NonNegativeLengthPercentage,
-    BasicShapeRect,
-> {
+pub enum GenericBasicShape<Angle, Position, LengthPercentage, BasicShapeRect> {
     /// The <basic-shape-rect>.
     Rect(BasicShapeRect),
     /// Defines a circle with a center and a radius.
     Circle(
+        #[animation(field_bound)]
         #[css(field_bound)]
         #[shmem(field_bound)]
-        Circle<Position, NonNegativeLengthPercentage>,
+        Circle<Position, NonNegative<LengthPercentage>>,
     ),
     /// Defines an ellipse with a center and x-axis/y-axis radii.
     Ellipse(
+        #[animation(field_bound)]
         #[css(field_bound)]
         #[shmem(field_bound)]
-        Ellipse<Position, NonNegativeLengthPercentage>,
+        Ellipse<Position, NonNegative<LengthPercentage>>,
     ),
     /// Defines a polygon with pair arguments.
     Polygon(GenericPolygon<LengthPercentage>),
@@ -248,10 +247,11 @@ pub use self::GenericBasicShape as BasicShape;
 )]
 #[css(function = "inset")]
 #[repr(C)]
-pub struct GenericInsetRect<LengthPercentage, NonNegativeLengthPercentage> {
+pub struct GenericInsetRect<LengthPercentage> {
     pub rect: Rect<LengthPercentage>,
     #[shmem(field_bound)]
-    pub round: GenericBorderRadius<NonNegativeLengthPercentage>,
+    #[animation(field_bound)]
+    pub round: GenericBorderRadius<NonNegative<LengthPercentage>>,
 }
 
 pub use self::GenericInsetRect as InsetRect;
@@ -492,10 +492,9 @@ impl<B, U> ToAnimatedZero for ShapeOutside<B, U> {
     }
 }
 
-impl<Length, NonNegativeLength> ToCss for InsetRect<Length, NonNegativeLength>
+impl<Length> ToCss for InsetRect<Length>
 where
-    Length: ToCss + PartialEq,
-    NonNegativeLength: ToCss + PartialEq + Zero,
+    Length: ToCss + PartialEq + Zero,
 {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where

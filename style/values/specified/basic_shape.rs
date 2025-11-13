@@ -42,16 +42,11 @@ pub type ShapeOutside = generic::GenericShapeOutside<BasicShape, Image>;
 pub type ShapePosition = GenericPosition<LengthPercentage, LengthPercentage>;
 
 /// A specified basic shape.
-pub type BasicShape = generic::GenericBasicShape<
-    Angle,
-    ShapePosition,
-    LengthPercentage,
-    NonNegativeLengthPercentage,
-    BasicShapeRect,
->;
+pub type BasicShape =
+    generic::GenericBasicShape<Angle, ShapePosition, LengthPercentage, BasicShapeRect>;
 
 /// The specified value of `inset()`.
-pub type InsetRect = generic::GenericInsetRect<LengthPercentage, NonNegativeLengthPercentage>;
+pub type InsetRect = generic::GenericInsetRect<LengthPercentage>;
 
 /// A specified circle.
 pub type Circle = generic::Circle<ShapePosition, NonNegativeLengthPercentage>;

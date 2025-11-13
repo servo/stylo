@@ -8,6 +8,7 @@ use crate::values::animated::{Animate, Procedure};
 use crate::values::computed::NonNegativeNumber;
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::ratio::Ratio as GenericRatio;
+use crate::values::generics::NonNegative;
 use crate::Zero;
 use std::cmp::Ordering;
 
@@ -23,17 +24,22 @@ impl PartialOrd for Ratio {
     }
 }
 
-impl GenericRatio<f32> {
+impl Ratio {
     /// Returns the f32 value by dividing the first value by the second one.
     #[inline]
     fn to_f32(&self) -> f32 {
         debug_assert!(!self.is_degenerate());
-        self.0 / self.1
+        (self.0).0 / (self.1).0
+    }
+    /// Returns a new Ratio.
+    #[inline]
+    pub fn new(a: f32, b: f32) -> Self {
+        GenericRatio(a.into(), b.into())
     }
 }
 
 /// https://drafts.csswg.org/css-values/#combine-ratio
-impl Animate for GenericRatio<f32> {
+impl Animate for Ratio {
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
         // If either <ratio> is degenerate, the values cannot be interpolated.
         if self.is_degenerate() || other.is_degenerate() {
@@ -64,11 +70,11 @@ impl Animate for GenericRatio<f32> {
         if result.is_zero() || result.is_infinite() {
             return Err(());
         }
-        Ok(GenericRatio(result, 1.0))
+        Ok(GenericRatio(NonNegative(result), NonNegative(1.0)))
     }
 }
 
-impl ComputeSquaredDistance for GenericRatio<f32> {
+impl ComputeSquaredDistance for Ratio {
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
         if self.is_degenerate() || other.is_degenerate() {
             return Err(());
@@ -78,13 +84,5 @@ impl ComputeSquaredDistance for GenericRatio<f32> {
         self.to_f32()
             .ln()
             .compute_squared_distance(&other.to_f32().ln())
-    }
-}
-
-impl Ratio {
-    /// Returns a new Ratio.
-    #[inline]
-    pub fn new(a: f32, b: f32) -> Self {
-        GenericRatio(a.into(), b.into())
     }
 }

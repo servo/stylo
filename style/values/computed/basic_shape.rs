@@ -26,16 +26,10 @@ pub type ClipPath = generic::GenericClipPath<BasicShape, ComputedUrl>;
 pub type ShapeOutside = generic::GenericShapeOutside<BasicShape, Image>;
 
 /// A computed basic shape.
-pub type BasicShape = generic::GenericBasicShape<
-    Angle,
-    Position,
-    LengthPercentage,
-    NonNegativeLengthPercentage,
-    InsetRect,
->;
+pub type BasicShape = generic::GenericBasicShape<Angle, Position, LengthPercentage, InsetRect>;
 
 /// The computed value of `inset()`.
-pub type InsetRect = generic::GenericInsetRect<LengthPercentage, NonNegativeLengthPercentage>;
+pub type InsetRect = generic::GenericInsetRect<LengthPercentage>;
 
 /// A computed circle.
 pub type Circle = generic::Circle<Position, NonNegativeLengthPercentage>;

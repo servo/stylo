@@ -9,11 +9,11 @@ use crate::logical_geometry::PhysicalSide;
 use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
 use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::computed::{NonNegativeNumber, Percentage, Zoom};
-use crate::values::generics::length as generics;
 use crate::values::generics::length::{
     GenericLengthOrNumber, GenericLengthPercentageOrNormal, GenericMaxSize, GenericSize,
 };
 use crate::values::generics::NonNegative;
+use crate::values::generics::{length as generics, ClampToNonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 use crate::values::specified::length::{AbsoluteLength, FontBaseSize, LineHeightBase};
 use crate::values::{specified, CSSFloat};
@@ -450,17 +450,9 @@ pub type LengthOrNumber = GenericLengthOrNumber<Length, Number>;
 /// A wrapper of Length, whose value must be >= 0.
 pub type NonNegativeLength = NonNegative<Length>;
 
-impl ToAnimatedValue for NonNegativeLength {
-    type AnimatedValue = Length;
-
-    #[inline]
-    fn to_animated_value(self, context: &AnimatedContext) -> Self::AnimatedValue {
-        self.0.to_animated_value(context)
-    }
-
-    #[inline]
-    fn from_animated_value(animated: Self::AnimatedValue) -> Self {
-        NonNegativeLength::new(animated.px().max(0.))
+impl ClampToNonNegative for Length {
+    fn clamp_to_non_negative(self) -> Self {
+        Self::new(self.px().max(0.))
     }
 }
 

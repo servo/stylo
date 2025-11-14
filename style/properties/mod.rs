@@ -223,19 +223,19 @@ impl NonCustomPropertyId {
     #[inline]
     pub fn to_noncustomcsspropertyid(self) -> NonCustomCSSPropertyId {
         // unsafe: guaranteed by static_assert_noncustomcsspropertyid.
-        unsafe { mem::transmute(self.0 as i32) }
+        unsafe { mem::transmute(self.0) }
     }
 
     /// Convert an `NonCustomCSSPropertyId` into a `NonCustomPropertyId`.
     #[cfg(feature = "gecko")]
     #[inline]
     pub fn from_noncustomcsspropertyid(prop: NonCustomCSSPropertyId) -> Option<Self> {
-        let prop = prop as i32;
-        if prop < 0 || prop >= property_counts::NON_CUSTOM as i32 {
+        let prop = prop as u16;
+        if prop >= property_counts::NON_CUSTOM as u16 {
             return None;
         }
         // guaranteed by static_assert_noncustomcsspropertyid above.
-        Some(NonCustomPropertyId(prop as u16))
+        Some(NonCustomPropertyId(prop))
     }
 
     /// Resolves the alias of a given property if needed.

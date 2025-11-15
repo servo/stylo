@@ -21,7 +21,7 @@ pub mod generated {
 
 use crate::custom_properties::{self, ComputedCustomProperties};
 #[cfg(feature = "gecko")]
-use crate::gecko_bindings::structs::{AnimatedPropertyID, NonCustomCSSPropertyId, RefPtr};
+use crate::gecko_bindings::structs::{CSSPropertyId, NonCustomCSSPropertyId, RefPtr};
 use crate::logical_geometry::WritingMode;
 use crate::parser::ParserContext;
 use crate::stylesheets::CssRuleType;
@@ -426,10 +426,10 @@ impl PropertyId {
         Some(NonCustomPropertyId::from_noncustomcsspropertyid(id)?.to_property_id())
     }
 
-    /// Returns a property id from Gecko's AnimatedPropertyID.
+    /// Returns a property id from Gecko's CSSPropertyId.
     #[cfg(feature = "gecko")]
     #[inline]
-    pub fn from_gecko_animated_property_id(property: &AnimatedPropertyID) -> Option<Self> {
+    pub fn from_gecko_css_property_id(property: &CSSPropertyId) -> Option<Self> {
         Some(
             if property.mId == NonCustomCSSPropertyId::eCSSPropertyExtra_variable {
                 debug_assert!(!property.mCustomName.mRawPtr.is_null());
@@ -981,16 +981,14 @@ impl OwnedPropertyDeclarationId {
         }
     }
 
-    /// Convert an `AnimatedPropertyID` into an `OwnedPropertyDeclarationId`.
+    /// Convert an `CSSPropertyId` into an `OwnedPropertyDeclarationId`.
     #[cfg(feature = "gecko")]
     #[inline]
-    pub fn from_gecko_animated_property_id(property: &AnimatedPropertyID) -> Option<Self> {
-        Some(
-            match PropertyId::from_gecko_animated_property_id(property)? {
-                PropertyId::Custom(name) => Self::Custom(name),
-                PropertyId::NonCustom(id) => Self::Longhand(id.as_longhand()?),
-            },
-        )
+    pub fn from_gecko_css_property_id(property: &CSSPropertyId) -> Option<Self> {
+        Some(match PropertyId::from_gecko_css_property_id(property)? {
+            PropertyId::Custom(name) => Self::Custom(name),
+            PropertyId::NonCustom(id) => Self::Longhand(id.as_longhand()?),
+        })
     }
 }
 
@@ -1134,20 +1132,20 @@ impl<'a> PropertyDeclarationId<'a> {
         }
     }
 
-    /// Convert a `PropertyDeclarationId` into an `AnimatedPropertyID`
+    /// Convert a `PropertyDeclarationId` into an `CSSPropertyId`
     ///
     /// FIXME(emilio, bug 1870107): We should consider using cbindgen to generate the property id
     /// representation or so.
     #[cfg(feature = "gecko")]
     #[inline]
-    pub fn to_gecko_animated_property_id(&self) -> AnimatedPropertyID {
+    pub fn to_gecko_css_property_id(&self) -> CSSPropertyId {
         match self {
-            Self::Longhand(id) => AnimatedPropertyID {
+            Self::Longhand(id) => CSSPropertyId {
                 mId: id.to_noncustomcsspropertyid(),
                 mCustomName: RefPtr::null(),
             },
             Self::Custom(name) => {
-                let mut property_id = AnimatedPropertyID {
+                let mut property_id = CSSPropertyId {
                     mId: NonCustomCSSPropertyId::eCSSPropertyExtra_variable,
                     mCustomName: RefPtr::null(),
                 };

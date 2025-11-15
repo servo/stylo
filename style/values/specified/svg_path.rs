@@ -10,9 +10,9 @@ use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::basic_shape::GenericShapeCommand;
 use crate::values::generics::basic_shape::{
     ArcSize, ArcSweep, ByTo, CommandEndPoint, ControlPoint, ControlReference, CoordinatePair,
-    RelativeControlPoint, ShapePosition,
+    RelativeControlPoint,
 };
-use crate::values::generics::position::GenericPosition;
+use crate::values::generics::position::GenericPosition as Position;
 use crate::values::CSSFloat;
 use cssparser::Parser;
 use std::fmt::{self, Write};
@@ -21,6 +21,9 @@ use std::ops;
 use std::slice;
 use style_traits::values::SequenceWriter;
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+
+/// A specified value for `<position>`.
+pub type ShapePosition = Position<CSSFloat, CSSFloat>;
 
 /// Whether to allow empty string in the parser.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -194,7 +197,7 @@ impl ComputeSquaredDistance for SVGPathData {
 /// points of the Bézier curve in the spec.
 ///
 /// https://www.w3.org/TR/SVG11/paths.html#PathData
-pub type PathCommand = GenericShapeCommand<CSSFloat, ShapePosition<CSSFloat>, CSSFloat>;
+pub type PathCommand = GenericShapeCommand<CSSFloat, CSSFloat>;
 
 /// For internal SVGPath normalization.
 #[allow(missing_docs)]
@@ -301,8 +304,8 @@ impl PathCommand {
                     state.last_control = control1.into();
                     CubicCurve {
                         point,
-                        control1: ControlPoint::Absolute(c1.into()),
-                        control2: ControlPoint::Absolute(control2.into()),
+                        control1: ControlPoint::Position(c1.into()),
+                        control2: ControlPoint::Position(control2.into()),
                     }
                 } else {
                     state.pos = point.into();
@@ -333,7 +336,7 @@ impl PathCommand {
                     state.last_command = *self;
                     CubicCurve {
                         point,
-                        control1: ControlPoint::Absolute(control1.into()),
+                        control1: ControlPoint::Position(control1.into()),
                         control2,
                     }
                 } else {
@@ -361,8 +364,8 @@ impl PathCommand {
                     state.last_control = control;
                     CubicCurve {
                         point,
-                        control1: ControlPoint::Absolute(control1.into()),
-                        control2: ControlPoint::Absolute(control2.into()),
+                        control1: ControlPoint::Position(control1.into()),
+                        control2: ControlPoint::Position(control2.into()),
                     }
                 } else {
                     state.pos = point.into();
@@ -384,8 +387,8 @@ impl PathCommand {
                         let end_point = CoordPair::from(point);
                         CubicCurve {
                             point: CommandEndPoint::ToPosition(state.pos.into()),
-                            control1: ControlPoint::Absolute(end_point.into()),
-                            control2: ControlPoint::Absolute(end_point.into()),
+                            control1: ControlPoint::Position(end_point.into()),
+                            control2: ControlPoint::Position(end_point.into()),
                         }
                     } else {
                         Arc {
@@ -547,14 +550,14 @@ impl ops::Div<CSSFloat> for CoordPair {
     }
 }
 
-impl CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat> {
+impl CommandEndPoint<CSSFloat> {
     /// Converts <command-end-point> into absolutely positioned type.
-    pub fn to_abs(self, state_pos: CoordPair) -> Self {
+    pub fn to_abs(self, state_pos: CoordPair) -> CommandEndPoint<CSSFloat> {
         // Consume self value.
         match self {
             CommandEndPoint::ToPosition(_) => self,
             CommandEndPoint::ByCoordinate(coord) => {
-                let pos = GenericPosition {
+                let pos = Position {
                     horizontal: coord.x + state_pos.x,
                     vertical: coord.y + state_pos.y,
                 };
@@ -564,18 +567,18 @@ impl CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat> {
     }
 }
 
-impl ControlPoint<ShapePosition<CSSFloat>, CSSFloat> {
+impl ControlPoint<CSSFloat> {
     /// Converts <control-point> into absolutely positioned control point type.
     pub fn to_abs(
         self,
         state_pos: CoordPair,
-        end_point: CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>,
-    ) -> Self {
+        end_point: CommandEndPoint<CSSFloat>,
+    ) -> ControlPoint<CSSFloat> {
         // Consume self value.
         match self {
-            ControlPoint::Absolute(_) => self,
+            ControlPoint::Position(_) => self,
             ControlPoint::Relative(point) => {
-                let mut pos = GenericPosition {
+                let mut pos = Position {
                     horizontal: point.coord.x,
                     vertical: point.coord.y,
                 };
@@ -596,15 +599,15 @@ impl ControlPoint<ShapePosition<CSSFloat>, CSSFloat> {
                     },
                     _ => (),
                 }
-                ControlPoint::Absolute(pos)
+                ControlPoint::Position(pos)
             },
         }
     }
 }
 
-impl From<CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>> for CoordPair {
+impl From<CommandEndPoint<CSSFloat>> for CoordPair {
     #[inline]
-    fn from(p: CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>) -> Self {
+    fn from(p: CommandEndPoint<CSSFloat>) -> Self {
         match p {
             CommandEndPoint::ToPosition(pos) => CoordPair {
                 x: pos.horizontal,
@@ -615,11 +618,11 @@ impl From<CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>> for CoordPair {
     }
 }
 
-impl From<ControlPoint<ShapePosition<CSSFloat>, CSSFloat>> for CoordPair {
+impl From<ControlPoint<CSSFloat>> for CoordPair {
     #[inline]
-    fn from(point: ControlPoint<ShapePosition<CSSFloat>, CSSFloat>) -> Self {
+    fn from(point: ControlPoint<CSSFloat>) -> Self {
         match point {
-            ControlPoint::Absolute(pos) => CoordPair {
+            ControlPoint::Position(pos) => CoordPair {
                 x: pos.horizontal,
                 y: pos.vertical,
             },
@@ -633,24 +636,24 @@ impl From<ControlPoint<ShapePosition<CSSFloat>, CSSFloat>> for CoordPair {
     }
 }
 
-impl From<CoordPair> for CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat> {
+impl From<CoordPair> for CommandEndPoint<CSSFloat> {
     #[inline]
     fn from(coord: CoordPair) -> Self {
         CommandEndPoint::ByCoordinate(coord)
     }
 }
 
-impl From<CoordPair> for ShapePosition<CSSFloat> {
+impl From<CoordPair> for Position<CSSFloat, CSSFloat> {
     #[inline]
     fn from(coord: CoordPair) -> Self {
-        GenericPosition {
+        Position {
             horizontal: coord.x,
             vertical: coord.y,
         }
     }
 }
 
-impl ToCss for ShapePosition<CSSFloat> {
+impl ToCss for ShapePosition {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: Write,
@@ -889,7 +892,7 @@ fn parse_coord(iter: &mut Peekable<Cloned<slice::Iter<u8>>>) -> Result<CoordPair
 /// Parse a pair of numbers that describes the absolutely positioned endpoint.
 fn parse_command_point_abs(
     iter: &mut Peekable<Cloned<slice::Iter<u8>>>,
-) -> Result<CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>, ()> {
+) -> Result<CommandEndPoint<f32>, ()> {
     let coord = parse_coord(iter)?;
     Ok(CommandEndPoint::ToPosition(coord.into()))
 }
@@ -897,7 +900,7 @@ fn parse_command_point_abs(
 /// Parse a pair of numbers that describes the relatively positioned endpoint.
 fn parse_command_point_rel(
     iter: &mut Peekable<Cloned<slice::Iter<u8>>>,
-) -> Result<CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>, ()> {
+) -> Result<CommandEndPoint<f32>, ()> {
     let coord = parse_coord(iter)?;
     Ok(CommandEndPoint::ByCoordinate(coord))
 }
@@ -908,7 +911,7 @@ fn parse_command_point_rel(
 /// defaults to the commands coordinate mode (absolute or relative).
 fn parse_control_point(
     iter: &mut Peekable<Cloned<slice::Iter<u8>>>,
-) -> Result<ControlPoint<ShapePosition<CSSFloat>, CSSFloat>, ()> {
+) -> Result<ControlPoint<f32>, ()> {
     let coord = parse_coord(iter)?;
     Ok(ControlPoint::Relative(RelativeControlPoint {
         coord,

@@ -747,10 +747,10 @@ fn parse_non_custom_property_declaration_value_into<'i>(
     };
 
     input.reset(&start);
-    input.look_for_var_or_env_functions();
+    input.look_for_arbitrary_substitution_functions(&["var", "env"]);
     let err = match parse_entirely_into(declarations, input) {
         Ok(()) => {
-            input.seen_var_or_env_functions();
+            input.seen_arbitrary_substitution_functions();
             return Ok(());
         },
         Err(e) => e,
@@ -772,7 +772,7 @@ fn parse_non_custom_property_declaration_value_into<'i>(
         }
         at_start = false;
     }
-    if !input.seen_var_or_env_functions() || invalid {
+    if !input.seen_arbitrary_substitution_functions() || invalid {
         return Err(err);
     }
     input.reset(start);

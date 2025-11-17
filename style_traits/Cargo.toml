@@ -18,7 +18,7 @@ gecko = ["nsstring"]
 [dependencies]
 app_units = "0.7"
 bitflags = "2"
-cssparser = "0.35"
+cssparser = "0.36"
 euclid = "0.22"
 malloc_size_of = { path = "../malloc_size_of" }
 malloc_size_of_derive = { path = "../../../xpcom/rust/malloc_size_of_derive" }

@@ -747,14 +747,7 @@ fn parse_non_custom_property_declaration_value_into<'i>(
     };
 
     input.reset(&start);
-    input.look_for_arbitrary_substitution_functions(
-        if static_prefs::pref!("layout.css.attr.enabled") {
-            &["var", "env", "attr"]
-        } else {
-            &["var", "env"]
-        },
-    );
-
+    input.look_for_arbitrary_substitution_functions(&["var", "env"]);
     let err = match parse_entirely_into(declarations, input) {
         Ok(()) => {
             input.seen_arbitrary_substitution_functions();

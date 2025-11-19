@@ -308,7 +308,6 @@ ${helpers.predefined_type(
     "MathDepth",
     "0",
     engines="gecko",
-    animation_type="discrete",
     spec="https://mathml-refresh.github.io/mathml-core/#the-math-script-level-property",
     affects="",
 )}

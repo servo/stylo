@@ -189,6 +189,7 @@ pub enum TextOverflowSide {
     /// Render ellipsis to represent clipped inline content.
     Ellipsis,
     /// Render a given string to represent clipped inline content.
+    #[cfg(feature = "gecko")]
     String(crate::values::AtomString),
 }
 
@@ -229,7 +230,9 @@ impl Parse for TextOverflow {
     ) -> Result<TextOverflow, ParseError<'i>> {
         let first = TextOverflowSide::parse(context, input)?;
         Ok(
+            
             if let Ok(second) = input.try_parse(|input| TextOverflowSide::parse(context, input)) {
+                #[cfg(feature = "gecko")]
                 Self {
                     first,
                     second,

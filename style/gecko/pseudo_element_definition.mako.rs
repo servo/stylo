@@ -158,12 +158,7 @@ impl PseudoElement {
                 }),
             % endif
             % endfor
-            PseudoStyleType::highlight => {
-                match functional_pseudo_parameter {
-                    Some(p) => Some(PseudoElement::Highlight(p)),
-                    None => None
-                }
-            }
+            PseudoStyleType::highlight => functional_pseudo_parameter.map(PseudoElement::Highlight),
             _ => None,
         }
     }

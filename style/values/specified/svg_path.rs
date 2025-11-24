@@ -9,8 +9,8 @@ use crate::values::animated::{lists, Animate, Procedure};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::basic_shape::GenericShapeCommand;
 use crate::values::generics::basic_shape::{
-    ArcSize, ArcSweep, ByTo, CommandEndPoint, ControlPoint, ControlReference, CoordinatePair,
-    RelativeControlPoint, ShapePosition,
+    ArcRadii, ArcSize, ArcSweep, ByTo, CommandEndPoint, ControlPoint, ControlReference,
+    CoordinatePair, RelativeControlPoint, ShapePosition,
 };
 use crate::values::generics::position::GenericPosition;
 use crate::values::CSSFloat;
@@ -380,7 +380,7 @@ impl PathCommand {
                 state.pos = point.into();
                 if reduce {
                     state.last_command = *self;
-                    if radii.x == 0. && radii.y == 0. {
+                    if radii.rx == 0. && radii.ry.as_ref().is_none_or(|v| *v == 0.) {
                         let end_point = CoordPair::from(point);
                         CubicCurve {
                             point: CommandEndPoint::ToPosition(state.pos.into()),
@@ -860,7 +860,7 @@ impl<'a> PathParser<'a> {
         };
         if by_to.is_abs() {
             parse_arguments!(self, Arc, [
-                radii => parse_coord,
+                radii => parse_arc,
                 rotate => parse_number,
                 arc_size => parse_arc_size,
                 arc_sweep => parse_arc_sweep,
@@ -868,7 +868,7 @@ impl<'a> PathParser<'a> {
             ])
         } else {
             parse_arguments!(self, Arc, [
-                radii => parse_coord,
+                radii => parse_arc,
                 rotate => parse_number,
                 arc_size => parse_arc_size,
                 arc_sweep => parse_arc_sweep,
@@ -914,6 +914,14 @@ fn parse_control_point(
         coord,
         reference: ControlReference::None,
     }))
+}
+
+fn parse_arc(iter: &mut Peekable<Cloned<slice::Iter<u8>>>) -> Result<ArcRadii<CSSFloat>, ()> {
+    let coord = parse_coord(iter)?;
+    Ok(ArcRadii {
+        rx: coord.x,
+        ry: Some(coord.y).into(),
+    })
 }
 
 /// This is a special version which parses the number for SVG Path. e.g. "M 0.6.5" should be parsed

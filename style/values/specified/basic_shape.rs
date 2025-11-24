@@ -779,7 +779,7 @@ impl Parse for ShapeCommand {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
         use crate::values::generics::basic_shape::{
-            ArcSize, ArcSweep, ByTo, CommandEndPoint, ControlPoint, CoordinatePair,
+            ArcRadii, ArcSize, ArcSweep, ByTo, CommandEndPoint, ControlPoint,
         };
 
         // <shape-command> = <move-command> | <line-command> | <hv-line-command> |
@@ -856,10 +856,8 @@ impl Parse for ShapeCommand {
                 let point = CommandEndPoint::parse(context, input, by_to)?;
                 input.expect_ident_matching("of")?;
                 let rx = LengthPercentage::parse(context, input)?;
-                let ry = input
-                    .try_parse(|i| LengthPercentage::parse(context, i))
-                    .unwrap_or(rx.clone());
-                let radii = CoordinatePair::new(rx, ry);
+                let ry = input.try_parse(|i| LengthPercentage::parse(context, i)).ok();
+                let radii = ArcRadii { rx, ry: ry.into() };
 
                 // [<arc-sweep> || <arc-size> || rotate <angle>]?
                 let mut arc_sweep = None;

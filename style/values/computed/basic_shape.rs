@@ -248,3 +248,16 @@ impl From<&generic::ControlPoint<ShapePosition<CSSFloat>, CSSFloat>> for Control
         }
     }
 }
+
+impl From<&generic::ArcRadii<CSSFloat>> for generic::ArcRadii<LengthPercentage> {
+    #[inline]
+    fn from(p: &generic::ArcRadii<CSSFloat>) -> Self {
+        use crate::values::computed::CSSPixelLength;
+        Self {
+            rx: LengthPercentage::new_length(CSSPixelLength::new(p.rx)),
+            ry: p
+                .ry
+                .map(|v| LengthPercentage::new_length(CSSPixelLength::new(v))),
+        }
+    }
+}

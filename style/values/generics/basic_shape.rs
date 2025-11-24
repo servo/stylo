@@ -11,7 +11,7 @@ use crate::values::generics::{
     border::GenericBorderRadius,
     position::{GenericPosition, GenericPositionOrAuto},
     rect::Rect,
-    NonNegative,
+    NonNegative, Optional,
 };
 use crate::values::specified::svg_path::{PathCommand, SVGPathData};
 use crate::Zero;
@@ -794,7 +794,7 @@ pub enum GenericShapeCommand<Angle, Position, LengthPercentage> {
     /// The arc command.
     Arc {
         point: CommandEndPoint<Position, LengthPercentage>,
-        radii: CoordinatePair<LengthPercentage>,
+        radii: ArcRadii<LengthPercentage>,
         arc_sweep: ArcSweep,
         arc_size: ArcSize,
         rotate: Angle,
@@ -883,11 +883,7 @@ where
                 dest.write_str("arc ")?;
                 point.to_css(dest)?;
                 dest.write_str(" of ")?;
-                radii.x.to_css(dest)?;
-                if radii.x != radii.y {
-                    dest.write_char(' ')?;
-                    radii.y.to_css(dest)?;
-                }
+                radii.to_css(dest)?;
 
                 if matches!(arc_sweep, ArcSweep::Cw) {
                     dest.write_str(" cw")?;
@@ -1091,7 +1087,7 @@ impl<Position, LengthPercentage> ControlPoint<Position, LengthPercentage> {
 }
 
 /// Defines a relative control point to a quadratic or cubic Bézier curve, dependent on the
-/// reference value. The default "none" is to be relative to the command’s starting point.
+/// reference value. The default `None` is to be relative to the command’s starting point.
 /// https://drafts.csswg.org/css-shapes/#typedef-shape-relative-control-point
 #[allow(missing_docs)]
 #[derive(
@@ -1177,6 +1173,37 @@ pub enum ControlReference {
     Start,
     End,
     Origin,
+}
+
+/// Defines the radiuses for an <arc-command>.
+///
+/// The first <length-percentage> is the ellipse's horizontal radius, and the second is
+/// the vertical radius. If only one value is provided, it is used for both radii, and any
+/// <percentage> is resolved against the direction-agnostic size of the reference box.
+/// https://drafts.csswg.org/css-shapes-1/#typedef-shape-arc-command
+#[allow(missing_docs)]
+#[derive(
+    Animate,
+    Clone,
+    ComputeSquaredDistance,
+    Copy,
+    Debug,
+    Deserialize,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToAnimatedZero,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+)]
+#[repr(C)]
+pub struct ArcRadii<LengthPercentage> {
+    pub rx: LengthPercentage,
+    pub ry: Optional<LengthPercentage>,
 }
 
 /// This indicates that the arc that is traced around the ellipse clockwise or counter-clockwise

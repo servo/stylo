@@ -458,6 +458,13 @@ pub enum DeferFontRelativeCustomPropertyResolution {
     No,
 }
 
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem, Parse)]
+enum SubstitutionFunctionKind {
+    Var,
+    Env,
+    Attr,
+}
+
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 struct VariableFallback {
     start: num::NonZeroUsize,
@@ -466,24 +473,25 @@ struct VariableFallback {
 }
 
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
-struct VarOrEnvReference {
+struct SubstitutionFunctionReference {
     name: Name,
     start: usize,
     end: usize,
     fallback: Option<VariableFallback>,
     prev_token_type: TokenSerializationType,
     next_token_type: TokenSerializationType,
-    is_var: bool,
+    substitution_kind: SubstitutionFunctionKind,
 }
 
 /// A struct holding information about the external references to that a custom
 /// property value may have.
 #[derive(Clone, Debug, Default, MallocSizeOf, PartialEq, ToShmem)]
 struct References {
-    refs: Vec<VarOrEnvReference>,
+    refs: Vec<SubstitutionFunctionReference>,
     non_custom_references: NonCustomReferences,
     any_env: bool,
     any_var: bool,
+    any_attr: bool,
 }
 
 impl References {
@@ -784,32 +792,42 @@ fn parse_declaration_value_block<'i, 't>(
                 return Err(input.new_custom_error(e));
             },
             Token::Function(ref name) => {
-                let is_var = name.eq_ignore_ascii_case("var");
-                if is_var || name.eq_ignore_ascii_case("env") {
+                let substitution_kind = match SubstitutionFunctionKind::from_ident(name).ok() {
+                    Some(SubstitutionFunctionKind::Attr) => {
+                        if static_prefs::pref!("layout.css.attr.enabled") {
+                            Some(SubstitutionFunctionKind::Attr)
+                        } else {
+                            None
+                        }
+                    },
+                    kind => kind,
+                };
+                if let Some(substitution_kind) = substitution_kind {
                     let our_ref_index = references.refs.len();
                     let fallback = input.parse_nested_block(|input| {
                         // TODO(emilio): For env() this should be <custom-ident> per spec, but no other browser does
                         // that, see https://github.com/w3c/csswg-drafts/issues/3262.
                         let name = input.expect_ident()?;
-                        let name = Atom::from(if is_var {
-                            match parse_name(name.as_ref()) {
-                                Ok(name) => name,
-                                Err(()) => {
-                                    let name = name.clone();
-                                    return Err(input.new_custom_error(
-                                        SelectorParseErrorKind::UnexpectedIdent(name),
-                                    ));
-                                },
-                            }
-                        } else {
-                            name.as_ref()
-                        });
+                        let name =
+                            Atom::from(if substitution_kind == SubstitutionFunctionKind::Var {
+                                match parse_name(name.as_ref()) {
+                                    Ok(name) => name,
+                                    Err(()) => {
+                                        let name = name.clone();
+                                        return Err(input.new_custom_error(
+                                            SelectorParseErrorKind::UnexpectedIdent(name),
+                                        ));
+                                    },
+                                }
+                            } else {
+                                name.as_ref()
+                            });
 
                         // We want the order of the references to match source order. So we need to reserve our slot
                         // now, _before_ parsing our fallback. Note that we don't care if parsing fails after all, since
                         // if this fails we discard the whole result anyways.
                         let start = token_start.byte_index() - input_start.byte_index();
-                        references.refs.push(VarOrEnvReference {
+                        references.refs.push(SubstitutionFunctionReference {
                             name,
                             start,
                             // To be fixed up after parsing fallback and auto-closing via our_ref_index.
@@ -819,7 +837,7 @@ fn parse_declaration_value_block<'i, 't>(
                             next_token_type: TokenSerializationType::Nothing,
                             // To be fixed up after parsing fallback.
                             fallback: None,
-                            is_var,
+                            substitution_kind: substitution_kind.clone(),
                         });
 
                         let mut fallback = None;
@@ -863,11 +881,11 @@ fn parse_declaration_value_block<'i, 't>(
                     reference.end = input.position().byte_index() - input_start.byte_index()
                         + missing_closing_characters.len();
                     reference.fallback = fallback;
-                    if is_var {
-                        references.any_var = true;
-                    } else {
-                        references.any_env = true;
-                    }
+                    match substitution_kind {
+                        SubstitutionFunctionKind::Var => references.any_var = true,
+                        SubstitutionFunctionKind::Env => references.any_env = true,
+                        SubstitutionFunctionKind::Attr => references.any_attr = true,
+                    };
                 } else {
                     nested!();
                     check_closed!(")");
@@ -1038,6 +1056,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                 // Non-custom dependency is really relevant for registered custom properties
                 // that require computed value of such dependencies.
                 let has_dependency = unparsed_value.references.any_var
+                    || unparsed_value.references.any_attr
                     || find_non_custom_references(
                         registration,
                         unparsed_value,
@@ -1122,7 +1141,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
             _ => return,
         };
 
-        if !refs.any_var {
+        if !refs.any_var && !refs.any_attr {
             return;
         }
 
@@ -1151,7 +1170,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
             .refs
             .iter()
             .filter_map(|reference| {
-                if !reference.is_var {
+                if reference.substitution_kind != SubstitutionFunctionKind::Var {
                     return None;
                 }
                 let registration = self
@@ -1507,7 +1526,9 @@ fn substitute_all(
                     /* include_unregistered = */ true,
                 );
                 context.non_custom_references |= non_custom_refs.unwrap_or_default();
-                let has_dependency = value.references.any_var || non_custom_refs.is_some();
+                let has_dependency = value.references.any_var
+                    || value.references.any_attr
+                    || non_custom_refs.is_some();
                 // Nothing to resolve.
                 if !has_dependency {
                     debug_assert!(!value.references.any_env, "Should've been handled earlier");
@@ -1605,7 +1626,7 @@ fn substitute_all(
             // Visit other custom properties...
             // FIXME: Maybe avoid visiting the same var twice if not needed?
             for next in &v.references.refs {
-                if !next.is_var {
+                if next.substitution_kind != SubstitutionFunctionKind::Var {
                     continue;
                 }
                 visit_link(
@@ -1731,7 +1752,9 @@ fn substitute_all(
                 )
                 .is_some()
                     || v.references.refs.iter().any(|reference| {
-                        reference.is_var && deferred.get(&reference.name).is_some()
+                        (reference.substitution_kind == SubstitutionFunctionKind::Var
+                            && deferred.get(&reference.name).is_some())
+                            || reference.substitution_kind == SubstitutionFunctionKind::Attr
                     });
 
                 if defer {
@@ -1742,7 +1765,7 @@ fn substitute_all(
             }
 
             // If there are no var references we should already be computed and substituted by now.
-            if !defer && v.references.any_var {
+            if !defer && (v.references.any_var || v.references.any_attr) {
                 substitute_references_if_needed_and_apply(
                     &name,
                     v,
@@ -1993,7 +2016,7 @@ fn do_substitute_chunk<'a>(
     custom_properties: &'a ComputedCustomProperties,
     stylist: &Stylist,
     computed_context: &computed::Context,
-    references: &mut std::iter::Peekable<std::slice::Iter<VarOrEnvReference>>,
+    references: &mut std::iter::Peekable<std::slice::Iter<SubstitutionFunctionReference>>,
 ) -> Result<Substitution<'a>, ()> {
     if start == end {
         // Empty string. Easy.
@@ -2054,31 +2077,37 @@ fn substitute_one_reference<'a>(
     css: &'a str,
     url_data: &UrlExtraData,
     custom_properties: &'a ComputedCustomProperties,
-    reference: &VarOrEnvReference,
+    reference: &SubstitutionFunctionReference,
     stylist: &Stylist,
     computed_context: &computed::Context,
-    references: &mut std::iter::Peekable<std::slice::Iter<VarOrEnvReference>>,
+    references: &mut std::iter::Peekable<std::slice::Iter<SubstitutionFunctionReference>>,
 ) -> Result<Substitution<'a>, ()> {
-    if reference.is_var {
-        let registration = stylist.get_custom_property_registration(&reference.name);
-        if let Some(v) = custom_properties.get(registration, &reference.name) {
-            // Skip references that are inside the outer variable (in fallback for example).
-            while references
-                .next_if(|next_ref| next_ref.end <= reference.end)
-                .is_some()
-            {}
-            return Ok(Substitution::from_value(v.to_variable_value()));
-        }
-    } else {
-        let device = stylist.device();
-        if let Some(v) = device.environment().get(&reference.name, device, url_data) {
-            while references
-                .next_if(|next_ref| next_ref.end <= reference.end)
-                .is_some()
-            {}
-            return Ok(Substitution::from_value(v));
-        }
-    }
+    match reference.substitution_kind {
+        SubstitutionFunctionKind::Var => {
+            let registration = stylist.get_custom_property_registration(&reference.name);
+            if let Some(v) = custom_properties.get(registration, &reference.name) {
+                // Skip references that are inside the outer variable (in fallback for example).
+                while references
+                    .next_if(|next_ref| next_ref.end <= reference.end)
+                    .is_some()
+                {}
+                return Ok(Substitution::from_value(v.to_variable_value()));
+            }
+        },
+        SubstitutionFunctionKind::Env => {
+            let device = stylist.device();
+            if let Some(v) = device.environment().get(&reference.name, device, url_data) {
+                while references
+                    .next_if(|next_ref| next_ref.end <= reference.end)
+                    .is_some()
+                {}
+                return Ok(Substitution::from_value(v));
+            }
+        },
+        SubstitutionFunctionKind::Attr => {
+            // TODO(descalante): implement attribute lookup.
+        },
+    };
 
     let Some(ref fallback) = reference.fallback else {
         return Err(());

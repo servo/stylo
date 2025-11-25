@@ -103,7 +103,7 @@ fn default_color_interpolation_method<T>(
     });
 
     if has_modern_syntax_item {
-        ColorInterpolationMethod::default()
+        ColorInterpolationMethod::oklab()
     } else {
         ColorInterpolationMethod::srgb()
     }

@@ -33,15 +33,8 @@ impl ColorMix {
         input.expect_function_matching("color-mix")?;
 
         input.parse_nested_block(|input| {
-            // If the color interpolation method is omitted, default to "in oklab".
-            // See: https://github.com/web-platform-tests/interop/issues/1166
-            let interpolation = input
-                .try_parse(|input| -> Result<_, ParseError<'i>> {
-                    let interpolation = ColorInterpolationMethod::parse(context, input)?;
-                    input.expect_comma()?;
-                    Ok(interpolation)
-                })
-                .unwrap_or_default();
+            let interpolation = ColorInterpolationMethod::parse(context, input)?;
+            input.expect_comma()?;
 
             let try_parse_percentage = |input: &mut Parser| -> Option<Percentage> {
                 input

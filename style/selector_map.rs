@@ -52,6 +52,7 @@ const RARE_PSEUDO_CLASS_STATES: ElementState = ElementState::from_bits_retain(
         | ElementState::FOCUSRING.bits()
         | ElementState::TOPMOST_MODAL.bits()
         | ElementState::SUPPRESS_FOR_PRINT_SELECTION.bits()
+        | ElementState::ACTIVE_VIEW_TRANSITION.bits()
         | ElementState::HEADING_LEVEL_BITS.bits(),
 );
 

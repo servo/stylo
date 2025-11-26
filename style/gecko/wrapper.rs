@@ -2064,11 +2064,6 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
                 self.state().intersects(pseudo_class.state_flag())
             },
             NonTSPseudoClass::Dir(ref dir) => self.state().intersects(dir.element_state()),
-            NonTSPseudoClass::ActiveViewTransitionType(ref types) => {
-                self.state().intersects(pseudo_class.state_flag()) && unsafe {
-                    bindings::Gecko_HasActiveViewTransitionTypes(self.as_node().owner_doc().0, types)
-                }
-            },
             NonTSPseudoClass::AnyLink => self.is_link(),
             NonTSPseudoClass::Link => {
                 self.is_link() && context.visited_handling().matches_unvisited()

@@ -81,17 +81,28 @@ impl ColorInterpolationMethod {
         }
     }
 
+    /// Return true if the this is the default method.
+    pub fn is_default(&self) -> bool {
+        self.space == ColorSpace::Oklab
+    }
+
     /// Decides the best method for interpolating between the given colors.
     /// https://drafts.csswg.org/css-color-4/#interpolation-space
     pub fn best_interpolation_between(left: &AbsoluteColor, right: &AbsoluteColor) -> Self {
-        // The preferred color space to use for interpolating colors is Oklab.
-        // However, if either of the colors are in legacy rgb(), hsl() or hwb(),
-        // then interpolation is done in sRGB.
+        // The default color space to use for interpolation is Oklab. However,
+        // if either of the colors are in legacy rgb(), hsl() or hwb(), then
+        // interpolation is done in sRGB.
         if !left.is_legacy_syntax() || !right.is_legacy_syntax() {
-            Self::oklab()
+            Self::default()
         } else {
             Self::srgb()
         }
+    }
+}
+
+impl Default for ColorInterpolationMethod {
+    fn default() -> Self {
+        Self::oklab()
     }
 }
 

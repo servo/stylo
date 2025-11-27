@@ -19,6 +19,7 @@ use crate::properties::{
 use crate::values::computed::basic_shape::ClipPath;
 use crate::values::computed::Perspective;
 use crate::values::generics::transform::{GenericRotate, GenericScale, GenericTranslate};
+use crate::Zero;
 use std::fmt;
 
 bitflags! {
@@ -148,6 +149,7 @@ fn augmented_restyle_damage_rebuild_stacking_context(
 ) -> bool {
     restyle_damage_rebuild_stacking_context(old, new)
         || old.guarantees_stacking_context() != new.guarantees_stacking_context()
+        || old.get_outline().outline_width.is_zero() != new.get_outline().outline_width.is_zero()
 }
 fn compute_damage(old: &ComputedValues, new: &ComputedValues) -> ServoRestyleDamage {
     let mut damage = ServoRestyleDamage::empty();

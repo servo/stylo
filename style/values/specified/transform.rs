@@ -13,7 +13,7 @@ use crate::values::specified::position::{
     HorizontalPositionKeyword, Side, VerticalPositionKeyword,
 };
 use crate::values::specified::{
-    self, Angle, Integer, Length, LengthPercentage, Number, NumberOrPercentage,
+    self, AllowQuirks, Angle, Integer, Length, LengthPercentage, Number, NumberOrPercentage,
 };
 use crate::Zero;
 use cssparser::Parser;
@@ -100,7 +100,26 @@ impl TransformOrigin {
     }
 }
 
+/// Whether to allow unitless values for perspective in prefixed transform properties.
+///
+/// See: https://github.com/whatwg/compat/issues/100
+#[allow(missing_docs)]
+pub enum AllowUnitlessPerspective {
+    No,
+    Yes,
+}
+
 impl Transform {
+    /// Parse the transform property value, allowing unitless perspective values.
+    ///
+    /// This is used for `-webkit-transform` which allows unitless values for perspective.
+    #[inline]
+    pub(crate) fn parse_legacy<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        Self::parse_internal(context, input, AllowUnitlessPerspective::Yes)
+    }
     /// Internal parse function for deciding if we wish to accept prefixed values or not
     ///
     /// `transform` allows unitless zero angles as an exception, see:
@@ -108,6 +127,7 @@ impl Transform {
     fn parse_internal<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
+        allow_unitless_perspective: AllowUnitlessPerspective,
     ) -> Result<Self, ParseError<'i>> {
         use style_traits::{Separator, Space};
 
@@ -282,7 +302,13 @@ impl Transform {
                             Ok(generic::TransformOperation::SkewY(theta))
                         },
                         "perspective" => {
-                            let p = match input.try_parse(|input| specified::Length::parse_non_negative(context, input)) {
+                            let p = match input.try_parse(|input| {
+                                if matches!(allow_unitless_perspective, AllowUnitlessPerspective::Yes) {
+                                    specified::Length::parse_non_negative_quirky(context, input, AllowQuirks::Always)
+                                } else {
+                                    specified::Length::parse_non_negative(context, input)
+                                }
+                            }) {
                                 Ok(p) => generic::PerspectiveFunction::Length(p),
                                 Err(..) => {
                                     input.expect_ident_matching("none")?;
@@ -310,7 +336,7 @@ impl Parse for Transform {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        Transform::parse_internal(context, input)
+        Transform::parse_internal(context, input, AllowUnitlessPerspective::No)
     }
 }
 

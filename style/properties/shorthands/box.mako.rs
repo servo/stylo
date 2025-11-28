@@ -225,3 +225,48 @@ ${helpers.two_properties_shorthand(
         }
     }
 </%helpers:shorthand>
+
+<%helpers:shorthand name="-webkit-perspective"
+                    engines="gecko servo"
+                    sub_properties="perspective"
+                    derive_serialize="True"
+                    flags="IS_LEGACY_SHORTHAND"
+                    spec="https://github.com/whatwg/compat/issues/100">
+    pub fn parse_value<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        use crate::values::specified::Length;
+        use crate::values::generics::NonNegative;
+        use crate::values::specified::AllowQuirks;
+        use crate::values::specified::Perspective;
+        use crate::properties::longhands::perspective;
+
+        if let Ok(l) = input.try_parse(|input| Length::parse_non_negative_quirky(context, input, AllowQuirks::Always)) {
+            Ok(expanded! {
+                perspective: Perspective::Length(NonNegative(l)),
+            })
+        } else {
+            Ok(expanded! {
+                perspective: perspective::parse(context, input)?
+            })
+        }
+    }
+</%helpers:shorthand>
+
+<%helpers:shorthand name="-webkit-transform"
+                    engines="gecko servo"
+                    sub_properties="transform"
+                    derive_serialize="True"
+                    flags="IS_LEGACY_SHORTHAND"
+                    spec="https://github.com/whatwg/compat/issues/100">
+    pub fn parse_value<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        use crate::values::specified::Transform;
+        Ok(expanded! {
+            transform: Transform::parse_legacy(context, input)?,
+        })
+    }
+</%helpers:shorthand>

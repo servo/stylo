@@ -170,7 +170,7 @@ ${helpers.predefined_type(
     "Transform",
     "generics::transform::Transform::none()",
     engines="gecko servo",
-    extra_prefixes=transform_extra_prefixes,
+    extra_prefixes="moz:layout.css.prefixes.transforms",
     flags="CAN_ANIMATE_ON_COMPOSITOR",
     spec="https://drafts.csswg.org/css-transforms/#propdef-transform",
     servo_restyle_damage="recalculate_overflow",
@@ -395,7 +395,7 @@ ${helpers.predefined_type(
     engines="gecko servo",
     gecko_ffi_name="mChildPerspective",
     spec="https://drafts.csswg.org/css-transforms/#perspective",
-    extra_prefixes=transform_extra_prefixes,
+    extra_prefixes="moz:layout.css.prefixes.transforms",
     servo_restyle_damage = "recalculate_overflow",
     affects="overflow",
 )}

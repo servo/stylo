@@ -858,19 +858,25 @@
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
-        let order = input.try_parse(|i| PositionTryOrder::parse(i)).unwrap_or(PositionTryOrder::normal());
+        let order = if static_prefs::pref!("layout.css.anchor-positioning.position-try-order.enabled") {
+            input.try_parse(PositionTryOrder::parse).ok()
+        } else {
+            None
+        };
         let fallbacks = PositionTryFallbacks::parse(context, input)?;
         Ok(expanded! {
-            position_try_order: order,
+            position_try_order: order.unwrap_or(PositionTryOrder::normal()),
             position_try_fallbacks: fallbacks,
         })
     }
 
     impl<'a> ToCss for LonghandsToSerialize<'a> {
         fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
-            if *self.position_try_order != PositionTryOrder::Normal {
-                self.position_try_order.to_css(dest)?;
-                dest.write_char(' ')?;
+            if let Some(o) = self.position_try_order {
+                if *o != PositionTryOrder::Normal {
+                    o.to_css(dest)?;
+                    dest.write_char(' ')?;
+                }
             }
             self.position_try_fallbacks.to_css(dest)
         }

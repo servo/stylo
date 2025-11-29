@@ -301,7 +301,7 @@ ${helpers.predefined_type(
     engines="gecko",
     initial_specified_value="specified::PositionTryOrder::normal()",
     animation_type="discrete",
-    gecko_pref="layout.css.anchor-positioning.enabled",
+    gecko_pref="layout.css.anchor-positioning.position-try-order.enabled",
     spec="https://drafts.csswg.org/css-anchor-position-1/#position-try-order-property",
     affects="layout",
 )}

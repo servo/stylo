@@ -385,7 +385,15 @@ pub trait TShadowRoot: Sized + Copy + Clone + Debug + PartialEq {
 
 /// The element trait, the main abstraction the style crate acts over.
 pub trait TElement:
-    Eq + PartialEq + Debug + Hash + Sized + Copy + Clone + SelectorsElement<Impl = SelectorImpl>
+    Eq
+    + PartialEq
+    + Debug
+    + Hash
+    + Sized
+    + Copy
+    + Clone
+    + SelectorsElement<Impl = SelectorImpl>
+    + AttributeProvider
 {
     /// The concrete node type.
     type ConcreteNode: TNode<ConcreteElement = Self>;
@@ -914,6 +922,22 @@ pub trait TElement:
     /// Compute the damage incurred by the change from the `_old` to `_new`.
     fn compute_layout_damage(_old: &ComputedValues, _new: &ComputedValues) -> RestyleDamage {
         Default::default()
+    }
+}
+
+/// The attribute provider trait
+pub trait AttributeProvider {
+    /// Return the value of the given custom attibute if it exists.
+    fn get_attr(&self, attr: &LocalName) -> Option<String>;
+}
+
+/// A dummy AttributeProvider that returns none to any attribute query.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DummyAttributeProvider;
+
+impl AttributeProvider for DummyAttributeProvider {
+    fn get_attr(&self, _attr: &LocalName) -> Option<String> {
+        None
     }
 }
 

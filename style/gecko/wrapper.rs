@@ -18,7 +18,10 @@ use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::each_relevant_element_hash;
 use crate::context::{QuirksMode, SharedStyleContext, UpdateAnimationsTasks};
 use crate::data::ElementData;
-use crate::dom::{LayoutIterator, NodeInfo, OpaqueNode, TDocument, TElement, TNode, TShadowRoot};
+use crate::dom::{
+    AttributeProvider, LayoutIterator, NodeInfo, OpaqueNode, TDocument, TElement, TNode,
+    TShadowRoot,
+};
 use crate::gecko::selector_parser::{NonTSPseudoClass, PseudoElement, SelectorImpl};
 use crate::gecko::snapshot_helpers;
 use crate::gecko_bindings::bindings;
@@ -71,6 +74,7 @@ use app_units::Au;
 use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 use dom::{DocumentState, ElementState};
 use euclid::default::Size2D;
+use nsstring::nsString;
 use rustc_hash::FxHashMap;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::{BloomFilter, BLOOM_HASH_MASK};
@@ -1814,6 +1818,19 @@ impl<'le> TElement for GeckoElement<'le> {
             ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING
         } else {
             ElementSelectorFlags::empty()
+        }
+    }
+}
+
+impl<'le> AttributeProvider for GeckoElement<'le> {
+    fn get_attr(&self, attr: &LocalName) -> Option<String> {
+        //TODO(bug 2003334): Avoid unnecessary string copies/conversions here.
+        let mut result = nsString::new();
+
+        if unsafe { bindings::Gecko_LookupAttrValue(self.0, attr.0.as_ptr(), &mut *result) } {
+            Some(result.to_string())
+        } else {
+            None
         }
     }
 }

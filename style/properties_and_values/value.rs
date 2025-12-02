@@ -12,14 +12,17 @@ use super::{
         data_type::DataType, Component as SyntaxComponent, ComponentName, Descriptor, Multiplier,
     },
 };
-use crate::custom_properties::ComputedValue as ComputedPropertyValue;
-use crate::parser::{Parse, ParserContext};
 use crate::properties;
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
 use crate::values::{
     animated::{self, Animate, Procedure},
     computed::{self, ToComputedValue},
     specified, CustomIdent,
+};
+use crate::custom_properties::ComputedValue as ComputedPropertyValue;
+use crate::{
+    dom::AttributeProvider,
+    parser::{Parse, ParserContext},
 };
 use cssparser::{BasicParseErrorKind, ParseErrorKind, Parser as CSSParser, TokenSerializationType};
 use selectors::matching::QuirksMode;
@@ -614,6 +617,7 @@ impl CustomAnimatedValue {
         declaration: &properties::CustomDeclaration,
         context: &mut computed::Context,
         _initial: &properties::ComputedValues,
+        _attr_provider: &dyn AttributeProvider,
     ) -> Option<Self> {
         let computed_value = match declaration.value {
             properties::CustomDeclarationValue::Unparsed(ref value) => {

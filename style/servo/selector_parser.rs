@@ -67,6 +67,9 @@ pub enum PseudoElement {
     ColorSwatch,
     FileSelectorButton,
     Placeholder,
+    ServoRangeProgress,
+    ServoRangeThumb,
+    ServoRangeTrack,
 
     // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
     ServoTextControlInnerContainer,
@@ -102,6 +105,9 @@ impl ToCss for PseudoElement {
             ColorSwatch => "::color-swatch",
             FileSelectorButton => "::file-selector-button",
             Placeholder => "::placeholder",
+            ServoRangeProgress => "::-servo-range-progress",
+            ServoRangeTrack => "::-servo-range-track",
+            ServoRangeThumb => "::-servo-range-thumb",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoAnonymousBox => "::-servo-anonymous-box",
@@ -255,6 +261,9 @@ impl PseudoElement {
             | PseudoElement::Marker
             | PseudoElement::Placeholder
             | PseudoElement::DetailsContent
+            | PseudoElement::ServoRangeProgress
+            | PseudoElement::ServoRangeThumb
+            | PseudoElement::ServoRangeTrack
             | PseudoElement::ServoTextControlInnerContainer
             | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
             PseudoElement::ServoAnonymousBox
@@ -691,6 +700,24 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 ServoTextControlInnerEditor
+            },
+            "-servo-range-progress" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoRangeProgress
+            },
+            "-servo-range-thumb" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoRangeThumb
+            },
+            "-servo-range-track" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoRangeTrack
             },
             "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {

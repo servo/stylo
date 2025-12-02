@@ -574,22 +574,17 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
 
     /// If a <fieldset> has grid/flex display type, we need to inherit
     /// this type into its ::-moz-fieldset-content anonymous box.
-    ///
-    /// NOTE(emilio): We don't need to handle the display change for this case
-    /// in matching.rs because anonymous box restyling works separately to the
-    /// normal cascading process.
     #[cfg(feature = "gecko")]
-    fn adjust_for_fieldset_content(&mut self, layout_parent_style: &ComputedValues) {
+    fn adjust_for_fieldset_content(&mut self) {
         use crate::selector_parser::PseudoElement;
-
         if self.style.pseudo != Some(&PseudoElement::FieldsetContent) {
             return;
         }
-
-        // TODO We actually want style from parent rather than layout
-        // parent, so that this fixup doesn't happen incorrectly when
-        // when <fieldset> has "display: contents".
-        let parent_display = layout_parent_style.get_box().clone_display();
+        let parent_display = self.style.get_parent_box().clone_display();
+        debug_assert!(
+            !parent_display.is_contents(),
+            "How did we create a fieldset-content box with display: contents?"
+        );
         let new_display = match parent_display {
             Display::Flex | Display::InlineFlex => Some(Display::Flex),
             Display::Grid | Display::InlineGrid => Some(Display::Grid),
@@ -623,11 +618,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     }
 
     #[cfg(feature = "gecko")]
-    fn should_suppress_linebreak<E>(
-        &self,
-        layout_parent_style: &ComputedValues,
-        element: Option<E>,
-    ) -> bool
+    fn should_suppress_linebreak<E>(&self, element: Option<E>) -> bool
     where
         E: TElement,
     {
@@ -635,14 +626,15 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         if self.style.is_floating() || self.style.is_absolutely_positioned() {
             return false;
         }
-        let parent_display = layout_parent_style.get_box().clone_display();
-        if layout_parent_style
-            .flags
+        let parent_display = self.style.get_parent_box().clone_display();
+        if self
+            .style
+            .get_parent_flags()
             .contains(ComputedValueFlags::SHOULD_SUPPRESS_LINEBREAK)
         {
             // Line break suppression is propagated to any children of
-            // line participants.
-            if parent_display.is_line_participant() {
+            // line participants, and across display: contents boundaries.
+            if parent_display.is_line_participant() || parent_display.is_contents() {
                 return true;
             }
         }
@@ -675,7 +667,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     /// * suppress border and padding for ruby level containers,
     /// * correct unicode-bidi.
     #[cfg(feature = "gecko")]
-    fn adjust_for_ruby<E>(&mut self, layout_parent_style: &ComputedValues, element: Option<E>)
+    fn adjust_for_ruby<E>(&mut self, element: Option<E>)
     where
         E: TElement,
     {
@@ -683,7 +675,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
 
         let self_display = self.style.get_box().clone_display();
         // Check whether line break should be suppressed for this element.
-        if self.should_suppress_linebreak(layout_parent_style, element) {
+        if self.should_suppress_linebreak(element) {
             self.style
                 .add_flags(ComputedValueFlags::SHOULD_SUPPRESS_LINEBREAK);
             // Inlinify the display type if allowed.
@@ -1073,7 +1065,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         #[cfg(feature = "gecko")]
         {
             self.adjust_for_prohibited_display_contents(element);
-            self.adjust_for_fieldset_content(layout_parent_style);
+            self.adjust_for_fieldset_content();
             // NOTE: It's important that this happens before
             // adjust_for_overflow.
             self.adjust_for_text_control_editing_root();
@@ -1094,7 +1086,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         self.adjust_for_writing_mode(layout_parent_style);
         #[cfg(feature = "gecko")]
         {
-            self.adjust_for_ruby(layout_parent_style, element);
+            self.adjust_for_ruby(element);
             self.adjust_for_appearance(element);
             self.adjust_for_marker_pseudo();
         }

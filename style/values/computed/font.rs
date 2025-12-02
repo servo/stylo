@@ -188,12 +188,18 @@ impl FontWeight {
         value: 600 << FONT_WEIGHT_FRACTION_BITS,
     });
 
+    /// The threshold above which CSS font matching prefers bolder faces
+    /// over lighter ones.
+    pub const PREFER_BOLD_THRESHOLD: FontWeight = FontWeight(FontWeightFixedPoint {
+        value: 500 << FONT_WEIGHT_FRACTION_BITS,
+    });
+
     /// Returns the `normal` keyword value.
     pub fn normal() -> Self {
         Self::NORMAL
     }
 
-    /// Weither this weight is bold
+    /// Whether this weight is bold
     pub fn is_bold(&self) -> bool {
         *self >= Self::BOLD_THRESHOLD
     }

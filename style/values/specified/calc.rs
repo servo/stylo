@@ -297,11 +297,15 @@ impl generic::CalcNodeLeaf for Leaf {
             Self::Length(ref l) => match *l {
                 NoCalcLength::Absolute(..) => SortKey::Px,
                 NoCalcLength::FontRelative(ref relative) => match *relative {
-                    FontRelativeLength::Ch(..) => SortKey::Ch,
                     FontRelativeLength::Em(..) => SortKey::Em,
                     FontRelativeLength::Ex(..) => SortKey::Ex,
+                    FontRelativeLength::Rex(..) => SortKey::Rex,
+                    FontRelativeLength::Ch(..) => SortKey::Ch,
+                    FontRelativeLength::Rch(..) => SortKey::Rch,
                     FontRelativeLength::Cap(..) => SortKey::Cap,
+                    FontRelativeLength::Rcap(..) => SortKey::Rcap,
                     FontRelativeLength::Ic(..) => SortKey::Ic,
+                    FontRelativeLength::Ric(..) => SortKey::Ric,
                     FontRelativeLength::Rem(..) => SortKey::Rem,
                     FontRelativeLength::Lh(..) => SortKey::Lh,
                     FontRelativeLength::Rlh(..) => SortKey::Rlh,

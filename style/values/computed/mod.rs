@@ -399,7 +399,7 @@ impl<'a> Context<'a> {
             flags |= QueryFontMetricsFlags::USE_USER_FONT_SET
         }
         self.device()
-            .query_font_metrics(vertical, font, size, flags)
+            .query_font_metrics(vertical, font, size, flags, /* track_changes = */ true)
     }
 
     /// The current viewport size, used to resolve viewport units.

@@ -28,6 +28,7 @@ use crate::style_resolver::{PseudoElementResolution, ResolvedElementStyles};
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::RuleInclusion;
 use crate::traversal_flags::TraversalFlags;
+use crate::values::computed::font::QueryFontMetricsFlags;
 use servo_arc::{Arc, ArcBorrow};
 
 /// Represents the result of comparing an element's old and new style.
@@ -969,30 +970,6 @@ pub trait MatchMethods: TElement {
             let new_font_size = new_primary_style.get_font().clone_font_size();
             let old_font_size = old_style.map(|s| s.get_font().clone_font_size());
 
-            if old_font_size != Some(new_font_size) {
-                if is_root {
-                    debug_assert!(self.owner_doc_matches_for_testing(device));
-                    let size = new_font_size.computed_size();
-                    device.set_root_font_size(new_primary_style.effective_zoom.unzoom(size.px()));
-                    if device.used_root_font_size() {
-                        // If the root font-size changed since last time, and something
-                        // in the document did use rem units, ensure we recascade the
-                        // entire tree.
-                        restyle_requirement = ChildRestyleRequirement::MustCascadeDescendants;
-                    }
-                }
-
-                if is_container && old_font_size.is_some() {
-                    // TODO(emilio): Maybe only do this if we were matched
-                    // against relative font sizes?
-                    // Also, maybe we should do this as well for font-family /
-                    // etc changes (for ex/ch/ic units to work correctly)? We
-                    // should probably do the optimization mentioned above if
-                    // so.
-                    restyle_requirement = ChildRestyleRequirement::MustMatchDescendants;
-                }
-            }
-
             // For line-height, we want the fully resolved value, as `normal` also depends on other
             // font properties.
             let new_line_height = device
@@ -1008,25 +985,86 @@ pub trait MatchMethods: TElement {
                     .0
             });
 
-            if old_line_height != Some(new_line_height) {
-                if is_root {
-                    debug_assert!(self.owner_doc_matches_for_testing(device));
+            if is_root {
+                debug_assert!(self.owner_doc_matches_for_testing(device));
+
+                // Update root font size for rem units
+                if old_font_size != Some(new_font_size) {
+                    let size = new_font_size.computed_size();
+                    device.set_root_font_size(new_primary_style.effective_zoom.unzoom(size.px()));
+                    if device.used_root_font_size() {
+                        // If the root font-size changed since last time, and something
+                        // in the document did use rem units, ensure we recascade the
+                        // entire tree.
+                        restyle_requirement = ChildRestyleRequirement::MustCascadeDescendants;
+                    }
+                }
+
+                // Update root line height for rlh units
+                if old_line_height != Some(new_line_height) {
                     device.set_root_line_height(
                         new_primary_style
                             .effective_zoom
                             .unzoom(new_line_height.px()),
                     );
                     if device.used_root_line_height() {
-                        restyle_requirement = std::cmp::max(
-                            restyle_requirement,
-                            ChildRestyleRequirement::MustCascadeDescendants,
-                        );
+                        restyle_requirement = ChildRestyleRequirement::MustCascadeDescendants;
                     }
                 }
 
-                if is_container && old_line_height.is_some() {
-                    restyle_requirement = ChildRestyleRequirement::MustMatchDescendants;
+                // Update root font metrics for rcap, rch, rex, ric units
+                let new_font_metrics = device.query_font_metrics(
+                    new_primary_style.writing_mode.is_upright(),
+                    &new_primary_style.get_font(),
+                    new_font_size.computed_size(),
+                    QueryFontMetricsFlags::USE_USER_FONT_SET
+                        | QueryFontMetricsFlags::NEEDS_CH
+                        | QueryFontMetricsFlags::NEEDS_IC,
+                    /* track_usage = */ false,
+                );
+                let mut root_font_metrics_changed = false;
+                root_font_metrics_changed |= device.set_root_font_metrics_ex(
+                    new_primary_style
+                        .effective_zoom
+                        .unzoom(new_font_metrics.x_height_or_default(&new_font_size).px()),
+                );
+                root_font_metrics_changed |= device.set_root_font_metrics_ch(
+                    new_primary_style.effective_zoom.unzoom(
+                        new_font_metrics
+                            .zero_advance_measure_or_default(
+                                &new_font_size,
+                                new_primary_style.writing_mode.is_upright(),
+                            )
+                            .px(),
+                    ),
+                );
+                root_font_metrics_changed |= device.set_root_font_metrics_cap(
+                    new_primary_style
+                        .effective_zoom
+                        .unzoom(new_font_metrics.cap_height_or_default().px()),
+                );
+                root_font_metrics_changed |= device.set_root_font_metrics_ic(
+                    new_primary_style
+                        .effective_zoom
+                        .unzoom(new_font_metrics.ic_width_or_default(&new_font_size).px()),
+                );
+
+                if device.used_root_font_metrics() && root_font_metrics_changed {
+                    restyle_requirement = ChildRestyleRequirement::MustCascadeDescendants;
                 }
+            }
+
+            if is_container
+                && (old_font_size.is_some_and(|old| old != new_font_size)
+                    || old_line_height.is_some_and(|old| old != new_line_height))
+            {
+                // TODO(emilio): Maybe only do this if we were matched
+                // against relative font sizes?
+                // Also, maybe we should do this as well for font-family /
+                // etc changes (for ex/ch/ic units to work correctly)? We
+                // should probably do the optimization mentioned above if
+                // so.
+                restyle_requirement = ChildRestyleRequirement::MustMatchDescendants;
             }
         }
 

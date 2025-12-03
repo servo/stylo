@@ -415,7 +415,12 @@ impl NonCustomReferences {
         if value.eq_ignore_ascii_case(FontRelativeLength::RLH) {
             return Self::ROOT_FONT_UNITS | Self::ROOT_LH_UNITS;
         }
-        if value.eq_ignore_ascii_case(FontRelativeLength::REM) {
+        if value.eq_ignore_ascii_case(FontRelativeLength::REM)
+            || value.eq_ignore_ascii_case(FontRelativeLength::REX)
+            || value.eq_ignore_ascii_case(FontRelativeLength::RCH)
+            || value.eq_ignore_ascii_case(FontRelativeLength::RCAP)
+            || value.eq_ignore_ascii_case(FontRelativeLength::RIC)
+        {
             return Self::ROOT_FONT_UNITS;
         }
         Self::empty()

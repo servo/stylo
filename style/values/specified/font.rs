@@ -784,6 +784,18 @@ const LARGER_FONT_SIZE_RATIO: f32 = 1.2;
 pub const FONT_MEDIUM_PX: f32 = 16.0;
 /// The default line height.
 pub const FONT_MEDIUM_LINE_HEIGHT_PX: f32 = FONT_MEDIUM_PX * 1.2;
+/// The default ex height -- https://drafts.csswg.org/css-values/#ex
+/// > In the cases where it is impossible or impractical to determine the x-height, a value of 0.5em must be assumed
+pub const FONT_MEDIUM_EX_PX: f32 = FONT_MEDIUM_PX * 0.5;
+/// The default cap height -- https://drafts.csswg.org/css-values/#cap
+/// > In the cases where it is impossible or impractical to determine the cap-height, the font’s ascent must be used
+pub const FONT_MEDIUM_CAP_PX: f32 = FONT_MEDIUM_PX;
+/// The default advance measure -- https://drafts.csswg.org/css-values/#ch
+/// > Thus, the ch unit falls back to 0.5em in the general case
+pub const FONT_MEDIUM_CH_PX: f32 = FONT_MEDIUM_PX * 0.5;
+/// The default idographic advance measure -- https://drafts.csswg.org/css-values/#ic
+/// > In the cases where it is impossible or impractical to determine the ideographic advance measure, it must be assumed to be 1em
+pub const FONT_MEDIUM_IC_PX: f32 = FONT_MEDIUM_PX;
 
 impl FontSizeKeyword {
     #[inline]

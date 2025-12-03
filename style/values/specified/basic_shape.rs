@@ -9,7 +9,9 @@
 
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::basic_shape::InsetRect as ComputedInsetRect;
-use crate::values::computed::{Context, ToComputedValue};
+use crate::values::computed::{
+    Context, LengthPercentage as ComputedLengthPercentage, ToComputedValue,
+};
 use crate::values::generics::basic_shape as generic;
 use crate::values::generics::basic_shape::{Path, PolygonCoord};
 use crate::values::generics::position::GenericPositionOrAuto;
@@ -22,6 +24,7 @@ use crate::values::specified::position::{Position, Side};
 use crate::values::specified::url::SpecifiedUrl;
 use crate::values::specified::PositionComponent;
 use crate::values::specified::{LengthPercentage, NonNegativeLengthPercentage, SVGPathData};
+use crate::values::CSSFloat;
 use crate::Zero;
 use cssparser::Parser;
 use std::fmt::{self, Write};
@@ -753,7 +756,7 @@ impl generic::Shape<Angle, Position, LengthPercentage> {
                 // from the top-left corner of the reference
                 i.expect_ident_matching("from")?;
                 Ok(ShapeCommand::Move {
-                    point: generic::CommandEndPoint::parse(context, i, generic::ByTo::To)?,
+                    point: generic::CommandEndPoint::parse_endpoint_as_abs(context, i)?,
                 })
             } else {
                 // The further path data commands.
@@ -779,7 +782,7 @@ impl Parse for ShapeCommand {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
         use crate::values::generics::basic_shape::{
-            ArcRadii, ArcSize, ArcSweep, ByTo, CommandEndPoint, ControlPoint,
+            ArcRadii, ArcSize, ArcSweep, AxisEndPoint, CommandEndPoint, ControlPoint,
         };
 
         // <shape-command> = <move-command> | <line-command> | <hv-line-command> |
@@ -787,45 +790,27 @@ impl Parse for ShapeCommand {
         Ok(try_match_ident_ignore_ascii_case! { input,
             "close" => Self::Close,
             "move" => {
-                let by_to = ByTo::parse(input)?;
-                let point = CommandEndPoint::parse(context, input, by_to)?;
+                let point = CommandEndPoint::parse(context, input)?;
                 Self::Move { point }
             },
             "line" => {
-                let by_to = ByTo::parse(input)?;
-                let point = CommandEndPoint::parse(context, input, by_to)?;
+                let point = CommandEndPoint::parse(context, input)?;
                 Self::Line { point }
             },
             "hline" => {
-                let by_to = ByTo::parse(input)?;
-                // FIXME(Bug 1993311): Using parse_to_position here is incomplete, we should
-                // parse x-start and x-end too. Furthermore, it currently can incorrectly
-                // parse 2 offsets as valid (i.e. hline to left 30% works), and similarly
-                // incorrectly parse top or bottom as valid values.
-                let x = if by_to.is_abs() {
-                    convert_to_length_percentage(Position::parse(context, input)?.horizontal)
-                } else {
-                    LengthPercentage::parse(context, input)?
-                };
-                Self::HLine { by_to, x }
+                let x = AxisEndPoint::parse_hline(context, input)?;
+                Self::HLine { x }
             },
             "vline" => {
-                let by_to = ByTo::parse(input)?;
-                // FIXME(Bug 1993311): Should parse y-start and y-end too.
-                let y = if by_to.is_abs() {
-                    convert_to_length_percentage(Position::parse(context, input)?.horizontal)
-                } else {
-                    LengthPercentage::parse(context, input)?
-                };
-                Self::VLine { by_to, y }
+                let y = AxisEndPoint::parse_vline(context, input)?;
+                Self::VLine { y }
             },
             "curve" => {
-                let by_to = ByTo::parse(input)?;
-                let point = CommandEndPoint::parse(context, input, by_to)?;
+                let point = CommandEndPoint::parse(context, input)?;
                 input.expect_ident_matching("with")?;
-                let control1 = ControlPoint::parse(context, input, by_to)?;
-                if input.expect_delim('/').is_ok() {
-                    let control2 = ControlPoint::parse(context, input, by_to)?;
+                let control1 = ControlPoint::parse(context, input, point.is_abs())?;
+                if input.try_parse(|i| i.expect_delim('/')).is_ok() {
+                    let control2 = ControlPoint::parse(context, input, point.is_abs())?;
                     Self::CubicCurve {
                         point,
                         control1,
@@ -839,10 +824,9 @@ impl Parse for ShapeCommand {
                 }
             },
             "smooth" => {
-                let by_to = ByTo::parse(input)?;
-                let point = CommandEndPoint::parse(context, input, by_to)?;
+                let point = CommandEndPoint::parse(context, input)?;
                 if input.try_parse(|i| i.expect_ident_matching("with")).is_ok() {
-                    let control2 = ControlPoint::parse(context, input, by_to)?;
+                    let control2 = ControlPoint::parse(context, input, point.is_abs())?;
                     Self::SmoothCubic {
                         point,
                         control2,
@@ -852,8 +836,7 @@ impl Parse for ShapeCommand {
                 }
             },
             "arc" => {
-                let by_to = ByTo::parse(input)?;
-                let point = CommandEndPoint::parse(context, input, by_to)?;
+                let point = CommandEndPoint::parse(context, input)?;
                 input.expect_ident_matching("of")?;
                 let rx = LengthPercentage::parse(context, input)?;
                 let ry = input.try_parse(|i| LengthPercentage::parse(context, i)).ok();
@@ -913,12 +896,12 @@ impl generic::ControlPoint<Position, LengthPercentage> {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
-        by_to: generic::ByTo,
+        is_end_point_abs: bool,
     ) -> Result<Self, ParseError<'i>> {
         let coord = input.try_parse(|i| generic::CoordinatePair::parse(context, i));
 
         // Parse <position>
-        if by_to.is_abs() && coord.is_err() {
+        if is_end_point_abs && coord.is_err() {
             let pos = Position::parse(context, input)?;
             return Ok(Self::Absolute(pos));
         }
@@ -936,19 +919,142 @@ impl generic::ControlPoint<Position, LengthPercentage> {
     }
 }
 
-impl generic::CommandEndPoint<Position, LengthPercentage> {
+impl Parse for generic::CommandEndPoint<Position, LengthPercentage> {
     /// Parse <command-end-point> = to <position> | by <coordinate-pair>
-    pub fn parse<'i, 't>(
+    fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
-        by_to: generic::ByTo,
     ) -> Result<Self, ParseError<'i>> {
-        if by_to.is_abs() {
-            let point = Position::parse(context, input)?;
-            Ok(Self::ToPosition(point))
+        if ByTo::parse(input)?.is_abs() {
+            Self::parse_endpoint_as_abs(context, input)
         } else {
             let point = generic::CoordinatePair::parse(context, input)?;
             Ok(Self::ByCoordinate(point))
         }
+    }
+}
+
+impl generic::CommandEndPoint<Position, LengthPercentage> {
+    /// Parse <command-end-point> = to <position>
+    fn parse_endpoint_as_abs<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        let point = Position::parse(context, input)?;
+        Ok(generic::CommandEndPoint::ToPosition(point))
+    }
+}
+
+impl generic::AxisEndPoint<LengthPercentage> {
+    /// Parse <horizontal-line-command>
+    pub fn parse_hline<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        use cssparser::Token;
+        use generic::{AxisPosition, AxisPositionKeyword};
+
+        // If the command is relative, parse for <length-percentage> only.
+        if !ByTo::parse(input)?.is_abs() {
+            return Ok(Self::ByCoordinate(LengthPercentage::parse(context, input)?));
+        }
+
+        let x = AxisPosition::parse(context, input)?;
+        if let AxisPosition::Keyword(
+            _word @ (AxisPositionKeyword::Top
+            | AxisPositionKeyword::Bottom
+            | AxisPositionKeyword::YStart
+            | AxisPositionKeyword::YEnd),
+        ) = &x
+        {
+            let location = input.current_source_location();
+            let token = Token::Ident(x.to_css_string().into());
+            return Err(location.new_unexpected_token_error(token));
+        }
+        Ok(Self::ToPosition(x))
+    }
+
+    /// Parse <vertical-line-command>
+    pub fn parse_vline<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        use cssparser::Token;
+        use generic::{AxisPosition, AxisPositionKeyword};
+
+        // If the command is relative, parse for <length-percentage> only.
+        if !ByTo::parse(input)?.is_abs() {
+            return Ok(Self::ByCoordinate(LengthPercentage::parse(context, input)?));
+        }
+
+        let y = AxisPosition::parse(context, input)?;
+        if let AxisPosition::Keyword(
+            _word @ (AxisPositionKeyword::Left
+            | AxisPositionKeyword::Right
+            | AxisPositionKeyword::XStart
+            | AxisPositionKeyword::XEnd),
+        ) = &y
+        {
+            // Return an error if we parsed a different keyword.
+            let location = input.current_source_location();
+            let token = Token::Ident(y.to_css_string().into());
+            return Err(location.new_unexpected_token_error(token));
+        }
+        Ok(Self::ToPosition(y))
+    }
+}
+
+impl ToComputedValue for generic::AxisPosition<LengthPercentage> {
+    type ComputedValue = generic::AxisPosition<ComputedLengthPercentage>;
+
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
+        match self {
+            Self::LengthPercent(lp) => {
+                Self::ComputedValue::LengthPercent(lp.to_computed_value(context))
+            },
+            Self::Keyword(word) => {
+                let lp = LengthPercentage::Percentage(word.as_percentage());
+                Self::ComputedValue::LengthPercent(lp.to_computed_value(context))
+            },
+        }
+    }
+
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        match computed {
+            Self::ComputedValue::LengthPercent(lp) => {
+                Self::LengthPercent(LengthPercentage::from_computed_value(lp))
+            },
+            _ => unreachable!("Invalid state: computed value cannot be a keyword."),
+        }
+    }
+}
+
+impl ToComputedValue for generic::AxisPosition<CSSFloat> {
+    type ComputedValue = Self;
+
+    fn to_computed_value(&self, _context: &Context) -> Self {
+        *self
+    }
+
+    fn from_computed_value(computed: &Self) -> Self {
+        *computed
+    }
+}
+
+/// This determines whether the command is absolutely or relatively positioned.
+/// https://drafts.csswg.org/css-shapes-1/#typedef-shape-command-end-point
+#[derive(Clone, Copy, Debug, Parse, PartialEq)]
+enum ByTo {
+    /// Command is relative to the command’s starting point.
+    By,
+    /// Command is relative to the top-left corner of the reference box.
+    To,
+}
+
+impl ByTo {
+    /// Return true if it is absolute, i.e. it is To.
+    #[inline]
+    pub fn is_abs(&self) -> bool {
+        matches!(self, ByTo::To)
     }
 }

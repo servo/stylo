@@ -62,6 +62,9 @@ pub type RelativeControlPoint = generic::RelativeControlPoint<LengthPercentage>;
 /// The computed value of 'CommandEndPoint'.
 pub type CommandEndPoint = generic::CommandEndPoint<Position, LengthPercentage>;
 
+/// The computed value of hline and vline's endpoint.
+pub type AxisEndPoint = generic::AxisEndPoint<LengthPercentage>;
+
 /// Animate from `Shape` to `Path`, and vice versa.
 macro_rules! animate_shape {
     (
@@ -144,7 +147,6 @@ impl Animate for PathOrShapeFunction {
 impl From<&PathCommand> for ShapeCommand {
     #[inline]
     fn from(path: &PathCommand) -> Self {
-        use crate::values::computed::CSSPixelLength;
         match path {
             &PathCommand::Close => Self::Close,
             &PathCommand::Move { ref point } => Self::Move {
@@ -153,14 +155,8 @@ impl From<&PathCommand> for ShapeCommand {
             &PathCommand::Line { ref point } => Self::Move {
                 point: point.into(),
             },
-            &PathCommand::HLine { by_to, x } => Self::HLine {
-                by_to,
-                x: LengthPercentage::new_length(CSSPixelLength::new(x)),
-            },
-            &PathCommand::VLine { by_to, y } => Self::VLine {
-                by_to,
-                y: LengthPercentage::new_length(CSSPixelLength::new(y)),
-            },
+            &PathCommand::HLine { ref x } => Self::HLine { x: x.into() },
+            &PathCommand::VLine { ref y } => Self::VLine { y: y.into() },
             &PathCommand::CubicCurve {
                 ref point,
                 ref control1,
@@ -232,6 +228,25 @@ impl From<&generic::CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>> for Comm
         match p {
             generic::CommandEndPoint::ToPosition(pos) => Self::ToPosition(pos.into()),
             generic::CommandEndPoint::ByCoordinate(coord) => Self::ByCoordinate(coord.into()),
+        }
+    }
+}
+
+impl From<&generic::AxisEndPoint<CSSFloat>> for AxisEndPoint {
+    #[inline]
+    fn from(p: &generic::AxisEndPoint<CSSFloat>) -> Self {
+        use crate::values::computed::CSSPixelLength;
+        use generic::AxisPosition;
+        match p {
+            generic::AxisEndPoint::ToPosition(AxisPosition::LengthPercent(lp)) => Self::ToPosition(
+                AxisPosition::LengthPercent(LengthPercentage::new_length(CSSPixelLength::new(*lp))),
+            ),
+            generic::AxisEndPoint::ToPosition(AxisPosition::Keyword(_)) => {
+                unreachable!("Invalid state: SVG path commands cannot contain a keyword.")
+            },
+            generic::AxisEndPoint::ByCoordinate(pos) => {
+                Self::ByCoordinate(LengthPercentage::new_length(CSSPixelLength::new(*pos)))
+            },
         }
     }
 }

@@ -660,22 +660,12 @@ impl<'le> GeckoElement<'le> {
         self.may_have_animations() && unsafe { Gecko_ElementHasAnimations(self.0) }
     }
 
-    /// Check if mImpl contains a real pointer (not a bloom filter).
-    #[inline(always)]
-    fn has_attr_impl(&self) -> bool {
-        let ptr = self.0.mAttrs.mImpl.mPtr as usize;
-        ptr != 0 && (ptr & 1) == 0
-    }
-
     #[inline(always)]
     fn attrs(&self) -> &[structs::AttrArray_InternalAttr] {
         unsafe {
-            if !self.has_attr_impl() {
-                return &[];
-            }
             match self.0.mAttrs.mImpl.mPtr.as_ref() {
                 Some(attrs) => attrs.mBuffer.as_slice(attrs.mAttrCount as usize),
-                None => &[],
+                None => return &[],
             }
         }
     }
@@ -1100,11 +1090,6 @@ impl<'le> TElement for GeckoElement<'le> {
     #[inline]
     fn is_xul_element(&self) -> bool {
         self.namespace_id() == structs::root::kNameSpaceID_XUL as i32
-    }
-
-    #[inline]
-    fn subtree_bloom_filter(&self) -> u64 {
-        unsafe { bindings::Gecko_Element_GetSubtreeBloomFilter(self.0) }
     }
 
     #[inline]

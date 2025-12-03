@@ -237,56 +237,26 @@ where
     fn invalidated_descendants(&mut self, _e: E, _child: E) {}
 }
 
-enum Operation {
-    Reject,
-    Accept,
-    RejectSkippingChildren,
-}
-
-impl From<bool> for Operation {
-    #[inline(always)]
-    fn from(matches: bool) -> Self {
-        if matches {
-            Operation::Accept
-        } else {
-            Operation::Reject
-        }
-    }
-}
-
 fn collect_all_elements<E, Q, F>(root: E::ConcreteNode, results: &mut Q::Output, mut filter: F)
 where
     E: TElement,
     Q: SelectorQuery<E>,
-    F: FnMut(E) -> Operation,
+    F: FnMut(E) -> bool,
 {
-    let mut iter = root.dom_descendants();
-    let mut cur = iter.next();
-    while let Some(node) = cur {
+    for node in root.dom_descendants() {
         let element = match node.as_element() {
             Some(e) => e,
-            None => {
-                cur = iter.next();
-                continue;
-            },
+            None => continue,
         };
-        match filter(element) {
-            // Element matches - add to results and continue traversing its children.
-            Operation::Accept => {
-                Q::append_element(results, element);
-                if Q::should_stop_after_first_match() {
-                    return;
-                }
-            },
-            // Element doesn't match - skip it but continue traversing its children.
-            Operation::Reject => {},
-            // Element doesn't match and skip entire subtree.
-            Operation::RejectSkippingChildren => {
-                cur = iter.next_skipping_children();
-                continue;
-            },
+
+        if !filter(element) {
+            continue;
         }
-        cur = iter.next();
+
+        Q::append_element(results, element);
+        if Q::should_stop_after_first_match() {
+            return;
+        }
     }
 }
 
@@ -374,7 +344,7 @@ fn collect_elements_with_id<E, Q, F>(
         Ok(elements) => elements,
         Err(()) => {
             collect_all_elements::<E, Q, _>(root, results, |e| {
-                Operation::from(e.has_id(id, class_and_id_case_sensitivity) && filter(e))
+                e.has_id(id, class_and_id_case_sensitivity) && filter(e)
             });
 
             return;
@@ -479,68 +449,26 @@ where
 {
     match *component {
         Component::ExplicitUniversalType => {
-            collect_all_elements::<E, Q, _>(root, results, |_| Operation::Accept)
+            collect_all_elements::<E, Q, _>(root, results, |_| true)
         },
-        Component::Class(ref class) => {
-            // Bloom filter can only be used when case sensitive.
-            let bloom_hash = if class_and_id_case_sensitivity == CaseSensitivity::CaseSensitive {
-                Some(E::hash_for_bloom_filter(class.0.get_hash()))
-            } else {
-                None
-            };
-
-            collect_all_elements::<E, Q, _>(root, results, |element| {
-                if bloom_hash.is_some_and(|hash| !element.bloom_may_have_hash(hash)) {
-                    return Operation::RejectSkippingChildren;
-                }
-                Operation::from(element.has_class(class, class_and_id_case_sensitivity))
-            });
-        },
+        Component::Class(ref class) => collect_all_elements::<E, Q, _>(root, results, |element| {
+            element.has_class(class, class_and_id_case_sensitivity)
+        }),
         Component::LocalName(ref local_name) => {
             collect_all_elements::<E, Q, _>(root, results, |element| {
-                Operation::from(local_name_matches(element, local_name))
+                local_name_matches(element, local_name)
             })
         },
         Component::AttributeInNoNamespaceExists {
             ref local_name,
             ref local_name_lower,
-        } => {
-            // For HTML elements: C++ hashes lowercase
-            // For XUL/SVG/MathML elements: C++ hashes original case
-            let hash_original = E::hash_for_bloom_filter(local_name.0.get_hash());
-            let hash_lower = if local_name.0 == local_name_lower.0 {
-                hash_original
-            } else {
-                E::hash_for_bloom_filter(local_name_lower.0.get_hash())
-            };
-
-            collect_all_elements::<E, Q, _>(root, results, |element| {
-                // Check bloom filter first
-                let bloom_found_hash = if hash_original == hash_lower
-                    || !element.as_node().owner_doc().is_html_document()
-                {
-                    element.bloom_may_have_hash(hash_original)
-                } else if element.is_html_element_in_html_document() {
-                    // HTML elements store lowercase hashes
-                    element.bloom_may_have_hash(hash_lower)
-                } else {
-                    // Non-HTML elements in HTML documents might have HTML descendants
-                    // with lowercase-only hashes, so check both
-                    element.bloom_may_have_hash(hash_original)
-                        || element.bloom_may_have_hash(hash_lower)
-                };
-
-                if !bloom_found_hash {
-                    return Operation::RejectSkippingChildren;
-                }
-
-                Operation::from(element.has_attr_in_no_namespace(matching::select_name(
-                    &element,
-                    local_name,
-                    local_name_lower,
-                )))
-            });
-        },
+        } => collect_all_elements::<E, Q, _>(root, results, |element| {
+            element.has_attr_in_no_namespace(matching::select_name(
+                &element,
+                local_name,
+                local_name_lower,
+            ))
+        }),
         Component::AttributeInNoNamespace {
             ref local_name,
             ref value,
@@ -549,15 +477,8 @@ where
         } => {
             let empty_namespace = selectors::parser::namespace_empty_string::<E::Impl>();
             let namespace_constraint = NamespaceConstraint::Specific(&empty_namespace);
-
-            // Only use bloom filter to check for attribute name existence.
-            let bloom_hash = E::hash_for_bloom_filter(local_name.0.get_hash());
-
             collect_all_elements::<E, Q, _>(root, results, |element| {
-                if !element.bloom_may_have_hash(bloom_hash) {
-                    return Operation::RejectSkippingChildren;
-                }
-                Operation::from(element.attr_matches(
+                element.attr_matches(
                     &namespace_constraint,
                     local_name,
                     &AttrSelectorOperation::WithValue {
@@ -568,8 +489,8 @@ where
                         ),
                         value,
                     },
-                ))
-            });
+                )
+            })
         },
         ref other => {
             let id = match get_id(other) {
@@ -772,38 +693,20 @@ where
     match simple_filter {
         SimpleFilter::Class(ref class) => {
             collect_all_elements::<E, Q, _>(root, results, |element| {
-                Operation::from(
-                    element.has_class(class, class_and_id_case_sensitivity)
-                        && matching::matches_selector_list(
-                            selector_list,
-                            &element,
-                            matching_context,
-                        ),
-                )
+                element.has_class(class, class_and_id_case_sensitivity)
+                    && matching::matches_selector_list(selector_list, &element, matching_context)
             });
         },
         SimpleFilter::LocalName(ref local_name) => {
             collect_all_elements::<E, Q, _>(root, results, |element| {
-                Operation::from(
-                    local_name_matches(element, local_name)
-                        && matching::matches_selector_list(
-                            selector_list,
-                            &element,
-                            matching_context,
-                        ),
-                )
+                local_name_matches(element, local_name)
+                    && matching::matches_selector_list(selector_list, &element, matching_context)
             });
         },
         SimpleFilter::Attr(ref local_name) => {
             collect_all_elements::<E, Q, _>(root, results, |element| {
-                Operation::from(
-                    has_attr(element, local_name)
-                        && matching::matches_selector_list(
-                            selector_list,
-                            &element,
-                            matching_context,
-                        ),
-                )
+                has_attr(element, local_name)
+                    && matching::matches_selector_list(selector_list, &element, matching_context)
             });
         },
     }
@@ -822,11 +725,7 @@ fn query_selector_slow<E, Q>(
     Q: SelectorQuery<E>,
 {
     collect_all_elements::<E, Q, _>(root, results, |element| {
-        Operation::from(matching::matches_selector_list(
-            selector_list,
-            &element,
-            matching_context,
-        ))
+        matching::matches_selector_list(selector_list, &element, matching_context)
     });
 }
 

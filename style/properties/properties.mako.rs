@@ -2488,7 +2488,7 @@ impl<'a> StyleBuilder<'a> {
     ///
     /// Do _not_ actually call this to construct a style, this should mostly be
     /// used for animations.
-    pub fn for_animation(
+    pub fn for_derived_style(
         device: &'a Device,
         stylist: Option<&'a Stylist>,
         style_to_derive_from: &'a ComputedValues,

@@ -22,8 +22,10 @@ use crate::invalidation::media_queries::{
 };
 use crate::invalidation::stylesheets::RuleChangeKind;
 use crate::media_queries::Device;
-use crate::properties::{self, CascadeMode, ComputedValues, FirstLineReparenting};
-use crate::properties::{AnimationDeclarations, PropertyDeclarationBlock};
+use crate::properties::{
+    self, AnimationDeclarations, CascadeMode, ComputedValues, FirstLineReparenting,
+    PropertyDeclarationBlock, StyleBuilder,
+};
 use crate::properties_and_values::registry::{
     PropertyRegistration, PropertyRegistrationData, ScriptRegistry as CustomPropertyScriptRegistry,
 };
@@ -56,7 +58,7 @@ use crate::stylesheets::{
     PerOriginIter, StylesheetContents, StylesheetInDocument,
 };
 use crate::stylesheets::{CustomMediaEvaluator, CustomMediaMap};
-use crate::values::computed::DashedIdentAndOrTryTactic;
+use crate::values::specified::position::PositionTryFallbacksItem;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
 use crate::values::{computed, AtomIdent};
 use crate::AllocErr;
@@ -1307,11 +1309,26 @@ impl Stylist {
         style: &ComputedValues,
         guards: &StylesheetGuards,
         element: E,
-        name_and_try_tactic: &DashedIdentAndOrTryTactic,
+        fallback_item: &PositionTryFallbacksItem,
     ) -> Option<Arc<ComputedValues>>
     where
         E: TElement,
     {
+        let name_and_try_tactic = match *fallback_item {
+            PositionTryFallbacksItem::PositionArea(area) => {
+                // We don't bother passing the parent_style argument here since
+                // we probably don't need it. If we do, we could wrap this up in
+                // a style_resolver::with_default_parent_styles call, as below.
+                let mut builder =
+                    StyleBuilder::for_derived_style(&self.device, Some(self), style, None);
+                builder.mutate_position().set_position_area(area);
+                return Some(builder.build());
+            },
+            PositionTryFallbacksItem::IdentAndOrTactic(ref name_and_try_tactic) => {
+                name_and_try_tactic
+            },
+        };
+
         let fallback_rule = if !name_and_try_tactic.ident.is_empty() {
             Some(self.lookup_position_try(&name_and_try_tactic.ident.0, element)?)
         } else {

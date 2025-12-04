@@ -898,7 +898,6 @@ impl generic::ControlPoint<Position, LengthPercentage> {
         input: &mut Parser<'i, 't>,
         is_end_point_abs: bool,
     ) -> Result<Self, ParseError<'i>> {
-        use generic::ControlReference;
         let coord = input.try_parse(|i| generic::CoordinatePair::parse(context, i));
 
         // Parse <position>
@@ -909,15 +908,10 @@ impl generic::ControlPoint<Position, LengthPercentage> {
 
         // Parse <relative-control-point> = <coordinate-pair> [from [ start | end | origin ]]?
         let coord = coord?;
-        let mut reference = if is_end_point_abs {
-            ControlReference::Origin
-        } else {
-            ControlReference::Start
-        };
+        let mut reference = generic::ControlReference::None;
         if input.try_parse(|i| i.expect_ident_matching("from")).is_ok() {
-            reference = ControlReference::parse(input)?;
+            reference = generic::ControlReference::parse(input)?;
         }
-
         Ok(Self::Relative(generic::RelativeControlPoint {
             coord,
             reference,

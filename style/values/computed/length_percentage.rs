@@ -699,6 +699,7 @@ impl<'de> Deserialize<'de> for LengthPercentage {
     ToAnimatedZero,
     ToCss,
     ToResolvedValue,
+    ToTyped,
 )]
 #[allow(missing_docs)]
 #[repr(u8)]

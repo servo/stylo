@@ -76,8 +76,8 @@ pub mod owned_str;
 
 pub use crate::specified_value_info::{CssType, KeywordsCollectFn, SpecifiedValueInfo};
 pub use crate::values::{
-    Comma, CommaWithSpace, CssString, CssStringWriter, CssWriter, OneOrMoreSeparated, Separator,
-    Space, ToCss, ToTyped, TypedValue,
+    Comma, CommaWithSpace, CssString, CssStringWriter, CssWriter, NumericValue, OneOrMoreSeparated,
+    Separator, Space, ToCss, ToTyped, TypedValue,
 };
 
 /// The error type for all CSS parsing routines.

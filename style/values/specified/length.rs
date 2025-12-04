@@ -29,7 +29,10 @@ use cssparser::{Parser, Token};
 use std::cmp;
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
+use style_traits::{
+    CssString, CssWriter, NumericValue, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
+    ToTyped, TypedValue,
+};
 
 pub use super::image::Image;
 pub use super::image::{EndingShape as GradientEndingShape, Gradient};
@@ -1356,6 +1359,14 @@ impl ToCss for NoCalcLength {
     }
 }
 
+impl ToTyped for NoCalcLength {
+    fn to_typed(&self) -> Option<TypedValue> {
+        let value = self.unitless_value();
+        let unit = CssString::from(self.unit());
+        Some(TypedValue::Numeric(NumericValue::Unit { value, unit }))
+    }
+}
+
 impl SpecifiedValueInfo for NoCalcLength {}
 
 impl PartialOrd for NoCalcLength {
@@ -1407,6 +1418,7 @@ impl Zero for NoCalcLength {
 ///
 /// <https://drafts.csswg.org/css-values/#lengths>
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
+#[typed_value(derive_fields)]
 pub enum Length {
     /// The internal length type that cannot parse `calc`
     NoCalc(NoCalcLength),

@@ -235,6 +235,7 @@ impl ToComputedValue for BorderSideWidth {
 #[derive(
     Clone, Debug, MallocSizeOf, PartialEq, Parse, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
+#[typed_value(derive_fields)]
 pub struct BorderSideOffset(Length);
 
 impl ToComputedValue for BorderSideOffset {

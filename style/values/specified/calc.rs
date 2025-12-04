@@ -25,7 +25,9 @@ use smallvec::SmallVec;
 use std::cmp;
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
+use style_traits::{
+    CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
+};
 
 /// The name of the mathematical function that we're parsing.
 #[derive(Clone, Copy, Debug, Parse)]
@@ -120,14 +122,25 @@ impl ToCss for Leaf {
     }
 }
 
+impl ToTyped for Leaf {
+    fn to_typed(&self) -> Option<TypedValue> {
+        // XXX Only supporting Length for now
+        match *self {
+            Self::Length(ref l) => l.to_typed(),
+            _ => None,
+        }
+    }
+}
+
 /// A struct to hold a simplified `<length>` or `<percentage>` expression.
 ///
 /// In some cases, e.g. DOMMatrix, we support calc(), but reject all the
 /// relative lengths, and to_computed_pixel_length_without_context() handles
 /// this case. Therefore, if you want to add a new field, please make sure this
 /// function work properly.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
 #[allow(missing_docs)]
+#[typed_value(derive_fields)]
 pub struct CalcLengthPercentage {
     #[css(skip)]
     pub clamping_mode: AllowedNumericType,

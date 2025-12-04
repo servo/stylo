@@ -9,6 +9,7 @@ use cssparser::ToCss as CssparserToCss;
 use cssparser::{serialize_string, ParseError, Parser, Token, UnicodeRange};
 use servo_arc::Arc;
 use std::fmt::{self, Write};
+use thin_vec::ThinVec;
 
 /// Serialises a value according to its CSS representation.
 ///
@@ -594,6 +595,41 @@ pub mod specified {
     }
 }
 
+/// A numeric value used by the Typed OM.
+///
+/// This corresponds to `CSSNumericValue` and its subclasses in the Typed OM
+/// specification. It represents numbers that can appear in CSS values,
+/// including both simple unit quantities and sums of numeric terms.
+///
+/// Unlike the parser-level representation, `NumericValue` is property-agnostic
+/// and suitable for conversion to or from the `CSSNumericValue` family of DOM
+/// objects.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub enum NumericValue {
+    /// A single numeric value with a concrete unit.
+    ///
+    /// This corresponds to `CSSUnitValue`. The `value` field stores the raw
+    /// numeric component, and the `unit` field stores the textual unit
+    /// identifier (e.g. `"px"`, `"em"`, `"%"`, `"deg"`).
+    Unit {
+        /// The numeric component of the value.
+        value: f32,
+        /// The textual unit string (e.g. `"px"`, `"em"`, `"deg"`).
+        unit: CssString,
+    },
+
+    /// A sum of multiple numeric values.
+    ///
+    /// This corresponds to `CSSMathSum`, representing an expression such as
+    /// `10px + 2em`. Each entry in `values` is another `NumericValue`, which
+    /// may itself be a unit value or a nested sum.
+    Sum {
+        /// The list of numeric terms that make up the sum.
+        values: ThinVec<NumericValue>,
+    },
+}
+
 /// A property-agnostic representation of a value, used by Typed OM.
 ///
 /// `TypedValue` is the internal counterpart of the various `CSSStyleValue`
@@ -608,6 +644,12 @@ pub enum TypedValue {
     /// transferred independently of any specific property. This corresponds
     /// to `CSSKeywordValue` in the Typed OM specification.
     Keyword(CssString),
+
+    /// A numeric value such as a length, angle, time, or a sum thereof.
+    ///
+    /// This corresponds to the `CSSNumericValue` hierarchy in the Typed OM
+    /// specification, including `CSSUnitValue` and `CSSMathSum`.
+    Numeric(NumericValue),
 }
 
 /// Reifies a value into its Typed OM representation.
@@ -662,9 +704,9 @@ where
 
 impl ToTyped for Au {
     fn to_typed(&self) -> Option<TypedValue> {
-        // XXX Should return TypedValue::Numeric in px units once that variant
-        // is available. Tracked in bug 1990419.
-        None
+        let value = self.to_f32_px();
+        let unit = CssString::from("px");
+        Some(TypedValue::Numeric(NumericValue::Unit { value, unit }))
     }
 }
 

@@ -13,7 +13,9 @@ use smallvec::SmallVec;
 use std::fmt::{self, Write};
 use std::ops::{Add, Mul, Neg, Rem, Sub};
 use std::{cmp, mem};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssWriter, NumericValue, ToCss, ToTyped, TypedValue};
+
+use thin_vec::ThinVec;
 
 /// Whether we're a `min` or `max` function.
 #[derive(
@@ -339,7 +341,7 @@ macro_rules! compare_helpers {
 }
 
 /// A trait that represents all the stuff a valid leaf of a calc expression.
-pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss {
+pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped {
     /// Returns the unit of the leaf.
     fn unit(&self) -> CalcUnits;
 
@@ -1935,6 +1937,37 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         Ok(())
     }
 
+    fn to_typed_impl(&self, level: ArgumentLevel) -> Option<TypedValue> {
+        // XXX Only supporting Sum and Leaf for now
+        match *self {
+            Self::Sum(ref children) => {
+                let mut values = ThinVec::new();
+                for child in &**children {
+                    if let Some(TypedValue::Numeric(inner)) =
+                        child.to_typed_impl(ArgumentLevel::Nested)
+                    {
+                        values.push(inner);
+                    }
+                }
+                Some(TypedValue::Numeric(NumericValue::Sum { values }))
+            },
+            Self::Leaf(ref l) => match l.to_typed() {
+                Some(TypedValue::Numeric(inner)) => match level {
+                    ArgumentLevel::CalculationRoot => {
+                        Some(TypedValue::Numeric(NumericValue::Sum {
+                            values: ThinVec::from([inner]),
+                        }))
+                    },
+                    ArgumentLevel::ArgumentRoot | ArgumentLevel::Nested => {
+                        Some(TypedValue::Numeric(inner))
+                    },
+                },
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     fn compare(
         &self,
         other: &Self,
@@ -1958,6 +1991,12 @@ impl<L: CalcNodeLeaf> ToCss for CalcNode<L> {
         W: Write,
     {
         self.to_css_impl(dest, ArgumentLevel::CalculationRoot)
+    }
+}
+
+impl<L: CalcNodeLeaf> ToTyped for CalcNode<L> {
+    fn to_typed(&self) -> Option<TypedValue> {
+        self.to_typed_impl(ArgumentLevel::CalculationRoot)
     }
 }
 

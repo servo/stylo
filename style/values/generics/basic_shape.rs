@@ -1167,7 +1167,7 @@ pub enum ControlPoint<Position, LengthPercentage> {
 
 impl<Position, LengthPercentage> ControlPoint<Position, LengthPercentage> {
     /// Serialize <control-point>
-    pub fn to_css<W>(&self, dest: &mut CssWriter<W>, is_endpoint_abs: bool) -> fmt::Result
+    pub fn to_css<W>(&self, dest: &mut CssWriter<W>, is_end_point_abs: bool) -> fmt::Result
     where
         W: Write,
         Position: ToCss,
@@ -1175,7 +1175,7 @@ impl<Position, LengthPercentage> ControlPoint<Position, LengthPercentage> {
     {
         match self {
             ControlPoint::Absolute(pos) => pos.to_css(dest),
-            ControlPoint::Relative(point) => point.to_css(dest, is_endpoint_abs),
+            ControlPoint::Relative(point) => point.to_css(dest, is_end_point_abs),
         }
     }
 }
@@ -1207,22 +1207,19 @@ pub struct RelativeControlPoint<LengthPercentage> {
 }
 
 impl<LengthPercentage: ToCss> RelativeControlPoint<LengthPercentage> {
-    fn to_css<W>(&self, dest: &mut CssWriter<W>, is_endpoint_abs: bool) -> fmt::Result
+    fn to_css<W>(&self, dest: &mut CssWriter<W>, is_end_point_abs: bool) -> fmt::Result
     where
         W: Write,
     {
         self.coord.to_css(dest)?;
-        let should_omit_reference = match self.reference {
-            ControlReference::None => true,
-            ControlReference::Start => !is_endpoint_abs,
-            ControlReference::Origin => is_endpoint_abs,
-            ControlReference::End => false,
-        };
-        if !should_omit_reference {
-            dest.write_str(" from ")?;
-            self.reference.to_css(dest)?;
+        match self.reference {
+            ControlReference::Origin if is_end_point_abs => Ok(()),
+            ControlReference::Start if !is_end_point_abs => Ok(()),
+            other => {
+                dest.write_str(" from ")?;
+                other.to_css(dest)
+            },
         }
-        Ok(())
     }
 }
 
@@ -1236,9 +1233,9 @@ impl<LengthPercentage: ComputeSquaredDistance> ComputeSquaredDistance
 
 /// Defines the point of reference for a <relative-control-point>.
 ///
-/// The default `None` is equivalent to `Origin` or `Start`, depending on
-/// whether the associated <command-end-point> is absolutely or relatively
-/// positioned, respectively.
+/// When a reference is not specified, depending on whether the associated
+/// <command-end-point> is absolutely or relatively positioned, the default
+/// will be `Origin` or `Start`, respectively.
 /// https://drafts.csswg.org/css-shapes/#typedef-shape-relative-control-point
 #[allow(missing_docs)]
 #[derive(
@@ -1262,8 +1259,6 @@ impl<LengthPercentage: ComputeSquaredDistance> ComputeSquaredDistance
 )]
 #[repr(C)]
 pub enum ControlReference {
-    #[css(skip)]
-    None,
     Start,
     End,
     Origin,

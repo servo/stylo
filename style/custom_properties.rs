@@ -599,6 +599,8 @@ impl VariableValue {
         css.shrink_to_fit();
         references.refs.shrink_to_fit();
 
+        css = css.trim_end().to_owned();
+
         Ok(Self {
             css,
             url_data: url_data.clone(),

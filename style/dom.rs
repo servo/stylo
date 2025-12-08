@@ -87,6 +87,19 @@ pub struct DomDescendants<N> {
     scope: N,
 }
 
+impl<N> DomDescendants<N>
+where
+    N: TNode,
+{
+    /// Returns the next element ignoring all of our subtree.
+    #[inline]
+    pub fn next_skipping_children(&mut self) -> Option<N> {
+        let prev = self.previous.take()?;
+        self.previous = prev.next_in_preorder_skipping_children(self.scope);
+        self.previous
+    }
+}
+
 impl<N> Iterator for DomDescendants<N>
 where
     N: TNode,
@@ -189,7 +202,15 @@ pub trait TNode: Sized + Copy + Clone + Debug + NodeInfo + PartialEq {
         if let Some(c) = self.first_child() {
             return Some(c);
         }
+        self.next_in_preorder_skipping_children(scoped_to)
+    }
 
+    /// Returns the next node in tree order, skipping the children of the current node.
+    ///
+    /// This is useful when we know that a subtree cannot contain matches, allowing us
+    /// to skip entire subtrees during traversal.
+    #[inline]
+    fn next_in_preorder_skipping_children(&self, scoped_to: Self) -> Option<Self> {
         let mut current = *self;
         loop {
             if current == scoped_to {
@@ -462,6 +483,41 @@ pub trait TElement:
     /// Return whether this element is an element in the XUL namespace.
     fn is_xul_element(&self) -> bool {
         false
+    }
+
+    /// Returns the bloom filter for this element's subtree, used for fast
+    /// querySelector optimization by allowing subtrees to be skipped.
+    /// Each element's filter includes hashes for all of it's class names and
+    /// attribute names (not values), along with the names for all descendent
+    /// elements.
+    ///
+    /// The default implementation returns all bits set, meaning the bloom filter
+    /// never filters anything.
+    fn subtree_bloom_filter(&self) -> u64 {
+        u64::MAX
+    }
+
+    /// Check if this element's subtree may contain elements with the given bloom hash.
+    fn bloom_may_have_hash(&self, bloom_hash: u64) -> bool {
+        let bloom = self.subtree_bloom_filter();
+        (bloom & bloom_hash) == bloom_hash
+    }
+
+    /// Convert a 32-bit atom hash to a bloom filter value using k=2 hash functions.
+    /// This must match the C++ implementation of HashForBloomFilter in Element.cpp
+    fn hash_for_bloom_filter(hash: u32) -> u64 {
+        // On 32-bit platforms, we have 31 bits available + 1 tag bit.
+        // On 64-bit platforms, we have 63 bits available + 1 tag bit.
+        #[cfg(target_pointer_width = "32")]
+        const BLOOM_BITS: u32 = 31;
+
+        #[cfg(target_pointer_width = "64")]
+        const BLOOM_BITS: u32 = 63;
+
+        let mut filter = 1u64;
+        filter |= 1u64 << (1 + (hash % BLOOM_BITS));
+        filter |= 1u64 << (1 + ((hash >> 6) % BLOOM_BITS));
+        filter
     }
 
     /// Return the list of slotted nodes of this node.

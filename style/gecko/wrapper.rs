@@ -1103,6 +1103,11 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     #[inline]
+    fn subtree_bloom_filter(&self) -> u64 {
+        unsafe { bindings::Gecko_Element_GetSubtreeBloomFilter(self.0) }
+    }
+
+    #[inline]
     fn local_name(&self) -> &WeakAtom {
         unsafe { WeakAtom::new(self.as_node().node_info().mInner.mName) }
     }

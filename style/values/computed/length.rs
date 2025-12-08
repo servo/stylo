@@ -21,7 +21,7 @@ use crate::Zero;
 use app_units::Au;
 use std::fmt::{self, Write};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
-use style_traits::{CSSPixel, CssWriter, ToCss};
+use style_traits::{CSSPixel, CssString, CssWriter, NumericValue, ToCss, ToTyped, TypedValue};
 
 pub use super::image::Image;
 pub use super::length_percentage::{LengthPercentage, NonNegativeLengthPercentage};
@@ -181,7 +181,6 @@ impl NonNegativeLengthPercentageOrAuto {
     ToAnimatedZero,
     ToComputedValue,
     ToShmem,
-    ToTyped,
 )]
 #[repr(C)]
 pub struct CSSPixelLength(CSSFloat);
@@ -330,6 +329,15 @@ impl ToCss for CSSPixelLength {
     {
         self.0.to_css(dest)?;
         dest.write_str("px")
+    }
+}
+
+impl ToTyped for CSSPixelLength {
+    fn to_typed(&self) -> Option<TypedValue> {
+        Some(TypedValue::Numeric(NumericValue::Unit {
+            value: self.0 as f32,
+            unit: CssString::from("px"),
+        }))
     }
 }
 

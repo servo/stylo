@@ -2720,14 +2720,7 @@ impl<Impl: SelectorImpl> ToCss for Component<Impl> {
             },
             Has(ref list) => {
                 dest.write_str(":has(")?;
-                let mut first = true;
-                for RelativeSelector { ref selector, .. } in list.iter() {
-                    if !first {
-                        dest.write_str(", ")?;
-                    }
-                    first = false;
-                    selector.to_css(dest)?;
-                }
+                serialize_selector_list(list.iter().map(|rel| &rel.selector), dest)?;
                 dest.write_str(")")
             },
             NonTSPseudoClass(ref pseudo) => pseudo.to_css(dest),

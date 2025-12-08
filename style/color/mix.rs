@@ -252,43 +252,43 @@ impl AbsoluteColor {
         // Lightness        L
         if matches!(source.color_space, S::Lab | S::Lch | S::Oklab | S::Oklch) {
             if matches!(self.color_space, S::Lab | S::Lch | S::Oklab | S::Oklch) {
-                self.flags
-                    .set(F::C0_IS_NONE, source.flags.contains(F::C0_IS_NONE));
+                self.flags |= source.flags & F::C0_IS_NONE;
             } else if matches!(self.color_space, S::Hsl) {
-                self.flags
-                    .set(F::C2_IS_NONE, source.flags.contains(F::C0_IS_NONE));
+                if source.flags.contains(F::C0_IS_NONE) {
+                    self.flags.insert(F::C2_IS_NONE)
+                }
             }
         } else if matches!(source.color_space, S::Hsl)
             && matches!(self.color_space, S::Lab | S::Lch | S::Oklab | S::Oklch)
         {
-            self.flags
-                .set(F::C0_IS_NONE, source.flags.contains(F::C2_IS_NONE));
+            if source.flags.contains(F::C2_IS_NONE) {
+                self.flags.insert(F::C0_IS_NONE)
+            }
         }
 
         // Colorfulness     C, S
         if matches!(source.color_space, S::Hsl | S::Lch | S::Oklch)
             && matches!(self.color_space, S::Hsl | S::Lch | S::Oklch)
         {
-            self.flags
-                .set(F::C1_IS_NONE, source.flags.contains(F::C1_IS_NONE));
+            self.flags |= source.flags & F::C1_IS_NONE;
         }
 
         // Hue              H
         if matches!(source.color_space, S::Hsl | S::Hwb) {
             if matches!(self.color_space, S::Hsl | S::Hwb) {
-                self.flags
-                    .set(F::C0_IS_NONE, source.flags.contains(F::C0_IS_NONE));
+                self.flags |= source.flags & F::C0_IS_NONE;
             } else if matches!(self.color_space, S::Lch | S::Oklch) {
-                self.flags
-                    .set(F::C2_IS_NONE, source.flags.contains(F::C0_IS_NONE));
+                if source.flags.contains(F::C0_IS_NONE) {
+                    self.flags.insert(F::C2_IS_NONE)
+                }
             }
         } else if matches!(source.color_space, S::Lch | S::Oklch) {
             if matches!(self.color_space, S::Hsl | S::Hwb) {
-                self.flags
-                    .set(F::C0_IS_NONE, source.flags.contains(F::C2_IS_NONE));
+                if source.flags.contains(F::C2_IS_NONE) {
+                    self.flags.insert(F::C0_IS_NONE)
+                }
             } else if matches!(self.color_space, S::Lch | S::Oklch) {
-                self.flags
-                    .set(F::C2_IS_NONE, source.flags.contains(F::C2_IS_NONE));
+                self.flags |= source.flags & F::C2_IS_NONE;
             }
         }
 
@@ -297,10 +297,8 @@ impl AbsoluteColor {
         if matches!(source.color_space, S::Lab | S::Oklab)
             && matches!(self.color_space, S::Lab | S::Oklab)
         {
-            self.flags
-                .set(F::C1_IS_NONE, source.flags.contains(F::C1_IS_NONE));
-            self.flags
-                .set(F::C2_IS_NONE, source.flags.contains(F::C2_IS_NONE));
+            self.flags |= source.flags & F::C1_IS_NONE;
+            self.flags |= source.flags & F::C2_IS_NONE;
         }
     }
 }

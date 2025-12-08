@@ -5,7 +5,6 @@
 //! Generic types for box properties.
 
 use crate::values::animated::ToAnimatedZero;
-use crate::Zero;
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ToCss};
 
@@ -156,7 +155,7 @@ pub struct GenericLineClamp<I>(pub I);
 
 pub use self::GenericLineClamp as LineClamp;
 
-impl<I: Zero> LineClamp<I> {
+impl<I: crate::Zero> LineClamp<I> {
     /// Returns the `none` value.
     pub fn none() -> Self {
         Self(crate::Zero::zero())
@@ -168,7 +167,7 @@ impl<I: Zero> LineClamp<I> {
     }
 }
 
-impl<I: Zero + ToCss> ToCss for LineClamp<I> {
+impl<I: crate::Zero + ToCss> ToCss for LineClamp<I> {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: Write,
@@ -245,89 +244,5 @@ impl PositionProperty {
     /// Is the box absolutely positioned?
     pub fn is_absolutely_positioned(self) -> bool {
         matches!(self, Self::Absolute | Self::Fixed)
-    }
-}
-
-/// https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin's <visual-box>. Note that the
-/// spec has special behavior for the omitted keyword, but that's rather odd, see:
-/// https://github.com/w3c/csswg-drafts/issues/13185
-#[allow(missing_docs)]
-#[derive(
-    Clone,
-    ComputeSquaredDistance,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    Parse,
-    SpecifiedValueInfo,
-    ToAnimatedValue,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-    ToTyped,
-)]
-#[repr(u8)]
-pub enum OverflowClipMarginBox {
-    ContentBox,
-    PaddingBox,
-    BorderBox,
-}
-
-/// https://drafts.csswg.org/css-overflow-4/#overflow-clip-margin
-#[derive(
-    Animate,
-    Clone,
-    ComputeSquaredDistance,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    SpecifiedValueInfo,
-    ToAnimatedValue,
-    ToComputedValue,
-    ToAnimatedZero,
-    ToResolvedValue,
-    ToShmem,
-    ToTyped,
-)]
-#[repr(C)]
-pub struct GenericOverflowClipMargin<L> {
-    /// The offset of the clip.
-    pub offset: L,
-    /// The box that we're clipping to.
-    #[animation(constant)]
-    pub visual_box: OverflowClipMarginBox,
-}
-
-pub use self::GenericOverflowClipMargin as OverflowClipMargin;
-
-impl<L: Zero> GenericOverflowClipMargin<L> {
-    /// Returns the `none` value.
-    pub fn zero() -> Self {
-        Self {
-            offset: Zero::zero(),
-            visual_box: OverflowClipMarginBox::PaddingBox,
-        }
-    }
-}
-
-impl<L: Zero + ToCss> ToCss for OverflowClipMargin<L> {
-    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-    where
-        W: Write,
-    {
-        if self.visual_box == OverflowClipMarginBox::PaddingBox {
-            return self.offset.to_css(dest);
-        }
-        self.visual_box.to_css(dest)?;
-        if !self.offset.is_zero() {
-            dest.write_char(' ')?;
-            self.offset.to_css(dest)?;
-        }
-        Ok(())
     }
 }

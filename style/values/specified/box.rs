@@ -8,8 +8,8 @@ pub use crate::logical_geometry::WritingModeProperty;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::{LonghandId, PropertyDeclarationId, PropertyId};
 use crate::values::generics::box_::{
-    GenericContainIntrinsicSize, GenericLineClamp, GenericOverflowClipMargin, GenericPerspective,
-    GenericVerticalAlign, OverflowClipMarginBox, VerticalAlignKeyword,
+    GenericContainIntrinsicSize, GenericLineClamp, GenericPerspective, GenericVerticalAlign,
+    VerticalAlignKeyword,
 };
 use crate::values::specified::length::{LengthPercentage, NonNegativeLength};
 use crate::values::specified::{AllowQuirks, Integer, NonNegativeNumberOrPercentage};
@@ -28,42 +28,6 @@ fn grid_enabled() -> bool {
 #[cfg(feature = "servo")]
 fn grid_enabled() -> bool {
     style_config::get_bool("layout.grid.enabled")
-}
-
-/// The specified value of `overflow-clip-margin`.
-pub type OverflowClipMargin = GenericOverflowClipMargin<NonNegativeLength>;
-
-impl Parse for OverflowClipMargin {
-    // <visual-box> || <length [0,∞]>
-    fn parse<'i>(
-        context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Self, ParseError<'i>> {
-        use crate::Zero;
-        let mut offset = None;
-        let mut visual_box = None;
-        loop {
-            if offset.is_none() {
-                offset = input
-                    .try_parse(|i| NonNegativeLength::parse(context, i))
-                    .ok();
-            }
-            if visual_box.is_none() {
-                visual_box = input.try_parse(OverflowClipMarginBox::parse).ok();
-                if visual_box.is_some() {
-                    continue;
-                }
-            }
-            break;
-        }
-        if offset.is_none() && visual_box.is_none() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-        }
-        Ok(Self {
-            offset: offset.unwrap_or_else(NonNegativeLength::zero),
-            visual_box: visual_box.unwrap_or(OverflowClipMarginBox::PaddingBox),
-        })
-    }
 }
 
 /// Defines an element’s display type, which consists of
@@ -937,6 +901,29 @@ pub enum OverscrollBehavior {
 pub enum OverflowAnchor {
     Auto,
     None,
+}
+
+#[allow(missing_docs)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum OverflowClipBox {
+    PaddingBox,
+    ContentBox,
 }
 
 #[derive(

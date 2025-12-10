@@ -1177,10 +1177,13 @@ impl PositionAreaKeyword {
     }
 
     /// Returns a value for the self-alignment properties in order to resolve
-    /// `normal`.
+    /// `normal`, in terms of the containing block's writing mode.
+    ///
+    /// Note that the caller must have converted the position-area to physical
+    /// values.
     ///
     /// <https://drafts.csswg.org/css-anchor-position/#position-area-alignment>
-    pub fn to_self_alignment(self) -> Option<AlignFlags> {
+    pub fn to_self_alignment(self, axis: LogicalAxis, cb_wm: &WritingMode) -> Option<AlignFlags> {
         let track = self.track()?;
         Some(match track {
             // "If the only the center track in an axis is selected, the default alignment in that axis is center."
@@ -1190,10 +1193,24 @@ impl PositionAreaKeyword {
             // "Otherwise, the default alignment in that axis is toward the non-specified side track: if it’s
             // specifying the “start” track of its axis, the default alignment in that axis is end; etc."
             _ => {
-                if track.start() {
-                    AlignFlags::END
+                debug_assert_eq!(self.group_type(), PositionAreaType::Physical);
+                if axis == LogicalAxis::Inline {
+                    // For the inline axis, map 'start' to 'end' unless the axis is inline-reversed,
+                    // meaning that its logical flow is counter to physical coordinates and therefore
+                    // physical 'start' already corresponds to logical 'end'.
+                    if track.start() == cb_wm.intersects(WritingMode::INLINE_REVERSED) {
+                        AlignFlags::START
+                    } else {
+                        AlignFlags::END
+                    }
                 } else {
-                    AlignFlags::START
+                    // For the block axis, only vertical-rl has reversed flow and therefore
+                    // does not map 'start' to 'end' here.
+                    if track.start() == cb_wm.is_vertical_rl() {
+                        AlignFlags::START
+                    } else {
+                        AlignFlags::END
+                    }
                 }
             },
         })

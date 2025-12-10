@@ -1329,12 +1329,9 @@ impl Animate for ArcSweep {
         use num_traits::FromPrimitive;
         // If an arc command has different <arc-sweep> between its starting and ending list, then
         // the interpolated result uses cw for any progress value between 0 and 1.
-        // Note: we cast progress from f64->f32->f64 to drop tiny noise near 0.0.
-        let progress = procedure.weights().1 as f32 as f64;
-        let procedure = Procedure::Interpolate { progress };
-        (*self as i32 as f32)
-            .animate(&(*other as i32 as f32), procedure)
-            .map(|v| ArcSweep::from_u8((v > 0.) as u8).unwrap_or(ArcSweep::Ccw))
+        (*self as i32)
+            .animate(&(*other as i32), procedure)
+            .map(|v| ArcSweep::from_u8((v > 0) as u8).unwrap_or(ArcSweep::Ccw))
     }
 }
 
@@ -1378,12 +1375,9 @@ impl Animate for ArcSize {
         use num_traits::FromPrimitive;
         // If it has different <arc-size> keywords, then the interpolated result uses large for any
         // progress value between 0 and 1.
-        // Note: we cast progress from f64->f32->f64 to drop tiny noise near 0.0.
-        let progress = procedure.weights().1 as f32 as f64;
-        let procedure = Procedure::Interpolate { progress };
-        (*self as i32 as f32)
-            .animate(&(*other as i32 as f32), procedure)
-            .map(|v| ArcSize::from_u8((v > 0.) as u8).unwrap_or(ArcSize::Small))
+        (*self as i32)
+            .animate(&(*other as i32), procedure)
+            .map(|v| ArcSize::from_u8((v > 0) as u8).unwrap_or(ArcSize::Small))
     }
 }
 

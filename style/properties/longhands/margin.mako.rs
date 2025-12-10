@@ -30,9 +30,8 @@
 
 ${helpers.predefined_type(
     "overflow-clip-margin",
-    "Length",
-    "computed::Length::zero()",
-    parse_method="parse_non_negative",
+    "OverflowClipMargin",
+    "computed::OverflowClipMargin::zero()",
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-overflow/#propdef-overflow-clip-margin",
     affects="overflow",

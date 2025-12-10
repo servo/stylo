@@ -23,9 +23,12 @@ use cssparser::{Parser, Token};
 use std::fmt::{self, Write};
 use std::ops::Add;
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
+use style_traits::{
+    CssString, CssWriter, NumericValue, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
+    ToTyped, TypedValue,
+};
 
-pub use self::align::{ContentDistribution, ItemPlacement, SelfAlignment, JustifyItems};
+pub use self::align::{ContentDistribution, ItemPlacement, JustifyItems, SelfAlignment};
 pub use self::angle::{AllowUnitlessZeroAngle, Angle};
 pub use self::animation::{
     AnimationComposition, AnimationDirection, AnimationDuration, AnimationFillMode,
@@ -347,6 +350,14 @@ impl ToCss for Number {
         W: Write,
     {
         serialize_number(self.value, self.calc_clamping_mode.is_some(), dest)
+    }
+}
+
+impl ToTyped for Number {
+    fn to_typed(&self) -> Option<TypedValue> {
+        let value = self.value;
+        let unit = CssString::from("number");
+        Some(TypedValue::Numeric(NumericValue::Unit { value, unit }))
     }
 }
 

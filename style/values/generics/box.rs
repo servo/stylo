@@ -199,6 +199,7 @@ impl<I: crate::Zero + ToCss> ToCss for LineClamp<I> {
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed_value(derive_fields)]
 pub enum GenericPerspective<NonNegativeLength> {
     /// A non-negative length.
     Length(NonNegativeLength),

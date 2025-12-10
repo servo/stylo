@@ -39,6 +39,7 @@ use style_traits::{CssWriter, SpecifiedValueInfo};
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C, u8)]
+#[typed_value(derive_fields)]
 pub enum GenericLengthPercentageOrAuto<LengthPercent> {
     LengthPercentage(LengthPercent),
     Auto,

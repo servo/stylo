@@ -35,6 +35,7 @@ click
 close
 closing
 color
+command
 complete
 compositionend
 compositionstart

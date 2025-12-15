@@ -14,9 +14,12 @@ use crate::values::specified::Integer;
 use crate::values::{AtomString, CustomIdent};
 use crate::Atom;
 use cssparser::{
+    ascii_case_insensitive_phf_map, match_ignore_ascii_case, CowRcStr, Parser, ParserState,
+    SourceLocation, Token,
+};
+use cssparser::{
     AtRuleParser, DeclarationParser, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser,
 };
-use cssparser::{CowRcStr, Parser, ParserState, SourceLocation, Token};
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Write};
 use std::mem;

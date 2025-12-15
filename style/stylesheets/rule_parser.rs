@@ -37,8 +37,9 @@ use crate::values::computed::font::FamilyName;
 use crate::values::{CssUrl, CustomIdent, DashedIdent, KeyframesName};
 use crate::{Atom, Namespace, Prefix};
 use cssparser::{
-    AtRuleParser, BasicParseError, BasicParseErrorKind, CowRcStr, DeclarationParser, Parser,
-    ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourcePosition,
+    match_ignore_ascii_case, AtRuleParser, BasicParseError, BasicParseErrorKind, CowRcStr,
+    DeclarationParser, Parser, ParserState, QualifiedRuleParser, RuleBodyItemParser,
+    RuleBodyParser, SourcePosition,
 };
 use selectors::parser::{ParseRelative, SelectorList};
 use servo_arc::Arc;

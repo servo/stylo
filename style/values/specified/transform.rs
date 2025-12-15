@@ -17,7 +17,7 @@ use crate::values::specified::{
     self, AllowQuirks, Angle, Integer, Length, LengthPercentage, Number, NumberOrPercentage,
 };
 use crate::Zero;
-use cssparser::Parser;
+use cssparser::{match_ignore_ascii_case, Parser};
 use style_traits::{ParseError, StyleParseErrorKind};
 
 pub use crate::values::generics::transform::TransformStyle;

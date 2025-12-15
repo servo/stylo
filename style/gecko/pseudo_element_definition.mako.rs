@@ -218,7 +218,7 @@ impl PseudoElement {
         // We don't need to support tree pseudos because functional
         // pseudo-elements needs arguments, and thus should be created
         // via other methods.
-        ascii_case_insensitive_phf_map! {
+        cssparser::ascii_case_insensitive_phf_map! {
             pseudo -> PseudoElement = {
                 % for pseudo in SIMPLE_PSEUDOS:
                 "${pseudo.value[1:]}" => ${pseudo_element_variant(pseudo)},

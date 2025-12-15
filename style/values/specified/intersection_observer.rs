@@ -9,7 +9,7 @@
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::{self, Length, LengthPercentage};
 use crate::values::generics::rect::Rect;
-use cssparser::{Parser, Token};
+use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::fmt;
 use style_traits::values::SequenceWriter;
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};

@@ -27,7 +27,7 @@ use crate::values::specified::{
 };
 use crate::values::specified::{Number, NumberOrPercentage, Percentage};
 use crate::Atom;
-use cssparser::{Delimiter, Parser, Token};
+use cssparser::{match_ignore_ascii_case, Delimiter, Parser, Token};
 use selectors::parser::SelectorParseErrorKind;
 use std::cmp::Ordering;
 use std::fmt::{self, Write};

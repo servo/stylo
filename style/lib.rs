@@ -25,10 +25,10 @@
 
 #![deny(missing_docs)]
 
+pub(crate) use cssparser;
+
 #[macro_use]
 extern crate bitflags;
-#[macro_use]
-extern crate cssparser;
 #[macro_use]
 extern crate debug_unreachable;
 #[macro_use]

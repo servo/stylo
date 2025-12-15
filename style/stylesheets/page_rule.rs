@@ -14,7 +14,7 @@ use crate::shared_lock::{
 };
 use crate::stylesheets::{style_or_page_rule_to_css, CssRules};
 use crate::values::{AtomIdent, CustomIdent};
-use cssparser::{Parser, SourceLocation, Token};
+use cssparser::{match_ignore_ascii_case, Parser, SourceLocation, Token};
 #[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
 use servo_arc::Arc;

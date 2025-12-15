@@ -31,7 +31,7 @@ use crate::stylesheets::Origin;
 use crate::stylist::Stylist;
 use crate::values::{computed, serialize_atom_name};
 use arrayvec::{ArrayVec, Drain as ArrayVecDrain};
-use cssparser::{Parser, ParserInput};
+use cssparser::{match_ignore_ascii_case, Parser, ParserInput};
 use rustc_hash::FxHashMap;
 use servo_arc::Arc;
 use std::{

@@ -254,7 +254,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
             quote! {
                 let location = input.current_source_location();
                 let ident = input.expect_ident()?;
-                match_ignore_ascii_case! { &ident,
+                cssparser::match_ignore_ascii_case! { &ident,
                     #match_keywords
                     _ => Err(location.new_unexpected_token_error(
                         cssparser::Token::Ident(ident.clone())
@@ -317,7 +317,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
             /// Parse this keyword from a string slice.
             #[inline]
             pub fn from_ident(ident: &str) -> Result<Self, ()> {
-                match_ignore_ascii_case! { ident,
+                cssparser::match_ignore_ascii_case! { ident,
                     #match_keywords
                     _ => Err(()),
                 }

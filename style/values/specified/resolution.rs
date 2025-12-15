@@ -10,7 +10,7 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::specified::CalcNode;
 use crate::values::CSSFloat;
-use cssparser::{Parser, Token};
+use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 

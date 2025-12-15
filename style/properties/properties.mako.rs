@@ -1237,7 +1237,7 @@ pub enum CountedUnknownProperty {
 impl CountedUnknownProperty {
     /// Parse the counted unknown property, for testing purposes only.
     pub fn parse_for_testing(property_name: &str) -> Option<Self> {
-        ascii_case_insensitive_phf_map! {
+        ::cssparser::ascii_case_insensitive_phf_map! {
             unknown_ids -> CountedUnknownProperty = {
                 % for property in data.counted_unknown_properties:
                 "${property.name}" => CountedUnknownProperty::${property.camel_case},
@@ -1267,7 +1267,7 @@ impl PropertyId {
             NonCustom(NonCustomPropertyId),
             CountedUnknown(CountedUnknownProperty),
         }
-        ascii_case_insensitive_phf_map! {
+        ::cssparser::ascii_case_insensitive_phf_map! {
             static_ids -> StaticId = {
                 % for i, property in enumerate(data.longhands + data.shorthands + data.all_aliases()):
                 "${property.name}" => StaticId::NonCustom(NonCustomPropertyId(${i})),

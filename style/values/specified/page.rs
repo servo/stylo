@@ -9,7 +9,7 @@ use crate::parser::{Parse, ParserContext};
 use crate::values::generics::size::Size2D;
 use crate::values::specified::length::NonNegativeLength;
 use crate::values::{generics, CustomIdent};
-use cssparser::Parser;
+use cssparser::{match_ignore_ascii_case, Parser};
 use style_traits::ParseError;
 
 pub use generics::page::PageOrientation;

@@ -85,7 +85,7 @@ pub fn parse_part_mapping(input: &str) -> Option<Mapping<'_>> {
 }
 
 /// <https://drafts.csswg.org/css-shadow-parts/#parsing-mapping-list>
-fn parse_mapping_list(input: &str) -> impl Iterator<Item = Mapping> {
+fn parse_mapping_list(input: &str) -> impl Iterator<Item = Mapping<'_>> {
     // Step 1. Let input be the string being parsed.
     // Step 2. Split the string input on commas. Let unparsed mappings be the resulting list of strings.
     let unparsed_mappings = input.split(',');

@@ -528,7 +528,7 @@ impl<'a> Parser<'a> {
                         )),
                     );
                 };
-                debug_assert_matches!(multiplier, Multiplier::Space);
+                debug_assert_eq!(multiplier, Multiplier::Space);
                 loop {
                     values.push(SpecifiedValueComponent::TransformFunction(
                         specified::Transform::parse(context, input)?,

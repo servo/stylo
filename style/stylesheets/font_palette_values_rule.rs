@@ -6,6 +6,7 @@
 //!
 //! [font-palette-values]: https://drafts.csswg.org/css-fonts/#font-palette-values
 
+use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::{

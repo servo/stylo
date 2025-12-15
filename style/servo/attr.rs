@@ -8,6 +8,7 @@
 
 use super::shadow_parts::ShadowParts;
 use crate::color::{parsing::parse_color_keyword, AbsoluteColor};
+use crate::derives::*;
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::Locked;
 use crate::str::str_join;

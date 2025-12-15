@@ -6,6 +6,7 @@
 
 #![deny(missing_docs)]
 
+use crate::derives::*;
 use crate::stylesheets::{Namespaces, Origin, UrlExtraData};
 use crate::values::serialize_atom_identifier;
 use crate::Atom;

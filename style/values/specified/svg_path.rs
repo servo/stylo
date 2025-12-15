@@ -4,6 +4,7 @@
 
 //! Specified types for SVG Path.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::animated::{lists, Animate, Procedure};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};

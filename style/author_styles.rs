@@ -5,6 +5,7 @@
 //! A set of author stylesheets and their computed representation, such as the
 //! ones used for ShadowRoot.
 
+use crate::derives::*;
 use crate::dom::TElement;
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::stylesheet_set::AuthorStylesheetSet;

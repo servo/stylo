@@ -4,6 +4,7 @@
 
 //! Specified @page at-rule properties and named-page style properties
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::size::Size2D;
 use crate::values::specified::length::NonNegativeLength;

@@ -4,6 +4,7 @@
 
 //! Specified types for UI properties.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::ui as generics;
 use crate::values::specified::color::Color;

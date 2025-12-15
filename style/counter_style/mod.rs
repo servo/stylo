@@ -6,6 +6,7 @@
 //!
 //! [counter-style]: https://drafts.csswg.org/css-counter-styles/
 
+use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};

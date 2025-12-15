@@ -4,6 +4,7 @@
 
 //! Specified types for properties related to animations and transitions.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::{NonCustomPropertyId, PropertyId, ShorthandId};
 use crate::values::generics::animation as generics;

@@ -15,6 +15,7 @@ use super::{
     },
 };
 use crate::custom_properties::{Name as CustomPropertyName, SpecifiedValue};
+use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};

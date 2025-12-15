@@ -4,6 +4,7 @@
 
 //! Computed values for font properties
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::animated::ToAnimatedValue;
 use crate::values::computed::{

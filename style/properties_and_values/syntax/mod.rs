@@ -9,6 +9,7 @@
 use std::fmt::{self, Debug};
 use std::{borrow::Cow, fmt::Write};
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::CustomIdent;
 use cssparser::{Parser as CSSParser, ParserInput as CSSParserInput};

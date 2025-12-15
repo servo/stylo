@@ -8,6 +8,7 @@
 
 use crate::applicable_declarations::CascadePriority;
 use crate::custom_properties_map::CustomPropertiesMap;
+use crate::derives::*;
 use crate::dom::AttributeProvider;
 use crate::media_queries::Device;
 use crate::properties::{

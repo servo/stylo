@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 //! A piecewise linear function, following CSS linear easing
+use crate::derives::*;
 use crate::values::computed::Percentage;
 use core::slice::Iter;
 /// draft as in https://github.com/w3c/csswg-drafts/pull/6533.

@@ -4,6 +4,7 @@
 
 //! [CSS cascade origins](https://drafts.csswg.org/css-cascade/#cascading-origins).
 
+use crate::derives::*;
 use std::marker::PhantomData;
 use std::ops::BitOrAssign;
 

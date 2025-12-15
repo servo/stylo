@@ -7,6 +7,7 @@
 //!
 //! [basic-shape]: https://drafts.csswg.org/css-shapes/#typedef-basic-shape
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::basic_shape::InsetRect as ComputedInsetRect;
 use crate::values::computed::{

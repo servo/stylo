@@ -11,6 +11,7 @@ use super::{
     component::{ColorComponent, ColorComponentType},
     AbsoluteColor,
 };
+use crate::derives::*;
 use crate::{
     parser::{Parse, ParserContext},
     values::{

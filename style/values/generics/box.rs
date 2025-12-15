@@ -4,6 +4,7 @@
 
 //! Generic types for box properties.
 
+use crate::derives::*;
 use crate::values::animated::ToAnimatedZero;
 use crate::Zero;
 use std::fmt::{self, Write};

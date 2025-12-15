@@ -5,6 +5,7 @@
 //! CSS handling for the computed value of
 //! [grids](https://drafts.csswg.org/css-grid/)
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::grid::{GridTemplateComponent, ImplicitGridTracks, RepeatCount};
 use crate::values::generics::grid::{LineNameList, LineNameListValue, NameRepeat, TrackBreadth};

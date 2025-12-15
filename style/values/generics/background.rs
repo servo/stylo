@@ -4,6 +4,7 @@
 
 //! Generic types for CSS values related to backgrounds.
 
+use crate::derives::*;
 use crate::values::generics::length::{GenericLengthPercentageOrAuto, LengthPercentageOrAuto};
 
 /// A generic value for the `background-size` property.

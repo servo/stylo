@@ -4,6 +4,7 @@
 
 //! Computed types for CSS values related to borders.
 
+use crate::derives::*;
 use crate::properties::{LogicalGroupId, LonghandId};
 use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
 use crate::values::computed::length::{

@@ -4,6 +4,7 @@
 
 //! Generic values for properties related to animations and transitions.
 
+use crate::derives::*;
 use crate::values::generics::length::GenericLengthPercentageOrAuto;
 use crate::values::specified::animation::{ScrollAxis, ScrollFunction, TimelineName};
 use crate::Zero;

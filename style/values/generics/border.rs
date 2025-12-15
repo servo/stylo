@@ -4,6 +4,7 @@
 
 //! Generic types for CSS values related to borders.
 
+use crate::derives::*;
 use crate::values::generics::rect::Rect;
 use crate::values::generics::size::Size2D;
 use crate::Zero;

@@ -4,6 +4,7 @@
 
 //! Specified types for text properties.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::longhands::writing_mode::computed_value::T as SpecifiedWritingMode;
 use crate::values::computed;

@@ -4,6 +4,7 @@
 
 //! Data needed to style a Gecko document.
 
+use crate::derives::*;
 use crate::dom::TElement;
 use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs::{

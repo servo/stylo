@@ -11,6 +11,7 @@ use style_traits::CssWriter;
 use style_traits::SpecifiedValueInfo;
 use style_traits::ToCss;
 
+use crate::derives::*;
 use crate::logical_geometry::PhysicalSide;
 use crate::values::animated::ToAnimatedZero;
 use crate::values::computed::position::TryTacticAdjustment;

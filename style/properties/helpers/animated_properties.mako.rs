@@ -25,6 +25,7 @@ use std::ptr;
 use std::mem;
 use rustc_hash::FxHashMap;
 use super::ComputedValues;
+use crate::derives::*;
 use crate::properties::OwnedPropertyDeclarationId;
 use crate::dom::AttributeProvider;
 use crate::values::animated::{Animate, Procedure, ToAnimatedValue, ToAnimatedZero};

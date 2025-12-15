@@ -4,6 +4,7 @@
 
 //! Common handling for the specified value CSS url() values.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::stylesheets::CorsMode;
 use crate::values::computed::{Context, ToComputedValue};

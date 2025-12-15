@@ -5,6 +5,7 @@
 //! A nested declarations rule.
 //! https://drafts.csswg.org/css-nesting-1/#nested-declarations-rule
 
+use crate::derives::*;
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,

@@ -4,6 +4,7 @@
 
 //! Specified types for CSS values related to backgrounds.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::background::BackgroundSize as GenericBackgroundSize;
 use crate::values::specified::length::{

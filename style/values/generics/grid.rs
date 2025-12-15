@@ -5,6 +5,7 @@
 //! Generic types for the handling of
 //! [grids](https://drafts.csswg.org/css-grid/).
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::specified;
 use crate::values::{CSSFloat, CustomIdent};

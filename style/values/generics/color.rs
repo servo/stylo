@@ -5,6 +5,7 @@
 //! Generic types for color properties.
 
 use crate::color::{mix::ColorInterpolationMethod, AbsoluteColor, ColorFunction};
+use crate::derives::*;
 use crate::values::{
     computed::ToComputedValue, specified::percentage::ToPercentage, ParseError, Parser,
 };

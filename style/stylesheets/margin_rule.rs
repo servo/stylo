@@ -6,6 +6,7 @@
 //!
 //! [margin]: https://drafts.csswg.org/css-page-3/#margin-boxes
 
+use crate::derives::*;
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};

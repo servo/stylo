@@ -6,6 +6,7 @@
 //!
 //! [layer]: https://drafts.csswg.org/css-cascade-5/#layering
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};

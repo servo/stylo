@@ -9,6 +9,7 @@ use crate::animation::DocumentAnimationSet;
 use crate::bloom::StyleBloom;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::data::{EagerPseudoStyles, ElementData};
+use crate::derives::*;
 use crate::dom::{SendElement, TElement};
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs;

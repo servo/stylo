@@ -4,6 +4,7 @@
 
 //! A list of CSS rules.
 
+use crate::derives::*;
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
 use crate::stylesheets::loader::StylesheetLoader;

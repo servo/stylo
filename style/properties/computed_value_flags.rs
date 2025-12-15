@@ -12,7 +12,7 @@
 /// we might want to add a function to handle this.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[cfg_attr(feature = "servo", derive(crate::derives::MallocSizeOf))]
 pub struct ComputedValueFlags(u32);
 
 bitflags! {

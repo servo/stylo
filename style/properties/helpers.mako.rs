@@ -108,6 +108,8 @@
             use crate::values::animated::ToAnimatedValue;
             #[allow(unused_imports)]
             use crate::values::resolved::ToResolvedValue;
+            #[allow(unused_imports)]
+            use crate::derives::*;
             pub use super::single_value::computed_value as single_value;
             pub use self::single_value::T as SingleComputedValue;
             % if not allow_empty:
@@ -373,6 +375,8 @@
     /// ${property.spec}
     pub mod ${property.ident} {
         #[allow(unused_imports)]
+        use crate::derives::*;
+        #[allow(unused_imports)]
         use cssparser::{Parser, BasicParseError, Token};
         #[allow(unused_imports)]
         use crate::parser::{Parse, ParserContext};
@@ -615,6 +619,8 @@
     <%def name="inner_body(keyword, needs_conversion=False)">
         pub use self::computed_value::T as SpecifiedValue;
         pub mod computed_value {
+            #[allow(unused_imports)]
+            use crate::derives::*;
             #[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
             #[derive(Clone, Copy, Debug, Eq, FromPrimitive, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToAnimatedValue, ToComputedValue, ToCss, ToResolvedValue, ToShmem, ToTyped)]
             pub enum T {
@@ -694,6 +700,8 @@
         use style_traits::{ParseError, StyleParseErrorKind};
         #[allow(unused_imports)]
         use style_traits::{CssWriter, KeywordsCollectFn, SpecifiedValueInfo, ToCss};
+        #[allow(unused_imports)]
+        use style_derive::{Animate, ComputeSquaredDistance, ToAnimatedValue, Parse, ToAnimatedZero, ToComputedValue, ToResolvedValue, ToCss, SpecifiedValueInfo, ToTyped};
 
         % if derive_value_info:
         #[derive(SpecifiedValueInfo)]

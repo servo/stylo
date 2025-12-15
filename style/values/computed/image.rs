@@ -7,6 +7,7 @@
 //!
 //! [image]: https://drafts.csswg.org/css-images/#image-values
 
+use crate::derives::*;
 use crate::values::computed::percentage::Percentage;
 use crate::values::computed::position::Position;
 use crate::values::computed::url::ComputedUrl;

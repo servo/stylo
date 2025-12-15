@@ -4,6 +4,7 @@
 
 //! Applicable declarations management.
 
+use crate::derives::*;
 use crate::properties::PropertyDeclarationBlock;
 use crate::rule_tree::{CascadeLevel, StyleSource};
 use crate::shared_lock::Locked;

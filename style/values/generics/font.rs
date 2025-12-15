@@ -4,6 +4,7 @@
 
 //! Generic types for font stuff.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::animated::ToAnimatedZero;
 use crate::{One, Zero};

@@ -5,6 +5,7 @@
 //! Generic types for CSS values related to <ratio>.
 //! https://drafts.csswg.org/css-values/#ratios
 
+use crate::derives::*;
 use crate::{One, Zero};
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ToCss};

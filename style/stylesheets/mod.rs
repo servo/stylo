@@ -31,6 +31,7 @@ mod style_rule;
 mod stylesheet;
 pub mod supports_rule;
 
+use crate::derives::*;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::sugar::refptr::RefCounted;
 #[cfg(feature = "gecko")]

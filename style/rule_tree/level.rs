@@ -4,6 +4,7 @@
 
 #![forbid(unsafe_code)]
 
+use crate::derives::*;
 use crate::properties::Importance;
 use crate::shared_lock::{SharedRwLockReadGuard, StylesheetGuards};
 use crate::stylesheets::Origin;

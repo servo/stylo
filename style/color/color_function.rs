@@ -12,6 +12,7 @@ use super::{
     parsing::{NumberOrAngleComponent, NumberOrPercentageComponent},
     AbsoluteColor, ColorFlags, ColorSpace,
 };
+use crate::derives::*;
 use crate::values::{
     computed::color::Color as ComputedColor, generics::Optional, normalize,
     specified::color::Color as SpecifiedColor,

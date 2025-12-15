@@ -5,6 +5,7 @@
 //! Code for invalidations due to state or attribute changes.
 
 use crate::context::QuirksMode;
+use crate::derives::*;
 use crate::selector_map::{
     MaybeCaseInsensitiveHashMap, PrecomputedHashMap, SelectorMap, SelectorMapEntry,
 };

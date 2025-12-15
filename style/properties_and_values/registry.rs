@@ -6,6 +6,7 @@
 
 use super::rule::{Inherits, InitialValue, PropertyRuleName};
 use super::syntax::Descriptor;
+use crate::derives::*;
 use crate::selector_map::PrecomputedHashMap;
 use crate::stylesheets::UrlExtraData;
 use crate::Atom;

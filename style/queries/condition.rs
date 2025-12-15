@@ -9,6 +9,7 @@
 
 use super::{FeatureFlags, FeatureType, QueryFeatureExpression};
 use crate::custom_properties;
+use crate::derives::*;
 use crate::stylesheets::CustomMediaEvaluator;
 use crate::values::{computed, AtomString, DashedIdent};
 use crate::{error_reporting::ContextualParseError, parser::ParserContext, parser::Parse};

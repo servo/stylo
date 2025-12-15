@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+use crate::derives::*;
 use crate::selector_map::{MaybeCaseInsensitiveHashMap, PrecomputedHashMap};
 use crate::{Atom, LocalName, ShrinkIfNeeded};
 

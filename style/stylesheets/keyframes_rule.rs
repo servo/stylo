@@ -4,6 +4,7 @@
 
 //! Keyframes: https://drafts.csswg.org/css-animations/#keyframes
 
+use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::ParserContext;
 use crate::properties::{

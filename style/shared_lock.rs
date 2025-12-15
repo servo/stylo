@@ -34,7 +34,7 @@ use to_shmem::{SharedMemoryBuilder, ToShmem};
 /// used for objects stored in (read only) shared memory. Attempting to acquire
 /// write access to objects protected by a read only SharedRwLock will panic.
 #[derive(Clone)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[cfg_attr(feature = "servo", derive(crate::derives::MallocSizeOf))]
 pub struct SharedRwLock {
     #[cfg(feature = "servo")]
     #[cfg_attr(feature = "servo", ignore_malloc_size_of = "Arc")]

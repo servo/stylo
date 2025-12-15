@@ -10,6 +10,7 @@ use super::{
     parsing::{rcs_enabled, ChannelKeyword},
     AbsoluteColor,
 };
+use crate::derives::*;
 use crate::{
     parser::ParserContext,
     values::{

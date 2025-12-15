@@ -4,6 +4,7 @@
 
 //! Computed time values.
 
+use crate::derives::*;
 use crate::values::CSSFloat;
 use crate::Zero;
 use std::fmt::{self, Write};

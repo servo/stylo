@@ -6,6 +6,7 @@
 //!
 //! https://drafts.csswg.org/css-values/#resolution
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::specified::CalcNode;
 use crate::values::CSSFloat;

@@ -4,6 +4,7 @@
 
 //! Machinery to compute distances between animatable values.
 
+use crate::derives::*;
 use app_units::Au;
 use euclid::default::Size2D;
 use std::iter::Sum;

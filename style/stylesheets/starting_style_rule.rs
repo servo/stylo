@@ -5,6 +5,7 @@
 //! before-change style: the `@starting-style` rules.
 //! https://drafts.csswg.org/css-transitions-2/#defining-before-change-style
 
+use crate::derives::*;
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
 use crate::stylesheets::CssRules;

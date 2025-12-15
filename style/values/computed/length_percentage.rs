@@ -25,6 +25,7 @@
 //! our expectations.
 
 use super::{position::AnchorSide, Context, Length, Percentage, ToComputedValue};
+use crate::derives::*;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{AnchorPosOffsetResolutionParams, GeckoFontMetrics};
 use crate::logical_geometry::{PhysicalAxis, PhysicalSide};

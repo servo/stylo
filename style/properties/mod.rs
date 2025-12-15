@@ -20,6 +20,7 @@ pub mod generated {
 }
 
 use crate::custom_properties::{self, ComputedCustomProperties};
+use crate::derives::*;
 use crate::dom::AttributeProvider;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{CSSPropertyId, NonCustomCSSPropertyId, RefPtr};

@@ -5,6 +5,7 @@
 //! Generic types for CSS Easing Functions.
 //! https://drafts.csswg.org/css-easing/#timing-functions
 
+use crate::derives::*;
 use crate::parser::ParserContext;
 
 /// A generic easing function.

@@ -5,6 +5,7 @@
 //! Color mixing/interpolation.
 
 use super::{AbsoluteColor, ColorFlags, ColorSpace};
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::color::ColorMixFlags;
 use cssparser::Parser;

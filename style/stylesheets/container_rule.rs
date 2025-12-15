@@ -7,6 +7,7 @@
 //! [container]: https://drafts.csswg.org/css-contain-3/#container-rule
 
 use crate::computed_value_flags::ComputedValueFlags;
+use crate::derives::*;
 use crate::dom::TElement;
 use crate::logical_geometry::{LogicalSize, WritingMode};
 use crate::parser::ParserContext;

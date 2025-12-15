@@ -4,6 +4,7 @@
 
 //! Query features.
 
+use crate::derives::*;
 use crate::parser::ParserContext;
 use crate::values::computed::{self, CSSPixelLength, Ratio, Resolution};
 use crate::Atom;

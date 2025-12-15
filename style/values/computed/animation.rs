@@ -4,6 +4,7 @@
 
 //! Computed values for properties related to animations and transitions
 
+use crate::derives::*;
 use crate::values::computed::{Context, LengthPercentage, Time, ToComputedValue};
 use crate::values::generics::animation as generics;
 use crate::values::specified::animation as specified;

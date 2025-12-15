@@ -7,6 +7,7 @@
 //! [scope]: https://drafts.csswg.org/css-cascade-6/#scoped-styles
 
 use crate::applicable_declarations::ScopeProximity;
+use crate::derives::*;
 use crate::dom::TElement;
 use crate::parser::ParserContext;
 use crate::selector_parser::{SelectorImpl, SelectorParser};

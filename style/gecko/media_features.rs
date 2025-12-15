@@ -4,6 +4,7 @@
 
 //! Gecko's media feature list and evaluator.
 
+use crate::derives::*;
 use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs;
 use crate::media_queries::{Device, MediaType};

@@ -4,6 +4,7 @@
 
 //! Generic types for CSS values in SVG
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use cssparser::Parser;
 use style_traits::ParseError;

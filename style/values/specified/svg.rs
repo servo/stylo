@@ -4,6 +4,7 @@
 
 //! Specified types for SVG properties.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::svg as generic;
 use crate::values::specified::color::Color;

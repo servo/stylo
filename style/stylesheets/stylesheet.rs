@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 use crate::context::QuirksMode;
+use crate::derives::*;
 use crate::error_reporting::{ContextualParseError, ParseErrorReporter};
 use crate::media_queries::{Device, MediaList};
 use crate::parser::ParserContext;

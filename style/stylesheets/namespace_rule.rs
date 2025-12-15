@@ -4,6 +4,7 @@
 
 //! The `@namespace` at-rule.
 
+use crate::derives::*;
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
 use crate::{Namespace, Prefix};
 use cssparser::SourceLocation;

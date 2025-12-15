@@ -6,6 +6,7 @@
 //!
 //! https://drafts.csswg.org/css-values/#resolution
 
+use crate::derives::*;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::specified;
 use crate::values::CSSFloat;

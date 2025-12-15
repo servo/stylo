@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 //! Generic types for the column properties.
+use crate::derives::*;
 
 /// A generic type for `column-count` values.
 #[derive(

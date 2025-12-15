@@ -8,6 +8,7 @@
 
 #![deny(missing_docs)]
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::Atom;

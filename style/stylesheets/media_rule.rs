@@ -6,6 +6,7 @@
 //!
 //! [media]: https://drafts.csswg.org/css-conditional/#at-ruledef-media
 
+use crate::derives::*;
 use crate::media_queries::MediaList;
 use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet};
 use crate::shared_lock::{DeepCloneWithLock, Locked};

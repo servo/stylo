@@ -6,6 +6,7 @@
 //!
 //! https://drafts.csswg.org/css-align/
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use cssparser::Parser;
 use std::fmt::{self, Write};

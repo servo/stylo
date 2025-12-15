@@ -4,6 +4,7 @@
 
 //! Generic values for UI properties.
 
+use crate::derives::*;
 use crate::values::specified::ui::CursorKind;
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ToCss};

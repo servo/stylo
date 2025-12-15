@@ -4,6 +4,7 @@
 
 //! Computed types for box properties.
 
+use crate::derives::*;
 use crate::values::animated::{Animate, Procedure, ToAnimatedValue};
 use crate::values::computed::length::{LengthPercentage, NonNegativeLength};
 use crate::values::computed::{Context, Integer, Number, ToComputedValue};

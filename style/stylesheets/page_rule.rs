@@ -6,6 +6,7 @@
 //!
 //! [page]: https://drafts.csswg.org/css2/page.html#page-box
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::{

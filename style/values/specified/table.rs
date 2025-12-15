@@ -3,6 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 //! Specified types for CSS values related to tables.
+use crate::derives::*;
 
 /// Specified values for the `caption-side` property.
 ///

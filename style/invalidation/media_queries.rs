@@ -5,6 +5,7 @@
 //! Code related to the invalidation of media-query-affected rules.
 
 use crate::context::QuirksMode;
+use crate::derives::*;
 use crate::media_queries::Device;
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::stylesheets::{CustomMediaMap, DocumentRule, ImportRule, MediaRule};

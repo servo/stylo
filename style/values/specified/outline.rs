@@ -4,6 +4,7 @@
 
 //! Specified values for outline properties
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::specified::BorderStyle;
 use cssparser::Parser;

@@ -6,6 +6,7 @@
 
 use crate::counter_style::{parse_counter_style_body, parse_counter_style_name_definition};
 use crate::custom_properties::parse_name as parse_custom_property_name;
+use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 use crate::font_face::parse_font_face_block;
 use crate::media_queries::MediaList;

@@ -4,6 +4,7 @@
 
 //! A style rule.
 
+use crate::derives::*;
 use crate::properties::PropertyDeclarationBlock;
 use crate::selector_parser::SelectorImpl;
 use crate::shared_lock::{

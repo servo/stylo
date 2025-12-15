@@ -32,8 +32,6 @@ extern crate cssparser;
 #[macro_use]
 extern crate debug_unreachable;
 #[macro_use]
-extern crate derive_more;
-#[macro_use]
 #[cfg(feature = "gecko")]
 extern crate gecko_profiler;
 #[cfg(feature = "gecko")]
@@ -45,8 +43,6 @@ extern crate lazy_static;
 extern crate log;
 #[macro_use]
 extern crate malloc_size_of;
-#[macro_use]
-extern crate malloc_size_of_derive;
 #[cfg(feature = "servo")]
 extern crate web_atoms;
 #[allow(unused_extern_crates)]
@@ -57,8 +53,6 @@ pub use nsstring;
 #[cfg(feature = "gecko")]
 extern crate num_cpus;
 #[macro_use]
-extern crate num_derive;
-#[macro_use]
 extern crate serde;
 pub use servo_arc;
 #[cfg(feature = "servo")]
@@ -66,16 +60,23 @@ pub use servo_arc;
 extern crate stylo_atoms;
 #[macro_use]
 extern crate static_assertions;
-#[macro_use]
-extern crate style_derive;
 #[cfg(feature = "gecko")]
 #[macro_use]
 extern crate thin_vec;
-#[macro_use]
-extern crate to_shmem_derive;
 
 #[macro_use]
 mod macros;
+
+mod derives {
+    pub(crate) use derive_more::{Add, AddAssign, Deref, DerefMut, From};
+    pub(crate) use malloc_size_of_derive::MallocSizeOf;
+    pub(crate) use num_derive::FromPrimitive;
+    pub(crate) use style_derive::{
+        Animate, ComputeSquaredDistance, Parse, SpecifiedValueInfo, ToAnimatedValue,
+        ToAnimatedZero, ToComputedValue, ToCss, ToResolvedValue, ToTyped,
+    };
+    pub(crate) use to_shmem_derive::ToShmem;
+}
 
 pub mod applicable_declarations;
 pub mod author_styles;

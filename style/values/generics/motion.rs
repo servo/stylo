@@ -4,6 +4,7 @@
 
 //! Generic types for CSS Motion Path.
 
+use crate::derives::*;
 use crate::values::animated::ToAnimatedZero;
 use crate::values::generics::position::{GenericPosition, GenericPositionOrAuto};
 use crate::values::specified::motion::CoordBox;

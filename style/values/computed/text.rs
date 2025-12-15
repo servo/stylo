@@ -4,6 +4,7 @@
 
 //! Computed types for text properties.
 
+use crate::derives::*;
 use crate::values::computed::length::{Length, LengthPercentage};
 use crate::values::generics::text::{
     GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationInset,

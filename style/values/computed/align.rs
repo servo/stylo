@@ -6,6 +6,7 @@
 //!
 //! https://drafts.csswg.org/css-align/
 
+use crate::derives::*;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::specified;
 

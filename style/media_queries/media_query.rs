@@ -6,6 +6,7 @@
 //!
 //! https://drafts.csswg.org/mediaqueries/#typedef-media-query
 
+use crate::derives::*;
 use crate::parser::ParserContext;
 use crate::queries::{FeatureFlags, FeatureType, QueryCondition};
 use crate::str::string_as_ascii_lowercase;

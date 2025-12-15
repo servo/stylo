@@ -15,7 +15,7 @@ use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use std::os::unix::thread::{JoinHandleExt, RawPthread};
 #[cfg(windows)]
 use std::os::windows::{io::AsRawHandle, prelude::RawHandle};
-use std::{io, thread};
+use std::{io, sync::LazyLock, thread};
 use thin_vec::ThinVec;
 
 /// Platform-specific handle to a thread.
@@ -65,17 +65,14 @@ fn thread_name(index: usize) -> String {
     format!("StyleThread#{}", index)
 }
 
-lazy_static! {
-    /// JoinHandles for spawned style threads. These will be joined during
-    /// StyleThreadPool::shutdown() after exiting the thread pool.
-    ///
-    /// This would be quite inefficient if rayon destroyed and re-created
-    /// threads regularly during threadpool operation in response to demand,
-    /// however rayon actually never destroys its threads until the entire
-    /// thread pool is shut-down, so the size of this list is bounded.
-    static ref STYLE_THREAD_JOIN_HANDLES: Mutex<Vec<thread::JoinHandle<()>>> =
-        Mutex::new(Vec::new());
-}
+/// JoinHandles for spawned style threads. These will be joined during
+/// StyleThreadPool::shutdown() after exiting the thread pool.
+///
+/// This would be quite inefficient if rayon destroyed and re-created
+/// threads regularly during threadpool operation in response to demand,
+/// however rayon actually never destroys its threads until the entire
+/// thread pool is shut-down, so the size of this list is bounded.
+static STYLE_THREAD_JOIN_HANDLES: Mutex<Vec<thread::JoinHandle<()>>> = Mutex::new(Vec::new());
 
 fn thread_spawn(options: rayon::ThreadBuilder) -> io::Result<()> {
     let mut b = thread::Builder::new();
@@ -139,7 +136,7 @@ impl StyleThreadPool {
     pub fn get_thread_handles(handles: &mut ThinVec<PlatformThreadHandle>) {
         // Force the lazy initialization of STYLE_THREAD_POOL so that the threads get spawned and
         // their join handles are added to STYLE_THREAD_JOIN_HANDLES.
-        lazy_static::initialize(&STYLE_THREAD_POOL);
+        LazyLock::force(&STYLE_THREAD_POOL);
 
         for join_handle in STYLE_THREAD_JOIN_HANDLES.lock().iter() {
             #[cfg(unix)]
@@ -171,59 +168,57 @@ fn stylo_threads_pref() -> i32 {
 /// there on many-core machines (see bug 1431285 comment 14).
 pub(crate) const STYLO_MAX_THREADS: usize = 6;
 
-lazy_static! {
-    /// Global thread pool
-    pub static ref STYLE_THREAD_POOL: StyleThreadPool = {
-        use std::cmp;
-        // We always set this pref on startup, before layout or script have had a chance of
-        // accessing (and thus creating) the thread-pool.
-        let threads_pref: i32 = stylo_threads_pref();
-        let num_threads = if threads_pref >= 0 {
-            threads_pref as usize
+/// Global thread pool
+pub static STYLE_THREAD_POOL: LazyLock<StyleThreadPool> = LazyLock::new(|| {
+    use std::cmp;
+    // We always set this pref on startup, before layout or script have had a chance of
+    // accessing (and thus creating) the thread-pool.
+    let threads_pref: i32 = stylo_threads_pref();
+    let num_threads = if threads_pref >= 0 {
+        threads_pref as usize
+    } else {
+        // Gecko may wish to override the default number of threads, for example on
+        // systems with heterogeneous CPUs.
+        #[cfg(feature = "gecko")]
+        let num_threads = unsafe { bindings::Gecko_GetNumStyleThreads() };
+        #[cfg(not(feature = "gecko"))]
+        let num_threads = -1;
+
+        if num_threads >= 0 {
+            num_threads as usize
         } else {
-            // Gecko may wish to override the default number of threads, for example on
-            // systems with heterogeneous CPUs.
-            #[cfg(feature = "gecko")]
-            let num_threads = unsafe { bindings::Gecko_GetNumStyleThreads() };
-            #[cfg(not(feature = "gecko"))]
-            let num_threads = -1;
-
-            if num_threads >= 0 {
-                num_threads as usize
-            } else {
-                // The default heuristic is num_virtual_cores * .75. This gives us three threads on a
-                // hyper-threaded dual core, and six threads on a hyper-threaded quad core.
-                cmp::max(num_cpus::get() * 3 / 4, 1)
-            }
-        };
-
-        let num_threads = cmp::min(num_threads, STYLO_MAX_THREADS);
-        // Since the main-thread is also part of the pool, having one thread or less doesn't make
-        // sense.
-        let (pool, num_threads) = if num_threads <= 1 {
-            (None, None)
-        } else {
-            let workers = rayon::ThreadPoolBuilder::new()
-                .spawn_handler(thread_spawn)
-                .use_current_thread()
-                .num_threads(num_threads)
-                .thread_name(thread_name)
-                .start_handler(thread_startup)
-                .exit_handler(thread_shutdown)
-                .stack_size(STYLE_THREAD_STACK_SIZE_KB * 1024)
-                .build();
-            (workers.ok(), Some(num_threads))
-        };
-
-        StyleThreadPool {
-            num_threads,
-            style_thread_pool: RwLock::new(pool),
+            // The default heuristic is num_virtual_cores * .75. This gives us three threads on a
+            // hyper-threaded dual core, and six threads on a hyper-threaded quad core.
+            cmp::max(num_cpus::get() * 3 / 4, 1)
         }
     };
 
-    /// Global style data
-    pub static ref GLOBAL_STYLE_DATA: GlobalStyleData = GlobalStyleData {
-        shared_lock: SharedRwLock::new_leaked(),
-        options: StyleSystemOptions::default(),
+    let num_threads = cmp::min(num_threads, STYLO_MAX_THREADS);
+    // Since the main-thread is also part of the pool, having one thread or less doesn't make
+    // sense.
+    let (pool, num_threads) = if num_threads <= 1 {
+        (None, None)
+    } else {
+        let workers = rayon::ThreadPoolBuilder::new()
+            .spawn_handler(thread_spawn)
+            .use_current_thread()
+            .num_threads(num_threads)
+            .thread_name(thread_name)
+            .start_handler(thread_startup)
+            .exit_handler(thread_shutdown)
+            .stack_size(STYLE_THREAD_STACK_SIZE_KB * 1024)
+            .build();
+        (workers.ok(), Some(num_threads))
     };
-}
+
+    StyleThreadPool {
+        num_threads,
+        style_thread_pool: RwLock::new(pool),
+    }
+});
+
+/// Global style data
+pub static GLOBAL_STYLE_DATA: LazyLock<GlobalStyleData> = LazyLock::new(|| GlobalStyleData {
+    shared_lock: SharedRwLock::new_leaked(),
+    options: StyleSystemOptions::default(),
+});

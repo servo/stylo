@@ -1674,34 +1674,36 @@ impl<'le> TElement for GeckoElement<'le> {
         use crate::properties::longhands::color::SpecifiedValue as SpecifiedColor;
         use crate::stylesheets::layer_rule::LayerOrder;
         use crate::values::specified::{color::Color, font::XTextScale};
-        lazy_static! {
-            static ref TABLE_COLOR_RULE: ApplicableDeclarationBlock = {
-                let global_style_data = &*GLOBAL_STYLE_DATA;
-                let pdb = PropertyDeclarationBlock::with_one(
-                    PropertyDeclaration::Color(SpecifiedColor(Color::InheritFromBodyQuirk.into())),
-                    Importance::Normal,
-                );
-                let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
-                ApplicableDeclarationBlock::from_declarations(
-                    arc,
-                    ServoCascadeLevel::PresHints,
-                    LayerOrder::root(),
-                )
-            };
-            static ref MATHML_LANG_RULE: ApplicableDeclarationBlock = {
-                let global_style_data = &*GLOBAL_STYLE_DATA;
-                let pdb = PropertyDeclarationBlock::with_one(
-                    PropertyDeclaration::XLang(SpecifiedLang(atom!("x-math"))),
-                    Importance::Normal,
-                );
-                let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
-                ApplicableDeclarationBlock::from_declarations(
-                    arc,
-                    ServoCascadeLevel::PresHints,
-                    LayerOrder::root(),
-                )
-            };
-            static ref SVG_TEXT_DISABLE_SCALE_RULE: ApplicableDeclarationBlock = {
+        use std::sync::LazyLock;
+
+        static TABLE_COLOR_RULE: LazyLock<ApplicableDeclarationBlock> = LazyLock::new(|| {
+            let global_style_data = &*GLOBAL_STYLE_DATA;
+            let pdb = PropertyDeclarationBlock::with_one(
+                PropertyDeclaration::Color(SpecifiedColor(Color::InheritFromBodyQuirk.into())),
+                Importance::Normal,
+            );
+            let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
+            ApplicableDeclarationBlock::from_declarations(
+                arc,
+                ServoCascadeLevel::PresHints,
+                LayerOrder::root(),
+            )
+        });
+        static MATHML_LANG_RULE: LazyLock<ApplicableDeclarationBlock> = LazyLock::new(|| {
+            let global_style_data = &*GLOBAL_STYLE_DATA;
+            let pdb = PropertyDeclarationBlock::with_one(
+                PropertyDeclaration::XLang(SpecifiedLang(atom!("x-math"))),
+                Importance::Normal,
+            );
+            let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
+            ApplicableDeclarationBlock::from_declarations(
+                arc,
+                ServoCascadeLevel::PresHints,
+                LayerOrder::root(),
+            )
+        });
+        static SVG_TEXT_DISABLE_SCALE_RULE: LazyLock<ApplicableDeclarationBlock> =
+            LazyLock::new(|| {
                 let global_style_data = &*GLOBAL_STYLE_DATA;
                 let pdb = PropertyDeclarationBlock::with_one(
                     PropertyDeclaration::XTextScale(XTextScale::None),
@@ -1713,8 +1715,7 @@ impl<'le> TElement for GeckoElement<'le> {
                     ServoCascadeLevel::PresHints,
                     LayerOrder::root(),
                 )
-            };
-        };
+            });
 
         let ns = self.namespace_id();
         // <th> elements get a default MozCenterOrInherit which may get overridden

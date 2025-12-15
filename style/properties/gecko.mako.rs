@@ -444,18 +444,16 @@ impl ${style_struct.gecko_struct_name} {
             UniqueArc::assume_init(result).shareable()
         }
 % else:
-        lazy_static! {
-            static ref DEFAULT: Arc<${style_struct.gecko_struct_name}> = unsafe {
-                let mut result = UniqueArc::<${style_struct.gecko_struct_name}>::new_uninit();
-                Gecko_Construct_Default_${style_struct.gecko_ffi_name}(
-                    result.as_mut_ptr() as *mut _,
-                    std::ptr::null(),
-                );
-                let arc = UniqueArc::assume_init(result).shareable();
-                arc.mark_as_intentionally_leaked();
-                arc
-            };
-        };
+        static DEFAULT: std::sync::LazyLock<Arc<${style_struct.gecko_struct_name}>> = std::sync::LazyLock::new(|| unsafe {
+            let mut result = UniqueArc::<${style_struct.gecko_struct_name}>::new_uninit();
+            Gecko_Construct_Default_${style_struct.gecko_ffi_name}(
+                result.as_mut_ptr() as *mut _,
+                std::ptr::null(),
+            );
+            let arc = UniqueArc::assume_init(result).shareable();
+            arc.mark_as_intentionally_leaked();
+            arc
+        });
         DEFAULT.clone()
 % endif
     }

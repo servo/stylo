@@ -362,15 +362,13 @@ pub struct FontFamily {
 
 macro_rules! static_font_family {
     ($ident:ident, $family:expr) => {
-        lazy_static! {
-            static ref $ident: FontFamily = FontFamily {
-                families: FontFamilyList {
-                    list: crate::ArcSlice::from_iter_leaked(std::iter::once($family)),
-                },
-                is_system_font: false,
-                is_initial: false,
-            };
-        }
+        static $ident: std::sync::LazyLock<FontFamily> = std::sync::LazyLock::new(|| FontFamily {
+            families: FontFamilyList {
+                list: crate::ArcSlice::from_iter_leaked(std::iter::once($family)),
+            },
+            is_system_font: false,
+            is_initial: false,
+        });
     };
 }
 

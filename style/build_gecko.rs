@@ -13,14 +13,14 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 use std::slice;
+use std::sync::LazyLock;
 use std::sync::Mutex;
 use std::time::SystemTime;
 use toml;
 use toml::value::Table;
 
-lazy_static! {
-    static ref OUTDIR_PATH: PathBuf = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("gecko");
-}
+static OUTDIR_PATH: LazyLock<PathBuf> =
+    LazyLock::new(|| PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("gecko"));
 
 const STRUCTS_FILE: &'static str = "structs.rs";
 
@@ -39,32 +39,36 @@ fn read_config(path: &PathBuf) -> Table {
     }
 }
 
-lazy_static! {
-    static ref CONFIG: Table = {
-        // Load Gecko's binding generator config from the source tree.
-        let path = mozbuild::TOPSRCDIR.join("layout/style/ServoBindings.toml");
-        read_config(&path)
-    };
-    static ref BINDGEN_FLAGS: Vec<String> = {
-        mozbuild::config::BINDGEN_SYSTEM_FLAGS
-            .iter()
-            .chain(&mozbuild::config::NSPR_CFLAGS)
-            .chain(&mozbuild::config::MOZ_PIXMAN_CFLAGS)
-            .chain(&mozbuild::config::MOZ_ICU_CFLAGS)
-            .map(|s| s.to_string())
-            .collect()
-    };
-    static ref INCLUDE_RE: Regex = Regex::new(r#"#include\s*"(.+?)""#).unwrap();
-    static ref DISTDIR_PATH: PathBuf = mozbuild::TOPOBJDIR.join("dist");
-    static ref SEARCH_PATHS: Vec<PathBuf> = vec![
+static CONFIG: LazyLock<Table> = LazyLock::new(|| {
+    // Load Gecko's binding generator config from the source tree.
+    let path = mozbuild::TOPSRCDIR.join("layout/style/ServoBindings.toml");
+    read_config(&path)
+});
+static BINDGEN_FLAGS: LazyLock<Vec<String>> = LazyLock::new(|| {
+    mozbuild::config::BINDGEN_SYSTEM_FLAGS
+        .iter()
+        .chain(&mozbuild::config::NSPR_CFLAGS)
+        .chain(&mozbuild::config::MOZ_PIXMAN_CFLAGS)
+        .chain(&mozbuild::config::MOZ_ICU_CFLAGS)
+        .map(|s| s.to_string())
+        .collect()
+});
+static INCLUDE_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"#include\s*"(.+?)""#).unwrap());
+static DISTDIR_PATH: LazyLock<PathBuf> = LazyLock::new(|| mozbuild::TOPOBJDIR.join("dist"));
+static SEARCH_PATHS: LazyLock<Vec<PathBuf>> = LazyLock::new(|| {
+    vec![
         DISTDIR_PATH.join("include"),
         DISTDIR_PATH.join("include/nspr"),
-    ];
-    static ref ADDED_PATHS: Mutex<HashSet<PathBuf>> = Mutex::new(HashSet::new());
-    static ref LAST_MODIFIED: Mutex<SystemTime> =
-        Mutex::new(get_modified_time(&env::current_exe().unwrap())
-                   .expect("Failed to get modified time of executable"));
-}
+    ]
+});
+static ADDED_PATHS: LazyLock<Mutex<HashSet<PathBuf>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
+static LAST_MODIFIED: LazyLock<Mutex<SystemTime>> = LazyLock::new(|| {
+    Mutex::new(
+        get_modified_time(&env::current_exe().unwrap())
+            .expect("Failed to get modified time of executable"),
+    )
+});
 
 fn get_modified_time(file: &Path) -> Option<SystemTime> {
     file.metadata().and_then(|m| m.modified()).ok()

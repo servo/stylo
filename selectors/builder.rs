@@ -289,16 +289,6 @@ fn specificity_and_flags<Impl>(
 where
     Impl: SelectorImpl,
 {
-    complex_selector_specificity_and_flags(iter, for_nesting_parent).into()
-}
-
-fn complex_selector_specificity_and_flags<Impl>(
-    iter: slice::Iter<Component<Impl>>,
-    for_nesting_parent: bool,
-) -> SpecificityAndFlags
-where
-    Impl: SelectorImpl,
-{
     fn component_specificity<Impl>(
         simple_selector: &Component<Impl>,
         specificity: &mut Specificity,

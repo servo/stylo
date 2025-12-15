@@ -24,12 +24,12 @@
 //! module encapsulates those details and presents an easy-to-use API for the parser.
 
 use crate::parser::{
-    Combinator, Component, ParseRelative, RelativeSelector, Selector, SelectorImpl,
+    Combinator, Component, ParseRelative, RelativeSelector, Selector, SelectorData, SelectorImpl,
 };
 use crate::sink::Push;
 use bitflags::bitflags;
 use derive_more::{Add, AddAssign};
-use servo_arc::{Arc, ThinArc};
+use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::cmp;
 use std::slice;
@@ -90,10 +90,7 @@ impl<Impl: SelectorImpl> SelectorBuilder<Impl> {
 
     /// Consumes the builder, producing a Selector.
     #[inline(always)]
-    pub fn build(
-        &mut self,
-        parse_relative: ParseRelative,
-    ) -> ThinArc<SpecificityAndFlags, Component<Impl>> {
+    pub fn build(&mut self, parse_relative: ParseRelative) -> SelectorData<Impl> {
         // Compute the specificity and flags.
         let sf = specificity_and_flags(
             self.components.iter(),
@@ -109,7 +106,7 @@ impl<Impl: SelectorImpl> SelectorBuilder<Impl> {
         &mut self,
         mut spec: SpecificityAndFlags,
         parse_relative: ParseRelative,
-    ) -> ThinArc<SpecificityAndFlags, Component<Impl>> {
+    ) -> SelectorData<Impl> {
         let implicit_addition = match parse_relative {
             ParseRelative::ForNesting if !spec.flags.intersects(SelectorFlags::HAS_PARENT) => {
                 Some((Component::ParentSelector, SelectorFlags::HAS_PARENT))

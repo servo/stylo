@@ -793,7 +793,7 @@ pub fn namespace_empty_string<Impl: SelectorImpl>() -> Impl::NamespaceUrl {
     Impl::NamespaceUrl::default()
 }
 
-type SelectorData<Impl> = ThinArc<SpecificityAndFlags, Component<Impl>>;
+pub(super) type SelectorData<Impl> = ThinArc<SpecificityAndFlags, Component<Impl>>;
 
 /// Whether a selector may match a featureless host element, and whether it may match other
 /// elements.

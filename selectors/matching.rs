@@ -318,6 +318,37 @@ pub enum CompoundSelectorMatchingResult {
     NotMatched,
 }
 
+fn complex_selector_early_reject_by_local_name<E: Element>(
+    list: &SelectorList<E::Impl>,
+    element: &E,
+) -> bool {
+    list.slice()
+        .iter()
+        .all(|s| early_reject_by_local_name(s, 0, element))
+}
+
+/// Returns true if this compound would not match the given element by due
+/// to a local name selector (If one exists).
+pub fn early_reject_by_local_name<E: Element>(
+    selector: &Selector<E::Impl>,
+    from_offset: usize,
+    element: &E,
+) -> bool {
+    let iter = selector.iter_from(from_offset);
+    for component in iter {
+        if match component {
+            Component::LocalName(name) => !matches_local_name(element, name),
+            Component::Is(list) | Component::Where(list) => {
+                complex_selector_early_reject_by_local_name(list, element)
+            },
+            _ => continue,
+        } {
+            return true;
+        }
+    }
+    false
+}
+
 /// Matches a compound selector belonging to `selector`, starting at offset
 /// `from_offset`, matching left to right.
 ///

@@ -575,14 +575,16 @@ impl GenericAnchorSizeFunction<Box<CalcNode>> {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
         GenericAnchorSizeFunction::parse_inner(context, input, |i| {
-            Ok(Box::new(CalcNode::parse_argument(
-                context,
-                i,
-                AllowParse::new(CalcUnits::LENGTH_PERCENTAGE),
-            )?
-            .into_length_or_percentage(AllowedNumericType::All)
-            .map_err(|_| i.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
-            .node))
+            Ok(Box::new(
+                CalcNode::parse_argument(
+                    context,
+                    i,
+                    AllowParse::new(CalcUnits::LENGTH_PERCENTAGE),
+                )?
+                .into_length_or_percentage(AllowedNumericType::All)
+                .map_err(|_| i.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
+                .node,
+            ))
         })
     }
 }

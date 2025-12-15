@@ -1189,7 +1189,9 @@ where
                     invalidation_kind,
                     DependencyInvalidationKind::Normal(NormalDependencyInvalidationKind::Element)
                 ) || (matches!(invalidation_kind, DependencyInvalidationKind::Scope(_))
-                    && cur_dependency.selector.is_rightmost(cur_dependency.selector_offset))
+                    && cur_dependency
+                        .selector
+                        .is_rightmost(cur_dependency.selector_offset))
                 {
                     // Add to dependency stack to process its next dependencies.
                     to_process.push(cur_dependency);

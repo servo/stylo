@@ -868,8 +868,7 @@ trait PrivateMatchMethods: TElement {
             let old_justify_items = old_values.get_position().clone_justify_items();
             let new_justify_items = new_values.get_position().clone_justify_items();
 
-            let was_legacy_justify_items =
-                old_justify_items.computed.contains(AlignFlags::LEGACY);
+            let was_legacy_justify_items = old_justify_items.computed.contains(AlignFlags::LEGACY);
 
             let is_legacy_justify_items = new_justify_items.computed.contains(AlignFlags::LEGACY);
 

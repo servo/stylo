@@ -30,8 +30,6 @@ pub(crate) use cssparser;
 #[macro_use]
 extern crate bitflags;
 #[macro_use]
-extern crate debug_unreachable;
-#[macro_use]
 #[cfg(feature = "gecko")]
 extern crate gecko_profiler;
 #[cfg(feature = "gecko")]

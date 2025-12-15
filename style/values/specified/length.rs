@@ -27,6 +27,7 @@ use crate::values::CSSFloat;
 use crate::{Zero, ZeroNoPercent};
 use app_units::AU_PER_PX;
 use cssparser::{match_ignore_ascii_case, Parser, Token};
+use debug_unreachable::debug_unreachable;
 use std::cmp;
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;

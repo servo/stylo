@@ -37,7 +37,10 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
     if needs_catchall_branch {
         // This ideally shouldn't be needed, but see
         // https://github.com/rust-lang/rust/issues/68867
-        match_body.append_all(quote! { _ => unsafe { debug_unreachable!() } });
+        match_body.append_all(quote! { _ => unsafe {
+            use ::debug_unreachable::debug_unreachable;
+            debug_unreachable!()
+        } });
     }
 
     let name = &input.ident;

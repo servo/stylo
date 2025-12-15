@@ -22,6 +22,7 @@ use crate::values::specified::length::{ContainerRelativeLength, ViewportPercenta
 use crate::values::specified::{self, Angle, Resolution, Time};
 use crate::values::{serialize_number, serialize_percentage, CSSFloat, DashedIdent};
 use cssparser::{match_ignore_ascii_case, CowRcStr, Parser, Token};
+use debug_unreachable::debug_unreachable;
 use smallvec::SmallVec;
 use std::cmp;
 use std::fmt::{self, Write};

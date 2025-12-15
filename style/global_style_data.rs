@@ -191,7 +191,6 @@ lazy_static! {
             if num_threads >= 0 {
                 num_threads as usize
             } else {
-                use num_cpus;
                 // The default heuristic is num_virtual_cores * .75. This gives us three threads on a
                 // hyper-threaded dual core, and six threads on a hyper-threaded quad core.
                 cmp::max(num_cpus::get() * 3 / 4, 1)

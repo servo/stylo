@@ -50,7 +50,7 @@ bitflags! {
     }
 }
 
-malloc_size_of_is_0!(ServoRestyleDamage);
+malloc_size_of::malloc_size_of_is_0!(ServoRestyleDamage);
 
 impl ServoRestyleDamage {
     /// Compute the `StyleDifference` (including the appropriate restyle damage)

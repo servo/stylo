@@ -57,7 +57,7 @@ pub struct PtNameAndClassSelector(thin_vec::ThinVec<Atom>);
 impl PtNameAndClassSelector {
     /// Constructs a new one from a name.
     pub fn from_name(name: Atom) -> Self {
-        Self(thin_vec![name])
+        Self(thin_vec::thin_vec![name])
     }
 
     /// Returns the name component.
@@ -142,7 +142,7 @@ impl PtNameAndClassSelector {
 
         // Use the universal symbol as the first element to present the part of
         // `<pt-name-selector>` because they are equivalent (and the serialization is the same).
-        let mut result = thin_vec![name.unwrap_or(atom!("*"))];
+        let mut result = thin_vec::thin_vec![name.unwrap_or(atom!("*"))];
         result.append(&mut classes);
 
         Ok(Self(result))

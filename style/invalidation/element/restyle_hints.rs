@@ -192,4 +192,4 @@ impl Default for RestyleHint {
 }
 
 #[cfg(feature = "servo")]
-malloc_size_of_is_0!(RestyleHint);
+malloc_size_of::malloc_size_of_is_0!(RestyleHint);

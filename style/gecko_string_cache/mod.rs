@@ -528,6 +528,6 @@ impl From<String> for Atom {
     }
 }
 
-malloc_size_of_is_0!(Atom);
+malloc_size_of::malloc_size_of_is_0!(Atom);
 
 impl SpecifiedValueInfo for Atom {}

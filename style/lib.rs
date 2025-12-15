@@ -39,18 +39,9 @@ pub mod gecko_string_cache;
 extern crate lazy_static;
 #[macro_use]
 extern crate log;
-#[macro_use]
-extern crate malloc_size_of;
-#[cfg(feature = "servo")]
-extern crate web_atoms;
 #[allow(unused_extern_crates)]
 #[macro_use]
 extern crate matches;
-#[cfg(feature = "gecko")]
-pub use nsstring;
-#[cfg(feature = "gecko")]
-extern crate num_cpus;
-#[macro_use]
 extern crate serde;
 pub use servo_arc;
 #[cfg(feature = "servo")]
@@ -58,9 +49,6 @@ pub use servo_arc;
 extern crate stylo_atoms;
 #[macro_use]
 extern crate static_assertions;
-#[cfg(feature = "gecko")]
-#[macro_use]
-extern crate thin_vec;
 
 #[macro_use]
 mod macros;

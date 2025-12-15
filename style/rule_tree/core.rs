@@ -518,7 +518,7 @@ pub struct StrongRuleNode {
 }
 
 #[cfg(feature = "servo")]
-malloc_size_of_is_0!(StrongRuleNode);
+malloc_size_of::malloc_size_of_is_0!(StrongRuleNode);
 
 impl StrongRuleNode {
     fn new(n: Box<RuleNode>) -> Self {

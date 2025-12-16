@@ -1258,7 +1258,7 @@ impl CountedUnknownProperty {
 impl PropertyId {
     /// Returns a given property from the given name, _regardless of whether it
     /// is enabled or not_, or Err(()) for unknown properties.
-    pub(super) fn parse_unchecked(
+    pub fn parse_unchecked(
         property_name: &str,
         use_counters: Option<&UseCounters>,
     ) -> Result<Self, ()> {

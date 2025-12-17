@@ -22,7 +22,7 @@ bitflags! {
 }
 
 /// <https://drafts.css-houdini.org/css-properties-values-api-1/#supported-names>
-#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq)]
+#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, ToShmem)]
 pub enum DataType {
     /// Any valid `<length>` value
     Length,

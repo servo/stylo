@@ -17,7 +17,7 @@ use crate::properties::{
 };
 use crate::properties_and_values::{
     registry::PropertyRegistrationData,
-    syntax::data_type::DependentDataTypes,
+    syntax::{data_type::DependentDataTypes, Descriptor},
     value::{
         AllowComputationallyDependent, ComputedValue as ComputedRegisteredValue,
         SpecifiedValue as SpecifiedRegisteredValue,
@@ -473,6 +473,13 @@ enum SubstitutionFunctionKind {
     Attr,
 }
 
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem, Parse)]
+enum AttributeType {
+    None,
+    Type(Descriptor),
+    Unit,
+}
+
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 struct VariableFallback {
     start: num::NonZeroUsize,
@@ -486,6 +493,7 @@ struct SubstitutionFunctionReference {
     start: usize,
     end: usize,
     fallback: Option<VariableFallback>,
+    attribute_syntax: AttributeType,
     prev_token_type: TokenSerializationType,
     next_token_type: TokenSerializationType,
     substitution_kind: SubstitutionFunctionKind,
@@ -831,6 +839,19 @@ fn parse_declaration_value_block<'i, 't>(
                                 name.as_ref()
                             });
 
+                        let mut attribute_syntax = AttributeType::None;
+                        if substitution_kind == SubstitutionFunctionKind::Attr
+                            && input
+                                .try_parse(|input| input.expect_function_matching("type"))
+                                .is_ok()
+                        {
+                            // TODO(descalante): determine what to do for `type(garbage)` bug 2006626
+                            attribute_syntax = input
+                                .parse_nested_block(Descriptor::from_css_parser)
+                                .ok()
+                                .map_or(AttributeType::None, AttributeType::Type);
+                        }
+
                         // We want the order of the references to match source order. So we need to reserve our slot
                         // now, _before_ parsing our fallback. Note that we don't care if parsing fails after all, since
                         // if this fails we discard the whole result anyways.
@@ -845,6 +866,7 @@ fn parse_declaration_value_block<'i, 't>(
                             next_token_type: TokenSerializationType::Nothing,
                             // To be fixed up after parsing fallback.
                             fallback: None,
+                            attribute_syntax,
                             substitution_kind: substitution_kind.clone(),
                         });
 
@@ -2109,6 +2131,12 @@ fn do_substitute_chunk<'a>(
     Ok(Substitution::from_value(substituted))
 }
 
+fn quoted_css_string(src: &str) -> String {
+    let mut dest = String::with_capacity(src.len() + 2);
+    cssparser::serialize_string(src, &mut dest).unwrap();
+    dest
+}
+
 fn substitute_one_reference<'a>(
     css: &'a str,
     url_data: &UrlExtraData,
@@ -2135,12 +2163,25 @@ fn substitute_one_reference<'a>(
         },
         SubstitutionFunctionKind::Attr => attr_provider
             .get_attr(AtomIdent::cast(&reference.name))
-            .map(|attr| {
-                Substitution::new(
-                    Cow::Owned(attr),
-                    TokenSerializationType::Nothing,
-                    TokenSerializationType::Nothing,
+            .and_then(|attr| {
+                let AttributeType::Type(syntax) = &reference.attribute_syntax else {
+                    return Some(Substitution::new(
+                        Cow::Owned(quoted_css_string(&attr)),
+                        TokenSerializationType::Nothing,
+                        TokenSerializationType::Nothing,
+                    ));
+                };
+                let mut input = ParserInput::new(&attr);
+                let mut parser = Parser::new(&mut input);
+                let value = SpecifiedRegisteredValue::parse(
+                    &mut parser,
+                    syntax,
+                    url_data,
+                    AllowComputationallyDependent::Yes,
                 )
+                .ok()?;
+                let value = value.to_computed_value(computed_context);
+                Some(Substitution::from_value(value.to_variable_value()))
             }),
     };
 
@@ -2149,6 +2190,7 @@ fn substitute_one_reference<'a>(
             .next_if(|next_ref| next_ref.end <= reference.end)
             .is_some()
         {}
+
         return Ok(s);
     }
 

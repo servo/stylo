@@ -272,7 +272,7 @@ impl PseudoElement {
     /// parent element.
     #[inline]
     pub fn animations_stored_in_parent(&self) -> bool {
-        matches!(*self, Self::Before | Self::After | Self::Marker)
+        matches!(*self, Self::Before | Self::After | Self::Marker | Self::Backdrop)
     }
 
     /// Whether this pseudo-element is the ::before pseudo.

@@ -37,7 +37,7 @@ use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::calc::{CalcUnits, PositivePercentageBasis};
 #[cfg(feature = "gecko")]
 use crate::values::generics::length::AnchorResolutionResult;
-use crate::values::generics::position::{AnchorSideKeyword, GenericAnchorSide};
+use crate::values::generics::position::GenericAnchorSide;
 use crate::values::generics::{calc, ClampToNonNegative, NonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 use crate::values::specified::length::{FontBaseSize, LineHeightBase};
@@ -917,30 +917,6 @@ pub struct CalcLengthPercentage {
 
 /// Type for anchor side in `calc()` and other math fucntions.
 pub type CalcAnchorSide = GenericAnchorSide<Box<CalcNode>>;
-
-impl CalcAnchorSide {
-    /// Break down given anchor side into its equivalent keyword and percentage.
-    pub fn keyword_and_percentage(&self) -> (AnchorSideKeyword, f32) {
-        let p = match self {
-            Self::Percentage(p) => p,
-            Self::Keyword(k) => {
-                return if matches!(k, AnchorSideKeyword::Center) {
-                    (AnchorSideKeyword::Start, 0.5)
-                } else {
-                    (*k, 1.0)
-                }
-            },
-        };
-
-        if let CalcNode::Leaf(l) = &**p {
-            if let CalcLengthPercentageLeaf::Percentage(v) = l {
-                return (AnchorSideKeyword::Start, v.0);
-            }
-        }
-        debug_assert!(false, "Parsed non-percentage?");
-        (AnchorSideKeyword::Start, 1.0)
-    }
-}
 
 /// Result of resolving `CalcLengthPercentage`
 pub struct CalcLengthPercentageResolution {

@@ -316,7 +316,7 @@ impl FontRelativeLength {
                 FontMetricsOrientation::Horizontal,
                 QueryFontMetricsFlags::empty(),
             );
-            metrics.x_height_or_default(&reference_font_size)
+            metrics.x_height_or_default(reference_font_size.used_size())
         }
 
         fn ch_size(
@@ -338,7 +338,7 @@ impl FontRelativeLength {
                 QueryFontMetricsFlags::NEEDS_CH,
             );
             metrics.zero_advance_measure_or_default(
-                &reference_font_size,
+                reference_font_size.used_size(),
                 context.style().writing_mode.is_upright(),
             )
         }
@@ -364,7 +364,7 @@ impl FontRelativeLength {
                 FontMetricsOrientation::MatchContextPreferVertical,
                 QueryFontMetricsFlags::NEEDS_IC,
             );
-            metrics.ic_width_or_default(&reference_font_size)
+            metrics.ic_width_or_default(reference_font_size.used_size())
         }
 
         let reference_font_size = base_size.resolve(context);

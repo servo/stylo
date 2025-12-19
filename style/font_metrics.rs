@@ -6,7 +6,7 @@
 
 #![deny(missing_docs)]
 
-use crate::values::computed::{FontSize, Length};
+use crate::values::computed::Length;
 
 /// Represents the font metrics that style needs from a font to compute the
 /// value of certain CSS units like `ex`.
@@ -46,7 +46,7 @@ impl Default for FontMetrics {
 
 impl FontMetrics {
     /// Returns the x-height, computing a fallback value if not present
-    pub fn x_height_or_default(&self, reference_font_size: &FontSize) -> Length {
+    pub fn x_height_or_default(&self, reference_font_size: Length) -> Length {
         // https://drafts.csswg.org/css-values/#ex
         //
         //     In the cases where it is impossible or impractical to
@@ -55,14 +55,13 @@ impl FontMetrics {
         //
         // (But note we use 0.5em of the used, not computed
         // font-size)
-        self.x_height
-            .unwrap_or_else(|| reference_font_size.used_size() * 0.5)
+        self.x_height.unwrap_or_else(|| reference_font_size * 0.5)
     }
 
     /// Returns the zero advance measure, computing a fallback value if not present
     pub fn zero_advance_measure_or_default(
         &self,
-        reference_font_size: &FontSize,
+        reference_font_size: Length,
         upright: bool,
     ) -> Length {
         // https://drafts.csswg.org/css-values/#ch
@@ -79,9 +78,9 @@ impl FontMetrics {
         // above.
         self.zero_advance_measure.unwrap_or_else(|| {
             if upright {
-                reference_font_size.used_size()
+                reference_font_size
             } else {
-                reference_font_size.used_size() * 0.5
+                reference_font_size * 0.5
             }
         })
     }
@@ -98,7 +97,7 @@ impl FontMetrics {
     }
 
     /// Returns the ideographic advance measure, computing a fallback value if not present
-    pub fn ic_width_or_default(&self, reference_font_size: &FontSize) -> Length {
+    pub fn ic_width_or_default(&self, reference_font_size: Length) -> Length {
         // https://drafts.csswg.org/css-values/#ic
         //
         //     In the cases where it is impossible or impractical to
@@ -107,8 +106,7 @@ impl FontMetrics {
         //
         // Same caveat about computed vs. used as for other
         // metric-dependent units.
-        self.ic_width
-            .unwrap_or_else(|| reference_font_size.used_size())
+        self.ic_width.unwrap_or_else(|| reference_font_size)
     }
 }
 

@@ -2821,7 +2821,7 @@ where
             ParseRelative::No => unreachable!(),
         }
     }
-    'outer_loop: loop {
+    loop {
         // Parse a sequence of simple selectors.
         let empty = parse_compound_selector(parser, &mut state, input, &mut builder)?;
         if empty {
@@ -2845,7 +2845,7 @@ where
         let combinator = if let Ok(c) = try_parse_combinator(input) {
             c
         } else {
-            break 'outer_loop;
+            break;
         };
 
         if !state.allows_combinators() {

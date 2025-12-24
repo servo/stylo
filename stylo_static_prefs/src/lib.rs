@@ -42,6 +42,9 @@ macro_rules! pref {
     ("layout.css.font-variations.enabled") => {
         true
     };
+    ("layout.css.gradient-color-interpolation-method.enabled") => {
+        true
+    };
     ($string:literal) => {
         false
     };

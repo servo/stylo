@@ -45,6 +45,9 @@ macro_rules! pref {
     ("layout.css.gradient-color-interpolation-method.enabled") => {
         true
     };
+    ("layout.css.contrast-color.enabled") => {
+        true
+    };
     ($string:literal) => {
         false
     };

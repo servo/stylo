@@ -53,10 +53,13 @@ where
     true
 }
 
-/// Whether two elements have the same same style attribute (by pointer identity).
+/// Whether two elements have the same style attribute.
+///
+/// First checks pointer identity (fast path), then falls back to value comparison.
 pub fn have_same_style_attribute<E>(
     target: &mut StyleSharingTarget<E>,
     candidate: &mut StyleSharingCandidate<E>,
+    shared_context: &SharedStyleContext,
 ) -> bool
 where
     E: TElement,
@@ -64,7 +67,13 @@ where
     match (target.style_attribute(), candidate.style_attribute()) {
         (None, None) => true,
         (Some(_), None) | (None, Some(_)) => false,
-        (Some(a), Some(b)) => &*a as *const _ == &*b as *const _,
+        (Some(a), Some(b)) => {
+            if std::ptr::eq(&*a, &*b) {
+                return true;
+            }
+            let guard = shared_context.guards.author;
+            *a.read_with(guard) == *b.read_with(guard)
+        },
     }
 }
 

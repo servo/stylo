@@ -847,7 +847,7 @@ impl<E: TElement> StyleSharingCache<E> {
             return None;
         }
 
-        if !checks::have_same_style_attribute(target, candidate) {
+        if !checks::have_same_style_attribute(target, candidate, shared_context) {
             trace!("Miss: Style Attr");
             return None;
         }

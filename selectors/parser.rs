@@ -3212,7 +3212,11 @@ enum AttributeFlags {
 }
 
 impl AttributeFlags {
-    fn to_case_sensitivity(self, local_name: &str, have_namespace: bool) -> ParsedCaseSensitivity {
+    fn to_case_sensitivity(
+        self,
+        local_name_lower: &str,
+        have_namespace: bool,
+    ) -> ParsedCaseSensitivity {
         match self {
             AttributeFlags::CaseSensitive => ParsedCaseSensitivity::ExplicitCaseSensitive,
             AttributeFlags::AsciiCaseInsensitive => ParsedCaseSensitivity::AsciiCaseInsensitive,
@@ -3222,7 +3226,7 @@ impl AttributeFlags {
                         env!("OUT_DIR"),
                         "/ascii_case_insensitive_html_attributes.rs"
                     ))
-                    .contains(local_name)
+                    .contains(local_name_lower)
                 {
                     ParsedCaseSensitivity::AsciiCaseInsensitiveIfInHtmlElementInHtmlDocument
                 } else {

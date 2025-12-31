@@ -4543,7 +4543,7 @@ pub mod tests {
                     Component::Combinator(Combinator::Child),
                     Component::Class(DummyAtom::from("ok")),
                 ],
-                (1 << 20) + (1 << 10) + (0 << 0),
+                specificity(1, 1, 0),
                 SelectorFlags::empty(),
             )]))
         );
@@ -4638,7 +4638,7 @@ pub mod tests {
                     Component::ParentSelector,
                     Component::Class(DummyAtom::from("bar")),
                 ],
-                (1 << 20) + (1 << 10) + (0 << 0),
+                specificity(1, 1, 0),
                 SelectorFlags::HAS_PARENT
             )]))
         );

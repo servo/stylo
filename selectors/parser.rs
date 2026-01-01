@@ -4681,7 +4681,13 @@ pub mod tests {
         assert_eq!(iter.next(), None);
         let combinator = iter.next_sequence();
         assert_eq!(combinator, Some(Combinator::PseudoElement));
-        assert!(matches!(iter.next(), Some(&Component::LocalName(..))));
+        assert_eq!(
+            iter.next(),
+            Some(&Component::LocalName(LocalName {
+                name: DummyAtom::from("q"),
+                lower_name: DummyAtom::from("q"),
+            }))
+        );
         assert_eq!(iter.next(), None);
         assert_eq!(iter.next_sequence(), None);
     }
@@ -4698,10 +4704,10 @@ pub mod tests {
         assert_eq!(iter.next(), None);
         let combinator = iter.next_sequence();
         assert_eq!(combinator, Some(Combinator::PseudoElement));
-        assert!(matches!(
+        assert_eq!(
             iter.next(),
             Some(&Component::PseudoElement(PseudoElement::Before))
-        ));
+        );
         assert_eq!(iter.next(), None);
         let combinator = iter.next_sequence();
         assert_eq!(combinator, Some(Combinator::PseudoElement));
@@ -4728,10 +4734,10 @@ pub mod tests {
         assert_eq!(iter.next(), None);
         let combinator = iter.next_sequence();
         assert_eq!(combinator, Some(Combinator::PseudoElement));
-        assert!(matches!(
+        assert_eq!(
             iter.next(),
             Some(&Component::PseudoElement(PseudoElement::DetailsContent))
-        ));
+        );
         assert_eq!(iter.next(), None);
         let combinator = iter.next_sequence();
         assert_eq!(combinator, Some(Combinator::PseudoElement));

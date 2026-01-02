@@ -67,11 +67,6 @@ impl Parse for OverflowClipMargin {
     }
 }
 
-#[inline]
-fn is_display_grid_lanes_enabled() -> bool {
-    static_prefs::pref!("layout.css.display-grid-lanes.enabled")
-}
-
 /// Defines an element’s display type, which consists of
 /// the two basic qualities of how an element generates boxes
 /// <https://drafts.csswg.org/css-display/#propdef-display>
@@ -98,7 +93,6 @@ pub enum DisplayInside {
     FlowRoot,
     Flex,
     Grid,
-    GridLanes,
     Table,
     TableRowGroup,
     TableColumn,
@@ -197,12 +191,6 @@ impl Display {
         Self(((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Grid as u16);
     pub const InlineGrid: Self =
         Self(((DisplayOutside::Inline as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Grid as u16);
-    pub const GridLanes: Self = Self(
-        ((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::GridLanes as u16,
-    );
-    pub const InlineGridLanes: Self = Self(
-        ((DisplayOutside::Inline as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::GridLanes as u16,
-    );
     pub const Table: Self =
         Self(((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Table as u16);
     pub const InlineTable: Self = Self(
@@ -359,7 +347,8 @@ impl Display {
     /// This is used to implement various style fixups.
     pub fn is_item_container(&self) -> bool {
         match self.inside() {
-            DisplayInside::Flex | DisplayInside::Grid | DisplayInside::GridLanes => true,
+            DisplayInside::Flex => true,
+            DisplayInside::Grid => true,
             _ => false,
         }
     }
@@ -454,7 +443,6 @@ impl DisplayKeyword {
             "-webkit-flex" => Full(Display::Flex),
             "inline-flex" | "-webkit-inline-flex" => Full(Display::InlineFlex),
             "inline-grid" if grid_enabled() => Full(Display::InlineGrid),
-            "inline-grid-lanes" if is_display_grid_lanes_enabled() => Full(Display::InlineGridLanes),
             "table-caption" => Full(Display::TableCaption),
             "table-row-group" => Full(Display::TableRowGroup),
             "table-header-group" => Full(Display::TableHeaderGroup),
@@ -490,7 +478,6 @@ impl DisplayKeyword {
             "flow-root" => Inside(DisplayInside::FlowRoot),
             "table" => Inside(DisplayInside::Table),
             "grid" if grid_enabled() => Inside(DisplayInside::Grid),
-            "grid-lanes" if is_display_grid_lanes_enabled() => Inside(DisplayInside::GridLanes),
             #[cfg(feature = "gecko")]
             "ruby" => Inside(DisplayInside::Ruby),
         })
@@ -512,9 +499,6 @@ impl ToCss for Display {
             Display::TableCaption => dest.write_str("table-caption"),
             _ => match (outside, inside) {
                 (DisplayOutside::Inline, DisplayInside::Grid) => dest.write_str("inline-grid"),
-                (DisplayOutside::Inline, DisplayInside::GridLanes) => {
-                    dest.write_str("inline-grid-lanes")
-                },
                 (DisplayOutside::Inline, DisplayInside::Flex) => dest.write_str("inline-flex"),
                 (DisplayOutside::Inline, DisplayInside::Table) => dest.write_str("inline-table"),
                 #[cfg(feature = "gecko")]
@@ -594,12 +578,10 @@ impl SpecifiedValueInfo for Display {
             "flow-root",
             "flow-root list-item",
             "grid",
-            "grid-lanes",
             "inline",
             "inline-block",
             "inline-flex",
             "inline-grid",
-            "inline-grid-lanes",
             "inline-table",
             "inline list-item",
             "inline flow-root list-item",

@@ -1380,9 +1380,20 @@ impl PositionArea {
     /// Turns this <position-area> value into a physical <position-area>.
     pub fn to_physical(mut self, cb_wm: WritingMode, self_wm: WritingMode) -> Self {
         self.make_missing_second_explicit();
-        self.first = self.first.to_physical(cb_wm, self_wm, LogicalAxis::Block);
-        self.second = self.second.to_physical(cb_wm, self_wm, LogicalAxis::Inline);
-        self.canonicalize_order();
+        // If both axes are None, to_physical and canonicalize_order are not useful.
+        // The first value refers to the block axis, the second to the inline axis;
+        // but as a physical type, they will be interpreted as the x- and y-axis
+        // respectively, so if the writing mode is horizontal we need to swap the
+        // values (block -> y, inline -> x).
+        if self.first.axis() == PositionAreaAxis::None &&
+            self.second.axis() == PositionAreaAxis::None &&
+            !cb_wm.is_vertical() {
+          std::mem::swap(&mut self.first, &mut self.second);
+        } else {
+          self.first = self.first.to_physical(cb_wm, self_wm, LogicalAxis::Block);
+          self.second = self.second.to_physical(cb_wm, self_wm, LogicalAxis::Inline);
+          self.canonicalize_order();
+        }
         self
     }
 

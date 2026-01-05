@@ -1541,16 +1541,7 @@ pub mod style_structs {
                     }
                 % endif
             % endfor
-            % if style_struct.name == "Border":
-                % for side in ["top", "right", "bottom", "left"]:
-                    /// Whether the border-${side} property has nonzero width.
-                    #[allow(non_snake_case)]
-                    pub fn border_${side}_has_nonzero_width(&self) -> bool {
-                        use crate::Zero;
-                        !self.border_${side}_width.is_zero()
-                    }
-                % endfor
-            % elif style_struct.name == "Font":
+            % if style_struct.name == "Font":
                 /// Computes a font hash in order to be able to cache fonts
                 /// effectively in GFX and layout.
                 pub fn compute_font_hash(&mut self) {
@@ -1577,13 +1568,6 @@ pub mod style_structs {
                 #[inline]
                 pub fn color_scheme_bits(&self) -> ColorSchemeFlags {
                     self.color_scheme.bits
-                }
-            % elif style_struct.name == "Outline":
-                /// Whether the outline-width property is non-zero.
-                #[inline]
-                pub fn outline_has_nonzero_width(&self) -> bool {
-                    use crate::Zero;
-                    !self.outline_width.is_zero()
                 }
             % elif style_struct.name == "Box":
                 /// Sets the display property, but without touching original_display,
@@ -2066,7 +2050,7 @@ impl ComputedValues {
     pub fn computed_value_to_string(&self, property: PropertyDeclarationId) -> String {
         match property {
             PropertyDeclarationId::Longhand(id) => {
-                let context = resolved::Context {
+                let mut context = resolved::Context {
                     style: self,
                     for_property: id.into(),
                     current_longhand: Some(id),
@@ -2074,7 +2058,7 @@ impl ComputedValues {
                 let mut s = String::new();
                 self.computed_or_resolved_value(
                     id,
-                    Some(&context),
+                    Some(&mut context),
                     &mut s
                 ).unwrap();
                 s
@@ -2221,24 +2205,6 @@ impl ComputedValuesInner {
             &padding_style.padding_bottom.0,
             &padding_style.padding_left.0,
         ))
-    }
-
-    /// Get the logical border width
-    #[inline]
-    pub fn border_width_for_writing_mode(&self, writing_mode: WritingMode) -> LogicalMargin<Au> {
-        let border_style = self.get_border();
-        LogicalMargin::from_physical(writing_mode, SideOffsets2D::new(
-            Au::from(border_style.border_top_width),
-            Au::from(border_style.border_right_width),
-            Au::from(border_style.border_bottom_width),
-            Au::from(border_style.border_left_width),
-        ))
-    }
-
-    /// Gets the logical computed border widths for this style.
-    #[inline]
-    pub fn logical_border_width(&self) -> LogicalMargin<Au> {
-        self.border_width_for_writing_mode(self.writing_mode)
     }
 
     /// Gets the logical computed margin from this style.

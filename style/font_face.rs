@@ -686,7 +686,7 @@ macro_rules! font_face_descriptors {
             ///
             /// However both are required for the rule to represent an actual font face.
             #[cfg(feature = "servo")]
-            pub fn font_face(&self) -> Option<FontFace> {
+            pub fn font_face(&self) -> Option<FontFace<'_>> {
                 if $( self.$m_ident.is_some() )&&* {
                     Some(FontFace(self))
                 } else {

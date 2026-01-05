@@ -16,7 +16,7 @@ use crate::selector_parser::SnapshotMap;
 use crate::shared_lock::{SharedRwLockReadGuard, StylesheetGuards};
 use crate::stylesheets::scope_rule::ImplicitScopeRoot;
 use crate::stylesheets::{StylesheetContents, StylesheetInDocument};
-use crate::stylist::Stylist;
+use crate::stylist::{DocumentFlushResult, Stylist};
 use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 use malloc_size_of::MallocSizeOfOps;
 use selectors::Element;
@@ -203,7 +203,7 @@ impl PerDocumentStyleDataImpl {
         guard: &SharedRwLockReadGuard,
         document_element: Option<E>,
         snapshots: Option<&SnapshotMap>,
-    ) -> bool
+    ) -> DocumentFlushResult
     where
         E: TElement,
     {

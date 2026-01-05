@@ -8,17 +8,21 @@
 #![deny(unsafe_code)]
 
 use crate::context::QuirksMode;
+use crate::data::ElementData;
 use crate::derives::*;
 use crate::dom::{TDocument, TElement, TNode};
 use crate::invalidation::element::element_wrapper::{ElementSnapshot, ElementWrapper};
 use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::media_queries::Device;
+use crate::selector_map::PrecomputedHashSet;
 use crate::selector_parser::{SelectorImpl, Snapshot, SnapshotMap};
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::simple_buckets_map::SimpleBucketsMap;
 use crate::stylesheets::{CssRule, CssRuleRef, CustomMediaMap, StylesheetInDocument};
 use crate::stylesheets::{EffectiveRules, EffectiveRulesIterator};
+use crate::values::specified::position::PositionTryFallbacksItem;
 use crate::values::AtomIdent;
+use crate::Atom;
 use crate::LocalName as SelectorLocalName;
 use selectors::parser::{Component, LocalName, Selector};
 
@@ -377,8 +381,7 @@ impl StylesheetInvalidationSet {
         data.hint.contains(RestyleHint::RESTYLE_SELF) || any_children_invalid
     }
 
-    /// TODO(emilio): Reuse the bucket stuff from selectormap? That handles
-    /// :is() / :where() etc.
+    /// TODO(emilio): Reuse the bucket stuff from selectormap? That handles :is() / :where() etc.
     fn scan_component(
         component: &Component<SelectorImpl>,
         invalidation: &mut Option<Invalidation>,
@@ -684,9 +687,8 @@ impl StylesheetInvalidationSet {
                 self.invalidate_fully();
             },
             PositionTry(..) => {
-                // Potential change in sizes/positions of anchored elements. TODO(dshin, bug 1910616):
-                // We should probably make an effort to see if this position-try is referenced.
-                self.invalidate_fully();
+                // @position-try changes doesn't change style-time information (only layout
+                // information) and is handled by invalidate_position_try. So do nothing.
             },
             CustomMedia(..) => {
                 // @custom-media might be referenced by other rules which we can't get a hand on in
@@ -697,4 +699,53 @@ impl StylesheetInvalidationSet {
             },
         }
     }
+}
+
+/// Invalidates for any absolutely positioned element that references the given @position-try fallback names.
+pub fn invalidate_position_try<E>(
+    element: E,
+    changed_names: &PrecomputedHashSet<Atom>,
+    invalidate_self: &mut impl FnMut(E, &mut ElementData),
+    invalidated_descendants: &mut impl FnMut(E),
+) -> bool
+where
+    E: TElement,
+{
+    debug_assert!(
+        !changed_names.is_empty(),
+        "Don't call me if there's nothing to do"
+    );
+    let mut data = match element.mutate_data() {
+        Some(data) => data,
+        None => return false,
+    };
+
+    let mut self_invalid = false;
+    let style = data.styles.primary();
+    if style.clone_position().is_absolutely_positioned() {
+        let fallbacks = style.clone_position_try_fallbacks();
+        let referenced = fallbacks.0.iter().any(|f| match f {
+            PositionTryFallbacksItem::IdentAndOrTactic(ident_or_tactic) => {
+                changed_names.contains(&ident_or_tactic.ident.0)
+            },
+            PositionTryFallbacksItem::PositionArea(..) => false,
+        });
+
+        if referenced {
+            self_invalid = true;
+            invalidate_self(element, &mut data);
+        }
+    }
+    let mut any_children_invalid = false;
+    for child in element.traversal_children() {
+        let Some(e) = child.as_element() else {
+            continue;
+        };
+        any_children_invalid |=
+            invalidate_position_try(e, changed_names, invalidate_self, invalidated_descendants);
+    }
+    if any_children_invalid {
+        invalidated_descendants(element);
+    }
+    self_invalid || any_children_invalid
 }

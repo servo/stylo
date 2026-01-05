@@ -11,6 +11,7 @@ use crate::shared_lock::SharedRwLockReadGuard;
 use crate::stylesheet_set::AuthorStylesheetSet;
 use crate::stylesheets::StylesheetInDocument;
 use crate::stylist::CascadeData;
+use crate::stylist::CascadeDataDifference;
 use crate::stylist::Stylist;
 use servo_arc::Arc;
 use std::sync::LazyLock;
@@ -53,7 +54,11 @@ where
     /// TODO(emilio): Need a host element and a snapshot map to do invalidation
     /// properly.
     #[inline]
-    pub fn flush<E>(&mut self, stylist: &mut Stylist, guard: &SharedRwLockReadGuard)
+    pub fn flush<E>(
+        &mut self,
+        stylist: &mut Stylist,
+        guard: &SharedRwLockReadGuard,
+    ) -> CascadeDataDifference
     where
         E: TElement,
     {
@@ -61,9 +66,12 @@ where
             .stylesheets
             .flush::<E>(/* host = */ None, /* snapshot_map = */ None);
 
-        let result = stylist.rebuild_author_data(&self.data, flusher.sheets, guard);
+        let mut difference = CascadeDataDifference::default();
+        let result =
+            stylist.rebuild_author_data(&self.data, flusher.sheets, guard, &mut difference);
         if let Ok(Some(new_data)) = result {
             self.data = new_data;
         }
+        difference
     }
 }

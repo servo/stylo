@@ -33,69 +33,65 @@ ALL_AXES = [(axis, False) for axis in PHYSICAL_AXES] + [
 SYSTEM_FONT_LONGHANDS = """font_family font_size font_style
                            font_stretch font_weight""".split()
 
-PRIORITARY_PROPERTIES = set(
-    [
-        # The writing-mode group has the most priority of all property groups, as
-        # sizes like font-size can depend on it.
-        "writing-mode",
-        "direction",
-        "text-orientation",
-        # The fonts and colors group has the second priority, as all other lengths
-        # and colors depend on them.
-        #
-        # There are some interdependencies between these, but we fix them up in
-        # Cascade::fixup_font_stuff.
-        # Needed to properly compute the zoomed font-size.
-        "-x-text-scale",
-        # Needed to do font-size computation in a language-dependent way.
-        "-x-lang",
-        # Needed for ruby to respect language-dependent min-font-size
-        # preferences properly, see bug 1165538.
-        "-moz-min-font-size-ratio",
-        # font-size depends on math-depth's computed value.
-        "math-depth",
-        # Needed to compute the first available font and its used size,
-        # in order to compute font-relative units correctly.
-        "font-size",
-        "font-size-adjust",
-        "font-weight",
-        "font-stretch",
-        "font-style",
-        "font-family",
-        # color-scheme affects how system colors and light-dark() resolve.
-        "color-scheme",
-        # forced-color-adjust affects whether colors are adjusted.
-        "forced-color-adjust",
-        # Zoom affects all absolute lengths.
-        "zoom",
-        # Line height lengths depend on this.
-        "line-height",
-    ]
-)
+PRIORITARY_PROPERTIES = set([
+    # The writing-mode group has the most priority of all property groups, as
+    # sizes like font-size can depend on it.
+    "writing-mode",
+    "direction",
+    "text-orientation",
+    # The fonts and colors group has the second priority, as all other lengths
+    # and colors depend on them.
+    #
+    # There are some interdependencies between these, but we fix them up in
+    # Cascade::fixup_font_stuff.
+    # Needed to properly compute the zoomed font-size.
+    "-x-text-scale",
+    # Needed to do font-size computation in a language-dependent way.
+    "-x-lang",
+    # Needed for ruby to respect language-dependent min-font-size
+    # preferences properly, see bug 1165538.
+    "-moz-min-font-size-ratio",
+    # font-size depends on math-depth's computed value.
+    "math-depth",
+    # Needed to compute the first available font and its used size,
+    # in order to compute font-relative units correctly.
+    "font-size",
+    "font-size-adjust",
+    "font-weight",
+    "font-stretch",
+    "font-style",
+    "font-family",
+    # color-scheme affects how system colors and light-dark() resolve.
+    "color-scheme",
+    # forced-color-adjust affects whether colors are adjusted.
+    "forced-color-adjust",
+    # Zoom affects all absolute lengths.
+    "zoom",
+    # Line height lengths depend on this.
+    "line-height",
+])
 
-VISITED_DEPENDENT_PROPERTIES = set(
-    [
-        "column-rule-color",
-        "text-emphasis-color",
-        "-webkit-text-fill-color",
-        "-webkit-text-stroke-color",
-        "text-decoration-color",
-        "fill",
-        "stroke",
-        "caret-color",
-        "background-color",
-        "border-top-color",
-        "border-right-color",
-        "border-bottom-color",
-        "border-left-color",
-        "border-block-start-color",
-        "border-inline-end-color",
-        "border-block-end-color",
-        "border-inline-start-color",
-        "outline-color",
-        "color",
-    ]
-)
+VISITED_DEPENDENT_PROPERTIES = set([
+    "column-rule-color",
+    "text-emphasis-color",
+    "-webkit-text-fill-color",
+    "-webkit-text-stroke-color",
+    "text-decoration-color",
+    "fill",
+    "stroke",
+    "caret-color",
+    "background-color",
+    "border-top-color",
+    "border-right-color",
+    "border-bottom-color",
+    "border-left-color",
+    "border-block-start-color",
+    "border-inline-end-color",
+    "border-block-end-color",
+    "border-inline-start-color",
+    "outline-color",
+    "color",
+])
 
 # Bitfield values for all rule types which can have property declarations.
 STYLE_RULE = 1 << 0
@@ -946,36 +942,32 @@ class PropertyRestrictions:
     # https://svgwg.org/svg2-draft/propidx.html
     @staticmethod
     def svg_text_properties():
-        props = set(
-            [
-                "fill",
-                "fill-opacity",
-                "fill-rule",
-                "paint-order",
-                "stroke",
-                "stroke-dasharray",
-                "stroke-dashoffset",
-                "stroke-linecap",
-                "stroke-linejoin",
-                "stroke-miterlimit",
-                "stroke-opacity",
-                "stroke-width",
-                "text-rendering",
-                "vector-effect",
-            ]
-        )
+        props = set([
+            "fill",
+            "fill-opacity",
+            "fill-rule",
+            "paint-order",
+            "stroke",
+            "stroke-dasharray",
+            "stroke-dashoffset",
+            "stroke-linecap",
+            "stroke-linejoin",
+            "stroke-miterlimit",
+            "stroke-opacity",
+            "stroke-width",
+            "text-rendering",
+            "vector-effect",
+        ])
         return props
 
     @staticmethod
     def webkit_text_properties():
-        props = set(
-            [
-                # Kinda like css-text?
-                "-webkit-text-stroke-width",
-                "-webkit-text-fill-color",
-                "-webkit-text-stroke-color",
-            ]
-        )
+        props = set([
+            # Kinda like css-text?
+            "-webkit-text-stroke-width",
+            "-webkit-text-fill-color",
+            "-webkit-text-stroke-color",
+        ])
         return props
 
     # https://drafts.csswg.org/css-pseudo/#first-letter-styling

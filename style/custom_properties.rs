@@ -598,8 +598,6 @@ impl VariableValue {
         input: &mut Parser<'i, 't>,
         url_data: &UrlExtraData,
     ) -> Result<Self, ParseError<'i>> {
-        input.skip_whitespace();
-
         let mut references = References::default();
         let mut missing_closing_characters = String::new();
         let start_position = input.position();
@@ -609,7 +607,10 @@ impl VariableValue {
             &mut references,
             &mut missing_closing_characters,
         )?;
-        let mut css = input.slice_from(start_position).to_owned();
+        let mut css = input
+            .slice_from(start_position)
+            .trim_ascii_start()
+            .to_owned();
         if !missing_closing_characters.is_empty() {
             // Unescaped backslash at EOF in a quoted string is ignored.
             if css.ends_with("\\")
@@ -620,6 +621,7 @@ impl VariableValue {
             css.push_str(&missing_closing_characters);
         }
 
+        css.truncate(css.trim_ascii_end().len());
         css.shrink_to_fit();
         references.refs.shrink_to_fit();
 

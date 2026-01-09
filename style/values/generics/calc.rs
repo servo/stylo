@@ -11,9 +11,11 @@ use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
 use num_traits::Zero;
 use smallvec::SmallVec;
+use std::convert::AsRef;
 use std::fmt::{self, Write};
 use std::ops::{Add, Mul, Neg, Rem, Sub};
 use std::{cmp, mem};
+use strum_macros::AsRefStr;
 use style_traits::{CssWriter, NumericValue, ToCss, ToTyped, TypedValue};
 
 use thin_vec::ThinVec;
@@ -116,10 +118,16 @@ pub enum RoundingStrategy {
 /// This determines the order in which we serialize members of a calc() sum.
 ///
 /// See https://drafts.csswg.org/css-values-4/#sort-a-calculations-children
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(
+    AsRefStr, Clone, Copy, Debug, Eq, Ord, Parse, PartialEq, PartialOrd, MallocSizeOf, ToShmem,
+)]
+#[strum(serialize_all = "lowercase")]
 #[allow(missing_docs)]
 pub enum SortKey {
+    #[strum(serialize = "")]
     Number,
+    #[css(skip)]
+    #[strum(serialize = "%")]
     Percentage,
     Cap,
     Ch,
@@ -147,6 +155,7 @@ pub enum SortKey {
     Lvmax,
     Lvmin,
     Lvw,
+    Ms,
     Px,
     Rcap,
     Rch,
@@ -154,7 +163,7 @@ pub enum SortKey {
     Rex,
     Ric,
     Rlh,
-    Sec,
+    S, // Sec
     Svb,
     Svh,
     Svi,
@@ -167,7 +176,9 @@ pub enum SortKey {
     Vmax,
     Vmin,
     Vw,
+    #[css(skip)]
     ColorComponent,
+    #[css(skip)]
     Other,
 }
 

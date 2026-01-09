@@ -306,7 +306,7 @@ impl generic::CalcNodeLeaf for Leaf {
         match *self {
             Self::Number(..) => SortKey::Number,
             Self::Percentage(..) => SortKey::Percentage,
-            Self::Time(..) => SortKey::Sec,
+            Self::Time(..) => SortKey::S,
             Self::Resolution(..) => SortKey::Dppx,
             Self::Angle(..) => SortKey::Deg,
             Self::Length(ref l) => match *l {

@@ -2182,7 +2182,6 @@ fn substitute_one_reference<'a>(
                     AllowComputationallyDependent::Yes,
                 )
                 .ok()?;
-                let value = value.to_computed_value(computed_context);
                 Some(Substitution::from_value(value.to_variable_value()))
             }),
     };

@@ -23,9 +23,11 @@ use crate::invalidation::media_queries::{
 };
 use crate::invalidation::stylesheets::RuleChangeKind;
 use crate::media_queries::Device;
+#[cfg(feature = "gecko")]
+use crate::properties::StyleBuilder;
 use crate::properties::{
     self, AnimationDeclarations, CascadeMode, ComputedValues, FirstLineReparenting,
-    PropertyDeclarationBlock, StyleBuilder,
+    PropertyDeclarationBlock,
 };
 use crate::properties_and_values::registry::{
     PropertyRegistration, PropertyRegistrationData, ScriptRegistry as CustomPropertyScriptRegistry,

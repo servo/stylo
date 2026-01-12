@@ -31,7 +31,7 @@ pub enum GenericBackgroundSize<LengthPercent> {
         /// Explicit width.
         width: GenericLengthPercentageOrAuto<LengthPercent>,
         /// Explicit height.
-        #[css(contextual_skip_if = "width_and_height_are_auto")]
+        #[css(skip_if = "GenericLengthPercentageOrAuto::is_auto")]
         height: GenericLengthPercentageOrAuto<LengthPercent>,
     },
     /// `cover`
@@ -40,11 +40,6 @@ pub enum GenericBackgroundSize<LengthPercent> {
     /// `contain`
     #[animation(error)]
     Contain,
-}
-
-#[inline]
-fn width_and_height_are_auto<LengthPercent>(width: &GenericLengthPercentageOrAuto<LengthPercent>, height: &GenericLengthPercentageOrAuto<LengthPercent>) -> bool {
-    width.is_auto() && height.is_auto()
 }
 
 pub use self::GenericBackgroundSize as BackgroundSize;

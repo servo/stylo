@@ -28,8 +28,7 @@ use crate::stylesheets::UrlExtraData;
 use crate::stylist::Stylist;
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::specified::FontRelativeLength;
-use crate::values::AtomIdent;
-use crate::Atom;
+use crate::{Atom, LocalName};
 use cssparser::{
     CowRcStr, Delimiter, Parser, ParserInput, SourcePosition, Token, TokenSerializationType,
 };
@@ -2161,9 +2160,12 @@ fn substitute_one_reference<'a>(
                 .get(&reference.name, device, url_data)
                 .map(Substitution::from_value)
         },
-        SubstitutionFunctionKind::Attr => attr_provider
-            .get_attr(AtomIdent::cast(&reference.name))
-            .and_then(|attr| {
+        SubstitutionFunctionKind::Attr => {
+            #[cfg(feature = "gecko")]
+            let local_name = LocalName::cast(&reference.name);
+            #[cfg(feature = "servo")]
+            let local_name = LocalName::from(reference.name.as_ref());
+            attr_provider.get_attr(&local_name).and_then(|attr| {
                 let AttributeType::Type(syntax) = &reference.attribute_syntax else {
                     return Some(Substitution::new(
                         Cow::Owned(quoted_css_string(&attr)),
@@ -2182,7 +2184,8 @@ fn substitute_one_reference<'a>(
                 .ok()?;
                 let value = value.to_computed_value(computed_context);
                 Some(Substitution::from_value(value.to_variable_value()))
-            }),
+            })
+        },
     };
 
     if let Some(s) = substitution {

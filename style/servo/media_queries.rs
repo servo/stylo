@@ -21,7 +21,8 @@ use crate::values::computed::{
 };
 use crate::values::specified::color::{ColorSchemeFlags, ForcedColors};
 use crate::values::specified::font::{
-    QueryFontMetricsFlags, FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX,
+    QueryFontMetricsFlags, FONT_MEDIUM_CAP_PX, FONT_MEDIUM_CH_PX, FONT_MEDIUM_EX_PX,
+    FONT_MEDIUM_IC_PX, FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX,
 };
 use crate::values::specified::ViewportVariant;
 use crate::values::KeyframesName;
@@ -78,6 +79,18 @@ pub struct Device {
     /// Line height of the root element, used for rlh units in other elements.
     #[ignore_malloc_size_of = "Pure stack type"]
     root_line_height: AtomicU32,
+    /// X-height of the root element, used for rex units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_font_metrics_ex: AtomicU32,
+    /// Cap-height of the root element, used for rcap units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_font_metrics_cap: AtomicU32,
+    /// Advance measure (ch) of the root element, used for rch units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_font_metrics_ch: AtomicU32,
+    /// Ideographic advance measure of the root element, used for ric units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_font_metrics_ic: AtomicU32,
     /// Whether any styles computed in the document relied on the root font-size
     /// by using rem units.
     #[ignore_malloc_size_of = "Pure stack type"]
@@ -86,6 +99,9 @@ pub struct Device {
     /// by using rlh units.
     #[ignore_malloc_size_of = "Pure stack type"]
     used_root_line_height: AtomicBool,
+    /// Whether any styles computed in the document relied on the root font metrics
+    /// by using rcap, rch, rex, or ric units.
+    used_root_font_metrics: AtomicBool,
     /// Whether any styles computed in the document relied on font metrics.
     used_font_metrics: AtomicBool,
     /// Whether any styles computed in the document relied on the viewport size.
@@ -123,8 +139,13 @@ impl Device {
             quirks_mode,
             root_font_size: AtomicU32::new(FONT_MEDIUM_PX.to_bits()),
             root_line_height: AtomicU32::new(FONT_MEDIUM_LINE_HEIGHT_PX.to_bits()),
+            root_font_metrics_ex: AtomicU32::new(FONT_MEDIUM_EX_PX.to_bits()),
+            root_font_metrics_cap: AtomicU32::new(FONT_MEDIUM_CAP_PX.to_bits()),
+            root_font_metrics_ch: AtomicU32::new(FONT_MEDIUM_CH_PX.to_bits()),
+            root_font_metrics_ic: AtomicU32::new(FONT_MEDIUM_IC_PX.to_bits()),
             used_root_font_size: AtomicBool::new(false),
             used_root_line_height: AtomicBool::new(false),
+            used_root_font_metrics: AtomicBool::new(false),
             used_font_metrics: AtomicBool::new(false),
             used_viewport_units: AtomicBool::new(false),
             prefers_color_scheme,
@@ -168,6 +189,66 @@ impl Device {
     pub fn set_root_line_height(&self, size: f32) {
         self.root_line_height
             .store(size.to_bits(), Ordering::Relaxed);
+    }
+
+    /// Get the x-height of the root element (for rex)
+    pub fn root_font_metrics_ex(&self) -> Length {
+        self.used_root_font_metrics.store(true, Ordering::Relaxed);
+        Length::new(f32::from_bits(
+            self.root_font_metrics_ex.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the x-height of the root element (for rex), in zoom-independent CSS pixels.
+    pub fn set_root_font_metrics_ex(&self, size: f32) -> bool {
+        let size = size.to_bits();
+        let previous = self.root_font_metrics_ex.swap(size, Ordering::Relaxed);
+        previous != size
+    }
+
+    /// Get the cap-height of the root element (for rcap)
+    pub fn root_font_metrics_cap(&self) -> Length {
+        self.used_root_font_metrics.store(true, Ordering::Relaxed);
+        Length::new(f32::from_bits(
+            self.root_font_metrics_cap.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the cap-height of the root element (for rcap), in zoom-independent CSS pixels.
+    pub fn set_root_font_metrics_cap(&self, size: f32) -> bool {
+        let size = size.to_bits();
+        let previous = self.root_font_metrics_cap.swap(size, Ordering::Relaxed);
+        previous != size
+    }
+
+    /// Get the advance measure of the root element (for rch)
+    pub fn root_font_metrics_ch(&self) -> Length {
+        self.used_root_font_metrics.store(true, Ordering::Relaxed);
+        Length::new(f32::from_bits(
+            self.root_font_metrics_ch.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the advance measure of the root element (for rch), in zoom-independent CSS pixels.
+    pub fn set_root_font_metrics_ch(&self, size: f32) -> bool {
+        let size = size.to_bits();
+        let previous = self.root_font_metrics_ch.swap(size, Ordering::Relaxed);
+        previous != size
+    }
+
+    /// Get the ideographic advance measure of the root element (for ric)
+    pub fn root_font_metrics_ic(&self) -> Length {
+        self.used_root_font_metrics.store(true, Ordering::Relaxed);
+        Length::new(f32::from_bits(
+            self.root_font_metrics_ic.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the ideographic advance measure of the root element (for ric), in zoom-independent CSS pixels.
+    pub fn set_root_font_metrics_ic(&self, size: f32) -> bool {
+        let size = size.to_bits();
+        let previous = self.root_font_metrics_ic.swap(size, Ordering::Relaxed);
+        previous != size
     }
 
     /// Returns the computed line-height for the font in a given computed values instance.
@@ -219,6 +300,11 @@ impl Device {
     /// Returns whether we ever looked up the root line-height of the device.
     pub fn used_root_line_height(&self) -> bool {
         self.used_root_line_height.load(Ordering::Relaxed)
+    }
+
+    /// Returns whether we ever looked up the root font metrics of the device.
+    pub fn used_root_font_metrics(&self) -> bool {
+        self.used_root_font_metrics.load(Ordering::Relaxed)
     }
 
     /// Returns whether font metrics have been queried.
@@ -306,8 +392,11 @@ impl Device {
         font: &Font,
         base_size: CSSPixelLength,
         flags: QueryFontMetricsFlags,
+        track_usage: bool,
     ) -> FontMetrics {
-        self.used_font_metrics.store(true, Ordering::Relaxed);
+        if track_usage {
+            self.used_font_metrics.store(true, Ordering::Relaxed);
+        }
         self.font_metrics_provider
             .query_font_metrics(vertical, font, base_size, flags)
     }

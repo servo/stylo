@@ -1374,6 +1374,7 @@ impl Stylist {
                 // a style_resolver::with_default_parent_styles call, as below.
                 let mut builder =
                     StyleBuilder::for_derived_style(&self.device, Some(self), style, None);
+                builder.rules = style.rules.clone();
                 builder.mutate_position().set_position_area(area);
                 return Some(builder.build());
             },

@@ -18,21 +18,21 @@ members = [
 default-members = ["style"]
 
 [workspace.package]
-version = "0.10.0"
+version = "0.11.0"
 
 [workspace.dependencies]
 # in-repo dependencies (separately versioned)
 servo_arc       = { version = "0.4.3",  path = "./servo_arc" }
-selectors       = { version = "0.34.0", path = "./selectors" }
+selectors       = { version = "0.35.0", path = "./selectors" }
 to_shmem        = { version = "0.3.0",  path = "./to_shmem", features = ["servo"] }
 to_shmem_derive = { version = "0.1.0",  path = "./to_shmem_derive" }
 
 # in-repo dependencies (main version)
-malloc_size_of  = { version = "0.10.0", path = "./malloc_size_of", package = "stylo_malloc_size_of", features = ["servo"] }
-static_prefs    = { version = "0.10.0", path = "./stylo_static_prefs", package = "stylo_static_prefs" }
-style_config    = { version = "0.10.0", path = "./stylo_config", package = "stylo_config"}
-stylo_atoms     = { version = "0.10.0", path = "./stylo_atoms" }
-dom             = { version = "0.10.0", path = "./stylo_dom", package = "stylo_dom" }
-style_traits    = { version = "0.10.0", path = "./style_traits", features = ["servo"], package = "stylo_traits"}
-style_derive    = { version = "0.10.0", path = "./style_derive", package = "stylo_derive"}
-stylo           = { version = "0.10.0", path = "./style" }
+malloc_size_of  = { version = "0.11.0", path = "./malloc_size_of", package = "stylo_malloc_size_of", features = ["servo"] }
+static_prefs    = { version = "0.11.0", path = "./stylo_static_prefs", package = "stylo_static_prefs" }
+style_config    = { version = "0.11.0", path = "./stylo_config", package = "stylo_config"}
+stylo_atoms     = { version = "0.11.0", path = "./stylo_atoms" }
+dom             = { version = "0.11.0", path = "./stylo_dom", package = "stylo_dom" }
+style_traits    = { version = "0.11.0", path = "./style_traits", features = ["servo"], package = "stylo_traits"}
+style_derive    = { version = "0.11.0", path = "./style_derive", package = "stylo_derive"}
+stylo           = { version = "0.11.0", path = "./style" }

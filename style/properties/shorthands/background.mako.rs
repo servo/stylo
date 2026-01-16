@@ -158,17 +158,7 @@
 
                 let mut wrote_value = false;
 
-                if i == len - 1 {
-                    if *self.background_color != background_color::get_initial_specified_value() {
-                        self.background_color.to_css(dest)?;
-                        wrote_value = true;
-                    }
-                }
-
                 if *image != background_image::single_value::get_initial_specified_value() {
-                    if wrote_value {
-                        dest.write_char(' ')?;
-                    }
                     image.to_css(dest)?;
                     wrote_value = true;
                 }
@@ -217,6 +207,17 @@
                     }
 
                     wrote_value = true;
+                }
+
+                if i == len - 1 {
+                    if *self.background_color != background_color::get_initial_specified_value() {
+                        if wrote_value {
+                            dest.write_char(' ')?;
+                        }
+
+                        self.background_color.to_css(dest)?;
+                        wrote_value = true;
+                    }
                 }
 
                 if !wrote_value {

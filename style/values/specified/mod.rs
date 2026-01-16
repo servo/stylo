@@ -45,12 +45,12 @@ pub use self::border::{
     LineWidth,
 };
 pub use self::box_::{
-    Appearance, BaselineSource, BreakBetween, BreakWithin, Clear, Contain, ContainIntrinsicSize,
-    ContainerName, ContainerType, ContentVisibility, Display, Float, LineClamp, Overflow,
-    OverflowAnchor, OverflowClipMargin, OverscrollBehavior, Perspective, PositionProperty, Resize,
-    ScrollSnapAlign, ScrollSnapAxis, ScrollSnapStop, ScrollSnapStrictness, ScrollSnapType,
-    ScrollbarGutter, TouchAction, VerticalAlign, WillChange, WillChangeBits, WritingModeProperty,
-    Zoom,
+    AlignmentBaseline, Appearance, BaselineShift, BaselineSource, BreakBetween, BreakWithin, Clear,
+    Contain, ContainIntrinsicSize, ContainerName, ContainerType, ContentVisibility, Display, Float,
+    LineClamp, Overflow, OverflowAnchor, OverflowClipMargin, OverscrollBehavior, Perspective,
+    PositionProperty, Resize, ScrollSnapAlign, ScrollSnapAxis, ScrollSnapStop,
+    ScrollSnapStrictness, ScrollSnapType, ScrollbarGutter, TouchAction, WillChange, WillChangeBits,
+    WritingModeProperty, Zoom,
 };
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,

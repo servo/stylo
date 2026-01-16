@@ -9,8 +9,8 @@ pub use crate::logical_geometry::WritingModeProperty;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::{LonghandId, PropertyDeclarationId, PropertyId};
 use crate::values::generics::box_::{
-    GenericContainIntrinsicSize, GenericLineClamp, GenericOverflowClipMargin, GenericPerspective,
-    GenericVerticalAlign, OverflowClipMarginBox, VerticalAlignKeyword,
+    BaselineShiftKeyword, GenericBaselineShift, GenericContainIntrinsicSize, GenericLineClamp,
+    GenericOverflowClipMargin, GenericPerspective, OverflowClipMarginBox,
 };
 use crate::values::specified::length::{LengthPercentage, NonNegativeLength};
 use crate::values::specified::{AllowQuirks, Integer, NonNegativeNumberOrPercentage};
@@ -614,10 +614,10 @@ pub type ContainIntrinsicSize = GenericContainIntrinsicSize<NonNegativeLength>;
 /// A specified value for the `line-clamp` property.
 pub type LineClamp = GenericLineClamp<Integer>;
 
-/// A specified value for the `vertical-align` property.
-pub type VerticalAlign = GenericVerticalAlign<LengthPercentage>;
+/// A specified value for the `baseline-shift` property.
+pub type BaselineShift = GenericBaselineShift<LengthPercentage>;
 
-impl Parse for VerticalAlign {
+impl Parse for BaselineShift {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -625,13 +625,59 @@ impl Parse for VerticalAlign {
         if let Ok(lp) =
             input.try_parse(|i| LengthPercentage::parse_quirky(context, i, AllowQuirks::Yes))
         {
-            return Ok(GenericVerticalAlign::Length(lp));
+            return Ok(BaselineShift::Length(lp));
         }
 
-        Ok(GenericVerticalAlign::Keyword(VerticalAlignKeyword::parse(
-            input,
-        )?))
+        Ok(BaselineShift::Keyword(BaselineShiftKeyword::parse(input)?))
     }
+}
+
+/// A specified value for the `alignment-baseline` property.
+/// https://drafts.csswg.org/css-inline-3/#alignment-baseline
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToCss,
+    ToShmem,
+    ToComputedValue,
+    ToResolvedValue,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum AlignmentBaseline {
+    /// Use the dominant baseline choice of the parent.
+    Baseline,
+    /// Use the text-under baseline.
+    TextBottom,
+    // Bug 2010717 - Uncomment to support alignment-baseline: alphabetic
+    // /// Use the alphabetic baseline.
+    // Alphabetic,
+    // Bug 2010718 - Uncomment to support alignment-baseline: ideographic
+    // /// Use the ideographic-under baseline.
+    // Ideographic,
+    /// In general, use the x-middle baselines; except under text-orientation: upright
+    /// (where the alphabetic and x-height baselines are essentially meaningless) use
+    /// the central baseline instead.
+    Middle,
+    // Bug 2010719 - Uncomment to support alignment-baseline: central
+    // /// Use the central baseline.
+    // Central,
+    // Bug 2010720 - Uncomment to support alignment-baseline: mathematical
+    // /// Use the math baseline.
+    // Mathematical,
+    /// Use the text-over baseline.
+    TextTop,
+    /// Used to implement the deprecated "align=middle" attribute for HTML img elements.
+    #[cfg(feature = "gecko")]
+    MozMiddleWithBaseline,
 }
 
 /// A specified value for the `baseline-source` property.

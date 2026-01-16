@@ -59,6 +59,97 @@ ${helpers.two_properties_shorthand(
 </%helpers:shorthand>
 
 <%helpers:shorthand
+    engines="gecko servo"
+    name="vertical-align"
+    sub_properties="alignment-baseline baseline-shift baseline-source"
+    spec="https://drafts.csswg.org/css-inline-3/#transverse-alignment"
+>
+    use crate::values::specified::box_::{AlignmentBaseline, BaselineSource, BaselineShift};
+    pub fn parse_value<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        use crate::parser::Parse;
+
+        let mut baseline_source = None;
+        let mut alignment_baseline = None;
+        let mut baseline_shift = None;
+
+        loop {
+            if baseline_source.is_none() {
+                if input.try_parse(|input| input.expect_ident_matching("first")).is_ok() {
+                    baseline_source = Some(BaselineSource::First);
+                    continue
+                }
+                if input.try_parse(|input| input.expect_ident_matching("last")).is_ok() {
+                    baseline_source = Some(BaselineSource::Last);
+                    continue
+                }
+            }
+
+            if alignment_baseline.is_none() {
+                if let Ok(value) = input.try_parse(AlignmentBaseline::parse) {
+                    alignment_baseline = Some(value);
+                    continue
+                }
+            }
+
+            if baseline_shift.is_none() {
+                if let Ok(value) = input.try_parse(|input| BaselineShift::parse(context, input)) {
+                    baseline_shift = Some(value);
+                    continue
+                }
+            }
+
+            break;
+        }
+
+        if baseline_source.is_none() && alignment_baseline.is_none() && baseline_shift.is_none() {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+
+        Ok(expanded! {
+            baseline_source: baseline_source.unwrap_or(BaselineSource::Auto),
+            alignment_baseline: alignment_baseline.unwrap_or(AlignmentBaseline::Baseline),
+            baseline_shift: baseline_shift.unwrap_or(BaselineShift::zero()),
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a> {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
+            let mut is_first = true;
+
+            if *self.baseline_source != BaselineSource::Auto {
+                self.baseline_source.to_css(dest)?;
+                is_first = false;
+            }
+
+            if *self.alignment_baseline != AlignmentBaseline::Baseline {
+                if !is_first {
+                    dest.write_char(' ')?;
+                }
+                self.alignment_baseline.to_css(dest)?;
+                is_first = false;
+            }
+
+            if *self.baseline_shift != BaselineShift::zero() {
+                if !is_first {
+                    dest.write_char(' ')?;
+                }
+                self.baseline_shift.to_css(dest)?;
+                is_first = false;
+            }
+
+            if is_first {
+                self.alignment_baseline.to_css(dest)?;
+            }
+
+            Ok(())
+        }
+    }
+</%helpers:shorthand>
+
+<%helpers:shorthand
     engines="gecko"
     name="page-break-before"
     flags="IS_LEGACY_SHORTHAND"

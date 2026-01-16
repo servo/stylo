@@ -568,6 +568,7 @@ class Longhand(Property):
             return False
         if self.predefined_type:
             return self.predefined_type in {
+                "AlignmentBaseline",
                 "Appearance",
                 "AnimationComposition",
                 "AnimationDirection",
@@ -989,8 +990,8 @@ class PropertyRestrictions:
                 "initial-letter",
                 # Kinda like css-fonts?
                 "-moz-osx-font-smoothing",
-                "vertical-align",
-                # Will become shorthand of vertical-align (Bug 1830771)
+                "alignment-baseline",
+                "baseline-shift",
                 "baseline-source",
                 "line-height",
                 # Kinda like css-backgrounds?
@@ -1022,8 +1023,8 @@ class PropertyRestrictions:
                 "opacity",
                 # Kinda like css-fonts?
                 "-moz-osx-font-smoothing",
-                "vertical-align",
-                # Will become shorthand of vertical-align (Bug 1830771)
+                "alignment-baseline",
+                "baseline-shift",
                 "baseline-source",
                 "line-height",
                 # Kinda like css-backgrounds?

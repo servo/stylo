@@ -102,11 +102,22 @@ ${helpers.predefined_type(
 )}
 
 ${helpers.predefined_type(
-    "vertical-align",
-    "VerticalAlign",
-    "computed::VerticalAlign::baseline()",
+    "alignment-baseline",
+    "AlignmentBaseline",
+    "computed::AlignmentBaseline::Baseline",
     engines="gecko servo",
-    spec="https://www.w3.org/TR/CSS2/visudet.html#propdef-vertical-align",
+    animation_type="discrete",
+    spec="https://drafts.csswg.org/css-inline-3/#alignment-baseline",
+    servo_restyle_damage = "rebuild_box",
+    affects="layout",
+)}
+
+${helpers.predefined_type(
+    "baseline-shift",
+    "BaselineShift",
+    "computed::BaselineShift::zero()",
+    engines="gecko servo",
+    spec="https://drafts.csswg.org/css-inline-3/#baseline-shift",
     servo_restyle_damage = "rebuild_box",
     affects="layout",
 )}

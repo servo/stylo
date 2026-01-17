@@ -2998,11 +2998,22 @@ const_assert!(std::mem::size_of::<longhands::${longhand.ident}::SpecifiedValue>(
 % for effect_name in ["repaint", "recalculate_overflow", "rebuild_stacking_context", "rebuild_box"]:
 pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &ComputedValues) -> bool {
     % for style_struct in data.active_style_structs():
-        % for longhand in style_struct.longhands:
+        <% longhands_affected = [effect_name in longhand.servo_restyle_damage.split() for longhand in style_struct.longhands if not longhand.logical] %>
+        % if any(longhands_affected):
+        let old_${style_struct.name_lower} = old.get_${style_struct.name_lower}();
+        let new_${style_struct.name_lower} = new.get_${style_struct.name_lower}();
+        if !std::ptr::eq(old_${style_struct.name_lower}, new_${style_struct.name_lower}) {
+            if
+            % for longhand in style_struct.longhands:
             % if effect_name in longhand.servo_restyle_damage.split() and not longhand.logical:
-                old.get_${style_struct.name_lower}().${longhand.ident} != new.get_${style_struct.name_lower}().${longhand.ident} ||
+                old_${style_struct.name_lower}.${longhand.ident} != new_${style_struct.name_lower}.${longhand.ident} ||
             % endif
-        % endfor
+            % endfor
+            false {
+                return true;
+            }
+        }
+        % endif
     % endfor
     false
 }

@@ -29,8 +29,7 @@ use crate::stylist::Stylist;
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::calc::SortKey as AttrUnit;
 use crate::values::specified::FontRelativeLength;
-use crate::values::AtomIdent;
-use crate::Atom;
+use crate::{Atom, LocalName};
 use cssparser::{
     CowRcStr, Delimiter, Parser, ParserInput, SourcePosition, Token, TokenSerializationType,
 };
@@ -2193,9 +2192,12 @@ fn substitute_one_reference<'a>(
                 .map(Substitution::from_value)
         },
         // https://drafts.csswg.org/css-values-5/#attr-substitution
-        SubstitutionFunctionKind::Attr => attr_provider
-            .get_attr(AtomIdent::cast(&reference.name))
-            .map_or_else(
+        SubstitutionFunctionKind::Attr => {
+            #[cfg(feature = "gecko")]
+            let local_name = LocalName::cast(&reference.name);
+            #[cfg(feature = "servo")]
+            let local_name = LocalName::from(reference.name.as_ref());
+            attr_provider.get_attr(&local_name).map_or_else(
                 || {
                     // Special case when fallback and <attr-type> are omitted.
                     // See FAILURE: https://drafts.csswg.org/css-values-5/#attr-substitution
@@ -2241,7 +2243,8 @@ fn substitute_one_reference<'a>(
                         AttributeType::RawString | AttributeType::None => simple_subst(&attr),
                     }
                 },
-            ),
+            )
+        },
     };
 
     if let Some(s) = substitution {

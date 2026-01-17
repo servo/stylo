@@ -21,7 +21,8 @@ use crate::values::computed::{
 };
 use crate::values::specified::color::{ColorSchemeFlags, ForcedColors};
 use crate::values::specified::font::{
-    QueryFontMetricsFlags, FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX,
+    QueryFontMetricsFlags, FONT_MEDIUM_CAP_PX, FONT_MEDIUM_CH_PX, FONT_MEDIUM_EX_PX,
+    FONT_MEDIUM_IC_PX, FONT_MEDIUM_LINE_HEIGHT_PX, FONT_MEDIUM_PX,
 };
 use crate::values::specified::ViewportVariant;
 use crate::values::KeyframesName;
@@ -29,8 +30,10 @@ use app_units::{Au, AU_PER_PX};
 use euclid::default::Size2D as UntypedSize2D;
 use euclid::{Scale, SideOffsets2D, Size2D};
 use mime::Mime;
+use parking_lot::RwLock;
 use servo_arc::Arc;
 use std::fmt::Debug;
+use std::mem;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use style_traits::{CSSPixel, DevicePixel};
 
@@ -53,6 +56,12 @@ pub trait FontMetricsProvider: Debug + Sync {
 /// is displayed in.
 ///
 /// This is the struct against which media queries are evaluated.
+/// and contains all the viewport rule state.
+///
+/// This structure also contains atomics used for computing root font-relative
+/// units. These atomics use relaxed ordering, since when computing the style
+/// of the root element, there can't be any other style being computed at the
+/// same time (given we need the style of the parent to compute everything else).
 #[derive(Debug, MallocSizeOf)]
 pub struct Device {
     /// The current media type used by de device.
@@ -65,19 +74,28 @@ pub struct Device {
     #[ignore_malloc_size_of = "Pure stack type"]
     quirks_mode: QuirksMode,
 
-    /// The font size of the root element
-    /// This is set when computing the style of the root
-    /// element, and used for rem units in other elements
-    ///
-    /// When computing the style of the root element, there can't be any
-    /// other style being computed at the same time, given we need the style of
-    /// the parent to compute everything else. So it is correct to just use
-    /// a relaxed atomic here.
+    /// Current computed style of the root element, used for calculations of
+    /// root font-relative units.
+    #[ignore_malloc_size_of = "Arc"]
+    root_style: RwLock<Arc<ComputedValues>>,
+    /// Font size of the root element, used for rem units in other elements.
     #[ignore_malloc_size_of = "Pure stack type"]
     root_font_size: AtomicU32,
     /// Line height of the root element, used for rlh units in other elements.
     #[ignore_malloc_size_of = "Pure stack type"]
     root_line_height: AtomicU32,
+    /// X-height of the root element, used for rex units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_font_metrics_ex: AtomicU32,
+    /// Cap-height of the root element, used for rcap units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_font_metrics_cap: AtomicU32,
+    /// Advance measure (ch) of the root element, used for rch units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_font_metrics_ch: AtomicU32,
+    /// Ideographic advance measure of the root element, used for ric units in other elements.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    root_font_metrics_ic: AtomicU32,
     /// Whether any styles computed in the document relied on the root font-size
     /// by using rem units.
     #[ignore_malloc_size_of = "Pure stack type"]
@@ -86,6 +104,11 @@ pub struct Device {
     /// by using rlh units.
     #[ignore_malloc_size_of = "Pure stack type"]
     used_root_line_height: AtomicBool,
+    /// Whether any styles computed in the document relied on the root font metrics
+    /// by using rcap, rch, rex, or ric units. This is a lock instead of an atomic
+    /// in order to prevent concurrent writes to the root font metric values.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    used_root_font_metrics: RwLock<bool>,
     /// Whether any styles computed in the document relied on font metrics.
     used_font_metrics: AtomicBool,
     /// Whether any styles computed in the document relied on the viewport size.
@@ -116,15 +139,24 @@ impl Device {
         default_computed_values: Arc<ComputedValues>,
         prefers_color_scheme: PrefersColorScheme,
     ) -> Device {
+        let default_values =
+            ComputedValues::initial_values_with_font_override(Font::initial_values());
+        let root_style = RwLock::new(Arc::clone(&default_values));
         Device {
             media_type,
             viewport_size,
             device_pixel_ratio,
             quirks_mode,
+            root_style,
             root_font_size: AtomicU32::new(FONT_MEDIUM_PX.to_bits()),
             root_line_height: AtomicU32::new(FONT_MEDIUM_LINE_HEIGHT_PX.to_bits()),
+            root_font_metrics_ex: AtomicU32::new(FONT_MEDIUM_EX_PX.to_bits()),
+            root_font_metrics_cap: AtomicU32::new(FONT_MEDIUM_CAP_PX.to_bits()),
+            root_font_metrics_ch: AtomicU32::new(FONT_MEDIUM_CH_PX.to_bits()),
+            root_font_metrics_ic: AtomicU32::new(FONT_MEDIUM_IC_PX.to_bits()),
             used_root_font_size: AtomicBool::new(false),
             used_root_line_height: AtomicBool::new(false),
+            used_root_font_metrics: RwLock::new(false),
             used_font_metrics: AtomicBool::new(false),
             used_viewport_units: AtomicBool::new(false),
             prefers_color_scheme,
@@ -143,6 +175,12 @@ impl Device {
     /// Return the default computed values for this device.
     pub fn default_computed_values(&self) -> &ComputedValues {
         &self.default_computed_values
+    }
+
+    /// Store a pointer to the root element's computed style, for use in
+    /// calculation of root font-relative metrics.
+    pub fn set_root_style(&self, style: &Arc<ComputedValues>) {
+        *self.root_style.write() = style.clone();
     }
 
     /// Get the font size of the root element (for rem)
@@ -168,6 +206,66 @@ impl Device {
     pub fn set_root_line_height(&self, size: f32) {
         self.root_line_height
             .store(size.to_bits(), Ordering::Relaxed);
+    }
+
+    /// Get the x-height of the root element (for rex)
+    pub fn root_font_metrics_ex(&self) -> Length {
+        self.ensure_root_font_metrics_updated();
+        Length::new(f32::from_bits(
+            self.root_font_metrics_ex.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the x-height of the root element (for rex), in zoom-independent CSS pixels.
+    pub fn set_root_font_metrics_ex(&self, size: f32) -> bool {
+        let size = size.to_bits();
+        let previous = self.root_font_metrics_ex.swap(size, Ordering::Relaxed);
+        previous != size
+    }
+
+    /// Get the cap-height of the root element (for rcap)
+    pub fn root_font_metrics_cap(&self) -> Length {
+        self.ensure_root_font_metrics_updated();
+        Length::new(f32::from_bits(
+            self.root_font_metrics_cap.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the cap-height of the root element (for rcap), in zoom-independent CSS pixels.
+    pub fn set_root_font_metrics_cap(&self, size: f32) -> bool {
+        let size = size.to_bits();
+        let previous = self.root_font_metrics_cap.swap(size, Ordering::Relaxed);
+        previous != size
+    }
+
+    /// Get the advance measure of the root element (for rch)
+    pub fn root_font_metrics_ch(&self) -> Length {
+        self.ensure_root_font_metrics_updated();
+        Length::new(f32::from_bits(
+            self.root_font_metrics_ch.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the advance measure of the root element (for rch), in zoom-independent CSS pixels.
+    pub fn set_root_font_metrics_ch(&self, size: f32) -> bool {
+        let size = size.to_bits();
+        let previous = self.root_font_metrics_ch.swap(size, Ordering::Relaxed);
+        previous != size
+    }
+
+    /// Get the ideographic advance measure of the root element (for ric)
+    pub fn root_font_metrics_ic(&self) -> Length {
+        self.ensure_root_font_metrics_updated();
+        Length::new(f32::from_bits(
+            self.root_font_metrics_ic.load(Ordering::Relaxed),
+        ))
+    }
+
+    /// Set the ideographic advance measure of the root element (for ric), in zoom-independent CSS pixels.
+    pub fn set_root_font_metrics_ic(&self, size: f32) -> bool {
+        let size = size.to_bits();
+        let previous = self.root_font_metrics_ic.swap(size, Ordering::Relaxed);
+        previous != size
     }
 
     /// Returns the computed line-height for the font in a given computed values instance.
@@ -221,9 +319,28 @@ impl Device {
         self.used_root_line_height.load(Ordering::Relaxed)
     }
 
+    /// Returns whether we ever looked up the root font metrics of the device.
+    pub fn used_root_font_metrics(&self) -> bool {
+        *self.used_root_font_metrics.read()
+    }
+
     /// Returns whether font metrics have been queried.
     pub fn used_font_metrics(&self) -> bool {
         self.used_font_metrics.load(Ordering::Relaxed)
+    }
+
+    /// Get the viewport size on this [`Device`].
+    pub fn viewport_size(&self) -> Size2D<f32, CSSPixel> {
+        self.viewport_size
+    }
+
+    /// Set the viewport size on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_viewport_size(&mut self, viewport_size: Size2D<f32, CSSPixel>) {
+        self.viewport_size = viewport_size;
     }
 
     /// Returns the viewport size of the current device in app units, needed,
@@ -267,6 +384,18 @@ impl Device {
         self.device_pixel_ratio
     }
 
+    /// Set a new device pixel ratio on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_device_pixel_ratio(
+        &mut self,
+        device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
+    ) {
+        self.device_pixel_ratio = device_pixel_ratio;
+    }
+
     /// Gets the size of the scrollbar in CSS pixels.
     pub fn scrollbar_inline_size(&self) -> CSSPixelLength {
         // TODO: implement this.
@@ -280,10 +409,62 @@ impl Device {
         font: &Font,
         base_size: CSSPixelLength,
         flags: QueryFontMetricsFlags,
+        track_usage: bool,
     ) -> FontMetrics {
-        self.used_font_metrics.store(true, Ordering::Relaxed);
+        if track_usage {
+            self.used_font_metrics.store(true, Ordering::Relaxed);
+        }
         self.font_metrics_provider
             .query_font_metrics(vertical, font, base_size, flags)
+    }
+
+    fn ensure_root_font_metrics_updated(&self) {
+        let mut guard = self.used_root_font_metrics.write();
+        let previously_computed = mem::replace(&mut *guard, true);
+        if !previously_computed {
+            self.update_root_font_metrics();
+        }
+    }
+
+    /// Compute the root element's font metrics, and returns a bool indicating whether
+    /// the font metrics have changed since the previous restyle.
+    pub fn update_root_font_metrics(&self) -> bool {
+        let root_style = self.root_style.read();
+        let root_effective_zoom = (*root_style).effective_zoom;
+        let root_font_size = (*root_style).get_font().clone_font_size().computed_size();
+
+        let root_font_metrics = self.query_font_metrics(
+            (*root_style).writing_mode.is_upright(),
+            &(*root_style).get_font(),
+            root_font_size,
+            QueryFontMetricsFlags::USE_USER_FONT_SET
+                | QueryFontMetricsFlags::NEEDS_CH
+                | QueryFontMetricsFlags::NEEDS_IC,
+            /* track_usage = */ false,
+        );
+
+        let mut root_font_metrics_changed = false;
+        root_font_metrics_changed |= self.set_root_font_metrics_ex(
+            root_effective_zoom.unzoom(root_font_metrics.x_height_or_default(root_font_size).px()),
+        );
+        root_font_metrics_changed |= self.set_root_font_metrics_ch(
+            root_effective_zoom.unzoom(
+                root_font_metrics
+                    .zero_advance_measure_or_default(
+                        root_font_size,
+                        (*root_style).writing_mode.is_upright(),
+                    )
+                    .px(),
+            ),
+        );
+        root_font_metrics_changed |= self.set_root_font_metrics_cap(
+            root_effective_zoom.unzoom(root_font_metrics.cap_height_or_default().px()),
+        );
+        root_font_metrics_changed |= self.set_root_font_metrics_ic(
+            root_effective_zoom.unzoom(root_font_metrics.ic_width_or_default(root_font_size).px()),
+        );
+
+        root_font_metrics_changed
     }
 
     /// Return the media type of the current device.
@@ -304,6 +485,15 @@ impl Device {
     /// Returns the default foreground color.
     pub fn default_color(&self) -> AbsoluteColor {
         AbsoluteColor::BLACK
+    }
+
+    /// Set the [`PrefersColorScheme`] value on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_color_scheme(&mut self, new_color_scheme: PrefersColorScheme) {
+        self.prefers_color_scheme = new_color_scheme;
     }
 
     /// Returns the color scheme of this [`Device`].

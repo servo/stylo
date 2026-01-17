@@ -16,9 +16,10 @@
         font-size
         line-height
         font-family
+        font-optical-sizing
+        font-variation-settings
         ${'font-size-adjust' if engine == 'gecko' else ''}
         ${'font-kerning' if engine == 'gecko' else ''}
-        ${'font-optical-sizing' if engine == 'gecko' else ''}
         ${'font-variant-alternates' if engine == 'gecko' else ''}
         ${'font-variant-east-asian' if engine == 'gecko' else ''}
         ${'font-variant-emoji' if engine == 'gecko' else ''}
@@ -27,14 +28,13 @@
         ${'font-variant-position' if engine == 'gecko' else ''}
         ${'font-language-override' if engine == 'gecko' else ''}
         ${'font-feature-settings' if engine == 'gecko' else ''}
-        ${'font-variation-settings' if engine == 'gecko' else ''}
     "
     derive_value_info="False"
     spec="https://drafts.csswg.org/css-fonts-3/#propdef-font"
 >
     use crate::computed_values::font_variant_caps::T::SmallCaps;
     use crate::parser::Parse;
-    use crate::properties::longhands::{font_family, font_style, font_weight, font_stretch};
+    use crate::properties::longhands::{font_family, font_style, font_weight, font_stretch, font_optical_sizing, font_variation_settings};
     #[cfg(feature = "gecko")]
     use crate::properties::longhands::font_size;
     use crate::properties::longhands::font_variant_caps;
@@ -49,8 +49,7 @@
                                 variant_alternates variant_east_asian \
                                 variant_emoji variant_ligatures \
                                 variant_numeric variant_position \
-                                feature_settings variation_settings \
-                                optical_sizing".split()
+                                feature_settings".split()
     %>
     % if engine == "gecko":
         % for prop in gecko_sub_properties:
@@ -76,7 +75,7 @@
                         ${name}: ${name}::SpecifiedValue::system_font(sys),
                      % endfor
                      line_height: LineHeight::normal(),
-                     % for name in gecko_sub_properties + ["variant_caps"]:
+                     % for name in gecko_sub_properties + ["optical_sizing", "variant_caps", "variation_settings"]:
                          font_${name}: font_${name}::get_initial_specified_value(),
                      % endfor
                  })
@@ -151,6 +150,8 @@
             font_size: size,
             line_height: line_height.unwrap_or(LineHeight::normal()),
             font_family: family,
+            font_optical_sizing: font_optical_sizing::get_initial_specified_value(),
+            font_variation_settings: font_variation_settings::get_initial_specified_value(),
             % if engine == "gecko":
                 % for name in gecko_sub_properties:
                     font_${name}: font_${name}::get_initial_specified_value(),
@@ -195,7 +196,7 @@
             }
 
             % for name in gecko_sub_properties:
-            % if name != "optical_sizing" and name != "variation_settings" and name != "variant_emoji":
+            % if name != "variation_settings" and name != "variant_emoji":
             if self.font_${name} != &font_${name}::get_initial_specified_value() {
                 return Ok(());
             }

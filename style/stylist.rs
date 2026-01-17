@@ -23,9 +23,11 @@ use crate::invalidation::media_queries::{
 };
 use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet};
 use crate::media_queries::Device;
+#[cfg(feature = "gecko")]
+use crate::properties::StyleBuilder;
 use crate::properties::{
     self, AnimationDeclarations, CascadeMode, ComputedValues, FirstLineReparenting,
-    PropertyDeclarationBlock, StyleBuilder,
+    PropertyDeclarationBlock,
 };
 use crate::properties_and_values::registry::{
     PropertyRegistration, PropertyRegistrationData, ScriptRegistry as CustomPropertyScriptRegistry,
@@ -53,6 +55,7 @@ use crate::stylesheets::{
     PageRule, PerOrigin, PerOriginIter, PositionTryRule, StylesheetContents, StylesheetInDocument,
 };
 use crate::stylesheets::{CustomMediaEvaluator, CustomMediaMap};
+#[cfg(feature = "gecko")]
 use crate::values::specified::position::PositionTryFallbacksItem;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
 use crate::values::{computed, AtomIdent};
@@ -1357,6 +1360,7 @@ impl Stylist {
     }
 
     /// Computes a fallback style lazily given the current and parent styles, and name.
+    #[cfg(feature = "gecko")]
     pub fn resolve_position_try<E>(
         &self,
         style: &ComputedValues,

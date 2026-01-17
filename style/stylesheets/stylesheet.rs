@@ -553,11 +553,11 @@ impl Clone for Stylesheet {
         // Make a deep clone of the media, using the new lock.
         let media = self.media.read_with(&guard).clone();
         let media = Arc::new(lock.wrap(media));
-        let contents = lock.wrap(Arc::new(
+        let contents = lock.wrap(
             self.contents
                 .read_with(&guard)
-                .deep_clone_with_lock(&lock, &guard),
-        ));
+                .deep_clone(&lock, None, &guard),
+        );
 
         Stylesheet {
             contents,

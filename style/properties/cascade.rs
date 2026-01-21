@@ -1019,7 +1019,14 @@ impl<'b> Cascade<'b> {
         }
 
         if !can_skip_apply {
+            // Set context.scope to this declaration's cascade level so that
+            // tree-scoped properties (anchor-name, position-anchor, anchor-scope)
+            // get the correct scope when converted to computed values.
+            let old_scope = context.scope;
+            let cascade_level = priority.cascade_level();
+            context.scope = cascade_level;
             unsafe { self.do_apply_declaration(context, longhand_id, &declaration) }
+            context.scope = old_scope;
         }
     }
 

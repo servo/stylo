@@ -349,7 +349,6 @@ impl<S: Side> PositionComponent<S> {
 }
 
 /// https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name
-#[repr(transparent)]
 #[derive(
     Animate,
     Clone,
@@ -364,6 +363,7 @@ impl<S: Side> PositionComponent<S> {
     ToTyped,
 )]
 #[css(comma)]
+#[repr(transparent)]
 pub struct AnchorNameIdent(
     #[css(iterable, if_empty = "none")]
     #[ignore_malloc_size_of = "Arc"]
@@ -423,7 +423,7 @@ impl AnchorName {
     ToTyped,
 )]
 #[repr(u8)]
-pub enum AnchorScope {
+pub enum AnchorScopeKeyword {
     /// `none`
     None,
     /// `all`
@@ -437,19 +437,14 @@ pub enum AnchorScope {
     ),
 }
 
-impl AnchorScope {
+impl AnchorScopeKeyword {
     /// Return the `none` value.
     pub fn none() -> Self {
         Self::None
     }
-
-    /// Returns whether this is the `none` value.
-    pub fn is_none(&self) -> bool {
-        *self == Self::None
-    }
 }
 
-impl Parse for AnchorScope {
+impl Parse for AnchorScopeKeyword {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -469,7 +464,19 @@ impl Parse for AnchorScope {
         while input.try_parse(|input| input.expect_comma()).is_ok() {
             idents.push(DashedIdent::parse(context, input)?);
         }
-        Ok(AnchorScope::Idents(ArcSlice::from_iter(idents.drain(..))))
+        Ok(AnchorScopeKeyword::Idents(ArcSlice::from_iter(
+            idents.drain(..),
+        )))
+    }
+}
+
+/// https://drafts.csswg.org/css-anchor-position-1/#propdef-scope
+pub type AnchorScope = TreeScoped<AnchorScopeKeyword>;
+
+impl AnchorScope {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::with_default_level(AnchorScopeKeyword::none())
     }
 }
 

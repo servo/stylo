@@ -87,10 +87,13 @@ pub use self::page::{PageName, PageOrientation, PageSize, PageSizeOrientation, P
 pub use self::percentage::{NonNegativePercentage, Percentage};
 pub use self::position::AnchorFunction;
 pub use self::position::AnchorName;
+pub use self::position::AnchorNameIdent;
 pub use self::position::AnchorScope;
+pub use self::position::AnchorScopeKeyword;
 pub use self::position::AspectRatio;
 pub use self::position::Inset;
 pub use self::position::PositionAnchor;
+pub use self::position::PositionAnchorKeyword;
 pub use self::position::PositionTryFallbacks;
 pub use self::position::PositionTryOrder;
 pub use self::position::PositionVisibility;

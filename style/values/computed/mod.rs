@@ -24,7 +24,6 @@ use crate::media_queries::Device;
 use crate::properties;
 use crate::properties::{ComputedValues, StyleBuilder};
 use crate::rule_cache::RuleCacheConditions;
-use crate::rule_tree::CascadeLevel;
 use crate::stylesheets::container_rule::{
     ContainerInfo, ContainerSizeQuery, ContainerSizeQueryResult,
 };
@@ -215,9 +214,6 @@ pub struct Context<'a> {
     /// FIXME(emilio): Drop the refcell.
     pub rule_cache_conditions: RefCell<&'a mut RuleCacheConditions>,
 
-    /// The cascade level in the shadow tree hierarchy.
-    pub scope: CascadeLevel,
-
     /// Container size query for this context.
     container_size_query: RefCell<ContainerSizeQuery<'a>>,
 }
@@ -247,7 +243,6 @@ impl<'a> Context<'a> {
             container_info: None,
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(&mut conditions),
-            scope: CascadeLevel::same_tree_author_normal(),
             container_size_query: RefCell::new(ContainerSizeQuery::none()),
         };
         f(&context)
@@ -284,7 +279,6 @@ impl<'a> Context<'a> {
             container_info,
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(&mut conditions),
-            scope: CascadeLevel::same_tree_author_normal(),
             container_size_query: RefCell::new(container_size_query),
         };
 
@@ -308,7 +302,6 @@ impl<'a> Context<'a> {
             for_smil_animation: false,
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
-            scope: CascadeLevel::same_tree_author_normal(),
             container_size_query: RefCell::new(container_size_query),
         }
     }
@@ -331,7 +324,6 @@ impl<'a> Context<'a> {
             for_smil_animation,
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
-            scope: CascadeLevel::same_tree_author_normal(),
             container_size_query: RefCell::new(container_size_query),
         }
     }
@@ -354,7 +346,6 @@ impl<'a> Context<'a> {
             for_smil_animation: false,
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
-            scope: CascadeLevel::same_tree_author_normal(),
             container_size_query: RefCell::new(ContainerSizeQuery::none()),
         }
     }
@@ -438,11 +429,6 @@ impl<'a> Context<'a> {
     /// The current style.
     pub fn style(&self) -> &StyleBuilder<'a> {
         &self.builder
-    }
-
-    /// The current tree scope.
-    pub fn current_scope(&self) -> CascadeLevel {
-        self.scope
     }
 
     /// Apply text-zoom if enabled.
@@ -734,7 +720,6 @@ trivial_to_computed_value!(bool);
 trivial_to_computed_value!(f32);
 trivial_to_computed_value!(i32);
 trivial_to_computed_value!(u8);
-trivial_to_computed_value!(i8);
 trivial_to_computed_value!(u16);
 trivial_to_computed_value!(u32);
 trivial_to_computed_value!(usize);

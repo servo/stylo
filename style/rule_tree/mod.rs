@@ -15,7 +15,7 @@ use smallvec::SmallVec;
 use std::io::{self, Write};
 
 mod core;
-pub mod level;
+mod level;
 mod map;
 mod source;
 mod unsafe_box;

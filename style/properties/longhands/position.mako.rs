@@ -248,7 +248,7 @@ ${helpers.predefined_type(
 ${helpers.predefined_type(
     "position-anchor",
     "PositionAnchor",
-    "computed::PositionAnchor::None",
+    "computed::PositionAnchor::none()",
     engines="gecko",
     animation_type="discrete",
     rule_types_allowed=DEFAULT_RULES_AND_POSITION_TRY,

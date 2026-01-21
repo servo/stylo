@@ -488,13 +488,30 @@ impl Parse for AnchorScope {
     ToTyped,
 )]
 #[repr(u8)]
-pub enum PositionAnchor {
+pub enum PositionAnchorKeyword {
     /// `none`
     None,
     /// `auto`
     Auto,
     /// `<dashed-ident>`
     Ident(DashedIdent),
+}
+
+impl PositionAnchorKeyword {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::None
+    }
+}
+
+/// https://drafts.csswg.org/css-anchor-position-1/#propdef-position-anchor
+pub type PositionAnchor = TreeScoped<PositionAnchorKeyword>;
+
+impl PositionAnchor {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::with_default_level(PositionAnchorKeyword::none())
+    }
 }
 
 #[derive(
@@ -1392,9 +1409,10 @@ impl PositionArea {
         // but as a physical type, they will be interpreted as the x- and y-axis
         // respectively, so if the writing mode is horizontal we need to swap the
         // values (block -> y, inline -> x).
-        if self.first.axis() == PositionAreaAxis::None &&
-            self.second.axis() == PositionAreaAxis::None &&
-            !cb_wm.is_vertical() {
+        if self.first.axis() == PositionAreaAxis::None
+            && self.second.axis() == PositionAreaAxis::None
+            && !cb_wm.is_vertical()
+        {
             std::mem::swap(&mut self.first, &mut self.second);
         } else {
             self.first = self.first.to_physical(cb_wm, self_wm, LogicalAxis::Block);

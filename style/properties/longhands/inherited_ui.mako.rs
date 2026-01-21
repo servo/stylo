@@ -55,9 +55,10 @@ ${helpers.predefined_type(
     "caret-color",
     "color::CaretColor",
     "generics::color::CaretColor::auto()",
-    engines="gecko",
+    engines="gecko servo",
     spec="https://drafts.csswg.org/css-ui/#caret-color",
     ignored_when_colors_disabled=True,
+    servo_restyle_damage="repaint",
     affects="paint",
 )}
 

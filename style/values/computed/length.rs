@@ -13,10 +13,12 @@ use crate::values::computed::{NonNegativeNumber, Percentage, Zoom};
 use crate::values::generics::length::{
     GenericLengthOrNumber, GenericLengthPercentageOrNormal, GenericMaxSize, GenericSize,
 };
+use crate::values::generics::position::TreeScoped;
 use crate::values::generics::NonNegative;
 use crate::values::generics::{length as generics, ClampToNonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 use crate::values::specified::length::{AbsoluteLength, FontBaseSize, LineHeightBase};
+use crate::values::DashedIdent;
 use crate::values::{specified, CSSFloat};
 use crate::Zero;
 use app_units::Au;
@@ -526,7 +528,7 @@ pub type MaxSize = GenericMaxSize<NonNegativeLengthPercentage>;
 #[cfg(feature = "gecko")]
 use crate::{
     gecko_bindings::structs::AnchorPosResolutionParams, logical_geometry::PhysicalAxis,
-    values::generics::length::AnchorSizeKeyword, values::DashedIdent,
+    values::generics::length::AnchorSizeKeyword,
 };
 
 /// Resolve the anchor function with the given resolver. Returns `Err()` if no anchor is found.
@@ -534,7 +536,7 @@ use crate::{
 /// anchor size keyword is not specified.
 #[cfg(feature = "gecko")]
 pub fn resolve_anchor_size(
-    anchor_name: &DashedIdent,
+    anchor_name: &TreeScoped<DashedIdent>,
     prop_axis: PhysicalAxis,
     anchor_size_keyword: AnchorSizeKeyword,
     params: &AnchorPosResolutionParams,
@@ -545,7 +547,8 @@ pub fn resolve_anchor_size(
     let valid = unsafe {
         Gecko_GetAnchorPosSize(
             params,
-            anchor_name.0.as_ptr(),
+            anchor_name.value.0.as_ptr(),
+            &anchor_name.scope,
             prop_axis as u8,
             anchor_size_keyword as u8,
             &mut offset,

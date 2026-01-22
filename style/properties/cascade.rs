@@ -459,6 +459,18 @@ fn tweak_when_ignoring_colors(
         }
     }
 
+    // Don't override background-color on ::-moz-color-swatch. It is set as an
+    // author style (via the style attribute), but it's pretty important for it
+    // to show up for obvious reasons :)
+    if context
+        .builder
+        .pseudo
+        .map_or(false, |p| p.is_color_swatch())
+        && longhand_id == LonghandId::BackgroundColor
+    {
+        return;
+    }
+
     fn alpha_channel(color: &Color, context: &computed::Context) -> f32 {
         // We assume here currentColor is opaque.
         color

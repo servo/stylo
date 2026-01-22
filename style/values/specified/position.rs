@@ -20,7 +20,7 @@ use crate::values::generics::position::PositionComponent as GenericPositionCompo
 use crate::values::generics::position::PositionOrAuto as GenericPositionOrAuto;
 use crate::values::generics::position::ZIndex as GenericZIndex;
 use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericAnchorSide};
-use crate::values::generics::position::{GenericAnchorFunction, GenericInset};
+use crate::values::generics::position::{GenericAnchorFunction, GenericInset, TreeScoped};
 use crate::values::specified;
 use crate::values::specified::align::AlignFlags;
 use crate::values::specified::{AllowQuirks, Integer, LengthPercentage, NonNegativeNumber};
@@ -351,6 +351,7 @@ impl<S: Side> PositionComponent<S> {
 /// https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name
 #[repr(transparent)]
 #[derive(
+    Animate,
     Clone,
     Debug,
     MallocSizeOf,
@@ -363,25 +364,21 @@ impl<S: Side> PositionComponent<S> {
     ToTyped,
 )]
 #[css(comma)]
-pub struct AnchorName(
+pub struct AnchorNameIdent(
     #[css(iterable, if_empty = "none")]
     #[ignore_malloc_size_of = "Arc"]
+    #[animation(constant)]
     pub crate::ArcSlice<DashedIdent>,
 );
 
-impl AnchorName {
+impl AnchorNameIdent {
     /// Return the `none` value.
     pub fn none() -> Self {
         Self(Default::default())
     }
-
-    /// Returns whether this is the `none` value.
-    pub fn is_none(&self) -> bool {
-        self.0.is_empty()
-    }
 }
 
-impl Parse for AnchorName {
+impl Parse for AnchorNameIdent {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -398,7 +395,17 @@ impl Parse for AnchorName {
         while input.try_parse(|input| input.expect_comma()).is_ok() {
             idents.push(DashedIdent::parse(context, input)?);
         }
-        Ok(AnchorName(ArcSlice::from_iter(idents.drain(..))))
+        Ok(AnchorNameIdent(ArcSlice::from_iter(idents.drain(..))))
+    }
+}
+
+/// https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name
+pub type AnchorName = TreeScoped<AnchorNameIdent>;
+
+impl AnchorName {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::with_default_level(AnchorNameIdent::none())
     }
 }
 
@@ -1388,11 +1395,11 @@ impl PositionArea {
         if self.first.axis() == PositionAreaAxis::None &&
             self.second.axis() == PositionAreaAxis::None &&
             !cb_wm.is_vertical() {
-          std::mem::swap(&mut self.first, &mut self.second);
+            std::mem::swap(&mut self.first, &mut self.second);
         } else {
-          self.first = self.first.to_physical(cb_wm, self_wm, LogicalAxis::Block);
-          self.second = self.second.to_physical(cb_wm, self_wm, LogicalAxis::Inline);
-          self.canonicalize_order();
+            self.first = self.first.to_physical(cb_wm, self_wm, LogicalAxis::Block);
+            self.second = self.second.to_physical(cb_wm, self_wm, LogicalAxis::Inline);
+            self.canonicalize_order();
         }
         self
     }

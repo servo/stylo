@@ -5,15 +5,19 @@
 //! Generic types for CSS handling of specified and computed values of
 //! [`position`](https://drafts.csswg.org/css-backgrounds-3/#position)
 
+use cssparser::Parser;
 use std::fmt::Write;
 
 use style_derive::Animate;
 use style_traits::CssWriter;
+use style_traits::ParseError;
 use style_traits::SpecifiedValueInfo;
 use style_traits::ToCss;
 
 use crate::derives::*;
 use crate::logical_geometry::PhysicalSide;
+use crate::parser::{Parse, ParserContext};
+use crate::rule_tree::CascadeLevel;
 use crate::values::animated::ToAnimatedZero;
 use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::generics::box_::PositionProperty;
@@ -22,7 +26,6 @@ use crate::values::generics::ratio::Ratio;
 use crate::values::generics::Optional;
 use crate::values::DashedIdent;
 
-use crate::rule_tree::CascadeLevel;
 use crate::values::computed::Context;
 use crate::values::computed::ToComputedValue;
 
@@ -65,6 +68,21 @@ impl<T> TreeScoped<T> {
             value,
             scope: CascadeLevel::same_tree_author_normal(),
         }
+    }
+}
+
+impl<T> Parse for TreeScoped<T>
+where
+    T: Parse,
+{
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        Ok(TreeScoped {
+            value: T::parse(context, input)?,
+            scope: CascadeLevel::same_tree_author_normal(),
+        })
     }
 }
 

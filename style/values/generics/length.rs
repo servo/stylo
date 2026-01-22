@@ -7,7 +7,6 @@
 use crate::derives::*;
 use crate::logical_geometry::PhysicalSide;
 use crate::parser::{Parse, ParserContext};
-use crate::rule_tree::CascadeLevel;
 use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::generics::box_::PositionProperty;
 use crate::values::generics::position::TreeScoped;

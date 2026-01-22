@@ -7,6 +7,7 @@
 
 use std::fmt::Write;
 
+use style_derive::Animate;
 use style_traits::CssWriter;
 use style_traits::SpecifiedValueInfo;
 use style_traits::ToCss;
@@ -20,6 +21,73 @@ use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::ratio::Ratio;
 use crate::values::generics::Optional;
 use crate::values::DashedIdent;
+
+use crate::rule_tree::CascadeLevel;
+use crate::values::computed::Context;
+use crate::values::computed::ToComputedValue;
+
+/// A generic type for representing a value scoped to a specific cascade level
+/// in the shadow tree hierarchy.
+#[repr(C)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+    Serialize,
+    Deserialize,
+)]
+pub struct TreeScoped<T> {
+    /// The scoped value.
+    pub value: T,
+    /// The cascade level in the shadow tree hierarchy.
+    #[css(skip)]
+    pub scope: CascadeLevel,
+}
+
+impl<T> TreeScoped<T> {
+    /// Creates a new `TreeScoped` value.
+    pub fn new(value: T, scope: CascadeLevel) -> Self {
+        Self { value, scope }
+    }
+
+    /// Creates a new `TreeScoped` value with the default cascade level
+    /// (same tree author normal).
+    pub fn with_default_level(value: T) -> Self {
+        Self {
+            value,
+            scope: CascadeLevel::same_tree_author_normal(),
+        }
+    }
+}
+
+impl<T: ToComputedValue> ToComputedValue for TreeScoped<T> {
+    type ComputedValue = TreeScoped<T::ComputedValue>;
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
+        TreeScoped {
+            value: self.value.to_computed_value(context),
+            scope: if context.current_scope().is_tree() {
+                context.current_scope()
+            } else {
+                self.scope.clone()
+            },
+        }
+    }
+
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        Self {
+            value: ToComputedValue::from_computed_value(&computed.value),
+            scope: computed.scope.clone(),
+        }
+    }
+}
 
 /// A generic type for representing a CSS [position](https://drafts.csswg.org/css-values/#position).
 #[derive(

@@ -1124,6 +1124,10 @@ impl<'b> Cascade<'b> {
             builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_TEXT_COLOR);
         }
 
+        if self.author_specified.contains(LonghandId::TextShadow) {
+            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_TEXT_SHADOW);
+        }
+
         if self.author_specified.contains(LonghandId::LetterSpacing) {
             builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_LETTER_SPACING);
         }

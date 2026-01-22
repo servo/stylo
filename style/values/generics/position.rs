@@ -439,8 +439,10 @@ pub use self::GenericInset as Inset;
 pub struct GenericAnchorFunction<Percentage, Fallback> {
     /// Anchor name of the element to anchor to.
     /// If omitted, selects the implicit anchor element.
+    /// The shadow cascade order of the tree-scoped anchor name
+    /// associates the name with the host of the originating stylesheet.
     #[animation(constant)]
-    pub target_element: DashedIdent,
+    pub target_element: TreeScoped<DashedIdent>,
     /// Where relative to the target anchor element to position
     /// the anchored element to.
     pub side: GenericAnchorSide<Percentage>,
@@ -458,7 +460,7 @@ where
         W: Write,
     {
         dest.write_str("anchor(")?;
-        if !self.target_element.is_empty() {
+        if !self.target_element.value.is_empty() {
             self.target_element.to_css(dest)?;
             dest.write_str(" ")?;
         }

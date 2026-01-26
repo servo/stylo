@@ -194,6 +194,8 @@ bitflags! {
         /// For shape-outside.
         const SHAPE_OUTSIDE =
             Self::INSET.bits() |
+            Self::XYWH.bits() |
+            Self::RECT.bits() |
             Self::CIRCLE.bits() |
             Self::ELLIPSE.bits() |
             Self::POLYGON.bits();

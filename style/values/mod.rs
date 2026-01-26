@@ -714,7 +714,10 @@ impl Parse for KeyframesName {
         let location = input.current_source_location();
         Ok(match *input.next()? {
             Token::Ident(ref s) => Self(CustomIdent::from_ident(location, s, &["none"])?.0),
-            Token::QuotedString(ref s) => Self(Atom::from(s.as_ref())),
+            // Note that empty <string> should be rejected.
+            Token::QuotedString(ref s) if !s.as_ref().is_empty() => {
+                Self(Atom::from(s.as_ref()))
+            },
             ref t => return Err(location.new_unexpected_token_error(t.clone())),
         })
     }

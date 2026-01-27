@@ -19,6 +19,12 @@ pub use color_function::*;
 use component::ColorComponent;
 use cssparser::color::PredefinedColorSpace;
 
+/// Number of color-mix items to reserve on the stack to avoid heap allocations.
+pub const PRE_ALLOCATED_COLOR_MIX_ITEMS: usize = 3;
+
+/// Conveniece type to use for collecting color mix items.
+pub type ColorMixItemList<T> = smallvec::SmallVec<[T; PRE_ALLOCATED_COLOR_MIX_ITEMS]>;
+
 /// The 3 components that make up a color.  (Does not include the alpha component)
 #[derive(Copy, Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]

@@ -10,7 +10,6 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::color::ColorMixFlags;
 use cssparser::Parser;
-use smallvec::SmallVec;
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ParseError, ToCss};
 
@@ -164,24 +163,6 @@ impl ColorMixItem {
     pub fn new(color: AbsoluteColor, weight: f32) -> Self {
         Self { color, weight }
     }
-}
-
-/// Mix two colors into one.
-#[inline]
-pub fn mix(
-    interpolation: ColorInterpolationMethod,
-    left_color: &AbsoluteColor,
-    left_weight: f32,
-    right_color: &AbsoluteColor,
-    right_weight: f32,
-    flags: ColorMixFlags,
-) -> AbsoluteColor {
-    let items = [
-        ColorMixItem::new(*left_color, left_weight),
-        ColorMixItem::new(*right_color, right_weight),
-    ];
-
-    mix_many(interpolation, items, flags)
 }
 
 /// Mix N colors into one (left-to-right fold).

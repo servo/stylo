@@ -83,7 +83,7 @@ impl Color {
                 if mix.flags.contains(ColorMixFlags::RESULT_IN_MODERN_SYNTAX) {
                     true
                 } else {
-                    mix.left.has_modern_syntax() || mix.right.has_modern_syntax()
+                    mix.left.color.has_modern_syntax() || mix.right.color.has_modern_syntax()
                 }
             },
             Self::LightDark(ld) => ld.light.has_modern_syntax() || ld.dark.has_modern_syntax(),

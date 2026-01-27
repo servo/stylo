@@ -12,7 +12,8 @@ use crate::media_queries::Device;
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::{Color as ComputedColor, Context, ToComputedValue};
 use crate::values::generics::color::{
-    ColorMixFlags, GenericCaretColor, GenericColorMix, GenericColorOrAuto, GenericLightDark,
+    ColorMixFlags, GenericCaretColor, GenericColorMix, GenericColorMixItem, GenericColorOrAuto,
+    GenericLightDark,
 };
 use crate::values::specified::Percentage;
 use crate::values::{normalize, CustomIdent};
@@ -83,10 +84,14 @@ impl ColorMix {
             // to preserve floating point precision.
             Ok(ColorMix {
                 interpolation,
-                left,
-                left_percentage,
-                right,
-                right_percentage,
+                left: GenericColorMixItem {
+                    color: left,
+                    percentage: left_percentage,
+                },
+                right: GenericColorMixItem {
+                    color: right,
+                    percentage: right_percentage,
+                },
                 flags: ColorMixFlags::NORMALIZE_WEIGHTS | ColorMixFlags::RESULT_IN_MODERN_SYNTAX,
             })
         })
@@ -586,8 +591,13 @@ impl Color {
                     && ld.dark.honored_in_forced_colors_mode(allow_transparent)
             },
             Self::ColorMix(ref mix) => {
-                mix.left.honored_in_forced_colors_mode(allow_transparent)
-                    && mix.right.honored_in_forced_colors_mode(allow_transparent)
+                mix.left
+                    .color
+                    .honored_in_forced_colors_mode(allow_transparent)
+                    && mix
+                        .right
+                        .color
+                        .honored_in_forced_colors_mode(allow_transparent)
             },
             Self::ContrastColor(ref c) => c.honored_in_forced_colors_mode(allow_transparent),
         }
@@ -625,14 +635,17 @@ impl Color {
             Self::Absolute(c) => Some(c.color),
             Self::ColorFunction(ref color_function) => color_function.resolve_to_absolute().ok(),
             Self::ColorMix(ref mix) => {
-                let left = mix.left.resolve_to_absolute()?;
-                let right = mix.right.resolve_to_absolute()?;
-                Some(crate::color::mix::mix(
+                use crate::color::mix;
+
+                let left = mix.left.color.resolve_to_absolute()?;
+                let right = mix.right.color.resolve_to_absolute()?;
+
+                Some(mix::mix_many(
                     mix.interpolation,
-                    &left,
-                    mix.left_percentage.to_percentage(),
-                    &right,
-                    mix.right_percentage.to_percentage(),
+                    [
+                        mix::ColorMixItem::new(left, mix.left.percentage.to_percentage()),
+                        mix::ColorMixItem::new(right, mix.right.percentage.to_percentage()),
+                    ],
                     mix.flags,
                 ))
             },
@@ -783,15 +796,19 @@ impl Color {
             Color::ColorMix(ref mix) => {
                 use crate::values::computed::percentage::Percentage;
 
-                let left = mix.left.to_computed_color(context)?;
-                let right = mix.right.to_computed_color(context)?;
+                let left = mix.left.color.to_computed_color(context)?;
+                let right = mix.right.color.to_computed_color(context)?;
 
                 ComputedColor::from_color_mix(GenericColorMix {
                     interpolation: mix.interpolation,
-                    left,
-                    left_percentage: Percentage(mix.left_percentage.get()),
-                    right,
-                    right_percentage: Percentage(mix.right_percentage.get()),
+                    left: GenericColorMixItem {
+                        color: left,
+                        percentage: Percentage(mix.left.percentage.get()),
+                    },
+                    right: GenericColorMixItem {
+                        color: right,
+                        percentage: Percentage(mix.right.percentage.get()),
+                    },
                     flags: mix.flags,
                 })
             },

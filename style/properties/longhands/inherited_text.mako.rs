@@ -227,10 +227,11 @@ ${helpers.predefined_type(
     "line-break",
     "LineBreak",
     "computed::LineBreak::Auto",
-    engines="gecko",
+    engines="gecko servo",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text-3/#line-break-property",
     affects="layout",
+    servo_restyle_damage="rebuild_box",
 )}
 
 // CSS Compatibility

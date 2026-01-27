@@ -4,13 +4,14 @@
 
 //! Generic types for color properties.
 
+use crate::color::ColorMixItemList;
 use crate::color::{mix::ColorInterpolationMethod, AbsoluteColor, ColorFunction};
 use crate::derives::*;
 use crate::values::{
     computed::ToComputedValue, specified::percentage::ToPercentage, ParseError, Parser,
 };
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{owned_slice::OwnedSlice, CssWriter, ToCss};
 
 /// This struct represents a combined color from a numeric color and
 /// the current foreground color (currentcolor keyword).
@@ -78,8 +79,7 @@ pub struct GenericColorMixItem<Color, Percentage> {
 #[repr(C)]
 pub struct GenericColorMix<Color, Percentage> {
     pub interpolation: ColorInterpolationMethod,
-    pub left: GenericColorMixItem<Color, Percentage>,
-    pub right: GenericColorMixItem<Color, Percentage>,
+    pub items: OwnedSlice<GenericColorMixItem<Color, Percentage>>,
     pub flags: ColorMixFlags,
 }
 
@@ -90,23 +90,6 @@ impl<Color: ToCss, Percentage: ToCss + ToPercentage> ToCss for ColorMix<Color, P
     where
         W: Write,
     {
-        fn can_omit<Percentage: ToPercentage>(
-            a: &Percentage,
-            b: &Percentage,
-            is_left: bool,
-        ) -> bool {
-            if a.is_calc() {
-                return false;
-            }
-            if a.to_percentage() == 0.5 {
-                return b.to_percentage() == 0.5;
-            }
-            if is_left {
-                return false;
-            }
-            (1.0 - a.to_percentage() - b.to_percentage()).abs() <= f32::EPSILON
-        }
-
         dest.write_str("color-mix(")?;
 
         // If the color interpolation method is oklab (which is now the default),
@@ -117,18 +100,51 @@ impl<Color: ToCss, Percentage: ToCss + ToPercentage> ToCss for ColorMix<Color, P
             dest.write_str(", ")?;
         }
 
-        self.left.color.to_css(dest)?;
-        if !can_omit(&self.left.percentage, &self.right.percentage, true) {
-            dest.write_char(' ')?;
-            self.left.percentage.to_css(dest)?;
-        }
+        let uniform = self
+            .items
+            .split_first()
+            .map(|(first, rest)| {
+                rest.iter()
+                    .all(|item| item.percentage.to_percentage() == first.percentage.to_percentage())
+            })
+            .unwrap_or(false);
+        let uniform_value = 1.0 / self.items.len() as f32;
 
-        dest.write_str(", ")?;
+        let is_pair = self.items.len() == 2;
 
-        self.right.color.to_css(dest)?;
-        if !can_omit(&self.right.percentage, &self.left.percentage, false) {
-            dest.write_char(' ')?;
-            self.right.percentage.to_css(dest)?;
+        for (index, item) in self.items.iter().enumerate() {
+            if index != 0 {
+                dest.write_str(", ")?;
+            }
+
+            item.color.to_css(dest)?;
+
+            let omit = if is_pair {
+                let can_omit = |a: &Percentage, b: &Percentage, is_left| {
+                    if a.is_calc() {
+                        return false;
+                    }
+                    if a.to_percentage() == 0.5 {
+                        return b.to_percentage() == 0.5;
+                    }
+                    if is_left {
+                        return false;
+                    }
+                    (1.0 - a.to_percentage() - b.to_percentage()).abs() <= f32::EPSILON
+                };
+
+                let other = &self.items[1 - index].percentage;
+                can_omit(&item.percentage, other, index == 0)
+            } else {
+                !item.percentage.is_calc()
+                    && uniform
+                    && item.percentage.to_percentage() == uniform_value
+            };
+
+            if !omit {
+                dest.write_char(' ')?;
+                item.percentage.to_css(dest)?;
+            }
         }
 
         dest.write_char(')')
@@ -144,17 +160,15 @@ impl<Percentage> ColorMix<GenericColor<Percentage>, Percentage> {
     {
         use crate::color::mix;
 
-        let left = self.left.color.as_absolute()?;
-        let right = self.right.color.as_absolute()?;
+        let mut items = ColorMixItemList::with_capacity(self.items.len());
+        for item in self.items.iter() {
+            items.push(mix::ColorMixItem::new(
+                *item.color.as_absolute()?,
+                item.percentage.to_percentage(),
+            ))
+        }
 
-        Some(mix::mix_many(
-            self.interpolation,
-            [
-                mix::ColorMixItem::new(*left, self.left.percentage.to_percentage()),
-                mix::ColorMixItem::new(*right, self.right.percentage.to_percentage()),
-            ],
-            self.flags,
-        ))
+        Some(mix::mix_many(self.interpolation, items, self.flags))
     }
 }
 

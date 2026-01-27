@@ -335,6 +335,7 @@ pub enum NonTSPseudoClass {
     ReadOnly,
     ReadWrite,
     Required,
+    ServoListBox,
     ServoNonZeroBorder,
     Target,
     UserInvalid,
@@ -413,6 +414,7 @@ impl ToCss for NonTSPseudoClass {
             Self::ReadOnly => ":read-only",
             Self::ReadWrite => ":read-write",
             Self::Required => ":required",
+            Self::ServoListBox => ":-servo-list-box",
             Self::ServoNonZeroBorder => ":-servo-nonzero-border",
             Self::Target => ":target",
             Self::UserInvalid => ":user-invalid",
@@ -457,6 +459,7 @@ impl NonTSPseudoClass {
             Self::ReadOnly => ElementState::READONLY,
             Self::ReadWrite => ElementState::READWRITE,
             Self::Required => ElementState::REQUIRED,
+            Self::ServoListBox => ElementState::LIST_BOX,
             Self::Target => ElementState::URLTARGET,
             Self::UserInvalid => ElementState::USER_INVALID,
             Self::UserValid => ElementState::USER_VALID,
@@ -593,6 +596,14 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     ))
                 }
                 NonTSPseudoClass::ServoNonZeroBorder
+            },
+            "-servo-list-box" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(
+                        SelectorParseErrorKind::UnexpectedIdent("-servo-list-box".into())
+                    ))
+                }
+                NonTSPseudoClass::ServoListBox
             },
             _ => return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone()))),
         };

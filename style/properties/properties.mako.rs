@@ -7,8 +7,7 @@
 <%namespace name="helpers" file="/helpers.mako.rs" />
 
 use servo_arc::{Arc, UniqueArc};
-use std::{ops, ptr};
-use std::{fmt, mem};
+use std::{ops, ptr, fmt, mem};
 
 #[cfg(feature = "servo")] use euclid::SideOffsets2D;
 #[cfg(feature = "gecko")] use crate::gecko_bindings::structs::{self, NonCustomCSSPropertyId};
@@ -65,24 +64,10 @@ impl<T> MaybeBoxed<Box<T>> for T {
     fn maybe_boxed(self) -> Box<T> { Box::new(self) }
 }
 
-macro_rules! expanded {
-    ( $( $name: ident: $value: expr ),+ ) => {
-        expanded!( $( $name: $value, )+ )
-    };
-    ( $( $name: ident: $value: expr, )+ ) => {
-        Longhands {
-            $(
-                $name: MaybeBoxed::maybe_boxed($value),
-            )+
-        }
-    }
-}
-
 /// A module with all the code for longhand properties.
 #[allow(missing_docs)]
 pub mod longhands {
 <%
-    from mako.exceptions import TemplateLookupException
     import toml
     import os
 
@@ -123,61 +108,57 @@ pub mod gecko {
 % endif
 
 
-macro_rules! unwrap_or_initial {
-    ($prop: ident) => (unwrap_or_initial!($prop, $prop));
-    ($prop: ident, $expr: expr) =>
-        ($expr.unwrap_or_else(|| $prop::get_initial_specified_value()));
-}
-
 /// A module with code for all the shorthand css properties, and a few
 /// serialization helpers.
 #[allow(missing_docs)]
-pub mod shorthands {
-    use cssparser::Parser;
-    use crate::parser::{Parse, ParserContext};
-    use style_traits::{ParseError, StyleParseErrorKind};
-    use crate::values::specified;
+pub mod shorthands_generated {
+<%
+    import toml
+    import os
 
-    % for style_struct in data.style_structs:
-    <%include file="/shorthands/${style_struct.name_lower}.mako.rs" />
-    % endfor
+    shorthands_toml = toml.loads(open(os.path.join(os.path.dirname(self.filename), "shorthands.toml")).read())
+    for name, args in shorthands_toml.items():
+        sub_properties = args.pop('sub_properties')
+        data.declare_shorthand(name, sub_properties.split(), **args)
 
-    // We didn't define the 'all' shorthand using the regular helpers:shorthand
-    // mechanism, since it causes some very large types to be generated.
-    //
-    // Also, make sure logical properties appear before its physical
-    // counter-parts, in order to prevent bugs like:
-    //
-    //   https://bugzilla.mozilla.org/show_bug.cgi?id=1410028
-    //
-    // FIXME(emilio): Adopt the resolution from:
-    //
-    //   https://github.com/w3c/csswg-drafts/issues/1898
-    //
-    // when there is one, whatever that is.
-    <%
-        logical_longhands = []
-        other_longhands = []
+    for shorthand in data.shorthands:
+        helpers.shorthand(shorthand)
 
-        for p in data.longhands:
-            if p.name in ['direction', 'unicode-bidi']:
-                continue;
-            if not p.enabled_in_content() and not p.experimental(engine):
-                continue;
-            if "Style" not in p.rule_types_allowed_names():
-                continue;
-            if p.logical:
-                logical_longhands.append(p.name)
-            else:
-                other_longhands.append(p.name)
+    # We didn't define the 'all' shorthand using the regular helpers:shorthand
+    # mechanism, since it causes some very large types to be generated.
+    #
+    # Also, make sure logical properties appear before its physical
+    # counter-parts, in order to prevent bugs like:
+    #
+    #   https://bugzilla.mozilla.org/show_bug.cgi?id=1410028
+    #
+    # FIXME(emilio): Adopt the resolution from:
+    #
+    #   https://github.com/w3c/csswg-drafts/issues/1898
+    #
+    # when there is one, whatever that is.
+    logical_longhands = []
+    other_longhands = []
 
-        data.declare_shorthand(
-            "all",
-            logical_longhands + other_longhands,
-            engines="gecko servo",
-            spec="https://drafts.csswg.org/css-cascade-3/#all-shorthand"
-        )
-        ALL_SHORTHAND_LEN = len(logical_longhands) + len(other_longhands);
+    for p in data.longhands:
+        if p.name in ['direction', 'unicode-bidi']:
+            continue;
+        if not p.enabled_in_content() and not p.experimental(engine):
+            continue;
+        if "Style" not in p.rule_types_allowed_names():
+            continue;
+        if p.logical:
+            logical_longhands.append(p.name)
+        else:
+            other_longhands.append(p.name)
+
+    data.declare_shorthand(
+        "all",
+        logical_longhands + other_longhands,
+        engines="gecko servo",
+        spec="https://drafts.csswg.org/css-cascade-3/#all-shorthand"
+    )
+    ALL_SHORTHAND_LEN = len(logical_longhands) + len(other_longhands);
     %>
 }
 
@@ -665,7 +646,7 @@ impl NonCustomPropertyId {
             % if prop.name == "all":
                 0, // 'all' accepts no value other than CSS-wide keywords
             % else:
-                <shorthands::${prop.ident}::Longhands as SpecifiedValueInfo>::SUPPORTED_TYPES,
+                <shorthands_generated::${prop.ident}::Longhands as SpecifiedValueInfo>::SUPPORTED_TYPES,
             % endif
             % endfor
         ];
@@ -684,7 +665,7 @@ impl NonCustomPropertyId {
             % if prop.name == "all":
                 do_nothing, // 'all' accepts no value other than CSS-wide keywords
             % else:
-                <shorthands::${prop.ident}::Longhands as SpecifiedValueInfo>::
+                <shorthands_generated::${prop.ident}::Longhands as SpecifiedValueInfo>::
                     collect_completion_keywords,
             % endif
             % endfor
@@ -1173,7 +1154,7 @@ impl ShorthandId {
             % if shorthand.ident == "all":
                 all_to_css,
             % else:
-                shorthands::${shorthand.ident}::to_css,
+                shorthands_generated::${shorthand.ident}::to_css,
             % endif
             % endfor
         ];
@@ -1240,7 +1221,7 @@ impl ShorthandId {
             % if shorthand.ident == "all":
             parse_all,
             % else:
-            shorthands::${shorthand.ident}::parse_into,
+            shorthands_generated::${shorthand.ident}::parse_into,
             % endif
             % endfor
         ];

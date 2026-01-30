@@ -6,10 +6,27 @@
 
 pub mod cascade;
 pub mod declaration_block;
+pub mod shorthands;
 
 pub use self::cascade::*;
 pub use self::declaration_block::*;
 pub use self::generated::*;
+
+macro_rules! expanded {
+    ( $( $name: ident: $value: expr ),+ ) => {
+        expanded!( $( $name: $value, )+ )
+    };
+    ( $( $name: ident: $value: expr, )+ ) => {
+        Longhands {
+            $(
+                $name: $crate::properties::MaybeBoxed::maybe_boxed($value),
+            )+
+        }
+    }
+}
+
+pub(crate) use expanded;
+
 /// The CSS properties supported by the style system.
 /// Generated from the properties.mako.rs template by build.rs
 #[macro_use]

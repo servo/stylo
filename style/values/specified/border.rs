@@ -15,13 +15,12 @@ use crate::values::generics::border::{
 use crate::values::generics::rect::Rect;
 use crate::values::generics::size::Size2D;
 use crate::values::specified::length::{Length, NonNegativeLength, NonNegativeLengthPercentage};
-use crate::values::specified::Color;
 use crate::values::specified::{AllowQuirks, NonNegativeNumber, NonNegativeNumberOrPercentage};
 use crate::Zero;
 use app_units::Au;
 use cssparser::Parser;
 use std::fmt::{self, Write};
-use style_traits::{values::SequenceWriter, CssWriter, ParseError, ToCss};
+use style_traits::{CssWriter, ParseError, ToCss};
 
 /// A specified value for a single side of a `border-style` property.
 ///
@@ -413,33 +412,4 @@ impl Parse for BorderImageRepeat {
             vertical.unwrap_or(horizontal),
         ))
     }
-}
-
-/// Serializes a border shorthand value composed of width/style/color.
-pub fn serialize_directional_border<W>(
-    dest: &mut CssWriter<W>,
-    width: &BorderSideWidth,
-    style: &BorderStyle,
-    color: &Color,
-) -> fmt::Result
-where
-    W: Write,
-{
-    let has_style = *style != BorderStyle::None;
-    let has_color = *color != Color::CurrentColor;
-    let has_width = *width != BorderSideWidth::medium();
-    if !has_style && !has_color && !has_width {
-        return width.to_css(dest);
-    }
-    let mut writer = SequenceWriter::new(dest, " ");
-    if has_width {
-        writer.item(width)?;
-    }
-    if has_style {
-        writer.item(style)?;
-    }
-    if has_color {
-        writer.item(color)?;
-    }
-    Ok(())
 }

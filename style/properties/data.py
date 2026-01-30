@@ -697,6 +697,10 @@ class Shorthand(Property):
         spec=None,
         servo_pref=None,
         gecko_pref=None,
+        kind=None,
+        allow_quirks=False,
+        derive_serialize=False,
+        derive_value_info=True,
         enabled_in="content",
         rule_types_allowed=DEFAULT_RULES,
         aliases=None,
@@ -716,6 +720,10 @@ class Shorthand(Property):
             flags=flags,
         )
         self.sub_properties = sub_properties
+        self.derive_serialize = derive_serialize
+        self.derive_value_info = derive_value_info
+        self.allow_quirks = allow_quirks
+        self.kind = kind
 
     def get_animatable(self):
         for sub in self.sub_properties:

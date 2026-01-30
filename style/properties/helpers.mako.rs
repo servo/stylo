@@ -546,33 +546,20 @@ pub mod ${property.ident} {
 }
 </%def>
 
-<%def name="shorthand(name, sub_properties, derive_serialize=False,
-                      derive_value_info=True, **kwargs)">
-<%
-    shorthand = data.declare_shorthand(name, sub_properties.split(), **kwargs)
-    # mako doesn't accept non-string value in parameters with <% %> form, so
-    # we have to workaround it this way.
-    if not isinstance(derive_value_info, bool):
-        derive_value_info = eval(derive_value_info)
-%>
-    % if shorthand:
+<%def name="shorthand(shorthand)">
     /// ${shorthand.spec}
     pub mod ${shorthand.ident} {
         use cssparser::Parser;
         use crate::parser::ParserContext;
-        use crate::properties::{PropertyDeclaration, SourcePropertyDeclaration, MaybeBoxed, longhands};
-        #[allow(unused_imports)]
-        use selectors::parser::SelectorParseErrorKind;
+        use crate::properties::{PropertyDeclaration, SourcePropertyDeclaration, longhands};
         #[allow(unused_imports)]
         use std::fmt::{self, Write};
         #[allow(unused_imports)]
-        use style_traits::{ParseError, StyleParseErrorKind};
-        #[allow(unused_imports)]
-        use style_traits::{CssWriter, KeywordsCollectFn, SpecifiedValueInfo, ToCss};
+        use style_traits::{CssWriter, KeywordsCollectFn, SpecifiedValueInfo, ToCss, ParseError};
         #[allow(unused_imports)]
         use style_derive::{Animate, ComputeSquaredDistance, ToAnimatedValue, Parse, ToAnimatedZero, ToComputedValue, ToResolvedValue, ToCss, SpecifiedValueInfo, ToTyped};
 
-        % if derive_value_info:
+        % if shorthand.derive_value_info:
         #[derive(SpecifiedValueInfo)]
         % endif
         pub struct Longhands {
@@ -591,7 +578,7 @@ pub mod ${property.ident} {
 
         /// Represents a serializable set of all of the longhand properties that
         /// correspond to a shorthand.
-        % if derive_serialize:
+        % if shorthand.derive_serialize:
         #[derive(ToCss)]
         % endif
         pub struct LonghandsToSerialize<'a> {
@@ -664,6 +651,9 @@ pub mod ${property.ident} {
         ) -> Result<(), ParseError<'i>> {
             #[allow(unused_imports)]
             use crate::properties::{NonCustomPropertyId, LonghandId};
+            % if not shorthand.kind:
+            use crate::properties::shorthands::${shorthand.ident}::parse_value;
+            % endif
             input.parse_entirely(|input| parse_value(context, input)).map(|longhands| {
                 % for sub_property in shorthand.sub_properties:
                 % if sub_property.may_be_disabled_in(shorthand, engine):
@@ -687,51 +677,40 @@ pub mod ${property.ident} {
                 Err(_) => Ok(())
             }
         }
-
-        ${caller.body()}
+        % if shorthand.kind == "two_properties":
+        ${self.two_properties_shorthand(shorthand)}
+        % endif
+        % if shorthand.kind == "four_sides":
+        ${self.four_sides_shorthand(shorthand)}
+        % endif
+        % if shorthand.kind == "single_border":
+        ${self.single_border_shorthand(shorthand)}
+        % endif
     }
-    % endif
 </%def>
 
 // A shorthand of kind `<property-1> <property-2>?` where both properties have
 // the same type.
-<%def name="two_properties_shorthand(
-    name,
-    first_property,
-    second_property,
-    parser_function='crate::parser::Parse::parse',
-    **kwargs
-)">
-<%call expr="self.shorthand(name, sub_properties=' '.join([first_property, second_property]), **kwargs)">
-    #[allow(unused_imports)]
-    use crate::parser::Parse;
-    #[allow(unused_imports)]
-    use crate::values::specified;
+<%def name="two_properties_shorthand(shorthand)">
+    type Single = crate::properties::longhands::${shorthand.sub_properties[0].ident}::SpecifiedValue;
 
-    fn parse_value<'i, 't>(
+    pub fn parse_value<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
-        let parse_one = |c: &ParserContext, input: &mut Parser<'i, 't>| -> Result<
-            crate::properties::longhands::${to_rust_ident(first_property)}::SpecifiedValue,
-            ParseError<'i>
-        > {
-            ${parser_function}(c, input)
-        };
-
-        let first = parse_one(context, input)?;
+        let first = <Single as crate::parser::Parse>::parse(context, input)?;
         let second =
-            input.try_parse(|input| parse_one(context, input)).unwrap_or_else(|_| first.clone());
+            input.try_parse(|input| <Single as crate::parser::Parse>::parse(context, input)).unwrap_or_else(|_| first.clone());
         Ok(expanded! {
-            ${to_rust_ident(first_property)}: first,
-            ${to_rust_ident(second_property)}: second,
+            ${shorthand.sub_properties[0].ident}: first,
+            ${shorthand.sub_properties[1].ident}: second,
         })
     }
 
     impl<'a> ToCss for LonghandsToSerialize<'a>  {
         fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
-            let first = &self.${to_rust_ident(first_property)};
-            let second = &self.${to_rust_ident(second_property)};
+            let first = &self.${shorthand.sub_properties[0].ident};
+            let second = &self.${shorthand.sub_properties[1].ident};
 
             first.to_css(dest)?;
             if first != second {
@@ -741,53 +720,66 @@ pub mod ${property.ident} {
             Ok(())
         }
     }
-</%call>
 </%def>
 
-<%def name="four_sides_shorthand(name, sub_property_pattern,
-                                 parser_function='crate::parser::Parse::parse',
-                                 allow_quirks=False, **kwargs)">
-    <% sub_properties=' '.join(sub_property_pattern % side for side in PHYSICAL_SIDES) %>
-    <%call expr="self.shorthand(name, sub_properties=sub_properties, **kwargs)">
-        #[allow(unused_imports)]
-        use crate::parser::Parse;
-        use crate::values::generics::rect::Rect;
-        #[allow(unused_imports)]
-        use crate::values::specified;
+<%def name="four_sides_shorthand(shorthand)">
+    use crate::values::generics::rect::Rect;
 
-        fn parse_value<'i, 't>(
-            context: &ParserContext,
-            input: &mut Parser<'i, 't>,
-        ) -> Result<Longhands, ParseError<'i>> {
-            let rect = Rect::parse_with(context, input, |c, i| -> Result<
-                crate::properties::longhands::${to_rust_ident(sub_property_pattern % "top")}::SpecifiedValue,
-                ParseError<'i>
-            > {
-            % if allow_quirks:
-                ${parser_function}_quirky(c, i, specified::AllowQuirks::Yes)
-            % else:
-                ${parser_function}(c, i)
-            % endif
-            })?;
-            Ok(expanded! {
-                % for index, side in enumerate(["top", "right", "bottom", "left"]):
-                    ${to_rust_ident(sub_property_pattern % side)}: rect.${index},
+    type Single = crate::properties::longhands::${shorthand.sub_properties[0].ident}::SpecifiedValue;
+    pub fn parse_value<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        let rect = Rect::parse_with(context, input, |c, i| -> Result<Single, ParseError<'i> > {
+        % if shorthand.allow_quirks:
+            Single::parse_quirky(c, i, crate::values::specified::AllowQuirks::Yes)
+        % else:
+            <Single as crate::parser::Parse>::parse(c, i)
+        % endif
+        })?;
+        Ok(expanded! {
+        % for index in range(4):
+            ${shorthand.sub_properties[index].ident}: rect.${index},
+        % endfor
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a> {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+        where
+            W: Write,
+        {
+            let rect = Rect::new(
+                % for index in range(4):
+                    &self.${shorthand.sub_properties[index].ident},
                 % endfor
-            })
+            );
+            rect.to_css(dest)
         }
+    }
+</%def>
 
-        impl<'a> ToCss for LonghandsToSerialize<'a> {
-            fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-            where
-                W: Write,
-            {
-                let rect = Rect::new(
-                    % for side in ["top", "right", "bottom", "left"]:
-                    &self.${to_rust_ident(sub_property_pattern % side)},
-                    % endfor
-                );
-                rect.to_css(dest)
-            }
+<%def name="single_border_shorthand(shorthand)">
+    pub fn parse_value<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        let (width, style, color) = crate::properties::shorthands::parse_border(context, input)?;
+        Ok(expanded! {
+            ${shorthand.sub_properties[0].ident}: width,
+            ${shorthand.sub_properties[1].ident}: style,
+            ${shorthand.sub_properties[2].ident}: color,
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a>  {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result where W: fmt::Write {
+            crate::properties::shorthands::serialize_directional_border(
+                dest,
+                % for i in range(3):
+                self.${shorthand.sub_properties[i].ident},
+                % endfor
+            )
         }
-    </%call>
+    }
 </%def>

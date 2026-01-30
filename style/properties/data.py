@@ -186,15 +186,15 @@ class Keyword(object):
                 "Only one of gecko_constant_prefix and gecko_enum_prefix "
                 "can be specified"
             )
-        self.gecko_constant_prefix = (
-            gecko_constant_prefix or "NS_STYLE_" + self.name.upper().replace("-", "_")
-        )
+        self.gecko_constant_prefix = gecko_constant_prefix
         self.gecko_enum_prefix = gecko_enum_prefix
+        if not gecko_constant_prefix and not gecko_enum_prefix:
+            self.gecko_enum_prefix = "Style" + to_camel_case(name.replace("-moz-", "").replace("-webkit-", ""))
         self.extra_gecko_values = (extra_gecko_values or "").split()
         self.extra_servo_values = (extra_servo_values or "").split()
         self.gecko_aliases = parse_aliases(gecko_aliases or "")
         self.servo_aliases = parse_aliases(servo_aliases or "")
-        self.gecko_inexhaustive = gecko_inexhaustive or (gecko_enum_prefix is None)
+        self.gecko_inexhaustive = gecko_inexhaustive or self.gecko_constant_prefix is not None
 
     def values_for(self, engine):
         if engine == "gecko":

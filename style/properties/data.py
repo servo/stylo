@@ -873,7 +873,7 @@ class PropertiesData(object):
         for prefix, pref in property.extra_prefixes:
             property.aliases.append(("-%s-%s" % (prefix, property.name), pref))
 
-    def declare_longhand(self, style_struct, name, engines=None, **kwargs):
+    def declare_longhand(self, style_struct, name, engines="servo gecko", **kwargs):
         engines = engines.split()
         if self.engine not in engines:
             return
@@ -892,7 +892,7 @@ class PropertiesData(object):
 
         return longhand
 
-    def declare_shorthand(self, name, sub_properties, engines, *args, **kwargs):
+    def declare_shorthand(self, name, sub_properties, engines="servo gecko", *args, **kwargs):
         engines = engines.split()
         if self.engine not in engines:
             return

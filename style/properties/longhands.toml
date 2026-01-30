@@ -33,7 +33,6 @@
 #     values                 - Space separated list of valid values
 #     extra_gecko_values
 #     gecko_enum_prefix
-#     gecko_needs_conversion - true/false
 #     gecko_constant_prefix
 #     custom_consts - map with name -> enum mapping
 #     gecko_inexhaustive - Whether the gecko enum doesn't cover all keywords
@@ -3729,7 +3728,7 @@ engines = "gecko"
 spec = "https://mathml-refresh.github.io/mathml-core/#the-math-style-property"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "normal compact", gecko_enum_prefix = "StyleMathStyle", gecko_needs_conversion = true }
+keyword = { values = "normal compact", gecko_enum_prefix = "StyleMathStyle" }
 
 [math-shift]
 struct = "font"
@@ -3740,7 +3739,7 @@ enabled_in = "ua"
 affects = "layout"
 gecko_pref = "mathml.math_shift.enabled"
 has_effect_on_gecko_scrollbars = false
-keyword = { values = "normal compact", gecko_enum_prefix = "StyleMathShift", gecko_needs_conversion = true }
+keyword = { values = "normal compact", gecko_enum_prefix = "StyleMathShift" }
 
 [-moz-osx-font-smoothing]
 struct = "font"
@@ -4150,7 +4149,7 @@ enabled_in = ""
 has_effect_on_gecko_scrollbars = false
 affects = "layout"
 gecko_ffi_name = "mMathVariant"
-keyword = { values = "none normal bold italic bold-italic script bold-script fraktur double-struck bold-fraktur sans-serif bold-sans-serif sans-serif-italic sans-serif-bold-italic monospace initial tailed looped stretched", gecko_enum_prefix = "StyleMathVariant", gecko_needs_conversion = true }
+keyword = { values = "none normal bold italic bold-italic script bold-script fraktur double-struck bold-fraktur sans-serif bold-sans-serif sans-serif-italic sans-serif-bold-italic monospace initial tailed looped stretched", gecko_enum_prefix = "StyleMathVariant" }
 
 [white-space-collapse]
 struct = "inherited_text"

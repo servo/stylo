@@ -178,7 +178,6 @@ class Keyword(object):
         gecko_aliases=None,
         servo_aliases=None,
         gecko_inexhaustive=None,
-        gecko_needs_conversion=False,
     ):
         self.name = name
         self.values = values.split()
@@ -191,7 +190,6 @@ class Keyword(object):
             gecko_constant_prefix or "NS_STYLE_" + self.name.upper().replace("-", "_")
         )
         self.gecko_enum_prefix = gecko_enum_prefix
-        self.gecko_needs_conversion = gecko_needs_conversion
         self.extra_gecko_values = (extra_gecko_values or "").split()
         self.extra_servo_values = (extra_servo_values or "").split()
         self.gecko_aliases = parse_aliases(gecko_aliases or "")

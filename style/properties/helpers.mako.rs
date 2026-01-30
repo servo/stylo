@@ -236,10 +236,6 @@ pub mod ${property.ident} {
         SpecifiedValue::parse(input)
     }
 
-    % if property.keyword.gecko_needs_conversion:
-    <%
-        conversion_values = property.keyword.values_for(engine) + list(property.keyword.aliases_for(engine).keys())
-    %>
     #[cfg(feature = "gecko")]
     impl SpecifiedValue {
         /// Obtain a specified value from a Gecko keyword value
@@ -247,19 +243,18 @@ pub mod ${property.ident} {
         /// Intended for use with presentation attributes, not style structs
         pub fn from_gecko_keyword(kw: u32) -> Self {
             use crate::gecko_bindings::structs;
-            % for value in conversion_values:
+            % for value in property.keyword.values_for(engine):
             // We can't match on enum values if we're matching on a u32
             const ${to_rust_ident(value).upper()}: u32 = structs::${property.keyword.gecko_constant(value)} as u32;
             % endfor
             match kw {
-                % for value in conversion_values:
+                % for value in property.keyword.values_for(engine):
                 ${to_rust_ident(value).upper()} => Self::${to_camel_case(value)},
                 % endfor
                 _ => panic!("Found unexpected value in style struct for ${property.name} property"),
             }
         }
     }
-    % endif
     % endif
     % if property.vector:
     } // single_value

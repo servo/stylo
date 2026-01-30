@@ -118,8 +118,7 @@ pub mod shorthands_generated {
 
     shorthands_toml = toml.loads(open(os.path.join(os.path.dirname(self.filename), "shorthands.toml")).read())
     for name, args in shorthands_toml.items():
-        sub_properties = args.pop('sub_properties')
-        data.declare_shorthand(name, sub_properties.split(), **args)
+        data.declare_shorthand(name, **args)
 
     for shorthand in data.shorthands:
         helpers.shorthand(shorthand)
@@ -145,7 +144,7 @@ pub mod shorthands_generated {
             continue;
         if not p.enabled_in_content() and not p.experimental(engine):
             continue;
-        if "Style" not in p.rule_types_allowed_names():
+        if "style" not in p.rule_types_allowed_names():
             continue;
         if p.logical:
             logical_longhands.append(p.name)
@@ -155,7 +154,6 @@ pub mod shorthands_generated {
     data.declare_shorthand(
         "all",
         logical_longhands + other_longhands,
-        engines="gecko servo",
         spec="https://drafts.csswg.org/css-cascade-3/#all-shorthand"
     )
     ALL_SHORTHAND_LEN = len(logical_longhands) + len(other_longhands);
@@ -578,7 +576,7 @@ impl NonCustomPropertyId {
             % for property in data.longhands + data.shorthands + data.all_aliases():
             % for name in RULE_VALUES:
             % if property.rule_types_allowed & RULE_VALUES[name] != 0:
-            CssRuleType::${name}.bit() |
+            CssRuleType::${to_camel_case(name)}.bit() |
             % endif
             % endfor
             0,

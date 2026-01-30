@@ -12,7 +12,7 @@
 # Required fields:
 #   type                - The Rust type name (e.g., "Display", "Color")
 #   struct              - Which style struct this belongs to ("box", "font", "position", etc.)
-#   engines             - Which engines support this ("gecko", "servo", "gecko servo")
+#   engine              - If this property is specific to one engine, the engine that it applies to
 #   spec                - URL to the specification
 #   affects             - What does this property affect? ("layout", "overflow", "paint", "")
 #
@@ -54,9 +54,9 @@
 type = "NonNegativeNumber"
 initial = "From::from(0.)"
 struct = "xul"
-engines = "gecko"
+engine = "gecko"
 gecko_ffi_name = "mBoxFlex"
-aliases = "-webkit-box-flex"
+aliases = ["-webkit-box-flex"]
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/box-flex)"
 affects = "layout"
 
@@ -65,9 +65,9 @@ affects = "layout"
 type = "Integer"
 initial = "1"
 struct = "xul"
-engines = "gecko"
+engine = "gecko"
 parse_method = "parse_non_negative"
-aliases = "-webkit-box-ordinal-group"
+aliases = ["-webkit-box-ordinal-group"]
 gecko_ffi_name = "mBoxOrdinal"
 animation_type = "discrete"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-box-ordinal-group)"
@@ -77,7 +77,7 @@ affects = "layout"
 type = "Appearance"
 initial = "computed::Appearance::None"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 animation_type = "none"
 spec = "Internal (not web-exposed)"
 enabled_in = "chrome"
@@ -88,7 +88,7 @@ affects = "paint"
 type = "Percentage"
 initial = "computed::Percentage::hundred()"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 animation_type = "none"
 gecko_ffi_name = "mMinFontSizeRatio"
 enabled_in = "ua"
@@ -99,7 +99,7 @@ affects = "layout"
 type = "LineClamp"
 initial = "computed::LineClamp::none()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-overflow-3/#line-clamp"
 affects = "layout"
 
@@ -117,7 +117,7 @@ affects = "layout"
 type = "XTextScale"
 initial = "computed::XTextScale::All"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 animation_type = "none"
 enabled_in = ""
 has_effect_on_gecko_scrollbars = false
@@ -128,7 +128,7 @@ affects = "layout"
 type = "ColorOrAuto"
 initial = "generics::color::ColorOrAuto::Auto"
 struct = "inherited_ui"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-ui-4/#widget-accent"
 ignored_when_colors_disabled = true
 affects = "paint"
@@ -139,7 +139,7 @@ initial = "specified::ContentDistribution::normal()"
 struct = "position"
 parse_method = "parse_block"
 spec = "https://drafts.csswg.org/css-align/#propdef-align-content"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 animation_type = "discrete"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
@@ -150,7 +150,7 @@ initial = "specified::ItemPlacement::normal()"
 struct = "position"
 parse_method = "parse_block"
 spec = "https://drafts.csswg.org/css-align/#propdef-align-items"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 animation_type = "discrete"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
@@ -161,9 +161,9 @@ initial = "specified::SelfAlignment::auto()"
 struct = "position"
 parse_method = "parse_block"
 spec = "https://drafts.csswg.org/css-align/#align-self-property"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 animation_type = "discrete"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 affects = "layout"
 
 [alignment-baseline]
@@ -179,7 +179,7 @@ affects = "layout"
 type = "AnchorName"
 initial = "computed::AnchorName::none()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 gecko_pref = "layout.css.anchor-positioning.enabled"
 spec = "https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name"
@@ -189,7 +189,7 @@ affects = ""
 type = "AnchorScope"
 initial = "computed::AnchorScope::none()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 gecko_pref = "layout.css.anchor-positioning.enabled"
 spec = "https://drafts.csswg.org/css-anchor-position-1/#propdef-scope"
@@ -202,9 +202,9 @@ struct = "ui"
 initial_specified_value = "specified::Time::zero()"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.animations webkit"
+extra_prefixes = ["moz:layout.css.prefixes.animations", "webkit"]
 spec = "https://drafts.csswg.org/css-animations/#propdef-animation-delay"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [animation-direction]
@@ -214,9 +214,9 @@ struct = "ui"
 initial_specified_value = "specified::AnimationDirection::Normal"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.animations webkit"
+extra_prefixes = ["moz:layout.css.prefixes.animations", "webkit"]
 spec = "https://drafts.csswg.org/css-animations/#propdef-animation-direction"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [animation-duration]
@@ -226,7 +226,7 @@ struct = "ui"
 initial_specified_value = "specified::AnimationDuration::auto()"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.animations webkit"
+extra_prefixes = ["moz:layout.css.prefixes.animations", "webkit"]
 spec = "https://drafts.csswg.org/css-animations-2/#animation-duration"
 affects = ""
 
@@ -237,9 +237,9 @@ struct = "ui"
 initial_specified_value = "computed::AnimationFillMode::None"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.animations webkit"
+extra_prefixes = ["moz:layout.css.prefixes.animations", "webkit"]
 spec = "https://drafts.csswg.org/css-animations/#propdef-animation-fill-mode"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [animation-iteration-count]
@@ -249,8 +249,8 @@ struct = "ui"
 initial_specified_value = "specified::AnimationIterationCount::one()"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.animations webkit"
-rule_types_allowed = "Style Scope"
+extra_prefixes = ["moz:layout.css.prefixes.animations", "webkit"]
+rule_types_allowed = ["style", "scope"]
 spec = "https://drafts.csswg.org/css-animations/#propdef-animation-iteration-count"
 affects = ""
 
@@ -261,8 +261,8 @@ struct = "ui"
 initial_specified_value = "specified::AnimationName::none()"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.animations webkit"
-rule_types_allowed = "Style Scope"
+extra_prefixes = ["moz:layout.css.prefixes.animations", "webkit"]
+rule_types_allowed = ["style", "scope"]
 spec = "https://drafts.csswg.org/css-animations/#propdef-animation-name"
 affects = ""
 
@@ -273,9 +273,9 @@ struct = "ui"
 initial_specified_value = "computed::AnimationPlayState::Running"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.animations webkit"
+extra_prefixes = ["moz:layout.css.prefixes.animations", "webkit"]
 spec = "https://drafts.csswg.org/css-animations/#propdef-animation-play-state"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [animation-timeline]
@@ -288,7 +288,7 @@ vector = { need_index = true }
 animation_type = "none"
 gecko_pref = "layout.css.scroll-driven-animations.enabled"
 spec = "https://drafts.csswg.org/css-animations-2/#propdef-animation-timeline"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [animation-timing-function]
@@ -298,7 +298,7 @@ struct = "ui"
 initial_specified_value = "specified::TimingFunction::ease()"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.animations webkit"
+extra_prefixes = ["moz:layout.css.prefixes.animations", "webkit"]
 spec = "https://drafts.csswg.org/css-transitions/#propdef-animation-timing-function"
 affects = ""
 
@@ -306,8 +306,8 @@ affects = ""
 type = "Appearance"
 initial = "computed::Appearance::None"
 struct = "box"
-engines = "gecko"
-extra_prefixes = "moz:layout.css.moz-appearance.enabled webkit"
+engine = "gecko"
+extra_prefixes = ["moz:layout.css.moz-appearance.enabled", "webkit"]
 spec = "https://drafts.csswg.org/css-ui-4/#propdef-appearance"
 animation_type = "discrete"
 gecko_ffi_name = "mAppearance"
@@ -393,7 +393,7 @@ struct = "background"
 initial_specified_value = "specified::BackgroundSize::auto()"
 spec = "https://drafts.csswg.org/css-backgrounds/#the-background-size"
 vector = { animation_type = "repeatable_list" }
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 servo_restyle_damage = "repaint"
 affects = "paint"
 
@@ -422,7 +422,7 @@ logical = true
 logical_group = "size"
 parse_method = "parse_size_for_width_or_height"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-block-size"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -441,7 +441,7 @@ initial = "computed::Inset::auto()"
 struct = "position"
 spec = "https://www.w3.org/TR/CSS2/visuren.html#propdef-bottom"
 allow_quirks = true
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 gecko_ffi_name = "mOffset.2"
 servo_restyle_damage = "rebuild_box"
 logical_group = "inset"
@@ -451,7 +451,7 @@ affects = "layout"
 type = "BoxShadow"
 struct = "effects"
 vector = { simple_bindings = true, animation_type = "with_zero" }
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 ignored_when_colors_disabled = true
 spec = "https://drafts.csswg.org/css-backgrounds/#box-shadow"
 affects = "overflow"
@@ -460,7 +460,7 @@ affects = "overflow"
 type = "BreakBetween"
 initial = "computed::BreakBetween::Auto"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-break/#propdef-break-after"
 animation_type = "discrete"
 affects = "layout"
@@ -469,7 +469,7 @@ affects = "layout"
 type = "BreakBetween"
 initial = "computed::BreakBetween::Auto"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-break/#propdef-break-before"
 animation_type = "discrete"
 affects = "layout"
@@ -478,7 +478,7 @@ affects = "layout"
 type = "BreakWithin"
 initial = "computed::BreakWithin::Auto"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-break/#propdef-break-inside"
 animation_type = "discrete"
 affects = "layout"
@@ -496,7 +496,7 @@ affects = "layout"
 type = "color::CaretColor"
 initial = "generics::color::CaretColor::auto()"
 struct = "inherited_ui"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-ui/#caret-color"
 ignored_when_colors_disabled = true
 affects = "paint"
@@ -523,7 +523,7 @@ affects = "overflow"
 type = "basic_shape::ClipPath"
 initial = "generics::basic_shape::ClipPath::None"
 struct = "svg"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-clip-path"
 affects = "paint"
 servo_restyle_damage = "repaint"
@@ -532,7 +532,7 @@ servo_restyle_damage = "repaint"
 type = "FillRule"
 initial = "Default::default()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://svgwg.org/svg2-draft/masking.html#ClipRuleProperty"
 affects = "paint"
@@ -570,7 +570,7 @@ affects = "layout"
 type = "length::NonNegativeLengthPercentageOrNormal"
 initial = "computed::length::NonNegativeLengthPercentageOrNormal::normal()"
 struct = "position"
-aliases = "grid-column-gap"
+aliases = ["grid-column-gap"]
 spec = "https://drafts.csswg.org/css-align-3/#propdef-column-gap"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
@@ -579,7 +579,7 @@ affects = "layout"
 type = "Color"
 initial = "computed_value::T::currentcolor()"
 struct = "column"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::Color::currentcolor()"
 ignored_when_colors_disabled = true
 spec = "https://drafts.csswg.org/css-multicol/#propdef-column-rule-color"
@@ -589,7 +589,7 @@ affects = "paint"
 type = "BorderStyle"
 initial = "computed::BorderStyle::None"
 struct = "column"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::BorderStyle::None"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-multicol/#propdef-column-rule-style"
@@ -599,7 +599,7 @@ affects = "paint"
 type = "BorderSideWidth"
 initial = "computed::BorderSideWidth::medium()"
 struct = "column"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::BorderSideWidth::medium()"
 spec = "https://drafts.csswg.org/css-multicol/#propdef-column-rule-width"
 affects = "layout"
@@ -627,7 +627,7 @@ affects = "layout"
 type = "ContainIntrinsicSize"
 initial = "computed::ContainIntrinsicSize::None"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 logical_group = "contain-intrinsic-size"
 logical = true
 spec = "https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override"
@@ -637,7 +637,7 @@ affects = "layout"
 type = "ContainIntrinsicSize"
 initial = "computed::ContainIntrinsicSize::None"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 logical_group = "contain-intrinsic-size"
 spec = "https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override"
 affects = "layout"
@@ -646,7 +646,7 @@ affects = "layout"
 type = "ContainIntrinsicSize"
 initial = "computed::ContainIntrinsicSize::None"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 logical_group = "contain-intrinsic-size"
 logical = true
 spec = "https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override"
@@ -656,7 +656,7 @@ affects = "layout"
 type = "ContainIntrinsicSize"
 initial = "computed::ContainIntrinsicSize::None"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 logical_group = "contain-intrinsic-size"
 spec = "https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override"
 affects = "layout"
@@ -693,7 +693,7 @@ affects = "layout"
 type = "ContentVisibility"
 initial = "computed::ContentVisibility::Visible"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-contain/#content-visibility"
 affects = "layout"
 
@@ -721,7 +721,7 @@ affects = "layout"
 type = "CounterSet"
 initial = "Default::default()"
 struct = "counters"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-lists-3/#propdef-counter-set"
 servo_restyle_damage = "rebuild_box"
@@ -741,7 +741,7 @@ affects = "paint"
 type = "DProperty"
 initial = "specified::DProperty::none()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/paths.html#TheDProperty"
 affects = "layout"
 
@@ -759,7 +759,7 @@ affects = "layout"
 type = "SVGPaint"
 initial = "crate::values::computed::SVGPaint::BLACK"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 boxed = true
 spec = "https://svgwg.org/svg2-draft/painting.html#SpecifyingFillPaint"
 affects = "paint"
@@ -768,7 +768,7 @@ affects = "paint"
 type = "SVGOpacity"
 initial = "Default::default()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#FillOpacity"
 affects = "paint"
 
@@ -776,7 +776,7 @@ affects = "paint"
 type = "FillRule"
 initial = "Default::default()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://svgwg.org/svg2-draft/painting.html#FillRuleProperty"
 affects = "paint"
@@ -786,7 +786,7 @@ type = "Filter"
 struct = "effects"
 vector = { simple_bindings = true, separator = "Space", animation_type = "with_zero" }
 gecko_ffi_name = "mFilters"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/filters/#propdef-filter"
 affects = "overflow"
 servo_restyle_damage = "repaint"
@@ -796,7 +796,7 @@ type = "FlexBasis"
 initial = "computed::FlexBasis::auto()"
 struct = "position"
 spec = "https://drafts.csswg.org/css-flexbox/#flex-basis-property"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 servo_restyle_damage = "rebuild_box"
 boxed = true
 affects = "layout"
@@ -806,7 +806,7 @@ type = "NonNegativeNumber"
 initial = "From::from(0.0)"
 struct = "position"
 spec = "https://drafts.csswg.org/css-flexbox/#flex-grow-property"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -815,7 +815,7 @@ type = "NonNegativeNumber"
 initial = "From::from(1.0)"
 struct = "position"
 spec = "https://drafts.csswg.org/css-flexbox/#flex-shrink-property"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -832,7 +832,7 @@ affects = "layout"
 type = "Color"
 initial = "computed::Color::BLACK"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.fxtf.org/filter-effects-1/#FloodColorProperty"
 affects = "paint"
 
@@ -840,7 +840,7 @@ affects = "paint"
 type = "Opacity"
 initial = "1.0"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.fxtf.org/filter-effects-1/#FloodOpacityProperty"
 affects = "paint"
 
@@ -858,9 +858,9 @@ affects = "layout"
 type = "FontFeatureSettings"
 initial = "computed::FontFeatureSettings::normal()"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontFeatureSettings::normal()"
-extra_prefixes = "moz:layout.css.prefixes.font-features webkit"
+extra_prefixes = ["moz:layout.css.prefixes.font-features", "webkit"]
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-feature-settings"
 affects = "layout"
@@ -872,7 +872,7 @@ struct = "font"
 initial_specified_value = "specified::FontLanguageOverride::normal()"
 animation_type = "discrete"
 gecko_ffi_name = "mFont.languageOverride"
-extra_prefixes = "moz:layout.css.prefixes.font-features"
+extra_prefixes = ["moz:layout.css.prefixes.font-features"]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font-language-override"
 affects = "layout"
 
@@ -880,7 +880,7 @@ affects = "layout"
 type = "FontPalette"
 initial = "computed::FontPalette::normal()"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontPalette::normal()"
 animation_type = "discrete"
 gecko_pref = "layout.css.font-palette.enabled"
@@ -902,7 +902,7 @@ affects = "layout"
 type = "FontSizeAdjust"
 initial = "computed::FontSizeAdjust::None"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontSizeAdjust::None"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-size-adjust"
 gecko_ffi_name = "mFont.sizeAdjust"
@@ -932,7 +932,7 @@ affects = "layout"
 type = "FontSynthesis"
 initial = "computed::FontSynthesis::Auto"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontSynthesis::Auto"
 gecko_ffi_name = "mFont.synthesisPosition"
 animation_type = "discrete"
@@ -943,7 +943,7 @@ affects = "layout"
 type = "FontSynthesis"
 initial = "computed::FontSynthesis::Auto"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontSynthesis::Auto"
 gecko_ffi_name = "mFont.synthesisSmallCaps"
 animation_type = "discrete"
@@ -954,7 +954,7 @@ affects = "layout"
 type = "FontSynthesisStyle"
 initial = "computed::FontSynthesisStyle::Auto"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontSynthesisStyle::Auto"
 gecko_ffi_name = "mFont.synthesisStyle"
 animation_type = "discrete"
@@ -975,7 +975,7 @@ affects = "layout"
 type = "FontVariantAlternates"
 initial = "computed::FontVariantAlternates::default()"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontVariantAlternates::default()"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-alternates"
@@ -986,7 +986,7 @@ affects = "layout"
 type = "FontVariantEastAsian"
 initial = "computed::FontVariantEastAsian::empty()"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontVariantEastAsian::empty()"
 animation_type = "discrete"
 gecko_ffi_name = "mFont.variantEastAsian"
@@ -997,7 +997,7 @@ affects = "layout"
 type = "FontVariantLigatures"
 initial = "computed::FontVariantLigatures::empty()"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontVariantLigatures::empty()"
 animation_type = "discrete"
 gecko_ffi_name = "mFont.variantLigatures"
@@ -1008,7 +1008,7 @@ affects = "layout"
 type = "FontVariantNumeric"
 initial = "computed::FontVariantNumeric::empty()"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::FontVariantNumeric::empty()"
 animation_type = "discrete"
 gecko_ffi_name = "mFont.variantNumeric"
@@ -1132,7 +1132,7 @@ logical_group = "size"
 allow_quirks = true
 parse_method = "parse_size_for_width_or_height"
 spec = "https://drafts.csswg.org/css-box/#propdef-height"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1152,7 +1152,7 @@ logical = true
 logical_group = "size"
 parse_method = "parse_size_for_width_or_height"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-inline-size"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1161,7 +1161,7 @@ type = "Inset"
 initial = "computed::Inset::auto()"
 struct = "position"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-inset-block-end"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 logical = true
 logical_group = "inset"
 affects = "layout"
@@ -1171,7 +1171,7 @@ type = "Inset"
 initial = "computed::Inset::auto()"
 struct = "position"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-inset-block-start"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 logical = true
 logical_group = "inset"
 affects = "layout"
@@ -1181,7 +1181,7 @@ type = "Inset"
 initial = "computed::Inset::auto()"
 struct = "position"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-inset-inline-end"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 logical = true
 logical_group = "inset"
 affects = "layout"
@@ -1191,7 +1191,7 @@ type = "Inset"
 initial = "computed::Inset::auto()"
 struct = "position"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-inset-inline-start"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 logical = true
 logical_group = "inset"
 affects = "layout"
@@ -1202,7 +1202,7 @@ initial = "specified::ContentDistribution::normal()"
 struct = "position"
 parse_method = "parse_inline"
 spec = "https://drafts.csswg.org/css-align/#propdef-justify-content"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 animation_type = "discrete"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
@@ -1222,7 +1222,7 @@ struct = "position"
 parse_method = "parse_inline"
 spec = "https://drafts.csswg.org/css-align/#justify-self-property"
 animation_type = "discrete"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 affects = "layout"
 
 [left]
@@ -1231,7 +1231,7 @@ initial = "computed::Inset::auto()"
 struct = "position"
 spec = "https://www.w3.org/TR/CSS2/visuren.html#propdef-left"
 allow_quirks = true
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 gecko_ffi_name = "mOffset.3"
 servo_restyle_damage = "rebuild_box"
 logical_group = "inset"
@@ -1249,7 +1249,7 @@ affects = "layout"
 type = "Color"
 initial = "computed::Color::WHITE"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.fxtf.org/filter-effects-1#LightingColorProperty"
 affects = "paint"
 
@@ -1275,7 +1275,7 @@ affects = "layout"
 type = "ListStyleType"
 initial = "computed::ListStyleType::disc()"
 struct = "list"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::ListStyleType::disc()"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-lists/#propdef-list-style-type"
@@ -1286,7 +1286,7 @@ affects = "layout"
 type = "url::UrlOrNone"
 initial = "computed::url::UrlOrNone::none()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://svgwg.org/svg2-draft/painting.html#VertexMarkerProperties"
 affects = "layout"
@@ -1295,7 +1295,7 @@ affects = "layout"
 type = "url::UrlOrNone"
 initial = "computed::url::UrlOrNone::none()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://svgwg.org/svg2-draft/painting.html#VertexMarkerProperties"
 affects = "layout"
@@ -1304,7 +1304,7 @@ affects = "layout"
 type = "url::UrlOrNone"
 initial = "computed::url::UrlOrNone::none()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://svgwg.org/svg2-draft/painting.html#VertexMarkerProperties"
 affects = "layout"
@@ -1313,7 +1313,7 @@ affects = "layout"
 type = "MasonryAutoFlow"
 initial = "computed::MasonryAutoFlow::initial()"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 gecko_pref = "layout.css.grid-template-masonry-value.enabled"
 animation_type = "discrete"
 spec = "https://github.com/w3c/csswg-drafts/issues/4650"
@@ -1323,7 +1323,7 @@ affects = "layout"
 type = "MathDepth"
 initial = "0"
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 spec = "https://mathml-refresh.github.io/mathml-core/#the-math-script-level-property"
 affects = ""
 
@@ -1334,7 +1334,7 @@ struct = "position"
 logical = true
 logical_group = "max-size"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-block-size"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1345,7 +1345,7 @@ struct = "position"
 logical_group = "max-size"
 allow_quirks = true
 spec = "https://drafts.csswg.org/css-box/#propdef-height"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1356,7 +1356,7 @@ struct = "position"
 logical = true
 logical_group = "max-size"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-inline-size"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1367,7 +1367,7 @@ struct = "position"
 logical_group = "max-size"
 allow_quirks = true
 spec = "https://drafts.csswg.org/css-box/#propdef-width"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1378,7 +1378,7 @@ struct = "position"
 logical = true
 logical_group = "min-size"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-block-size"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1389,7 +1389,7 @@ struct = "position"
 logical_group = "min-size"
 allow_quirks = true
 spec = "https://drafts.csswg.org/css-box/#propdef-height"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1400,7 +1400,7 @@ struct = "position"
 logical = true
 logical_group = "min-size"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-inline-size"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1411,7 +1411,7 @@ struct = "position"
 logical_group = "min-size"
 allow_quirks = true
 spec = "https://drafts.csswg.org/css-box/#propdef-width"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1427,7 +1427,7 @@ affects = "layout"
 type = "PositionOrAuto"
 initial = "computed::PositionOrAuto::auto()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 flags = "CAN_ANIMATE_ON_COMPOSITOR"
 spec = "https://drafts.fxtf.org/motion-1/#offset-anchor-property"
 servo_restyle_damage = "rebuild_box"
@@ -1438,7 +1438,7 @@ affects = "overflow"
 type = "LengthPercentage"
 initial = "computed::LengthPercentage::zero()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 flags = "CAN_ANIMATE_ON_COMPOSITOR"
 spec = "https://drafts.fxtf.org/motion-1/#offset-distance-property"
 servo_restyle_damage = "rebuild_box"
@@ -1458,7 +1458,7 @@ affects = "overflow"
 type = "OffsetPosition"
 initial = "computed::OffsetPosition::normal()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 flags = "CAN_ANIMATE_ON_COMPOSITOR"
 spec = "https://drafts.fxtf.org/motion-1/#offset-position-property"
 servo_restyle_damage = "rebuild_box"
@@ -1469,7 +1469,7 @@ affects = "overflow"
 type = "OffsetRotate"
 initial = "computed::OffsetRotate::auto()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 flags = "CAN_ANIMATE_ON_COMPOSITOR"
 spec = "https://drafts.fxtf.org/motion-1/#offset-rotate-property"
 servo_restyle_damage = "rebuild_box"
@@ -1488,7 +1488,7 @@ affects = "paint"
 type = "Integer"
 initial = "0"
 struct = "position"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 spec = "https://drafts.csswg.org/css-flexbox/#order-property"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
@@ -1534,7 +1534,7 @@ affects = "overflow"
 type = "OverflowAnchor"
 initial = "computed::OverflowAnchor::Auto"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::OverflowAnchor::Auto"
 gecko_pref = "layout.css.scroll-anchoring.enabled"
 spec = "https://drafts.csswg.org/css-scroll-anchoring/#exclusion-api"
@@ -1576,7 +1576,7 @@ initial = "computed::OverflowWrap::Normal"
 struct = "inherited_text"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text/#propdef-overflow-wrap"
-aliases = "word-wrap"
+aliases = ["word-wrap"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -1604,7 +1604,7 @@ affects = "layout"
 type = "OverscrollBehavior"
 initial = "computed::OverscrollBehavior::Auto"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 logical_group = "overscroll-behavior"
 logical = true
 spec = "https://wicg.github.io/overscroll-behavior/#overscroll-behavior-properties"
@@ -1615,7 +1615,7 @@ affects = "paint"
 type = "OverscrollBehavior"
 initial = "computed::OverscrollBehavior::Auto"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 logical_group = "overscroll-behavior"
 logical = true
 spec = "https://wicg.github.io/overscroll-behavior/#overscroll-behavior-properties"
@@ -1626,7 +1626,7 @@ affects = "paint"
 type = "OverscrollBehavior"
 initial = "computed::OverscrollBehavior::Auto"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 logical_group = "overscroll-behavior"
 spec = "https://wicg.github.io/overscroll-behavior/#overscroll-behavior-properties"
 animation_type = "discrete"
@@ -1636,7 +1636,7 @@ affects = "paint"
 type = "OverscrollBehavior"
 initial = "computed::OverscrollBehavior::Auto"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 logical_group = "overscroll-behavior"
 spec = "https://wicg.github.io/overscroll-behavior/#overscroll-behavior-properties"
 animation_type = "discrete"
@@ -1646,7 +1646,7 @@ affects = "paint"
 type = "PageName"
 initial = "computed::PageName::auto()"
 struct = "page"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-page-3/#using-named-pages"
 animation_type = "discrete"
 affects = "layout"
@@ -1655,18 +1655,18 @@ affects = "layout"
 type = "PageOrientation"
 initial = "computed::PageOrientation::Upright"
 struct = "page"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::PageOrientation::Upright"
 spec = "https://drafts.csswg.org/css-page-3/#page-orientation-prop"
 animation_type = "none"
-rule_types_allowed = "Page"
+rule_types_allowed = ["page"]
 affects = "layout"
 
 [paint-order]
 type = "SVGPaintOrder"
 initial = "computed::SVGPaintOrder::normal()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://svgwg.org/svg2-draft/painting.html#PaintOrder"
 affects = "paint"
@@ -1675,7 +1675,7 @@ affects = "paint"
 type = "MozContextProperties"
 initial = "computed::MozContextProperties::default()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 enabled_in = "chrome"
 gecko_pref = "svg.context-properties.content.enabled"
 has_effect_on_gecko_scrollbars = false
@@ -1689,7 +1689,7 @@ initial = "computed::Perspective::none()"
 struct = "box"
 gecko_ffi_name = "mChildPerspective"
 spec = "https://drafts.csswg.org/css-transforms/#perspective"
-extra_prefixes = "moz:layout.css.prefixes.transforms"
+extra_prefixes = ["moz:layout.css.prefixes.transforms"]
 servo_restyle_damage = "recalculate_overflow"
 affects = "overflow"
 
@@ -1698,7 +1698,7 @@ type = "Position"
 initial = "computed::position::Position::center()"
 struct = "box"
 boxed = true
-extra_prefixes = "moz:layout.css.prefixes.transforms webkit"
+extra_prefixes = ["moz:layout.css.prefixes.transforms", "webkit"]
 spec = "https://drafts.csswg.org/css-transforms-2/#perspective-origin-property"
 servo_restyle_damage = "recalculate_overflow"
 affects = "overflow"
@@ -1726,9 +1726,9 @@ affects = "layout"
 type = "PositionAnchor"
 initial = "computed::PositionAnchor::none()"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 gecko_pref = "layout.css.anchor-positioning.enabled"
 spec = "https://drafts.csswg.org/css-anchor-position-1/#propdef-position-anchor"
 affects = "layout"
@@ -1739,7 +1739,7 @@ initial = "computed::PositionArea::none()"
 struct = "position"
 initial_specified_value = "specified::PositionArea::none()"
 animation_type = "discrete"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 gecko_pref = "layout.css.anchor-positioning.enabled"
 servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-anchor-position-1/#typedef-position-area"
@@ -1749,7 +1749,7 @@ affects = "layout"
 type = "PositionTryFallbacks"
 initial = "computed::PositionTryFallbacks::none()"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::PositionTryFallbacks::none()"
 animation_type = "discrete"
 gecko_pref = "layout.css.anchor-positioning.enabled"
@@ -1760,7 +1760,7 @@ affects = "layout"
 type = "PositionTryOrder"
 initial = "computed::PositionTryOrder::normal()"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::PositionTryOrder::normal()"
 animation_type = "discrete"
 gecko_pref = "layout.css.anchor-positioning.position-try-order.enabled"
@@ -1771,7 +1771,7 @@ affects = "layout"
 type = "PositionVisibility"
 initial = "computed::PositionVisibility::ANCHORS_VISIBLE"
 struct = "position"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::PositionVisibility::ANCHORS_VISIBLE"
 animation_type = "discrete"
 gecko_pref = "layout.css.anchor-positioning.enabled"
@@ -1782,8 +1782,8 @@ affects = "layout"
 type = "PrintColorAdjust"
 initial = "computed::PrintColorAdjust::Economy"
 struct = "inherited_box"
-engines = "gecko"
-aliases = "color-adjust"
+engine = "gecko"
+aliases = ["color-adjust"]
 spec = "https://drafts.csswg.org/css-color-adjust/#print-color-adjust"
 animation_type = "discrete"
 affects = "paint"
@@ -1801,7 +1801,7 @@ affects = "layout"
 type = "Resize"
 initial = "computed::Resize::None"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 gecko_ffi_name = "mResize"
 spec = "https://drafts.csswg.org/css-ui/#propdef-resize"
@@ -1813,7 +1813,7 @@ initial = "computed::Inset::auto()"
 struct = "position"
 spec = "https://www.w3.org/TR/CSS2/visuren.html#propdef-right"
 allow_quirks = true
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 gecko_ffi_name = "mOffset.1"
 servo_restyle_damage = "rebuild_box"
 logical_group = "inset"
@@ -1833,7 +1833,7 @@ affects = "overflow"
 type = "length::NonNegativeLengthPercentageOrNormal"
 initial = "computed::length::NonNegativeLengthPercentageOrNormal::normal()"
 struct = "position"
-aliases = "grid-row-gap"
+aliases = ["grid-row-gap"]
 spec = "https://drafts.csswg.org/css-align-3/#propdef-row-gap"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
@@ -1852,7 +1852,7 @@ affects = "overflow"
 type = "ScrollSnapAlign"
 initial = "computed::ScrollSnapAlign::none()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-align"
 animation_type = "discrete"
 affects = "paint"
@@ -1861,7 +1861,7 @@ affects = "paint"
 type = "ScrollSnapStop"
 initial = "computed::ScrollSnapStop::Normal"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-stop"
 animation_type = "discrete"
 affects = "paint"
@@ -1870,7 +1870,7 @@ affects = "paint"
 type = "ScrollSnapType"
 initial = "computed::ScrollSnapType::none()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-type"
 animation_type = "discrete"
 affects = "paint"
@@ -1879,7 +1879,7 @@ affects = "paint"
 type = "ScrollbarColor"
 initial = "Default::default()"
 struct = "inherited_ui"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-scrollbars-1/#scrollbar-color"
 boxed = true
 ignored_when_colors_disabled = true
@@ -1889,7 +1889,7 @@ affects = "paint"
 type = "Inert"
 initial = "specified::Inert::None"
 struct = "inherited_ui"
-engines = "gecko"
+engine = "gecko"
 gecko_ffi_name = "mInert"
 animation_type = "discrete"
 enabled_in = "ua"
@@ -1900,7 +1900,7 @@ affects = "paint"
 type = "UserFocus"
 initial = "specified::UserFocus::Normal"
 struct = "inherited_ui"
-engines = "gecko"
+engine = "gecko"
 gecko_ffi_name = "mUserFocus"
 animation_type = "discrete"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-user-focus)"
@@ -1911,7 +1911,7 @@ affects = ""
 type = "MozTheme"
 initial = "specified::MozTheme::Auto"
 struct = "inherited_ui"
-engines = "gecko"
+engine = "gecko"
 enabled_in = "chrome"
 animation_type = "discrete"
 spec = "Internal"
@@ -1921,7 +1921,7 @@ affects = "paint"
 type = "ScrollbarGutter"
 initial = "computed::ScrollbarGutter::AUTO"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-overflow-3/#scrollbar-gutter-property"
 affects = "layout"
@@ -1930,7 +1930,7 @@ affects = "layout"
 type = "Opacity"
 initial = "0.0"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-shapes/#shape-image-threshold-property"
 affects = "layout"
 
@@ -1938,7 +1938,7 @@ affects = "layout"
 type = "NonNegativeLengthPercentage"
 initial = "computed::NonNegativeLengthPercentage::zero()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-shapes/#shape-margin-property"
 affects = "layout"
 
@@ -1946,7 +1946,7 @@ affects = "layout"
 type = "basic_shape::ShapeOutside"
 initial = "generics::basic_shape::ShapeOutside::None"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-shapes/#shape-outside-property"
 affects = "layout"
 
@@ -1954,19 +1954,19 @@ affects = "layout"
 type = "PageSize"
 initial = "computed::PageSize::auto()"
 struct = "page"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::PageSize::auto()"
 spec = "https://drafts.csswg.org/css-page-3/#page-size-prop"
 boxed = true
 animation_type = "none"
-rule_types_allowed = "Page"
+rule_types_allowed = ["page"]
 affects = "layout"
 
 [stop-color]
 type = "Color"
 initial = "computed::Color::BLACK"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/pservers.html#StopColorProperties"
 affects = "paint"
 
@@ -1974,7 +1974,7 @@ affects = "paint"
 type = "Opacity"
 initial = "1.0"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/pservers.html#StopOpacityProperty"
 affects = "paint"
 
@@ -1982,7 +1982,7 @@ affects = "paint"
 type = "SVGPaint"
 initial = "Default::default()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 boxed = true
 spec = "https://svgwg.org/svg2-draft/painting.html#SpecifyingStrokePaint"
 affects = "paint"
@@ -1991,7 +1991,7 @@ affects = "paint"
 type = "SVGStrokeDashArray"
 initial = "Default::default()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeDashing"
 affects = "paint"
 
@@ -1999,7 +1999,7 @@ affects = "paint"
 type = "SVGLength"
 initial = "computed::SVGLength::zero()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeDashing"
 affects = "paint"
 
@@ -2007,7 +2007,7 @@ affects = "paint"
 type = "NonNegativeNumber"
 initial = "From::from(4.0)"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeMiterlimitProperty"
 affects = "layout"
 
@@ -2015,7 +2015,7 @@ affects = "layout"
 type = "SVGOpacity"
 initial = "Default::default()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeOpacity"
 affects = "paint"
 
@@ -2023,7 +2023,7 @@ affects = "paint"
 type = "SVGWidth"
 initial = "computed::SVGWidth::one()"
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeWidth"
 affects = "layout"
 
@@ -2085,7 +2085,7 @@ initial = "computed::Inset::auto()"
 struct = "position"
 spec = "https://www.w3.org/TR/CSS2/visuren.html#propdef-top"
 allow_quirks = true
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 gecko_ffi_name = "mOffset.0"
 servo_restyle_damage = "rebuild_box"
 logical_group = "inset"
@@ -2095,7 +2095,7 @@ affects = "layout"
 type = "TouchAction"
 initial = "computed::TouchAction::auto()"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://compat.spec.whatwg.org/#touch-action"
 affects = "paint"
@@ -2104,7 +2104,7 @@ affects = "paint"
 type = "Transform"
 initial = "generics::transform::Transform::none()"
 struct = "box"
-extra_prefixes = "moz:layout.css.prefixes.transforms"
+extra_prefixes = ["moz:layout.css.prefixes.transforms"]
 flags = "CAN_ANIMATE_ON_COMPOSITOR"
 spec = "https://drafts.csswg.org/css-transforms/#propdef-transform"
 servo_restyle_damage = "recalculate_overflow"
@@ -2114,7 +2114,7 @@ affects = "overflow"
 type = "TransformBox"
 initial = "computed::TransformBox::ViewBox"
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-transforms/#transform-box"
 animation_type = "discrete"
 affects = "overflow"
@@ -2123,7 +2123,7 @@ affects = "overflow"
 type = "TransformOrigin"
 initial = "computed::TransformOrigin::initial_value()"
 struct = "box"
-extra_prefixes = "moz:layout.css.prefixes.transforms webkit"
+extra_prefixes = ["moz:layout.css.prefixes.transforms", "webkit"]
 gecko_ffi_name = "mTransformOrigin"
 boxed = true
 spec = "https://drafts.csswg.org/css-transforms/#transform-origin-property"
@@ -2135,7 +2135,7 @@ type = "TransformStyle"
 initial = "computed::TransformStyle::Flat"
 struct = "box"
 spec = "https://drafts.csswg.org/css-transforms-2/#transform-style-property"
-extra_prefixes = "moz:layout.css.prefixes.transforms webkit"
+extra_prefixes = ["moz:layout.css.prefixes.transforms", "webkit"]
 animation_type = "discrete"
 servo_restyle_damage = "recalculate_overflow"
 affects = "overflow"
@@ -2157,7 +2157,7 @@ struct = "ui"
 initial_specified_value = "specified::Time::zero()"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.transitions webkit"
+extra_prefixes = ["moz:layout.css.prefixes.transitions", "webkit"]
 spec = "https://drafts.csswg.org/css-transitions/#propdef-transition-delay"
 affects = ""
 
@@ -2169,7 +2169,7 @@ initial_specified_value = "specified::Time::zero()"
 parse_method = "parse_non_negative"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.transitions webkit"
+extra_prefixes = ["moz:layout.css.prefixes.transitions", "webkit"]
 spec = "https://drafts.csswg.org/css-transitions/#propdef-transition-duration"
 affects = ""
 
@@ -2180,7 +2180,7 @@ struct = "ui"
 initial_specified_value = "specified::TransitionProperty::all()"
 vector = { none_value = "computed::TransitionProperty::none()", need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.transitions webkit"
+extra_prefixes = ["moz:layout.css.prefixes.transitions", "webkit"]
 spec = "https://drafts.csswg.org/css-transitions/#propdef-transition-property"
 affects = ""
 
@@ -2191,7 +2191,7 @@ struct = "ui"
 initial_specified_value = "specified::TimingFunction::ease()"
 vector = { need_index = true }
 animation_type = "none"
-extra_prefixes = "moz:layout.css.prefixes.transitions webkit"
+extra_prefixes = ["moz:layout.css.prefixes.transitions", "webkit"]
 spec = "https://drafts.csswg.org/css-transitions/#propdef-transition-timing-function"
 affects = ""
 
@@ -2209,8 +2209,8 @@ affects = "overflow"
 type = "UserSelect"
 initial = "computed::UserSelect::Auto"
 struct = "ui"
-engines = "gecko"
-extra_prefixes = "moz webkit"
+engine = "gecko"
+extra_prefixes = ["moz", "webkit"]
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-ui-4/#propdef-user-select"
 affects = ""
@@ -2219,7 +2219,7 @@ affects = ""
 type = "BoolInteger"
 initial = "computed::BoolInteger::zero()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "None (Nonstandard Firefox-only property)"
 affects = "layout"
@@ -2228,7 +2228,7 @@ affects = "layout"
 type = "BoolInteger"
 initial = "computed::BoolInteger::zero()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "None (Nonstandard internal property)"
 enabled_in = "chrome"
@@ -2238,7 +2238,7 @@ affects = "paint"
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 spec = "None (Nonstandard internal property)"
 enabled_in = "chrome"
 affects = ""
@@ -2247,7 +2247,7 @@ affects = ""
 type = "Opacity"
 initial = "1.0"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 gecko_ffi_name = "mWindowOpacity"
 spec = "None (Nonstandard internal property)"
 enabled_in = "chrome"
@@ -2257,7 +2257,7 @@ affects = "paint"
 type = "Transform"
 initial = "generics::transform::Transform::none()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 spec = "None (Nonstandard internal property)"
 enabled_in = "chrome"
 affects = "overflow"
@@ -2277,60 +2277,60 @@ affects = ""
 type = "ScrollAxis"
 initial = "computed::ScrollAxis::default()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 vector = { need_index = true }
 animation_type = "none"
 gecko_pref = "layout.css.scroll-driven-animations.enabled"
 spec = "https://drafts.csswg.org/scroll-animations-1/#scroll-timeline-axis"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [scroll-timeline-name]
 type = "TimelineName"
 initial = "computed::TimelineName::none()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 vector = { need_index = true }
 animation_type = "none"
 gecko_pref = "layout.css.scroll-driven-animations.enabled"
 spec = "https://drafts.csswg.org/scroll-animations-1/#scroll-timeline-name"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [view-timeline-axis]
 type = "ScrollAxis"
 initial = "computed::ScrollAxis::default()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 vector = { need_index = true }
 animation_type = "none"
 gecko_pref = "layout.css.scroll-driven-animations.enabled"
 spec = "https://drafts.csswg.org/scroll-animations-1/#view-timeline-axis"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [view-timeline-inset]
 type = "ViewTimelineInset"
 initial = "computed::ViewTimelineInset::default()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 vector = { need_index = true }
 animation_type = "none"
 gecko_pref = "layout.css.scroll-driven-animations.enabled"
 spec = "https://drafts.csswg.org/scroll-animations-1/#view-timeline-axis"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [view-timeline-name]
 type = "TimelineName"
 initial = "computed::TimelineName::none()"
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 vector = { need_index = true }
 animation_type = "none"
 gecko_pref = "layout.css.scroll-driven-animations.enabled"
 spec = "https://drafts.csswg.org/scroll-animations-1/#view-timeline-name"
-rule_types_allowed = "Style Scope"
+rule_types_allowed = ["style", "scope"]
 affects = ""
 
 [view-transition-class]
@@ -2359,7 +2359,7 @@ enabled_in = "ua"
 type = "VectorEffect"
 initial = "computed::VectorEffect::none()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://svgwg.org/svg2-draft/coords.html#VectorEffects"
 affects = "layout"
@@ -2368,7 +2368,7 @@ affects = "layout"
 type = "LengthPercentage"
 initial = "computed::LengthPercentage::zero()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/geometry.html#CX"
 affects = "layout"
 
@@ -2376,7 +2376,7 @@ affects = "layout"
 type = "LengthPercentage"
 initial = "computed::LengthPercentage::zero()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/geometry.html#CY"
 affects = "layout"
 
@@ -2389,7 +2389,7 @@ initial_specified_value = "specified::Image::None"
 parse_method = "parse_with_cors_anonymous"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-image"
 vector = {}
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 animation_type = "discrete"
 affects = "paint"
 
@@ -2397,8 +2397,8 @@ affects = "paint"
 type = "position::HorizontalPosition"
 initial = "computed::LengthPercentage::zero_percent()"
 struct = "svg"
-engines = "gecko"
-extra_prefixes = "webkit"
+engine = "gecko"
+extra_prefixes = ["webkit"]
 initial_specified_value = "specified::PositionComponent::Center"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-position"
 vector = { animation_type = "repeatable_list" }
@@ -2408,8 +2408,8 @@ affects = "paint"
 type = "position::VerticalPosition"
 initial = "computed::LengthPercentage::zero_percent()"
 struct = "svg"
-engines = "gecko"
-extra_prefixes = "webkit"
+engine = "gecko"
+extra_prefixes = ["webkit"]
 initial_specified_value = "specified::PositionComponent::Center"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-position"
 vector = { animation_type = "repeatable_list" }
@@ -2419,9 +2419,9 @@ affects = "paint"
 type = "BackgroundRepeat"
 initial = "computed::BackgroundRepeat::repeat()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::BackgroundRepeat::repeat()"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 animation_type = "discrete"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-repeat"
 vector = {}
@@ -2431,9 +2431,9 @@ affects = "paint"
 type = "background::BackgroundSize"
 initial = "computed::BackgroundSize::auto()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::BackgroundSize::auto()"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-size"
 vector = { animation_type = "repeatable_list" }
 affects = "paint"
@@ -2442,7 +2442,7 @@ affects = "paint"
 type = "NonNegativeLengthPercentage"
 initial = "computed::NonNegativeLengthPercentage::zero()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/geometry.html#R"
 affects = "layout"
 
@@ -2450,7 +2450,7 @@ affects = "layout"
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/geometry.html#RX"
 affects = "layout"
 
@@ -2458,7 +2458,7 @@ affects = "layout"
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/geometry.html#RY"
 affects = "layout"
 
@@ -2466,7 +2466,7 @@ affects = "layout"
 type = "LengthPercentage"
 initial = "computed::LengthPercentage::zero()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/geometry.html#X"
 affects = "layout"
 
@@ -2474,7 +2474,7 @@ affects = "layout"
 type = "LengthPercentage"
 initial = "computed::LengthPercentage::zero()"
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/geometry.html#Y"
 affects = "layout"
 
@@ -2486,7 +2486,7 @@ logical_group = "size"
 allow_quirks = true
 parse_method = "parse_size_for_width_or_height"
 spec = "https://drafts.csswg.org/css-box/#propdef-width"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -2519,7 +2519,7 @@ affects = "layout"
 type = "text::MozControlCharacterVisibility"
 initial = "Default::default()"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 enabled_in = "chrome"
 gecko_pref = "layout.css.moz-control-character-visibility.enabled"
 has_effect_on_gecko_scrollbars = false
@@ -2531,7 +2531,7 @@ affects = "layout"
 type = "Color"
 initial = "computed_value::T::currentcolor()"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 ignored_when_colors_disabled = true
 spec = "https://compat.spec.whatwg.org/#the-webkit-text-fill-color"
 affects = "paint"
@@ -2540,7 +2540,7 @@ affects = "paint"
 type = "Color"
 initial = "computed_value::T::currentcolor()"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::Color::currentcolor()"
 ignored_when_colors_disabled = true
 spec = "https://compat.spec.whatwg.org/#the-webkit-text-stroke-color"
@@ -2550,7 +2550,7 @@ affects = "paint"
 type = "LineWidth"
 initial = "app_units::Au(0)"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::LineWidth::zero()"
 spec = "https://compat.spec.whatwg.org/#the-webkit-text-stroke-width"
 animation_type = "discrete"
@@ -2560,7 +2560,7 @@ affects = "overflow"
 type = "ForcedColorAdjust"
 initial = "computed::ForcedColorAdjust::Auto"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-color-adjust-1/#forced-color-adjust-prop"
 affects = "paint"
@@ -2569,7 +2569,7 @@ affects = "paint"
 type = "HyphenateCharacter"
 initial = "computed::HyphenateCharacter::Auto"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://www.w3.org/TR/css-text-4/#hyphenate-character"
 affects = "layout"
@@ -2578,7 +2578,7 @@ affects = "layout"
 type = "HyphenateLimitChars"
 initial = "computed::HyphenateLimitChars::auto()"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-text-4/#hyphenate-char-limits"
 affects = "layout"
 boxed = true
@@ -2587,7 +2587,7 @@ boxed = true
 type = "LineBreak"
 initial = "computed::LineBreak::Auto"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-3/#line-break-property"
 affects = "layout"
@@ -2596,7 +2596,7 @@ affects = "layout"
 type = "RubyPosition"
 initial = "computed::RubyPosition::AlternateOver"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-ruby/#ruby-position-property"
 animation_type = "discrete"
 affects = "layout"
@@ -2605,16 +2605,16 @@ affects = "layout"
 type = "NonNegativeLengthOrNumber"
 initial = "generics::length::LengthOrNumber::Number(From::from(8.0))"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-text-3/#tab-size-property"
-aliases = "-moz-tab-size"
+aliases = ["-moz-tab-size"]
 affects = "layout"
 
 [text-autospace]
 type = "TextAutospace"
 initial = "computed::text::TextAutospace::NO_AUTOSPACE"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 gecko_pref = "layout.css.text-autospace.enabled"
 has_effect_on_gecko_scrollbars = false
@@ -2625,7 +2625,7 @@ affects = "layout"
 type = "TextDecorationSkipInk"
 initial = "computed::TextDecorationSkipInk::Auto"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-decor-4/#text-decoration-skip-ink-property"
 affects = "overflow"
@@ -2634,7 +2634,7 @@ affects = "overflow"
 type = "Color"
 initial = "computed_value::T::currentcolor()"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::Color::currentcolor()"
 ignored_when_colors_disabled = true
 spec = "https://drafts.csswg.org/css-text-decor/#propdef-text-emphasis-color"
@@ -2644,7 +2644,7 @@ affects = "paint"
 type = "TextEmphasisPosition"
 initial = "computed::TextEmphasisPosition::AUTO"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::TextEmphasisPosition::AUTO"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-decor/#propdef-text-emphasis-position"
@@ -2654,7 +2654,7 @@ affects = "layout"
 type = "TextEmphasisStyle"
 initial = "computed::TextEmphasisStyle::None"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "SpecifiedValue::None"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-decor/#propdef-text-emphasis-style"
@@ -2664,7 +2664,7 @@ affects = "overflow"
 type = "LengthPercentageOrAuto"
 initial = "computed::LengthPercentageOrAuto::auto()"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-text-decor-4/#underline-offset"
 affects = "overflow"
 
@@ -2672,7 +2672,7 @@ affects = "overflow"
 type = "TextUnderlinePosition"
 initial = "computed::TextUnderlinePosition::AUTO"
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-decor-3/#text-underline-position-property"
 affects = "overflow"
@@ -2791,7 +2791,7 @@ affects = "paint"
 type = "TextDecorationInset"
 initial = "computed::text::TextDecorationInset::get_initial_value()"
 struct = "text"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::text::TextDecorationInset::get_initial_value()"
 boxed = true
 gecko_pref = "layout.css.text-decoration-inset.enabled"
@@ -2802,7 +2802,7 @@ affects = "overflow"
 type = "InitialLetter"
 initial = "computed::InitialLetter::normal()"
 struct = "text"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "specified::InitialLetter::normal()"
 animation_type = "discrete"
 gecko_pref = "layout.css.initial-letter.enabled"
@@ -2813,7 +2813,7 @@ affects = "layout"
 type = "TextDecorationLength"
 initial = "generics::text::GenericTextDecorationLength::Auto"
 struct = "text"
-engines = "gecko"
+engine = "gecko"
 initial_specified_value = "generics::text::GenericTextDecorationLength::Auto"
 spec = "https://drafts.csswg.org/css-text-decor-4/#text-decoration-width-property"
 affects = "overflow"
@@ -2822,7 +2822,7 @@ affects = "overflow"
 type = "Integer"
 initial = "1"
 struct = "table"
-engines = "gecko"
+engine = "gecko"
 spec = "Internal-only (for `<col span>` pres attr)"
 animation_type = "none"
 enabled_in = ""
@@ -2892,7 +2892,7 @@ affects = "paint"
 type = "Color"
 initial = "computed_value::T::currentcolor()"
 struct = "border"
-aliases = "-moz-border-start-color"
+aliases = ["-moz-border-start-color"]
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-border-inline-start-color"
 logical = true
 logical_group = "border-color"
@@ -2903,7 +2903,7 @@ affects = "paint"
 type = "Color"
 initial = "computed_value::T::currentcolor()"
 struct = "border"
-aliases = "-moz-border-end-color"
+aliases = ["-moz-border-end-color"]
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-border-inline-end-color"
 logical = true
 logical_group = "border-color"
@@ -2976,7 +2976,7 @@ affects = "layout"
 type = "BorderStyle"
 initial = "specified::BorderStyle::None"
 struct = "border"
-aliases = "-moz-border-start-style"
+aliases = ["-moz-border-start-style"]
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-border-inline-start-style"
 animation_type = "none"
 gecko_ffi_name = "mBorderStyle.6"
@@ -2988,7 +2988,7 @@ affects = "layout"
 type = "BorderStyle"
 initial = "specified::BorderStyle::None"
 struct = "border"
-aliases = "-moz-border-end-style"
+aliases = ["-moz-border-end-style"]
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-border-inline-end-style"
 animation_type = "none"
 gecko_ffi_name = "mBorderStyle.7"
@@ -3066,7 +3066,7 @@ affects = "layout"
 type = "BorderSideWidth"
 initial = "computed::BorderSideWidth::medium()"
 struct = "border"
-aliases = "-moz-border-start-width"
+aliases = ["-moz-border-start-width"]
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-border-inline-start-width"
 logical = true
 logical_group = "border-width"
@@ -3078,7 +3078,7 @@ affects = "layout"
 type = "BorderSideWidth"
 initial = "computed::BorderSideWidth::medium()"
 struct = "border"
-aliases = "-moz-border-end-width"
+aliases = ["-moz-border-end-width"]
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-border-inline-end-width"
 logical = true
 logical_group = "border-width"
@@ -3090,7 +3090,7 @@ affects = "layout"
 type = "BorderCornerRadius"
 initial = "computed::BorderCornerRadius::zero()"
 struct = "border"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 spec = "https://drafts.csswg.org/css-backgrounds/#border-top-left-radius"
 gecko_ffi_name = "mBorderRadius.top_left"
 boxed = true
@@ -3101,7 +3101,7 @@ affects = "paint"
 type = "BorderCornerRadius"
 initial = "computed::BorderCornerRadius::zero()"
 struct = "border"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 spec = "https://drafts.csswg.org/css-backgrounds/#border-top-right-radius"
 gecko_ffi_name = "mBorderRadius.top_right"
 boxed = true
@@ -3112,7 +3112,7 @@ affects = "paint"
 type = "BorderCornerRadius"
 initial = "computed::BorderCornerRadius::zero()"
 struct = "border"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 spec = "https://drafts.csswg.org/css-backgrounds/#border-bottom-right-radius"
 gecko_ffi_name = "mBorderRadius.bottom_right"
 boxed = true
@@ -3123,7 +3123,7 @@ affects = "paint"
 type = "BorderCornerRadius"
 initial = "computed::BorderCornerRadius::zero()"
 struct = "border"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 spec = "https://drafts.csswg.org/css-backgrounds/#border-bottom-left-radius"
 gecko_ffi_name = "mBorderRadius.bottom_left"
 boxed = true
@@ -3182,7 +3182,7 @@ allow_quirks = true
 logical_group = "margin"
 gecko_ffi_name = "mMargin.0"
 spec = "https://drafts.csswg.org/css-box/#propdef-margin-top"
-rule_types_allowed = "Style Keyframe Page Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "page", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -3194,7 +3194,7 @@ allow_quirks = true
 logical_group = "margin"
 gecko_ffi_name = "mMargin.1"
 spec = "https://drafts.csswg.org/css-box/#propdef-margin-right"
-rule_types_allowed = "Style Keyframe Page Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "page", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -3206,7 +3206,7 @@ allow_quirks = true
 logical_group = "margin"
 gecko_ffi_name = "mMargin.2"
 spec = "https://drafts.csswg.org/css-box/#propdef-margin-bottom"
-rule_types_allowed = "Style Keyframe Page Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "page", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -3218,7 +3218,7 @@ allow_quirks = true
 logical_group = "margin"
 gecko_ffi_name = "mMargin.3"
 spec = "https://drafts.csswg.org/css-box/#propdef-margin-left"
-rule_types_allowed = "Style Keyframe Page Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "page", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -3230,7 +3230,7 @@ logical = true
 logical_group = "margin"
 gecko_ffi_name = "mMargin.4"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-margin-block-start"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -3242,7 +3242,7 @@ logical = true
 logical_group = "margin"
 gecko_ffi_name = "mMargin.5"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-margin-block-end"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -3250,12 +3250,12 @@ affects = "layout"
 type = "Margin"
 initial = "computed::Margin::zero()"
 struct = "margin"
-aliases = "-moz-margin-start"
+aliases = ["-moz-margin-start"]
 logical = true
 logical_group = "margin"
 gecko_ffi_name = "mMargin.6"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-margin-inline-start"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -3263,12 +3263,12 @@ affects = "layout"
 type = "Margin"
 initial = "computed::Margin::zero()"
 struct = "margin"
-aliases = "-moz-margin-end"
+aliases = ["-moz-margin-end"]
 logical = true
 logical_group = "margin"
 gecko_ffi_name = "mMargin.7"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-margin-inline-end"
-rule_types_allowed = "Style Keyframe Scope PositionTry"
+rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
@@ -3276,7 +3276,7 @@ affects = "layout"
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "margin"
-engines = "gecko"
+engine = "gecko"
 logical_group = "scroll-margin"
 gecko_ffi_name = "mScrollMargin.0"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-top"
@@ -3286,7 +3286,7 @@ affects = ""
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "margin"
-engines = "gecko"
+engine = "gecko"
 logical_group = "scroll-margin"
 gecko_ffi_name = "mScrollMargin.1"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-right"
@@ -3296,7 +3296,7 @@ affects = ""
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "margin"
-engines = "gecko"
+engine = "gecko"
 logical_group = "scroll-margin"
 gecko_ffi_name = "mScrollMargin.2"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-bottom"
@@ -3306,7 +3306,7 @@ affects = ""
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "margin"
-engines = "gecko"
+engine = "gecko"
 logical_group = "scroll-margin"
 gecko_ffi_name = "mScrollMargin.3"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-left"
@@ -3316,7 +3316,7 @@ affects = ""
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "margin"
-engines = "gecko"
+engine = "gecko"
 logical = true
 logical_group = "scroll-margin"
 gecko_ffi_name = "mScrollMargin.4"
@@ -3327,7 +3327,7 @@ affects = ""
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "margin"
-engines = "gecko"
+engine = "gecko"
 logical = true
 logical_group = "scroll-margin"
 gecko_ffi_name = "mScrollMargin.5"
@@ -3338,7 +3338,7 @@ affects = ""
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "margin"
-engines = "gecko"
+engine = "gecko"
 logical = true
 logical_group = "scroll-margin"
 gecko_ffi_name = "mScrollMargin.6"
@@ -3349,7 +3349,7 @@ affects = ""
 type = "Length"
 initial = "computed::Length::zero()"
 struct = "margin"
-engines = "gecko"
+engine = "gecko"
 logical = true
 logical_group = "scroll-margin"
 gecko_ffi_name = "mScrollMargin.7"
@@ -3426,7 +3426,7 @@ affects = "layout"
 type = "NonNegativeLengthPercentage"
 initial = "computed::NonNegativeLengthPercentage::zero()"
 struct = "padding"
-aliases = "-moz-padding-start"
+aliases = ["-moz-padding-start"]
 logical = true
 logical_group = "padding"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-padding-inline-start"
@@ -3438,7 +3438,7 @@ affects = "layout"
 type = "NonNegativeLengthPercentage"
 initial = "computed::NonNegativeLengthPercentage::zero()"
 struct = "padding"
-aliases = "-moz-padding-end"
+aliases = ["-moz-padding-end"]
 logical = true
 logical_group = "padding"
 spec = "https://drafts.csswg.org/css-logical-props/#propdef-padding-inline-end"
@@ -3450,7 +3450,7 @@ affects = "layout"
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "padding"
-engines = "gecko"
+engine = "gecko"
 logical_group = "scroll-padding"
 gecko_ffi_name = "mScrollPadding.0"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-top"
@@ -3460,7 +3460,7 @@ affects = ""
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "padding"
-engines = "gecko"
+engine = "gecko"
 logical_group = "scroll-padding"
 gecko_ffi_name = "mScrollPadding.1"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-right"
@@ -3470,7 +3470,7 @@ affects = ""
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "padding"
-engines = "gecko"
+engine = "gecko"
 logical_group = "scroll-padding"
 gecko_ffi_name = "mScrollPadding.2"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-bottom"
@@ -3480,7 +3480,7 @@ affects = ""
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "padding"
-engines = "gecko"
+engine = "gecko"
 logical_group = "scroll-padding"
 gecko_ffi_name = "mScrollPadding.3"
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-left"
@@ -3490,7 +3490,7 @@ affects = ""
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "padding"
-engines = "gecko"
+engine = "gecko"
 logical = true
 logical_group = "scroll-padding"
 gecko_ffi_name = "mScrollPadding.4"
@@ -3501,7 +3501,7 @@ affects = ""
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "padding"
-engines = "gecko"
+engine = "gecko"
 logical = true
 logical_group = "scroll-padding"
 gecko_ffi_name = "mScrollPadding.5"
@@ -3512,7 +3512,7 @@ affects = ""
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "padding"
-engines = "gecko"
+engine = "gecko"
 logical = true
 logical_group = "scroll-padding"
 gecko_ffi_name = "mScrollPadding.6"
@@ -3523,7 +3523,7 @@ affects = ""
 type = "NonNegativeLengthPercentageOrAuto"
 initial = "computed::NonNegativeLengthPercentageOrAuto::auto()"
 struct = "padding"
-engines = "gecko"
+engine = "gecko"
 logical = true
 logical_group = "scroll-padding"
 gecko_ffi_name = "mScrollPadding.7"
@@ -3537,95 +3537,97 @@ animation_type = "discrete"
 affects = "paint"
 servo_restyle_damage = "repaint"
 vector = {}
-keyword = { values = "scroll fixed", extra_gecko_values = "local", gecko_enum_prefix = "StyleImageLayerAttachment" }
+keyword = { values = ["scroll", "fixed"], extra_gecko_values = ["local"], gecko_enum_prefix = "StyleImageLayerAttachment" }
 
 [background-clip]
 struct = "background"
 spec = "https://drafts.csswg.org/css-backgrounds/#the-background-clip"
 animation_type = "discrete"
 affects = "paint"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 servo_restyle_damage = "repaint"
 vector = {}
-keyword = { values = "border-box padding-box content-box", extra_gecko_values = "text", gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
+keyword = { values = ["border-box", "padding-box", "content-box"], extra_gecko_values = ["text"], gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
 
 [background-origin]
 struct = "background"
 spec = "https://drafts.csswg.org/css-backgrounds/#the-background-origin"
 animation_type = "discrete"
 affects = "paint"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 servo_restyle_damage = "repaint"
 vector = {}
-keyword = { values = "padding-box border-box content-box", gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
+keyword = { values = ["padding-box", "border-box", "content-box"], gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
 
 [background-blend-mode]
 struct = "background"
-engines="gecko"
+engine = "gecko"
 vector = {}
 animation_type = "discrete"
 spec = "https://drafts.fxtf.org/compositing/#background-blend-mode"
 affects = "paint"
 
 [background-blend-mode.keyword]
-values = """normal multiply screen overlay darken lighten color-dodge
-color-burn hard-light soft-light difference exclusion hue
-saturation color luminosity"""
+values = [
+  "normal", "multiply", "screen", "overlay", "darken", "lighten",
+  "color-dodge", "color-burn", "hard-light", "soft-light", "difference",
+  "exclusion", "hue", "saturation", "color", "luminosity"
+]
 gecko_enum_prefix = "StyleBlend"
 gecko_inexhaustive = true
 
 [box-decoration-break]
 struct = "border"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-break/#propdef-box-decoration-break"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "slice clone" }
+keyword = { values = ["slice", "clone"] }
 
 [-moz-float-edge]
 struct = "border"
-engines = "gecko"
+engine = "gecko"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-float-edge)"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFloatEdge"
-keyword = { values = "content-box margin-box" }
+keyword = { values = ["content-box", "margin-box"] }
 
 [-moz-top-layer]
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "Internal (not web-exposed)"
 animation_type = "discrete"
 enabled_in = "ua"
 affects = "layout"
 gecko_ffi_name = "mTopLayer"
-keyword = { values = "none auto" }
+keyword = { values = ["none", "auto"] }
 
 [-servo-top-layer]
 struct = "box"
-engines = "servo"
+engine = "servo"
 spec = "Internal (not web-exposed)"
 animation_type = "none"
 enabled_in = "ua"
 affects = "layout"
-keyword = { values = "none top" }
+keyword = { values = ["none", "top"] }
 
 [-servo-overflow-clip-box]
 struct = "box"
-engines = "servo"
+engine = "servo"
 spec = "Internal, not web-exposed,"
 animation_type = "none"
 enabled_in = "ua"
 affects = "layout"
-keyword = { values = "padding-box content-box" }
+keyword = { values = ["padding-box", "content-box"] }
 
 [scroll-behavior]
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/cssom-view/#propdef-scroll-behavior"
 animation_type = "discrete"
 affects = ""
-keyword = { values = "auto smooth" }
+keyword = { values = ["auto", "smooth"] }
 
 [isolation]
 struct = "box"
@@ -3633,33 +3635,33 @@ spec = "https://drafts.fxtf.org/compositing/#isolation"
 animation_type = "discrete"
 affects = "paint"
 servo_restyle_damage = "repaint"
-keyword = { values = "auto isolate" }
+keyword = { values = ["auto", "isolate"] }
 
 [backface-visibility]
 struct = "box"
 spec = "https://drafts.csswg.org/css-transforms/#backface-visibility-property"
 animation_type = "discrete"
 affects = "paint"
-extra_prefixes = "moz:layout.css.prefixes.transforms webkit"
+extra_prefixes = ["moz:layout.css.prefixes.transforms", "webkit"]
 servo_restyle_damage = "repaint"
-keyword = { values = "visible hidden" }
+keyword = { values = ["visible", "hidden"] }
 
 [-moz-orient]
 struct = "box"
-engines = "gecko"
+engine = "gecko"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-orient)"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mOrient"
-keyword = { values = "inline block horizontal vertical" }
+keyword = { values = ["inline", "block", "horizontal", "vertical"] }
 
 [column-fill]
 struct = "column"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-multicol/#propdef-column-fill"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "balance auto" }
+keyword = { values = ["balance", "auto"] }
 
 [column-span]
 struct = "column"
@@ -3667,7 +3669,7 @@ spec = "https://drafts.csswg.org/css-multicol/#propdef-column-span"
 animation_type = "discrete"
 affects = "layout"
 servo_pref = "layout.columns.enabled"
-keyword = { values = "none all" }
+keyword = { values = ["none", "all"] }
 
 [font-variant-caps]
 struct = "font"
@@ -3678,38 +3680,38 @@ gecko_ffi_name = "mFont.variantCaps"
 servo_restyle_damage = "rebuild_box"
 
 [font-variant-caps.keyword]
-values = "normal small-caps"
-extra_gecko_values = "all-small-caps petite-caps all-petite-caps unicase titling-caps"
+values = ["normal", "small-caps"]
+extra_gecko_values = ["all-small-caps", "petite-caps", "all-petite-caps", "unicase", "titling-caps"]
 gecko_constant_prefix = "NS_FONT_VARIANT_CAPS"
 
 [font-kerning]
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-kerning"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.kerning"
-keyword = { values = "auto none normal", gecko_constant_prefix = "NS_FONT_KERNING" }
+keyword = { values = ["auto", "none", "normal"], gecko_constant_prefix = "NS_FONT_KERNING" }
 
 [font-variant-emoji]
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-emoji"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.variantEmoji"
 gecko_pref = "layout.css.font-variant-emoji.enabled"
 has_effect_on_gecko_scrollbars = false
-keyword = { values = "normal text emoji unicode" }
+keyword = { values = ["normal", "text", "emoji", "unicode"] }
 
 [font-variant-position]
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-position"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.variantPosition"
-keyword = { values = "normal sub super", gecko_constant_prefix = "NS_FONT_VARIANT_POSITION" }
+keyword = { values = ["normal", "sub", "super"], gecko_constant_prefix = "NS_FONT_VARIANT_POSITION" }
 
 [font-optical-sizing]
 struct = "font"
@@ -3720,45 +3722,45 @@ gecko_ffi_name = "mFont.opticalSizing"
 gecko_pref = "layout.css.font-variations.enabled"
 servo_pref = "layout.variable_fonts.enabled"
 has_effect_on_gecko_scrollbars = false
-keyword = { values = "auto none", gecko_constant_prefix = "NS_FONT_OPTICAL_SIZING" }
+keyword = { values = ["auto", "none"], gecko_constant_prefix = "NS_FONT_OPTICAL_SIZING" }
 
 [math-style]
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 spec = "https://mathml-refresh.github.io/mathml-core/#the-math-style-property"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "normal compact" }
+keyword = { values = ["normal", "compact"] }
 
 [math-shift]
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 spec = "https://w3c.github.io/mathml-core/#the-math-shift"
 animation_type = "discrete"
 enabled_in = "ua"
 affects = "layout"
 gecko_pref = "mathml.math_shift.enabled"
 has_effect_on_gecko_scrollbars = false
-keyword = { values = "normal compact" }
+keyword = { values = ["normal", "compact"] }
 
 [-moz-osx-font-smoothing]
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/font-smooth)"
 animation_type = "discrete"
 affects = "paint"
 gecko_ffi_name = "mFont.smoothing"
-aliases = "-webkit-font-smoothing:layout.css.osx-font-smoothing.enabled"
+aliases = ["-webkit-font-smoothing:layout.css.osx-font-smoothing.enabled"]
 gecko_pref = "layout.css.osx-font-smoothing.enabled"
 has_effect_on_gecko_scrollbars = false
-keyword = { values = "auto grayscale subpixel-antialiased", gecko_aliases = "antialiased=grayscale", gecko_constant_prefix = "NS_FONT_SMOOTHING" }
+keyword = { values = ["auto", "grayscale", "subpixel-antialiased"], gecko_aliases = ["antialiased=grayscale"], gecko_constant_prefix = "NS_FONT_SMOOTHING" }
 
 [visibility]
 struct = "inherited_box"
 spec = "https://drafts.csswg.org/css-box/#propdef-visibility"
 affects = "paint"
 gecko_ffi_name = "mVisible"
-keyword = { values = "visible hidden collapse" }
+keyword = { values = ["visible", "hidden", "collapse"] }
 
 [direction]
 struct = "inherited_box"
@@ -3766,80 +3768,80 @@ spec = "https://drafts.csswg.org/css-writing-modes/#propdef-direction"
 animation_type = "none"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "ltr rtl" }
+keyword = { values = ["ltr", "rtl"] }
 
 [-moz-box-collapse]
 struct = "inherited_box"
-engines = "gecko"
+engine = "gecko"
 spec = "None (internal)"
 animation_type = "none"
 enabled_in = "chrome"
 affects = "layout"
-keyword = { values = "flex legacy" }
+keyword = { values = ["flex", "legacy"] }
 
 [text-orientation]
 struct = "inherited_box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-writing-modes/#propdef-text-orientation"
 animation_type = "none"
 affects = "layout"
-keyword = { values = "mixed upright sideways", gecko_aliases = "sideways-right=sideways" }
+keyword = { values = ["mixed", "upright", "sideways"], gecko_aliases = ["sideways-right=sideways"] }
 
 [image-orientation]
 struct = "inherited_box"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-images/#propdef-image-orientation"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "from-image none" }
+keyword = { values = ["from-image", "none"] }
 
 [text-anchor]
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/text.html#TextAnchorProperty"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "start middle end" }
+keyword = { values = ["start", "middle", "end"] }
 
 [color-interpolation]
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#ColorInterpolationProperty"
 animation_type = "discrete"
 affects = "paint"
-keyword = { values = "srgb auto linearrgb" }
+keyword = { values = ["srgb", "auto", "linearrgb"] }
 
 [color-interpolation-filters]
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#ColorInterpolationFiltersProperty"
 animation_type = "discrete"
 affects = "paint"
-keyword = { values = "linearrgb auto srgb", gecko_enum_prefix = "StyleColorInterpolation" }
+keyword = { values = ["linearrgb", "auto", "srgb"], gecko_enum_prefix = "StyleColorInterpolation" }
 
 [shape-rendering]
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#ShapeRenderingProperty"
 animation_type = "discrete"
 affects = "paint"
-keyword = { values = "auto optimizespeed crispedges geometricprecision" }
+keyword = { values = ["auto", "optimizespeed", "crispedges", "geometricprecision"] }
 
 [stroke-linecap]
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeLinecapProperty"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "butt round square" }
+keyword = { values = ["butt", "round", "square"] }
 
 [stroke-linejoin]
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeLinejoinProperty"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "miter round bevel" }
+keyword = { values = ["miter", "round", "bevel"] }
 
 [border-collapse]
 struct = "inherited_table"
@@ -3847,7 +3849,7 @@ spec = "https://drafts.csswg.org/css-tables/#propdef-border-collapse"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "separate collapse" }
+keyword = { values = ["separate", "collapse"] }
 
 [empty-cells]
 struct = "inherited_table"
@@ -3855,42 +3857,42 @@ spec = "https://drafts.csswg.org/css-tables/#propdef-empty-cells"
 animation_type = "discrete"
 affects = "paint"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "show hide" }
+keyword = { values = ["show", "hide"] }
 
 [hyphens]
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-text/#propdef-hyphens"
 animation_type = "discrete"
 affects = "layout"
-extra_prefixes = "moz"
-keyword = { values = "manual none auto" }
+extra_prefixes = ["moz"]
+keyword = { values = ["manual", "none", "auto"] }
 
 [-moz-text-size-adjust]
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-size-adjust/#adjustment-control"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mTextSizeAdjust"
-aliases = "-webkit-text-size-adjust"
-keyword = { values = "auto none" }
+aliases = ["-webkit-text-size-adjust"]
+keyword = { values = ["auto", "none"] }
 
 [ruby-align]
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-ruby/#ruby-align-property"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "space-around start center space-between" }
+keyword = { values = ["space-around", "start", "center", "space-between"] }
 
 [text-combine-upright]
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-writing-modes-3/#text-combine-upright"
 animation_type = "none"
 affects = "layout"
-keyword = { values = "none all" }
+keyword = { values = ["none", "all"] }
 
 [text-rendering]
 struct = "inherited_text"
@@ -3898,15 +3900,15 @@ spec = "https://svgwg.org/svg2-draft/painting.html#TextRenderingProperty"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "auto optimizespeed optimizelegibility geometricprecision" }
+keyword = { values = ["auto", "optimizespeed", "optimizelegibility", "geometricprecision"] }
 
 [-webkit-text-security]
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-text/#MISSING"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "none circle disc square" }
+keyword = { values = ["none", "circle", "disc", "square"] }
 
 [text-wrap-mode]
 struct = "inherited_text"
@@ -3914,15 +3916,15 @@ spec = "https://drafts.csswg.org/css-text-4/#propdef-text-wrap-mode"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "wrap nowrap" }
+keyword = { values = ["wrap", "nowrap"] }
 
 [text-wrap-style]
 struct = "inherited_text"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-text-4/#text-wrap-style"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "auto stable balance" }
+keyword = { values = ["auto", "stable", "balance"] }
 
 [list-style-position]
 struct = "list"
@@ -3930,88 +3932,88 @@ spec = "https://drafts.csswg.org/css-lists/#propdef-list-style-position"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "outside inside" }
+keyword = { values = ["outside", "inside"] }
 
 [flex-direction]
 struct = "position"
 spec = "https://drafts.csswg.org/css-flexbox/#flex-direction-property"
 animation_type = "discrete"
 affects = "layout"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "row row-reverse column column-reverse" }
+keyword = { values = ["row", "row-reverse", "column", "column-reverse"] }
 
 [flex-wrap]
 struct = "position"
 spec = "https://drafts.csswg.org/css-flexbox/#flex-wrap-property"
 animation_type = "discrete"
 affects = "layout"
-extra_prefixes = "webkit"
+extra_prefixes = ["webkit"]
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "nowrap wrap wrap-reverse" }
+keyword = { values = ["nowrap", "wrap", "wrap-reverse"] }
 
 [box-sizing]
 struct = "position"
 spec = "https://drafts.csswg.org/css-ui/#propdef-box-sizing"
 animation_type = "discrete"
 affects = "layout"
-extra_prefixes = "moz:layout.css.prefixes.box-sizing webkit"
+extra_prefixes = ["moz:layout.css.prefixes.box-sizing", "webkit"]
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "content-box border-box" }
+keyword = { values = ["content-box", "border-box"] }
 
 [object-fit]
 struct = "position"
 spec = "https://drafts.csswg.org/css-images/#propdef-object-fit"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "fill contain cover none scale-down" }
+keyword = { values = ["fill", "contain", "cover", "none", "scale-down"] }
 
 [mask-type]
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-type"
 animation_type = "discrete"
 affects = "paint"
-keyword = { values = "luminance alpha" }
+keyword = { values = ["luminance", "alpha"] }
 
 [mask-mode]
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-mode"
 animation_type = "discrete"
 affects = "paint"
 vector = {}
-keyword = { values = "match-source alpha luminance" }
+keyword = { values = ["match-source", "alpha", "luminance"] }
 
 [mask-clip]
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-clip"
 animation_type = "discrete"
 affects = "paint"
 vector = {}
-extra_prefixes = "webkit"
-keyword = { values = "border-box content-box padding-box", extra_gecko_values = "fill-box stroke-box view-box no-clip", gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
+extra_prefixes = ["webkit"]
+keyword = { values = ["border-box", "content-box", "padding-box"], extra_gecko_values = ["fill-box", "stroke-box", "view-box", "no-clip"], gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
 
 [mask-origin]
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-origin"
 animation_type = "discrete"
 affects = "paint"
 vector = {}
-extra_prefixes = "webkit"
-keyword = { values = "border-box content-box padding-box", extra_gecko_values = "fill-box stroke-box view-box", gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
+extra_prefixes = ["webkit"]
+keyword = { values = ["border-box", "content-box", "padding-box"], extra_gecko_values = ["fill-box", "stroke-box", "view-box"], gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
 
 [mask-composite]
 struct = "svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-composite"
 animation_type = "discrete"
 affects = "paint"
 vector = {}
-extra_prefixes = "webkit"
-keyword = { values = "add subtract intersect exclude" }
+extra_prefixes = ["webkit"]
+keyword = { values = ["add", "subtract", "intersect", "exclude"] }
 
 [table-layout]
 struct = "table"
@@ -4020,7 +4022,7 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mLayoutStrategy"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "auto fixed" }
+keyword = { values = ["auto", "fixed"] }
 
 [unicode-bidi]
 struct = "text"
@@ -4028,7 +4030,7 @@ spec = "https://drafts.csswg.org/css-writing-modes/#propdef-unicode-bidi"
 animation_type = "none"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "normal embed isolate bidi-override isolate-override plaintext" }
+keyword = { values = ["normal", "embed", "isolate", "bidi-override", "isolate-override", "plaintext"] }
 
 [text-decoration-style]
 struct = "text"
@@ -4036,93 +4038,93 @@ spec = "https://drafts.csswg.org/css-text-decor/#propdef-text-decoration-style"
 animation_type = "discrete"
 affects = "overflow"
 servo_restyle_damage = "recalculate_overflow"
-keyword = { values = "solid double dotted dashed wavy -moz-none" }
+keyword = { values = ["solid", "double", "dotted", "dashed", "wavy", "-moz-none"] }
 
 [ime-mode]
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-ui/#input-method-editor"
 animation_type = "discrete"
 affects = ""
 gecko_ffi_name = "mIMEMode"
-keyword = { values = "auto normal active disabled inactive" }
+keyword = { values = ["auto", "normal", "active", "disabled", "inactive"] }
 
 [scrollbar-width]
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-scrollbars-1/#scrollbar-width"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "auto thin none" }
+keyword = { values = ["auto", "thin", "none"] }
 
 [-moz-window-dragging]
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 spec = "None (Nonstandard Firefox-only property)"
 animation_type = "discrete"
 enabled_in = "chrome"
 affects = "paint"
 gecko_ffi_name = "mWindowDragging"
-keyword = { values = "default drag no-drag" }
+keyword = { values = ["default", "drag", "no-drag"] }
 
 [-moz-window-shadow]
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 spec = "None (Nonstandard internal property)"
 animation_type = "discrete"
 enabled_in = "chrome"
 affects = "overflow"
 gecko_ffi_name = "mWindowShadow"
-keyword = { values = "auto none" }
+keyword = { values = ["auto", "none"] }
 
 [field-sizing]
 struct = "ui"
-engines = "gecko"
+engine = "gecko"
 spec = "https://drafts.csswg.org/css-ui/#field-sizing"
 animation_type = "discrete"
 affects = "layout"
 gecko_pref = "layout.css.field-sizing.enabled"
-keyword = { values = "fixed content" }
+keyword = { values = ["fixed", "content"] }
 
 [-moz-box-align]
 struct = "xul"
-engines = "gecko"
+engine = "gecko"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/box-align)"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mBoxAlign"
-aliases = "-webkit-box-align"
-keyword = { values = "stretch start center baseline end" }
+aliases = ["-webkit-box-align"]
+keyword = { values = ["stretch", "start", "center", "baseline", "end"] }
 
 [-moz-box-direction]
 struct = "xul"
-engines = "gecko"
+engine = "gecko"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/box-direction)"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mBoxDirection"
-aliases = "-webkit-box-direction"
-keyword = { values = "normal reverse" }
+aliases = ["-webkit-box-direction"]
+keyword = { values = ["normal", "reverse"] }
 
 [-moz-box-orient]
 struct = "xul"
-engines = "gecko"
+engine = "gecko"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/box-orient)"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mBoxOrient"
-aliases = "-webkit-box-orient"
-keyword = { values = "horizontal vertical", gecko_aliases = "inline-axis=horizontal block-axis=vertical" }
+aliases = ["-webkit-box-orient"]
+keyword = { values = ["horizontal", "vertical"], gecko_aliases = ["inline-axis=horizontal", "block-axis=vertical"] }
 
 [-moz-box-pack]
 struct = "xul"
-engines = "gecko"
+engine = "gecko"
 spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/box-pack)"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mBoxPack"
-aliases = "-webkit-box-pack"
-keyword = { values = "start center end justify" }
+aliases = ["-webkit-box-pack"]
+keyword = { values = ["start", "center", "end", "justify"] }
 
 [mix-blend-mode]
 struct = "effects"
@@ -4130,26 +4132,26 @@ spec = "https://drafts.fxtf.org/compositing/#propdef-mix-blend-mode"
 animation_type = "discrete"
 affects = "paint"
 servo_restyle_damage = "repaint"
-keyword = { values = "normal multiply screen overlay darken lighten color-dodge color-burn hard-light soft-light difference exclusion hue saturation color luminosity plus-lighter", gecko_enum_prefix = "StyleBlend" }
+keyword = { values = ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity", "plus-lighter"], gecko_enum_prefix = "StyleBlend" }
 
 [dominant-baseline]
 struct = "inherited_svg"
-engines = "gecko"
+engine = "gecko"
 spec = "https://www.w3.org/TR/css-inline-3/#propdef-dominant-baseline"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = "auto ideographic alphabetic hanging mathematical central middle text-after-edge text-before-edge" }
+keyword = { values = ["auto", "ideographic", "alphabetic", "hanging", "mathematical", "central", "middle", "text-after-edge", "text-before-edge"] }
 
 [-moz-math-variant]
 struct = "font"
-engines = "gecko"
+engine = "gecko"
 spec = "Internal (not web-exposed)"
 animation_type = "none"
 enabled_in = ""
 has_effect_on_gecko_scrollbars = false
 affects = "layout"
 gecko_ffi_name = "mMathVariant"
-keyword = { values = "none normal bold italic bold-italic script bold-script fraktur double-struck bold-fraktur sans-serif bold-sans-serif sans-serif-italic sans-serif-bold-italic monospace initial tailed looped stretched" }
+keyword = { values = ["none", "normal", "bold", "italic", "bold-italic", "script", "bold-script", "fraktur", "double-struck", "bold-fraktur", "sans-serif", "bold-sans-serif", "sans-serif-italic", "sans-serif-bold-italic", "monospace", "initial", "tailed", "looped", "stretched"] }
 
 [white-space-collapse]
 struct = "inherited_text"
@@ -4157,4 +4159,4 @@ spec = "https://drafts.csswg.org/css-text-4/#propdef-white-space-collapse"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = "collapse preserve preserve-breaks break-spaces", extra_gecko_values = "preserve-spaces", gecko_aliases = "-moz-pre-space=preserve-spaces" }
+keyword = { values = ["collapse", "preserve", "preserve-breaks", "break-spaces"], extra_gecko_values = ["preserve-spaces"], gecko_aliases = ["-moz-pre-space=preserve-spaces"] }

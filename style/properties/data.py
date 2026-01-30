@@ -98,19 +98,19 @@ DEFAULT_RULES_AND_POSITION_TRY = DEFAULT_RULES | POSITION_TRY_RULE
 
 # Rule name to value dict
 RULE_VALUES = {
-    "Style": STYLE_RULE,
-    "Page": PAGE_RULE,
-    "Keyframe": KEYFRAME_RULE,
-    "PositionTry": POSITION_TRY_RULE,
-    "Scope": SCOPE_RULE,
+    "style": STYLE_RULE,
+    "page": PAGE_RULE,
+    "keyframe": KEYFRAME_RULE,
+    "position-try": POSITION_TRY_RULE,
+    "scope": SCOPE_RULE,
 }
 
 
-def rule_values_from_arg(that):
-    if isinstance(that, int):
-        return that
+def rule_values_from_arg(rule_types):
+    if not rule_types:
+        return DEFAULT_RULES
     mask = 0
-    for rule in that.split():
+    for rule in rule_types:
         mask |= RULE_VALUES[rule]
     return mask
 
@@ -144,7 +144,7 @@ def to_idl_name(ident):
 
 def parse_aliases(value):
     aliases = {}
-    for pair in value.split():
+    for pair in value:
         [a, v] = pair.split("=")
         aliases[a] = v
     return aliases
@@ -180,7 +180,8 @@ class Keyword(object):
         gecko_inexhaustive=None,
     ):
         self.name = name
-        self.values = values.split()
+        self.values = values;
+        assert isinstance(values, list), name
         if gecko_constant_prefix and gecko_enum_prefix:
             raise TypeError(
                 "Only one of gecko_constant_prefix and gecko_enum_prefix "
@@ -190,10 +191,10 @@ class Keyword(object):
         self.gecko_enum_prefix = gecko_enum_prefix
         if not gecko_constant_prefix and not gecko_enum_prefix:
             self.gecko_enum_prefix = "Style" + to_camel_case(name.replace("-moz-", "").replace("-webkit-", ""))
-        self.extra_gecko_values = (extra_gecko_values or "").split()
-        self.extra_servo_values = (extra_servo_values or "").split()
-        self.gecko_aliases = parse_aliases(gecko_aliases or "")
-        self.servo_aliases = parse_aliases(servo_aliases or "")
+        self.extra_gecko_values = extra_gecko_values or []
+        self.extra_servo_values = extra_servo_values or []
+        self.gecko_aliases = parse_aliases(gecko_aliases or [])
+        self.servo_aliases = parse_aliases(servo_aliases or [])
         self.gecko_inexhaustive = gecko_inexhaustive or self.gecko_constant_prefix is not None
 
     def values_for(self, engine):
@@ -245,7 +246,7 @@ class Keyword(object):
 def parse_property_aliases(alias_list):
     result = []
     if alias_list:
-        for alias in alias_list.split():
+        for alias in alias_list:
             (name, _, pref) = alias.partition(":")
             result.append((name, pref))
     return result
@@ -339,7 +340,7 @@ class Longhand(Property):
         enabled_in="content",
         gecko_ffi_name=None,
         has_effect_on_gecko_scrollbars=None,
-        rule_types_allowed=DEFAULT_RULES,
+        rule_types_allowed=None,
         cast_type="u8",
         logical=False,
         logical_group=None,
@@ -666,7 +667,7 @@ class Shorthand(Property):
         derive_serialize=False,
         derive_value_info=True,
         enabled_in="content",
-        rule_types_allowed=DEFAULT_RULES,
+        rule_types_allowed=None,
         aliases=None,
         extra_prefixes=None,
         flags=None,
@@ -837,9 +838,8 @@ class PropertiesData(object):
         for prefix, pref in property.extra_prefixes:
             property.aliases.append(("-%s-%s" % (prefix, property.name), pref))
 
-    def declare_longhand(self, style_struct, name, engines="servo gecko", **kwargs):
-        engines = engines.split()
-        if self.engine not in engines:
+    def declare_longhand(self, style_struct, name, engine=None, **kwargs):
+        if engine and self.engine != engine:
             return
 
         longhand = Longhand(style_struct, name, **kwargs)
@@ -856,11 +856,9 @@ class PropertiesData(object):
 
         return longhand
 
-    def declare_shorthand(self, name, sub_properties, engines="servo gecko", *args, **kwargs):
-        engines = engines.split()
-        if self.engine not in engines:
+    def declare_shorthand(self, name, sub_properties, engine=None, *args, **kwargs):
+        if engine and self.engine != engine:
             return
-
         sub_properties = [self.longhands_by_name[s] for s in sub_properties]
         shorthand = Shorthand(name, sub_properties, *args, **kwargs)
         self.add_prefixed_aliases(shorthand)

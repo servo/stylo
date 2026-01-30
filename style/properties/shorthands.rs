@@ -5,7 +5,7 @@
 //! Manual shorthand parsing and serialization
 #![allow(missing_docs)]
 
-use super::{expanded, longhands};
+use super::expanded;
 use crate::parser::{Parse, ParserContext};
 use crate::values::specified;
 use cssparser::Parser;
@@ -16,10 +16,17 @@ use style_traits::{
 };
 
 macro_rules! try_parse_one {
-    ($context: expr, $input: expr, $var: ident, $prop_module: ident) => {
+    ($context: expr, $input: expr, $var: ident, $parse_path: path) => {
         if $var.is_none() {
-            if let Ok(value) = $input.try_parse(|i| $prop_module::single_value::parse($context, i))
-            {
+            if let Ok(value) = $input.try_parse(|i| $parse_path($context, i)) {
+                $var = Some(value);
+                continue;
+            }
+        }
+    };
+    ($input: expr, $var: ident, $parse_path: path) => {
+        if $var.is_none() {
+            if let Ok(value) = $input.try_parse(|i| $parse_path(i)) {
                 $var = Some(value);
                 continue;
             }
@@ -78,35 +85,19 @@ pub fn parse_border<'i, 't>(
     ParseError<'i>,
 > {
     use crate::values::specified::{BorderSideWidth, BorderStyle, Color};
-    let _unused = context;
     let mut color = None;
     let mut style = None;
     let mut width = None;
-    let mut any = false;
+    let mut parsed = 0;
     loop {
-        if width.is_none() {
-            if let Ok(value) = input.try_parse(|i| BorderSideWidth::parse(context, i)) {
-                width = Some(value);
-                any = true;
-            }
-        }
-        if style.is_none() {
-            if let Ok(value) = input.try_parse(BorderStyle::parse) {
-                style = Some(value);
-                any = true;
-                continue;
-            }
-        }
-        if color.is_none() {
-            if let Ok(value) = input.try_parse(|i| Color::parse(context, i)) {
-                color = Some(value);
-                any = true;
-                continue;
-            }
-        }
+        parsed += 1;
+        try_parse_one!(context, input, width, BorderSideWidth::parse);
+        try_parse_one!(input, style, BorderStyle::parse);
+        try_parse_one!(context, input, color, Color::parse);
+        parsed -= 1;
         break;
     }
-    if !any {
+    if parsed == 0 {
         return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
     }
     Ok((
@@ -397,26 +388,26 @@ pub mod border {
     ) -> Result<Longhands, ParseError<'i>> {
         let (width, style, color) = super::parse_border(context, input)?;
         Ok(expanded! {
-                border_top_width: width.clone(),
-                border_top_style: style,
-                border_top_color: color.clone(),
-                border_right_width: width.clone(),
-                border_right_style: style,
-                border_right_color: color.clone(),
-                border_bottom_width: width.clone(),
-                border_bottom_style: style,
-                border_bottom_color: color.clone(),
-                border_left_width: width.clone(),
-                border_left_style: style,
-                border_left_color: color.clone(),
+            border_top_width: width.clone(),
+            border_top_style: style,
+            border_top_color: color.clone(),
+            border_right_width: width.clone(),
+            border_right_style: style,
+            border_right_color: color.clone(),
+            border_bottom_width: width.clone(),
+            border_bottom_style: style,
+            border_bottom_color: color.clone(),
+            border_left_width: width.clone(),
+            border_left_style: style,
+            border_left_color: color.clone(),
 
-                // The 'border' shorthand resets 'border-image' to its initial value.
-                // See https://drafts.csswg.org/css-backgrounds-3/#the-border-shorthands
-                border_image_outset: border_image_outset::get_initial_specified_value(),
-                border_image_repeat: border_image_repeat::get_initial_specified_value(),
-                border_image_slice: border_image_slice::get_initial_specified_value(),
-                border_image_source: border_image_source::get_initial_specified_value(),
-                border_image_width: border_image_width::get_initial_specified_value(),
+            // The 'border' shorthand resets 'border-image' to its initial value.
+            // See https://drafts.csswg.org/css-backgrounds-3/#the-border-shorthands
+            border_image_outset: border_image_outset::get_initial_specified_value(),
+            border_image_repeat: border_image_repeat::get_initial_specified_value(),
+            border_image_slice: border_image_slice::get_initial_specified_value(),
+            border_image_source: border_image_source::get_initial_specified_value(),
+            border_image_width: border_image_width::get_initial_specified_value(),
         })
     }
 
@@ -515,8 +506,7 @@ pub mod container {
         context: &ParserContext,
         input: &mut Parser<'i, '_>,
     ) -> Result<Longhands, ParseError<'i>> {
-        // See https://github.com/w3c/csswg-drafts/issues/7180 for why we don't
-        // match the spec.
+        // See https://github.com/w3c/csswg-drafts/issues/7180 for why we don't match the spec.
         let container_name = ContainerName::parse(context, input)?;
         let container_type = if input.try_parse(|input| input.expect_delim('/')).is_ok() {
             ContainerType::parse(context, input)?
@@ -557,43 +547,20 @@ pub mod vertical_align {
         let mut baseline_source = None;
         let mut alignment_baseline = None;
         let mut baseline_shift = None;
+        let mut parsed = 0;
 
         loop {
-            if baseline_source.is_none() {
-                if input
-                    .try_parse(|input| input.expect_ident_matching("first"))
-                    .is_ok()
-                {
-                    baseline_source = Some(BaselineSource::First);
-                    continue;
-                }
-                if input
-                    .try_parse(|input| input.expect_ident_matching("last"))
-                    .is_ok()
-                {
-                    baseline_source = Some(BaselineSource::Last);
-                    continue;
-                }
-            }
+            parsed += 1;
 
-            if alignment_baseline.is_none() {
-                if let Ok(value) = input.try_parse(AlignmentBaseline::parse) {
-                    alignment_baseline = Some(value);
-                    continue;
-                }
-            }
+            try_parse_one!(input, baseline_source, BaselineSource::parse_non_auto);
+            try_parse_one!(input, alignment_baseline, AlignmentBaseline::parse);
+            try_parse_one!(context, input, baseline_shift, BaselineShift::parse);
 
-            if baseline_shift.is_none() {
-                if let Ok(value) = input.try_parse(|input| BaselineShift::parse(context, input)) {
-                    baseline_shift = Some(value);
-                    continue;
-                }
-            }
-
+            parsed -= 1;
             break;
         }
 
-        if baseline_source.is_none() && alignment_baseline.is_none() && baseline_shift.is_none() {
+        if parsed == 0 {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
 
@@ -609,33 +576,19 @@ pub mod vertical_align {
         where
             W: fmt::Write,
         {
-            let mut is_first = true;
-
+            let mut writer = SequenceWriter::new(dest, " ");
             if *self.baseline_source != BaselineSource::Auto {
-                self.baseline_source.to_css(dest)?;
-                is_first = false;
+                writer.item(self.baseline_source)?;
             }
-
             if *self.alignment_baseline != AlignmentBaseline::Baseline {
-                if !is_first {
-                    dest.write_char(' ')?;
-                }
-                self.alignment_baseline.to_css(dest)?;
-                is_first = false;
+                writer.item(self.alignment_baseline)?;
             }
-
             if *self.baseline_shift != BaselineShift::zero() {
-                if !is_first {
-                    dest.write_char(' ')?;
-                }
-                self.baseline_shift.to_css(dest)?;
-                is_first = false;
+                writer.item(self.baseline_shift)?;
             }
-
-            if is_first {
+            if !writer.has_written() {
                 self.alignment_baseline.to_css(dest)?;
             }
-
             Ok(())
         }
     }
@@ -940,45 +893,23 @@ pub mod column_rule {
         let mut column_rule_width = None;
         let mut column_rule_style = None;
         let mut column_rule_color = None;
-        let mut any = false;
-
+        let mut parsed = 0;
         loop {
-            if column_rule_width.is_none() {
-                if let Ok(value) = input.try_parse(|input| column_rule_width::parse(context, input))
-                {
-                    column_rule_width = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
-            if column_rule_style.is_none() {
-                if let Ok(value) = input.try_parse(|input| column_rule_style::parse(context, input))
-                {
-                    column_rule_style = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
-            if column_rule_color.is_none() {
-                if let Ok(value) = input.try_parse(|input| column_rule_color::parse(context, input))
-                {
-                    column_rule_color = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
-
+            parsed += 1;
+            try_parse_one!(context, input, column_rule_width, column_rule_width::parse);
+            try_parse_one!(context, input, column_rule_style, column_rule_style::parse);
+            try_parse_one!(context, input, column_rule_color, column_rule_color::parse);
+            parsed -= 1;
             break;
         }
-        if any {
-            Ok(expanded! {
-                column_rule_width: unwrap_or_initial!(column_rule_width),
-                column_rule_style: unwrap_or_initial!(column_rule_style),
-                column_rule_color: unwrap_or_initial!(column_rule_color),
-            })
-        } else {
-            Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        if parsed == 0 {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
+        Ok(expanded! {
+            column_rule_width: unwrap_or_initial!(column_rule_width),
+            column_rule_style: unwrap_or_initial!(column_rule_style),
+            column_rule_color: unwrap_or_initial!(column_rule_color),
+        })
     }
 }
 
@@ -1216,81 +1147,66 @@ pub mod list_style {
         // `none` is ambiguous until we've finished parsing the shorthands, so we count the number
         // of times we see it.
         let mut nones = 0u8;
-        let (mut image, mut position, mut list_style_type, mut any) = (None, None, None, false);
+        let (mut image, mut position, mut list_style_type) = (None, None, None);
+        let mut parsed = 0;
         loop {
+            parsed += 1;
+
             if input
                 .try_parse(|input| input.expect_ident_matching("none"))
                 .is_ok()
             {
-                nones = nones + 1;
+                nones += 1;
                 if nones > 2 {
                     return Err(input
                         .new_custom_error(SelectorParseErrorKind::UnexpectedIdent("none".into())));
                 }
-                any = true;
                 continue;
             }
 
-            if image.is_none() {
-                if let Ok(value) = input.try_parse(|input| list_style_image::parse(context, input))
-                {
-                    image = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
-
-            if position.is_none() {
-                if let Ok(value) =
-                    input.try_parse(|input| list_style_position::parse(context, input))
-                {
-                    position = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
-
+            try_parse_one!(context, input, image, list_style_image::parse);
+            try_parse_one!(context, input, position, list_style_position::parse);
             // list-style-type must be checked the last, because it accepts
             // arbitrary identifier for custom counter style, and thus may
             // affect values of list-style-position.
-            if list_style_type.is_none() {
-                if let Ok(value) = input.try_parse(|input| list_style_type::parse(context, input)) {
-                    list_style_type = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
+            try_parse_one!(context, input, list_style_type, list_style_type::parse);
+
+            parsed -= 1;
             break;
         }
 
         let position = unwrap_or_initial!(list_style_position, position);
 
+        if parsed == 0 {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+
         // If there are two `none`s, then we can't have a type or image; if there is one `none`,
         // then we can't have both a type *and* an image; if there is no `none` then we're fine as
         // long as we parsed something.
         use self::list_style_type::SpecifiedValue as ListStyleType;
-        match (any, nones, list_style_type, image) {
-            (true, 2, None, None) => Ok(expanded! {
+        match (nones, list_style_type, image) {
+            (2, None, None) => Ok(expanded! {
                 list_style_position: position,
                 list_style_image: Image::None,
                 list_style_type: ListStyleType::none(),
             }),
-            (true, 1, None, Some(image)) => Ok(expanded! {
+            (1, None, Some(image)) => Ok(expanded! {
                 list_style_position: position,
                 list_style_image: image,
                 list_style_type: ListStyleType::none(),
             }),
-            (true, 1, Some(list_style_type), None) => Ok(expanded! {
+            (1, Some(list_style_type), None) => Ok(expanded! {
                 list_style_position: position,
                 list_style_image: Image::None,
                 list_style_type: list_style_type,
             }),
-            (true, 1, None, None) => Ok(expanded! {
+            (1, None, None) => Ok(expanded! {
                 list_style_position: position,
                 list_style_image: Image::None,
                 list_style_type: ListStyleType::none(),
             }),
-            (true, 0, list_style_type, image) => Ok(expanded! {
+            (0, list_style_type, image) => Ok(expanded! {
                 list_style_position: position,
                 list_style_image: unwrap_or_initial!(list_style_image, image),
                 list_style_type: unwrap_or_initial!(list_style_type),
@@ -1304,30 +1220,21 @@ pub mod list_style {
         where
             W: fmt::Write,
         {
-            use longhands::list_style_image::SpecifiedValue as ListStyleImage;
-            use longhands::list_style_position::SpecifiedValue as ListStylePosition;
-            use longhands::list_style_type::SpecifiedValue as ListStyleType;
-            let mut have_one_non_initial_value = false;
-            let position_is_initial = self.list_style_position == &ListStylePosition::Outside;
-            if !position_is_initial {
-                self.list_style_position.to_css(dest)?;
-                have_one_non_initial_value = true;
+            use list_style_image::SpecifiedValue as ListStyleImage;
+            use list_style_position::SpecifiedValue as ListStylePosition;
+            use list_style_type::SpecifiedValue as ListStyleType;
+
+            let mut writer = SequenceWriter::new(dest, " ");
+            if *self.list_style_position != ListStylePosition::Outside {
+                writer.item(self.list_style_position)?;
             }
-            if self.list_style_image != &ListStyleImage::None {
-                if have_one_non_initial_value {
-                    dest.write_char(' ')?;
-                }
-                self.list_style_image.to_css(dest)?;
-                have_one_non_initial_value = true;
+            if *self.list_style_image != ListStyleImage::None {
+                writer.item(self.list_style_image)?;
             }
-            if self.list_style_type != &ListStyleType::disc() {
-                if have_one_non_initial_value {
-                    dest.write_char(' ')?;
-                }
-                self.list_style_type.to_css(dest)?;
-                have_one_non_initial_value = true;
+            if *self.list_style_type != ListStyleType::disc() {
+                writer.item(self.list_style_type)?;
             }
-            if !have_one_non_initial_value {
+            if !writer.has_written() {
                 self.list_style_position.to_css(dest)?;
             }
             Ok(())
@@ -2005,10 +1912,25 @@ pub mod transition {
             loop {
                 parsed += 1;
 
-                try_parse_one!(context, input, duration, transition_duration);
-                try_parse_one!(context, input, timing_function, transition_timing_function);
-                try_parse_one!(context, input, delay, transition_delay);
-                try_parse_one!(context, input, behavior, transition_behavior);
+                try_parse_one!(
+                    context,
+                    input,
+                    duration,
+                    transition_duration::single_value::parse
+                );
+                try_parse_one!(
+                    context,
+                    input,
+                    timing_function,
+                    transition_timing_function::single_value::parse
+                );
+                try_parse_one!(context, input, delay, transition_delay::single_value::parse);
+                try_parse_one!(
+                    context,
+                    input,
+                    behavior,
+                    transition_behavior::single_value::parse
+                );
                 if property.is_none() {
                     if let Ok(value) = input.try_parse(|i| TransitionProperty::parse(context, i)) {
                         property = Some(value);
@@ -2178,40 +2100,23 @@ pub mod outline {
         let mut color = None;
         let mut style = None;
         let mut width = None;
-        let mut any = false;
+        let mut parsed = 0;
         loop {
-            if color.is_none() {
-                if let Ok(value) = input.try_parse(|i| specified::Color::parse(context, i)) {
-                    color = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
-            if style.is_none() {
-                if let Ok(value) = input.try_parse(|input| outline_style::parse(context, input)) {
-                    style = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
-            if width.is_none() {
-                if let Ok(value) = input.try_parse(|input| outline_width::parse(context, input)) {
-                    width = Some(value);
-                    any = true;
-                    continue;
-                }
-            }
+            parsed += 1;
+            try_parse_one!(context, input, color, specified::Color::parse);
+            try_parse_one!(context, input, style, outline_style::parse);
+            try_parse_one!(context, input, width, outline_width::parse);
+            parsed -= 1;
             break;
         }
-        if any {
-            Ok(expanded! {
-                outline_color: unwrap_or_initial!(outline_color, color),
-                outline_style: unwrap_or_initial!(outline_style, style),
-                outline_width: unwrap_or_initial!(outline_width, width),
-            })
-        } else {
-            Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        if parsed == 0 {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
+        Ok(expanded! {
+            outline_color: unwrap_or_initial!(outline_color, color),
+            outline_style: unwrap_or_initial!(outline_style, style),
+            outline_width: unwrap_or_initial!(outline_width, width),
+        })
     }
 
     impl<'a> ToCss for LonghandsToSerialize<'a> {
@@ -2219,34 +2124,19 @@ pub mod outline {
         where
             W: fmt::Write,
         {
-            let mut wrote_value = false;
-
+            let mut writer = SequenceWriter::new(dest, " ");
             if *self.outline_color != outline_color::get_initial_specified_value() {
-                if wrote_value {
-                    dest.write_char(' ')?;
-                }
-                self.outline_color.to_css(dest)?;
-                wrote_value = true;
+                writer.item(self.outline_color)?;
             }
             if *self.outline_style != outline_style::get_initial_specified_value() {
-                if wrote_value {
-                    dest.write_char(' ')?;
-                }
-                self.outline_style.to_css(dest)?;
-                wrote_value = true;
+                writer.item(self.outline_style)?;
             }
             if *self.outline_width != outline_width::get_initial_specified_value() {
-                if wrote_value {
-                    dest.write_char(' ')?;
-                }
-                self.outline_width.to_css(dest)?;
-                wrote_value = true;
+                writer.item(self.outline_width)?;
             }
-
-            if !wrote_value {
+            if !writer.has_written() {
                 self.outline_style.to_css(dest)?;
             }
-
             Ok(())
         }
     }
@@ -2372,13 +2262,10 @@ pub mod background {
             let mut attachment = None;
             let mut origin = None;
             let mut clip = None;
+            let mut parsed = 0;
             loop {
-                if background_color.is_none() {
-                    if let Ok(value) = input.try_parse(|i| Color::parse(context, i)) {
-                        background_color = Some(value);
-                        continue;
-                    }
-                }
+                parsed += 1;
+                try_parse_one!(context, input, background_color, Color::parse);
                 if position.is_none() {
                     if let Ok(value) = input.try_parse(|input| {
                         Position::parse_three_value_quirky(context, input, AllowQuirks::No)
@@ -2395,110 +2282,79 @@ pub mod background {
                         continue;
                     }
                 }
-                if image.is_none() {
-                    if let Ok(value) = input
-                        .try_parse(|input| background_image::single_value::parse(context, input))
-                    {
-                        image = Some(value);
-                        continue;
-                    }
-                }
-                if repeat.is_none() {
-                    if let Ok(value) = input
-                        .try_parse(|input| background_repeat::single_value::parse(context, input))
-                    {
-                        repeat = Some(value);
-                        continue;
-                    }
-                }
-                if attachment.is_none() {
-                    if let Ok(value) = input.try_parse(|input| {
-                        background_attachment::single_value::parse(context, input)
-                    }) {
-                        attachment = Some(value);
-                        continue;
-                    }
-                }
-                if origin.is_none() {
-                    if let Ok(value) = input
-                        .try_parse(|input| background_origin::single_value::parse(context, input))
-                    {
-                        origin = Some(value);
-                        continue;
-                    }
-                }
-                if clip.is_none() {
-                    if let Ok(value) = input
-                        .try_parse(|input| background_clip::single_value::parse(context, input))
-                    {
-                        clip = Some(value);
-                        continue;
-                    }
-                }
+                try_parse_one!(context, input, image, background_image::single_value::parse);
+                try_parse_one!(
+                    context,
+                    input,
+                    repeat,
+                    background_repeat::single_value::parse
+                );
+                try_parse_one!(
+                    context,
+                    input,
+                    attachment,
+                    background_attachment::single_value::parse
+                );
+                try_parse_one!(
+                    context,
+                    input,
+                    origin,
+                    background_origin::single_value::parse
+                );
+                try_parse_one!(context, input, clip, background_clip::single_value::parse);
+                parsed -= 1;
                 break;
+            }
+            if parsed == 0 {
+                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
             }
             if clip.is_none() {
                 if let Some(origin) = origin {
                     clip = Some(background_clip::single_value::SpecifiedValue::from(origin));
                 }
             }
-            let mut any = false;
-            any = any || image.is_some();
-            any = any || position.is_some();
-            any = any || repeat.is_some();
-            any = any || size.is_some();
-            any = any || attachment.is_some();
-            any = any || origin.is_some();
-            any = any || clip.is_some();
-            any = any || background_color.is_some();
-            if any {
-                if let Some(position) = position {
-                    background_position_x.push(position.horizontal);
-                    background_position_y.push(position.vertical);
-                } else {
-                    background_position_x.push(PositionComponent::zero());
-                    background_position_y.push(PositionComponent::zero());
-                }
-                if let Some(bg_image) = image {
-                    background_image.push(bg_image);
-                } else {
-                    background_image
-                        .push(background_image::single_value::get_initial_specified_value());
-                }
-                if let Some(bg_repeat) = repeat {
-                    background_repeat.push(bg_repeat);
-                } else {
-                    background_repeat
-                        .push(background_repeat::single_value::get_initial_specified_value());
-                }
-                if let Some(bg_size) = size {
-                    background_size.push(bg_size);
-                } else {
-                    background_size
-                        .push(background_size::single_value::get_initial_specified_value());
-                }
-                if let Some(bg_attachment) = attachment {
-                    background_attachment.push(bg_attachment);
-                } else {
-                    background_attachment
-                        .push(background_attachment::single_value::get_initial_specified_value());
-                }
-                if let Some(bg_origin) = origin {
-                    background_origin.push(bg_origin);
-                } else {
-                    background_origin
-                        .push(background_origin::single_value::get_initial_specified_value());
-                }
-                if let Some(bg_clip) = clip {
-                    background_clip.push(bg_clip);
-                } else {
-                    background_clip
-                        .push(background_clip::single_value::get_initial_specified_value());
-                }
-                Ok(())
+            if let Some(position) = position {
+                background_position_x.push(position.horizontal);
+                background_position_y.push(position.vertical);
             } else {
-                Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+                background_position_x.push(PositionComponent::zero());
+                background_position_y.push(PositionComponent::zero());
             }
+            if let Some(bg_image) = image {
+                background_image.push(bg_image);
+            } else {
+                background_image
+                    .push(background_image::single_value::get_initial_specified_value());
+            }
+            if let Some(bg_repeat) = repeat {
+                background_repeat.push(bg_repeat);
+            } else {
+                background_repeat
+                    .push(background_repeat::single_value::get_initial_specified_value());
+            }
+            if let Some(bg_size) = size {
+                background_size.push(bg_size);
+            } else {
+                background_size.push(background_size::single_value::get_initial_specified_value());
+            }
+            if let Some(bg_attachment) = attachment {
+                background_attachment.push(bg_attachment);
+            } else {
+                background_attachment
+                    .push(background_attachment::single_value::get_initial_specified_value());
+            }
+            if let Some(bg_origin) = origin {
+                background_origin.push(bg_origin);
+            } else {
+                background_origin
+                    .push(background_origin::single_value::get_initial_specified_value());
+            }
+            if let Some(bg_clip) = clip {
+                background_clip.push(bg_clip);
+            } else {
+                background_clip.push(background_clip::single_value::get_initial_specified_value());
+            }
+            Ok(())
         })?;
 
         Ok(expanded! {
@@ -2523,7 +2379,6 @@ pub mod background {
             if len == 0 {
                 return Ok(());
             }
-
             if len != self.background_image.0.len() {
                 return Ok(());
             }
@@ -2563,76 +2418,50 @@ pub mod background {
                     dest.write_str(", ")?;
                 }
 
-                let mut wrote_value = false;
-
+                let mut writer = SequenceWriter::new(dest, " ");
                 if *image != background_image::single_value::get_initial_specified_value() {
-                    image.to_css(dest)?;
-                    wrote_value = true;
+                    writer.item(image)?;
                 }
 
                 if *position_x != PositionComponent::zero()
                     || *position_y != PositionComponent::zero()
                     || *size != background_size::single_value::get_initial_specified_value()
                 {
-                    if wrote_value {
-                        dest.write_char(' ')?;
-                    }
-
-                    Position {
-                        horizontal: position_x.clone(),
-                        vertical: position_y.clone(),
-                    }
-                    .to_css(dest)?;
-
-                    wrote_value = true;
-
-                    if *size != background_size::single_value::get_initial_specified_value() {
-                        dest.write_str(" / ")?;
-                        size.to_css(dest)?;
-                    }
+                    writer.write_item(|dest| {
+                        Position {
+                            horizontal: position_x.clone(),
+                            vertical: position_y.clone(),
+                        }
+                        .to_css(dest)?;
+                        if *size != background_size::single_value::get_initial_specified_value() {
+                            dest.write_str(" / ")?;
+                            size.to_css(dest)?;
+                        }
+                        Ok(())
+                    })?;
                 }
-
                 if *repeat != background_repeat::single_value::get_initial_specified_value() {
-                    if wrote_value {
-                        dest.write_char(' ')?;
-                    }
-                    repeat.to_css(dest)?;
-                    wrote_value = true;
+                    writer.item(repeat)?;
                 }
                 if *attachment != background_attachment::single_value::get_initial_specified_value()
                 {
-                    if wrote_value {
-                        dest.write_char(' ')?;
-                    }
-                    attachment.to_css(dest)?;
-                    wrote_value = true;
+                    writer.item(attachment)?;
                 }
 
                 if *origin != Origin::PaddingBox || *clip != Clip::BorderBox {
-                    if wrote_value {
-                        dest.write_char(' ')?;
-                    }
-                    origin.to_css(dest)?;
+                    writer.item(origin)?;
                     if *clip != From::from(*origin) {
-                        dest.write_char(' ')?;
-                        clip.to_css(dest)?;
+                        writer.item(clip)?;
                     }
-
-                    wrote_value = true;
                 }
 
                 if i == len - 1 {
                     if *self.background_color != background_color::get_initial_specified_value() {
-                        if wrote_value {
-                            dest.write_char(' ')?;
-                        }
-
-                        self.background_color.to_css(dest)?;
-                        wrote_value = true;
+                        writer.item(self.background_color)?;
                     }
                 }
 
-                if !wrote_value {
+                if !writer.has_written() {
                     image.to_css(dest)?;
                 }
             }
@@ -2668,7 +2497,6 @@ pub mod font {
         let mut variant_caps = None;
         let mut weight = None;
         let mut stretch = None;
-        let size;
         #[cfg(feature = "gecko")]
         if let Ok(sys) = input.try_parse(|i| SystemFont::parse(context, i)) {
             return Ok(Longhands {
@@ -2693,6 +2521,8 @@ pub mod font {
                 font_variation_settings: font_variation_settings::get_initial_specified_value(),
             });
         }
+
+        let size;
         loop {
             if input
                 .try_parse(|input| input.expect_ident_matching("normal"))
@@ -2701,18 +2531,8 @@ pub mod font {
                 nb_normals += 1;
                 continue;
             }
-            if style.is_none() {
-                if let Ok(value) = input.try_parse(|input| font_style::parse(context, input)) {
-                    style = Some(value);
-                    continue;
-                }
-            }
-            if weight.is_none() {
-                if let Ok(value) = input.try_parse(|input| font_weight::parse(context, input)) {
-                    weight = Some(value);
-                    continue;
-                }
-            }
+            try_parse_one!(context, input, style, font_style::parse);
+            try_parse_one!(context, input, weight, font_weight::parse);
             if variant_caps.is_none() {
                 if input
                     .try_parse(|input| input.expect_ident_matching("small-caps"))
@@ -2722,20 +2542,10 @@ pub mod font {
                     continue;
                 }
             }
-            if stretch.is_none() {
-                if let Ok(value) = input.try_parse(FontStretchKeyword::parse) {
-                    stretch = Some(FontStretch::Keyword(value));
-                    continue;
-                }
-            }
-            size = Some(FontSize::parse(context, input)?);
+            try_parse_one!(input, stretch, FontStretchKeyword::parse);
+            size = FontSize::parse(context, input)?;
             break;
         }
-
-        let size = match size {
-            Some(s) => s,
-            None => return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
-        };
 
         let line_height = if input.try_parse(|input| input.expect_delim('/')).is_ok() {
             Some(LineHeight::parse(context, input)?)
@@ -2759,6 +2569,7 @@ pub mod font {
         }
 
         let family = FontFamily::parse(context, input)?;
+        let stretch = stretch.map(FontStretch::Keyword);
         Ok(Longhands {
             font_style: unwrap_or_initial!(font_style, style),
             font_weight: unwrap_or_initial!(font_weight, weight),
@@ -2906,66 +2717,29 @@ pub mod font {
             let mut sys = None;
             let mut all = true;
 
-            {
-                let value = self.font_family;
-                match value.get_system() {
-                    Some(s) => {
-                        debug_assert!(sys.is_none() || s == sys.unwrap());
-                        sys = Some(s);
-                    },
-                    None => {
-                        all = false;
-                    },
-                }
+            macro_rules! check {
+                ($v:expr) => {
+                    match $v.get_system() {
+                        Some(s) => {
+                            debug_assert!(sys.is_none() || s == sys.unwrap());
+                            sys = Some(s);
+                        },
+                        None => {
+                            all = false;
+                        },
+                    }
+                };
+                ($e:expr, $($es:expr),+) => { check!($e); check!($($es),*); };
             }
-            {
-                let value = self.font_size;
-                match value.get_system() {
-                    Some(s) => {
-                        debug_assert!(sys.is_none() || s == sys.unwrap());
-                        sys = Some(s);
-                    },
-                    None => {
-                        all = false;
-                    },
-                }
-            }
-            {
-                let value = self.font_style;
-                match value.get_system() {
-                    Some(s) => {
-                        debug_assert!(sys.is_none() || s == sys.unwrap());
-                        sys = Some(s);
-                    },
-                    None => {
-                        all = false;
-                    },
-                }
-            }
-            {
-                let value = self.font_stretch;
-                match value.get_system() {
-                    Some(s) => {
-                        debug_assert!(sys.is_none() || s == sys.unwrap());
-                        sys = Some(s);
-                    },
-                    None => {
-                        all = false;
-                    },
-                }
-            }
-            {
-                let value = self.font_weight;
-                match value.get_system() {
-                    Some(s) => {
-                        debug_assert!(sys.is_none() || s == sys.unwrap());
-                        sys = Some(s);
-                    },
-                    None => {
-                        all = false;
-                    },
-                }
-            }
+
+            check!(
+                self.font_family,
+                self.font_size,
+                self.font_style,
+                self.font_stretch,
+                self.font_weight
+            );
+
             if self.line_height != &LineHeight::normal() {
                 all = false
             }
@@ -3037,8 +2811,9 @@ pub mod font_variant {
         {
             ligatures = Some(FontVariantLigatures::NONE);
         } else {
-            let mut has_custom_value: bool = false;
+            let mut parsed = 0;
             loop {
+                parsed += 1;
                 if input
                     .try_parse(|input| input.expect_ident_matching("normal"))
                     .is_ok()
@@ -3048,68 +2823,18 @@ pub mod font_variant {
                 {
                     return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
-                if ligatures.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|i| font_variant_ligatures::parse(context, i))
-                    {
-                        has_custom_value = true;
-                        ligatures = Some(value);
-                        continue;
-                    }
-                }
-                if caps.is_none() {
-                    if let Ok(value) = input.try_parse(|i| font_variant_caps::parse(context, i)) {
-                        has_custom_value = true;
-                        caps = Some(value);
-                        continue;
-                    }
-                }
-                if alternates.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|i| font_variant_alternates::parse(context, i))
-                    {
-                        has_custom_value = true;
-                        alternates = Some(value);
-                        continue;
-                    }
-                }
-                if numeric.is_none() {
-                    if let Ok(value) = input.try_parse(|i| font_variant_numeric::parse(context, i))
-                    {
-                        has_custom_value = true;
-                        numeric = Some(value);
-                        continue;
-                    }
-                }
-                if east_asian.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|i| font_variant_east_asian::parse(context, i))
-                    {
-                        has_custom_value = true;
-                        east_asian = Some(value);
-                        continue;
-                    }
-                }
-                if position.is_none() {
-                    if let Ok(value) = input.try_parse(|i| font_variant_position::parse(context, i))
-                    {
-                        has_custom_value = true;
-                        position = Some(value);
-                        continue;
-                    }
-                }
-                if emoji.is_none() {
-                    if let Ok(value) = input.try_parse(|i| font_variant_emoji::parse(context, i)) {
-                        has_custom_value = true;
-                        emoji = Some(value);
-                        continue;
-                    }
-                }
-
+                try_parse_one!(context, input, ligatures, font_variant_ligatures::parse);
+                try_parse_one!(context, input, caps, font_variant_caps::parse);
+                try_parse_one!(context, input, alternates, font_variant_alternates::parse);
+                try_parse_one!(context, input, numeric, font_variant_numeric::parse);
+                try_parse_one!(context, input, east_asian, font_variant_east_asian::parse);
+                try_parse_one!(context, input, position, font_variant_position::parse);
+                try_parse_one!(context, input, emoji, font_variant_emoji::parse);
+                parsed -= 1;
                 break;
             }
 
-            if !has_custom_value {
+            if parsed == 0 {
                 return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
             }
         }
@@ -3135,42 +2860,23 @@ pub mod font_variant {
 
             const TOTAL_SUBPROPS: usize = 7;
             let mut nb_normals = 0;
-            {
-                let value = self.font_variant_ligatures;
-                if value == &font_variant_ligatures::get_initial_specified_value() {
-                    nb_normals += 1;
-                }
+            macro_rules! count_normal {
+                ($e: expr, $p: ident) => {
+                    if *$e == $p::get_initial_specified_value() {
+                        nb_normals += 1;
+                    }
+                };
+                ($v: ident) => {
+                    count_normal!(self.$v, $v);
+                };
             }
-            {
-                let value = self.font_variant_caps;
-                if value == &font_variant_caps::get_initial_specified_value() {
-                    nb_normals += 1;
-                }
-            }
-            {
-                let value = self.font_variant_alternates;
-                if value == &font_variant_alternates::get_initial_specified_value() {
-                    nb_normals += 1;
-                }
-            }
-            {
-                let value = self.font_variant_numeric;
-                if value == &font_variant_numeric::get_initial_specified_value() {
-                    nb_normals += 1;
-                }
-            }
-            {
-                let value = self.font_variant_east_asian;
-                if value == &font_variant_east_asian::get_initial_specified_value() {
-                    nb_normals += 1;
-                }
-            }
-            {
-                let value = self.font_variant_position;
-                if value == &font_variant_position::get_initial_specified_value() {
-                    nb_normals += 1;
-                }
-            }
+            count_normal!(font_variant_ligatures);
+            count_normal!(font_variant_caps);
+            count_normal!(font_variant_alternates);
+            count_normal!(font_variant_numeric);
+            count_normal!(font_variant_east_asian);
+            count_normal!(font_variant_position);
+
             if let Some(value) = self.font_variant_emoji {
                 if value == &font_variant_emoji::get_initial_specified_value() {
                     nb_normals += 1;
@@ -3179,87 +2885,37 @@ pub mod font_variant {
                 nb_normals += 1;
             }
 
-            if nb_normals > 0 && nb_normals == TOTAL_SUBPROPS {
-                dest.write_str("normal")?;
-            } else if has_none_ligatures {
+            if nb_normals == TOTAL_SUBPROPS {
+                return dest.write_str("normal");
+            }
+            if has_none_ligatures {
                 if nb_normals == TOTAL_SUBPROPS - 1 {
                     dest.write_str("none")?;
-                } else {
-                    return Ok(());
                 }
-            } else {
-                let mut has_any = false;
-                {
-                    let value = self.font_variant_ligatures;
-                    if value != &font_variant_ligatures::get_initial_specified_value() {
-                        if has_any {
-                            dest.write_char(' ')?;
-                        }
-                        has_any = true;
-                        value.to_css(dest)?;
-                    }
-                }
-                {
-                    let value = self.font_variant_caps;
-                    if value != &font_variant_caps::get_initial_specified_value() {
-                        if has_any {
-                            dest.write_char(' ')?;
-                        }
-                        has_any = true;
-                        value.to_css(dest)?;
-                    }
-                }
-                {
-                    let value = self.font_variant_alternates;
-                    if value != &font_variant_alternates::get_initial_specified_value() {
-                        if has_any {
-                            dest.write_char(' ')?;
-                        }
-                        has_any = true;
-                        value.to_css(dest)?;
-                    }
-                }
-                {
-                    let value = self.font_variant_numeric;
-                    if value != &font_variant_numeric::get_initial_specified_value() {
-                        if has_any {
-                            dest.write_char(' ')?;
-                        }
-                        has_any = true;
-                        value.to_css(dest)?;
-                    }
-                }
-                {
-                    let value = self.font_variant_east_asian;
-                    if value != &font_variant_east_asian::get_initial_specified_value() {
-                        if has_any {
-                            dest.write_char(' ')?;
-                        }
-                        has_any = true;
-                        value.to_css(dest)?;
-                    }
-                }
-                {
-                    let value = self.font_variant_position;
-                    if value != &font_variant_position::get_initial_specified_value() {
-                        if has_any {
-                            dest.write_char(' ')?;
-                        }
-                        has_any = true;
-                        value.to_css(dest)?;
-                    }
-                }
-                if let Some(value) = self.font_variant_emoji {
-                    if value != &font_variant_emoji::get_initial_specified_value() {
-                        if has_any {
-                            dest.write_char(' ')?;
-                        }
-                        has_any = true;
-                        value.to_css(dest)?;
-                    }
-                }
+                return Ok(());
             }
 
+            let mut writer = SequenceWriter::new(dest, " ");
+            macro_rules! write {
+                ($e: expr, $p: ident) => {
+                    if *$e != $p::get_initial_specified_value() {
+                        writer.item($e)?;
+                    }
+                };
+                ($v: ident) => {
+                    write!(self.$v, $v);
+                };
+            }
+
+            write!(font_variant_ligatures);
+            write!(font_variant_caps);
+            write!(font_variant_alternates);
+            write!(font_variant_numeric);
+            write!(font_variant_east_asian);
+            write!(font_variant_position);
+            if let Some(v) = self.font_variant_emoji {
+                write!(v, font_variant_emoji);
+            }
             Ok(())
         }
     }
@@ -3280,11 +2936,10 @@ pub mod font_synthesis {
         let mut small_caps = FontSynthesis::None;
         let mut position = FontSynthesis::None;
 
-        if input
+        if !input
             .try_parse(|input| input.expect_ident_matching("none"))
             .is_ok()
         {
-        } else {
             let mut has_custom_value = false;
             while !input.is_exhausted() {
                 try_match_ident_ignore_ascii_case! { input,
@@ -3333,44 +2988,26 @@ pub mod font_synthesis {
         where
             W: fmt::Write,
         {
-            let mut has_any = false;
+            let mut writer = SequenceWriter::new(dest, " ");
             if self.font_synthesis_weight == &FontSynthesis::Auto {
-                if has_any {
-                    dest.write_char(' ')?;
-                }
-                has_any = true;
-                dest.write_str("weight")?;
+                writer.raw_item("weight")?;
             }
             if self.font_synthesis_style != &FontSynthesisStyle::None {
-                if has_any {
-                    dest.write_char(' ')?;
-                }
-                has_any = true;
                 if self.font_synthesis_style == &FontSynthesisStyle::Auto {
-                    dest.write_str("style")?;
+                    writer.raw_item("style")?;
                 } else {
-                    dest.write_str("oblique-only")?;
+                    writer.raw_item("oblique-only")?;
                 }
             }
             if self.font_synthesis_small_caps == &FontSynthesis::Auto {
-                if has_any {
-                    dest.write_char(' ')?;
-                }
-                has_any = true;
-                dest.write_str("small-caps")?;
+                writer.raw_item("small-caps")?;
             }
             if self.font_synthesis_position == &FontSynthesis::Auto {
-                if has_any {
-                    dest.write_char(' ')?;
-                }
-                has_any = true;
-                dest.write_str("position")?;
+                writer.raw_item("position")?;
             }
-
-            if !has_any {
-                dest.write_str("none")?;
+            if !writer.has_written() {
+                writer.raw_item("none")?;
             }
-
             Ok(())
         }
     }
@@ -3403,34 +3040,21 @@ pub mod text_emphasis {
     ) -> Result<Longhands, ParseError<'i>> {
         let mut color = None;
         let mut style = None;
-
+        let mut parsed = 0;
         loop {
-            if color.is_none() {
-                if let Ok(value) =
-                    input.try_parse(|input| text_emphasis_color::parse(context, input))
-                {
-                    color = Some(value);
-                    continue;
-                }
-            }
-            if style.is_none() {
-                if let Ok(value) =
-                    input.try_parse(|input| text_emphasis_style::parse(context, input))
-                {
-                    style = Some(value);
-                    continue;
-                }
-            }
+            parsed += 1;
+            try_parse_one!(context, input, color, text_emphasis_color::parse);
+            try_parse_one!(context, input, style, text_emphasis_style::parse);
+            parsed -= 1;
             break;
         }
-        if color.is_some() || style.is_some() {
-            Ok(expanded! {
-                text_emphasis_color: unwrap_or_initial!(text_emphasis_color, color),
-                text_emphasis_style: unwrap_or_initial!(text_emphasis_style, style),
-            })
-        } else {
-            Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        if parsed == 0 {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
+        Ok(expanded! {
+            text_emphasis_color: unwrap_or_initial!(text_emphasis_color, color),
+            text_emphasis_style: unwrap_or_initial!(text_emphasis_style, style),
+        })
     }
 }
 
@@ -3447,31 +3071,23 @@ pub mod text_decoration {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
-        let (mut line, mut style, mut color, mut any) = (None, None, None, false);
+        let mut line = None;
+        let mut style = None;
+        let mut color = None;
         let mut thickness = None;
 
+        let mut parsed = 0;
         loop {
-            macro_rules! parse_component {
-                ($value:ident, $module:ident) => {
-                    if $value.is_none() {
-                        if let Ok(value) = input.try_parse(|input| $module::parse(context, input)) {
-                            $value = Some(value);
-                            any = true;
-                            continue;
-                        }
-                    }
-                };
-            }
-
-            parse_component!(line, text_decoration_line);
-            parse_component!(style, text_decoration_style);
-            parse_component!(color, text_decoration_color);
-            parse_component!(thickness, text_decoration_thickness);
-
+            parsed += 1;
+            try_parse_one!(context, input, line, text_decoration_line::parse);
+            try_parse_one!(context, input, style, text_decoration_style::parse);
+            try_parse_one!(context, input, color, text_decoration_color::parse);
+            try_parse_one!(context, input, thickness, text_decoration_thickness::parse);
+            parsed -= 1;
             break;
         }
 
-        if !any {
+        if parsed == 0 {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
 
@@ -3492,44 +3108,25 @@ pub mod text_decoration {
             use crate::values::specified::Color;
             use crate::values::specified::TextDecorationLine;
 
-            let (is_solid_style, is_current_color) = (
-                *self.text_decoration_style == text_decoration_style::SpecifiedValue::Solid,
-                *self.text_decoration_color == Color::CurrentColor,
-            );
-
+            let is_solid_style =
+                *self.text_decoration_style == text_decoration_style::SpecifiedValue::Solid;
+            let is_current_color = *self.text_decoration_color == Color::CurrentColor;
             let is_auto_thickness = self.text_decoration_thickness.is_auto();
-
-            let mut has_value = false;
             let is_none = *self.text_decoration_line == TextDecorationLine::none();
+
+            let mut writer = SequenceWriter::new(dest, " ");
             if (is_solid_style && is_current_color && is_auto_thickness) || !is_none {
-                self.text_decoration_line.to_css(dest)?;
-                has_value = true;
+                writer.item(self.text_decoration_line)?;
             }
-
             if !is_auto_thickness {
-                if has_value {
-                    dest.write_char(' ')?;
-                }
-                self.text_decoration_thickness.to_css(dest)?;
-                has_value = true;
+                writer.item(self.text_decoration_thickness)?;
             }
-
             if !is_solid_style {
-                if has_value {
-                    dest.write_char(' ')?;
-                }
-                self.text_decoration_style.to_css(dest)?;
-                has_value = true;
+                writer.item(self.text_decoration_style)?;
             }
-
             if !is_current_color {
-                if has_value {
-                    dest.write_char(' ')?;
-                }
-                self.text_decoration_color.to_css(dest)?;
-                has_value = true;
+                writer.item(self.text_decoration_color)?;
             }
-
             Ok(())
         }
     }
@@ -3539,15 +3136,11 @@ pub mod animation {
     pub use crate::properties::shorthands_generated::animation::*;
 
     use super::*;
-    use crate::properties::longhands::animation_delay;
-    use crate::properties::longhands::animation_direction;
-    use crate::properties::longhands::animation_duration;
-    use crate::properties::longhands::animation_fill_mode;
-    use crate::properties::longhands::animation_iteration_count;
-    use crate::properties::longhands::animation_name;
-    use crate::properties::longhands::animation_play_state;
-    use crate::properties::longhands::animation_timeline;
-    use crate::properties::longhands::animation_timing_function;
+    use crate::properties::longhands::{
+        animation_delay, animation_direction, animation_duration, animation_fill_mode,
+        animation_iteration_count, animation_name, animation_play_state, animation_timeline,
+        animation_timing_function,
+    };
 
     pub fn parse_value<'i, 't>(
         context: &ParserContext,
@@ -3580,47 +3173,72 @@ pub mod animation {
             let mut parsed = 0;
             loop {
                 parsed += 1;
-                try_parse_one!(context, input, duration, animation_duration);
-                try_parse_one!(context, input, timing_function, animation_timing_function);
-                try_parse_one!(context, input, delay, animation_delay);
-                try_parse_one!(context, input, iteration_count, animation_iteration_count);
-                try_parse_one!(context, input, direction, animation_direction);
-                try_parse_one!(context, input, fill_mode, animation_fill_mode);
-                try_parse_one!(context, input, play_state, animation_play_state);
-                try_parse_one!(context, input, name, animation_name);
-
+                try_parse_one!(
+                    context,
+                    input,
+                    duration,
+                    animation_duration::single_value::parse
+                );
+                try_parse_one!(
+                    context,
+                    input,
+                    timing_function,
+                    animation_timing_function::single_value::parse
+                );
+                try_parse_one!(context, input, delay, animation_delay::single_value::parse);
+                try_parse_one!(
+                    context,
+                    input,
+                    iteration_count,
+                    animation_iteration_count::single_value::parse
+                );
+                try_parse_one!(
+                    context,
+                    input,
+                    direction,
+                    animation_direction::single_value::parse
+                );
+                try_parse_one!(
+                    context,
+                    input,
+                    fill_mode,
+                    animation_fill_mode::single_value::parse
+                );
+                try_parse_one!(
+                    context,
+                    input,
+                    play_state,
+                    animation_play_state::single_value::parse
+                );
+                try_parse_one!(context, input, name, animation_name::single_value::parse);
                 parsed -= 1;
                 break;
             }
 
             if parsed == 0 {
-                Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
-            } else {
-                Ok(SingleAnimation {
-                    animation_name: name
-                        .unwrap_or_else(animation_name::single_value::get_initial_specified_value),
-                    animation_duration: duration.unwrap_or_else(
-                        animation_duration::single_value::get_initial_specified_value,
-                    ),
-                    animation_timing_function: timing_function.unwrap_or_else(
-                        animation_timing_function::single_value::get_initial_specified_value,
-                    ),
-                    animation_delay: delay
-                        .unwrap_or_else(animation_delay::single_value::get_initial_specified_value),
-                    animation_iteration_count: iteration_count.unwrap_or_else(
-                        animation_iteration_count::single_value::get_initial_specified_value,
-                    ),
-                    animation_direction: direction.unwrap_or_else(
-                        animation_direction::single_value::get_initial_specified_value,
-                    ),
-                    animation_fill_mode: fill_mode.unwrap_or_else(
-                        animation_fill_mode::single_value::get_initial_specified_value,
-                    ),
-                    animation_play_state: play_state.unwrap_or_else(
-                        animation_play_state::single_value::get_initial_specified_value,
-                    ),
-                })
+                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
             }
+            Ok(SingleAnimation {
+                animation_name: name
+                    .unwrap_or_else(animation_name::single_value::get_initial_specified_value),
+                animation_duration: duration
+                    .unwrap_or_else(animation_duration::single_value::get_initial_specified_value),
+                animation_timing_function: timing_function.unwrap_or_else(
+                    animation_timing_function::single_value::get_initial_specified_value,
+                ),
+                animation_delay: delay
+                    .unwrap_or_else(animation_delay::single_value::get_initial_specified_value),
+                animation_iteration_count: iteration_count.unwrap_or_else(
+                    animation_iteration_count::single_value::get_initial_specified_value,
+                ),
+                animation_direction: direction
+                    .unwrap_or_else(animation_direction::single_value::get_initial_specified_value),
+                animation_fill_mode: fill_mode
+                    .unwrap_or_else(animation_fill_mode::single_value::get_initial_specified_value),
+                animation_play_state: play_state.unwrap_or_else(
+                    animation_play_state::single_value::get_initial_specified_value,
+                ),
+            })
         }
 
         let mut names = vec![];
@@ -3833,19 +3451,14 @@ pub mod mask {
             let mut origin = None;
             let mut clip = None;
             let mut composite = None;
+            let mut parsed = 0;
             loop {
-                if image.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|input| mask_image::single_value::parse(context, input))
-                    {
-                        image = Some(value);
-                        continue;
-                    }
-                }
+                parsed += 1;
+
+                try_parse_one!(context, input, image, mask_image::single_value::parse);
                 if position.is_none() {
                     if let Ok(value) = input.try_parse(|input| Position::parse(context, input)) {
                         position = Some(value);
-
                         size = input
                             .try_parse(|input| {
                                 input.expect_delim('/')?;
@@ -3856,46 +3469,18 @@ pub mod mask {
                         continue;
                     }
                 }
-                if repeat.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|input| mask_repeat::single_value::parse(context, input))
-                    {
-                        repeat = Some(value);
-                        continue;
-                    }
-                }
-                if origin.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|input| mask_origin::single_value::parse(context, input))
-                    {
-                        origin = Some(value);
-                        continue;
-                    }
-                }
-                if clip.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|input| mask_clip::single_value::parse(context, input))
-                    {
-                        clip = Some(value);
-                        continue;
-                    }
-                }
-                if composite.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|input| mask_composite::single_value::parse(context, input))
-                    {
-                        composite = Some(value);
-                        continue;
-                    }
-                }
-                if mode.is_none() {
-                    if let Ok(value) =
-                        input.try_parse(|input| mask_mode::single_value::parse(context, input))
-                    {
-                        mode = Some(value);
-                        continue;
-                    }
-                }
+                try_parse_one!(context, input, repeat, mask_repeat::single_value::parse);
+                try_parse_one!(context, input, origin, mask_origin::single_value::parse);
+                try_parse_one!(context, input, clip, mask_clip::single_value::parse);
+                try_parse_one!(
+                    context,
+                    input,
+                    composite,
+                    mask_composite::single_value::parse
+                );
+                try_parse_one!(context, input, mode, mask_mode::single_value::parse);
+
+                parsed -= 1;
                 break;
             }
             if clip.is_none() {
@@ -3903,63 +3488,52 @@ pub mod mask {
                     clip = Some(mask_clip::single_value::SpecifiedValue::from(origin));
                 }
             }
-            let mut any = false;
-            any = any || image.is_some();
-            any = any || mode.is_some();
-            any = any || position.is_some();
-            any = any || size.is_some();
-            any = any || repeat.is_some();
-            any = any || origin.is_some();
-            any = any || clip.is_some();
-            any = any || composite.is_some();
-            if any {
-                if let Some(position) = position {
-                    mask_position_x.push(position.horizontal);
-                    mask_position_y.push(position.vertical);
-                } else {
-                    mask_position_x.push(PositionComponent::zero());
-                    mask_position_y.push(PositionComponent::zero());
-                }
-                if let Some(m_image) = image {
-                    mask_image.push(m_image);
-                } else {
-                    mask_image.push(mask_image::single_value::get_initial_specified_value());
-                }
-                if let Some(m_mode) = mode {
-                    mask_mode.push(m_mode);
-                } else {
-                    mask_mode.push(mask_mode::single_value::get_initial_specified_value());
-                }
-                if let Some(m_size) = size {
-                    mask_size.push(m_size);
-                } else {
-                    mask_size.push(mask_size::single_value::get_initial_specified_value());
-                }
-                if let Some(m_repeat) = repeat {
-                    mask_repeat.push(m_repeat);
-                } else {
-                    mask_repeat.push(mask_repeat::single_value::get_initial_specified_value());
-                }
-                if let Some(m_origin) = origin {
-                    mask_origin.push(m_origin);
-                } else {
-                    mask_origin.push(mask_origin::single_value::get_initial_specified_value());
-                }
-                if let Some(m_clip) = clip {
-                    mask_clip.push(m_clip);
-                } else {
-                    mask_clip.push(mask_clip::single_value::get_initial_specified_value());
-                }
-                if let Some(m_composite) = composite {
-                    mask_composite.push(m_composite);
-                } else {
-                    mask_composite
-                        .push(mask_composite::single_value::get_initial_specified_value());
-                }
-                Ok(())
-            } else {
-                Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+            if parsed == 0 {
+                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
             }
+            if let Some(position) = position {
+                mask_position_x.push(position.horizontal);
+                mask_position_y.push(position.vertical);
+            } else {
+                mask_position_x.push(PositionComponent::zero());
+                mask_position_y.push(PositionComponent::zero());
+            }
+            if let Some(m_image) = image {
+                mask_image.push(m_image);
+            } else {
+                mask_image.push(mask_image::single_value::get_initial_specified_value());
+            }
+            if let Some(m_mode) = mode {
+                mask_mode.push(m_mode);
+            } else {
+                mask_mode.push(mask_mode::single_value::get_initial_specified_value());
+            }
+            if let Some(m_size) = size {
+                mask_size.push(m_size);
+            } else {
+                mask_size.push(mask_size::single_value::get_initial_specified_value());
+            }
+            if let Some(m_repeat) = repeat {
+                mask_repeat.push(m_repeat);
+            } else {
+                mask_repeat.push(mask_repeat::single_value::get_initial_specified_value());
+            }
+            if let Some(m_origin) = origin {
+                mask_origin.push(m_origin);
+            } else {
+                mask_origin.push(mask_origin::single_value::get_initial_specified_value());
+            }
+            if let Some(m_clip) = clip {
+                mask_clip.push(m_clip);
+            } else {
+                mask_clip.push(mask_clip::single_value::get_initial_specified_value());
+            }
+            if let Some(m_composite) = composite {
+                mask_composite.push(m_composite);
+            } else {
+                mask_composite.push(mask_composite::single_value::get_initial_specified_value());
+            }
+            Ok(())
         })?;
 
         Ok(expanded! {
@@ -4054,17 +3628,19 @@ pub mod mask {
                 if has_image {
                     writer.item(image)?;
                 }
-
                 if has_position || has_size {
-                    writer.item(&Position {
-                        horizontal: position_x.clone(),
-                        vertical: position_y.clone(),
+                    writer.write_item(|dest| {
+                        Position {
+                            horizontal: position_x.clone(),
+                            vertical: position_y.clone(),
+                        }
+                        .to_css(dest)?;
+                        if has_size {
+                            dest.write_str(" / ")?;
+                            size.to_css(dest)?;
+                        }
+                        Ok(())
                     })?;
-
-                    if has_size {
-                        writer.raw_item("/")?;
-                        writer.item(size)?;
-                    }
                 }
 
                 if has_repeat {

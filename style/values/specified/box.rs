@@ -708,6 +708,16 @@ pub enum BaselineSource {
     Last,
 }
 
+impl BaselineSource {
+    /// Parse baseline source, but without the auto keyword, for the shorthand.
+    pub fn parse_non_auto<'i>(input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+        Ok(try_match_ident_ignore_ascii_case! { input,
+            "first" => Self::First,
+            "last" => Self::Last,
+        })
+    }
+}
+
 /// https://drafts.csswg.org/css-scroll-snap-1/#snap-axis
 #[allow(missing_docs)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]

@@ -14,6 +14,7 @@ use crate::context::UpdateAnimationsTasks;
 use crate::data::ElementData;
 use crate::media_queries::Device;
 use crate::properties::{AnimationDeclarations, ComputedValues, PropertyDeclarationBlock};
+use crate::selector_map::PrecomputedHashSet;
 use crate::selector_parser::{AttrValue, Lang, PseudoElement, RestyleDamage, SelectorImpl};
 use crate::shared_lock::{Locked, SharedRwLock};
 use crate::stylesheets::scope_rule::ImplicitScopeRoot;
@@ -985,6 +986,46 @@ pub trait TElement:
 pub trait AttributeProvider {
     /// Return the value of the given custom attibute if it exists.
     fn get_attr(&self, attr: &LocalName) -> Option<String>;
+}
+
+/// A set of the attributes used to compute a style that uses `attr()`
+pub type AttributeReferences = Option<Box<PrecomputedHashSet<LocalName>>>;
+
+/// A data structure to keep track of the names queried from a provider.
+pub struct AttributeTracker<'a> {
+    /// The element that queries for attributes.
+    pub provider: &'a dyn AttributeProvider,
+    /// The set of attributes we have queried.
+    pub references: Box<PrecomputedHashSet<AtomIdent>>,
+}
+
+impl<'a> AttributeTracker<'a> {
+    /// Construct a new attribute tracker trivially.
+    pub fn new(provider: &'a dyn AttributeProvider) -> Self {
+        Self {
+            provider,
+            references: Default::default(),
+        }
+    }
+
+    /// Consstruct a new dummy attribute tracker
+    pub fn new_dummy() -> Self {
+        Self {
+            provider: &DummyAttributeProvider {},
+            references: Default::default(),
+        }
+    }
+
+    /// Extract the queried references and consume self
+    pub fn finalize(self) -> Box<PrecomputedHashSet<AtomIdent>> {
+        self.references
+    }
+
+    /// Query the value and save the name of the attribtue.
+    pub fn query(&mut self, name: &LocalName) -> Option<String> {
+        self.references.insert(name.clone());
+        self.provider.get_attr(name)
+    }
 }
 
 /// A dummy AttributeProvider that returns none to any attribute query.

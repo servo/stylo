@@ -10,7 +10,7 @@ use crate::computed_value_flags::ComputedValueFlags;
 use crate::custom_properties::{
     CustomPropertiesBuilder, DeferFontRelativeCustomPropertyResolution,
 };
-use crate::dom::{AttributeProvider, DummyAttributeProvider, TElement};
+use crate::dom::{AttributeProvider, AttributeTracker, DummyAttributeProvider, TElement};
 #[cfg(feature = "gecko")]
 use crate::font_metrics::FontMetricsOrientation;
 use crate::logical_geometry::WritingMode;
@@ -236,12 +236,12 @@ fn iter_declarations<'builder, 'decls: 'builder>(
     iter: impl Iterator<Item = (&'decls PropertyDeclaration, CascadePriority)>,
     declarations: &mut Declarations<'decls>,
     mut custom_builder: Option<&mut CustomPropertiesBuilder<'builder, 'decls>>,
-    attr_provider: &dyn AttributeProvider,
+    attribute_tracker: &mut AttributeTracker,
 ) {
     for (declaration, priority) in iter {
         if let PropertyDeclaration::Custom(ref declaration) = *declaration {
             if let Some(ref mut builder) = custom_builder {
-                builder.cascade(declaration, priority, attr_provider);
+                builder.cascade(declaration, priority, attribute_tracker);
             }
         } else {
             let id = declaration.id().as_longhand().unwrap();
@@ -313,6 +313,7 @@ where
         Some(ref attr_provider) => attr_provider,
         None => &DummyAttributeProvider {},
     };
+    let mut attribute_tracker = AttributeTracker::new(attr_provider);
     let properties_to_apply = match cascade_mode {
         CascadeMode::Visited { unvisited_context } => {
             context.builder.custom_properties = unvisited_context.builder.custom_properties.clone();
@@ -325,21 +326,26 @@ where
             // TODO(bug 1859385): If we match the same rules when visited and unvisited, we could
             // try to avoid gathering the declarations. That'd be:
             //      unvisited_context.builder.rules.as_ref() == Some(rules)
-            iter_declarations(iter, &mut declarations, None, attr_provider);
+            iter_declarations(iter, &mut declarations, None, &mut attribute_tracker);
 
             LonghandIdSet::visited_dependent()
         },
         CascadeMode::Unvisited { visited_rules } => {
             let deferred_custom_properties = {
                 let mut builder = CustomPropertiesBuilder::new(stylist, &mut context);
-                iter_declarations(iter, &mut declarations, Some(&mut builder), attr_provider);
+                iter_declarations(
+                    iter,
+                    &mut declarations,
+                    Some(&mut builder),
+                    &mut attribute_tracker,
+                );
                 // Detect cycles, remove properties participating in them, and resolve properties, except:
                 // * Registered custom properties that depend on font-relative properties (Resolved)
                 //   when prioritary properties are resolved), and
                 // * Any property that, in turn, depend on properties like above.
                 builder.build(
                     DeferFontRelativeCustomPropertyResolution::Yes,
-                    attr_provider,
+                    &mut attribute_tracker,
                 )
             };
 
@@ -349,7 +355,7 @@ where
                 &mut context,
                 &declarations,
                 &mut shorthand_cache,
-                attr_provider,
+                &mut attribute_tracker,
             );
 
             // Resolve the deferred custom properties.
@@ -358,7 +364,7 @@ where
                     deferred,
                     stylist,
                     &mut context,
-                    attr_provider,
+                    &mut attribute_tracker,
                 );
             }
 
@@ -392,8 +398,12 @@ where
         &declarations.longhand_declarations,
         &mut shorthand_cache,
         &properties_to_apply,
-        attr_provider,
+        &mut attribute_tracker,
     );
+
+    if !attribute_tracker.references.is_empty() {
+        context.builder.attribute_references = Some(attribute_tracker.finalize());
+    }
 
     cascade.finished_applying_properties(&mut context.builder);
 
@@ -674,7 +684,7 @@ impl<'b> Cascade<'b> {
         context: &mut computed::Context,
         shorthand_cache: &'cache mut ShorthandsWithPropertyReferencesCache,
         declaration: &'decl PropertyDeclaration,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) -> Cow<'decl, PropertyDeclaration>
     where
         'cache: 'decl,
@@ -717,7 +727,7 @@ impl<'b> Cascade<'b> {
             context.builder.stylist.unwrap(),
             context,
             shorthand_cache,
-            attr_provider,
+            attribute_tracker,
         )
     }
 
@@ -727,7 +737,7 @@ impl<'b> Cascade<'b> {
         decls: &Declarations,
         cache: &mut ShorthandsWithPropertyReferencesCache,
         id: PrioritaryPropertyId,
-        attr_provider: &dyn AttributeProvider,
+        attr_provider: &mut AttributeTracker,
     ) -> bool {
         let mut index = decls.prioritary_positions[id as usize].most_important;
         if index == DeclarationIndex::MAX {
@@ -775,7 +785,7 @@ impl<'b> Cascade<'b> {
         context: &mut computed::Context,
         decls: &Declarations,
         cache: &mut ShorthandsWithPropertyReferencesCache,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) {
         // Keeps apply_one_prioritary_property calls readable, considering the repititious
         // arguments.
@@ -786,7 +796,7 @@ impl<'b> Cascade<'b> {
                     decls,
                     cache,
                     PrioritaryPropertyId::$prop,
-                    attr_provider,
+                    attribute_tracker,
                 )
             };
         }
@@ -877,7 +887,7 @@ impl<'b> Cascade<'b> {
         longhand_declarations: &[Declaration],
         shorthand_cache: &mut ShorthandsWithPropertyReferencesCache,
         properties_to_apply: &LonghandIdSet,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) {
         debug_assert!(!properties_to_apply.contains_any(LonghandIdSet::prioritary_properties()));
         debug_assert!(self.declarations_to_apply_unless_overridden.is_empty());
@@ -902,7 +912,7 @@ impl<'b> Cascade<'b> {
                 declaration.decl,
                 declaration.priority,
                 shorthand_cache,
-                attr_provider,
+                attribute_tracker,
             );
         }
         if !self.declarations_to_apply_unless_overridden.is_empty() {
@@ -944,7 +954,7 @@ impl<'b> Cascade<'b> {
         declaration: &PropertyDeclaration,
         priority: CascadePriority,
         cache: &mut ShorthandsWithPropertyReferencesCache,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) {
         debug_assert!(!longhand_id.is_logical());
         let origin = priority.cascade_level().origin();
@@ -961,7 +971,7 @@ impl<'b> Cascade<'b> {
         }
 
         let mut declaration =
-            self.substitute_variables_if_needed(context, cache, declaration, attr_provider);
+            self.substitute_variables_if_needed(context, cache, declaration, attribute_tracker);
 
         // When document colors are disabled, do special handling of
         // properties that are marked as ignored in that mode.

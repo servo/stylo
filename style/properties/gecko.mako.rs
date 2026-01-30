@@ -34,6 +34,7 @@ use std::{ops, ptr};
 use crate::values;
 use crate::values::computed::{Time, Zoom};
 use crate::values::computed::font::FontSize;
+use crate::dom::AttributeReferences;
 
 
 pub mod style_structs {
@@ -60,6 +61,7 @@ impl ComputedValues {
     pub fn new(
         pseudo: Option<&PseudoElement>,
         custom_properties: ComputedCustomProperties,
+        attributes_referenced: AttributeReferences,
         writing_mode: WritingMode,
         effective_zoom: Zoom,
         flags: ComputedValueFlags,
@@ -71,6 +73,7 @@ impl ComputedValues {
     ) -> Arc<Self> {
         ComputedValuesInner::new(
             custom_properties,
+            attributes_referenced,
             writing_mode,
             effective_zoom,
             flags,
@@ -85,6 +88,7 @@ impl ComputedValues {
     pub fn default_values(doc: &structs::Document) -> Arc<Self> {
         ComputedValuesInner::new(
             ComputedCustomProperties::default(),
+            AttributeReferences::default(),
             WritingMode::empty(), // FIXME(bz): This seems dubious
             Zoom::ONE,
             ComputedValueFlags::empty(),
@@ -167,6 +171,7 @@ impl Drop for ComputedValuesInner {
 impl ComputedValuesInner {
     pub fn new(
         custom_properties: ComputedCustomProperties,
+        attribute_references: AttributeReferences,
         writing_mode: WritingMode,
         effective_zoom: Zoom,
         flags: ComputedValueFlags,
@@ -178,6 +183,7 @@ impl ComputedValuesInner {
     ) -> Self {
         Self {
             custom_properties,
+            attribute_references,
             writing_mode,
             rules,
             visited_style: visited_style.map_or(ptr::null(), |p| Arc::into_raw(p)) as *const _,

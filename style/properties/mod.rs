@@ -38,7 +38,7 @@ pub mod generated {
 
 use crate::custom_properties::{self, ComputedCustomProperties};
 use crate::derives::*;
-use crate::dom::AttributeProvider;
+use crate::dom::AttributeTracker;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{CSSPropertyId, NonCustomCSSPropertyId, RefPtr};
 use crate::logical_geometry::WritingMode;
@@ -1449,7 +1449,7 @@ impl UnparsedValue {
         stylist: &Stylist,
         computed_context: &computed::Context,
         shorthand_cache: &'cache mut ShorthandsWithPropertyReferencesCache,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) -> Cow<'cache, PropertyDeclaration> {
         let invalid_at_computed_value_time = || {
             let keyword = if longhand_id.inherited() {
@@ -1484,7 +1484,7 @@ impl UnparsedValue {
             custom_properties,
             stylist,
             computed_context,
-            attr_provider,
+            attribute_tracker,
         ) {
             Ok(css) => css,
             Err(..) => return invalid_at_computed_value_time(),

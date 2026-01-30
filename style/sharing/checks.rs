@@ -140,6 +140,29 @@ where
     for_element == for_candidate
 }
 
+/// Whether the given element and a candidate have the same values for the the
+/// attributes used in an `attr()` function.
+#[inline]
+pub fn have_same_referenced_attrs<E>(
+    target: &StyleSharingTarget<E>,
+    candidate: &StyleSharingCandidate<E>,
+) -> bool
+where
+    E: TElement,
+{
+    // The candidate must be styled in order to be in the cache.
+    let borrowed_data = candidate.element.borrow_data().unwrap();
+    let attrs_used = borrowed_data.styles.primary().attribute_references.as_ref();
+
+    let Some(attrs_used) = attrs_used else {
+        return true;
+    };
+
+    attrs_used
+        .iter()
+        .all(|name| target.get_attr(name) == candidate.get_attr(name))
+}
+
 /// Whether a given element and a candidate share a set of scope activations
 /// for revalidation.
 #[inline]

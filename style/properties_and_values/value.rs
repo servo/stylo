@@ -12,8 +12,8 @@ use super::{
         data_type::DataType, Component as SyntaxComponent, ComponentName, Descriptor, Multiplier,
     },
 };
-use crate::custom_properties::ComputedValue as ComputedPropertyValue;
 use crate::derives::*;
+use crate::parser::{Parse, ParserContext};
 use crate::properties;
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
 use crate::values::{
@@ -21,10 +21,7 @@ use crate::values::{
     computed::{self, ToComputedValue},
     specified, CustomIdent,
 };
-use crate::{
-    dom::AttributeProvider,
-    parser::{Parse, ParserContext},
-};
+use crate::{custom_properties::ComputedValue as ComputedPropertyValue, dom::AttributeTracker};
 use cssparser::{BasicParseErrorKind, ParseErrorKind, Parser as CSSParser, TokenSerializationType};
 use selectors::matching::QuirksMode;
 use servo_arc::Arc;
@@ -370,7 +367,6 @@ impl ComputedValue {
             None
         }
     }
-
 }
 
 /// Whether the computed value parsing should allow computationaly dependent values like 3em or
@@ -625,7 +621,7 @@ impl CustomAnimatedValue {
         declaration: &properties::CustomDeclaration,
         context: &mut computed::Context,
         _initial: &properties::ComputedValues,
-        _attr_provider: &dyn AttributeProvider,
+        _attribute_tracker: &mut AttributeTracker,
     ) -> Option<Self> {
         let computed_value = match declaration.value {
             properties::CustomDeclarationValue::Unparsed(ref value) => {

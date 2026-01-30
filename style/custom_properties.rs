@@ -9,7 +9,7 @@
 use crate::applicable_declarations::CascadePriority;
 use crate::custom_properties_map::CustomPropertiesMap;
 use crate::derives::*;
-use crate::dom::AttributeProvider;
+use crate::dom::AttributeTracker;
 use crate::media_queries::Device;
 use crate::properties::{
     CSSWideKeyword, CustomDeclaration, CustomDeclarationValue, LonghandId, LonghandIdSet,
@@ -1080,7 +1080,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
         &mut self,
         declaration: &'a CustomDeclaration,
         priority: CascadePriority,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) {
         let CustomDeclaration {
             ref name,
@@ -1133,7 +1133,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                         map,
                         self.stylist,
                         self.computed_context,
-                        attr_provider,
+                        attribute_tracker,
                     );
                 }
                 self.may_have_cycles = true;
@@ -1387,7 +1387,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
     pub fn build(
         mut self,
         defer: DeferFontRelativeCustomPropertyResolution,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) -> Option<CustomPropertiesMap> {
         let mut deferred_custom_properties = None;
         if self.may_have_cycles {
@@ -1404,7 +1404,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                 &self.references_from_non_custom_properties,
                 self.stylist,
                 self.computed_context,
-                attr_provider,
+                attribute_tracker,
             );
             self.computed_context.builder.invalid_non_custom_properties =
                 invalid_non_custom_properties;
@@ -1447,7 +1447,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
         deferred: CustomPropertiesMap,
         stylist: &Stylist,
         computed_context: &mut computed::Context,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) {
         if deferred.is_empty() {
             return;
@@ -1466,7 +1466,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                 &mut custom_properties,
                 stylist,
                 computed_context,
-                attr_provider,
+                attribute_tracker,
             );
         }
         computed_context.builder.custom_properties = custom_properties;
@@ -1486,7 +1486,7 @@ fn substitute_all(
     references_from_non_custom_properties: &NonCustomReferenceMap<Vec<Name>>,
     stylist: &Stylist,
     computed_context: &computed::Context,
-    attr_provider: &dyn AttributeProvider,
+    attr_provider: &mut AttributeTracker,
 ) {
     // The cycle dependencies removal in this function is a variant
     // of Tarjan's algorithm. It is mostly based on the pseudo-code
@@ -1573,7 +1573,7 @@ fn substitute_all(
         var: VarType,
         non_custom_references: &NonCustomReferenceMap<Vec<Name>>,
         context: &mut Context<'a, 'b>,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) -> Option<usize> {
         // Some shortcut checks.
         let value = match var {
@@ -1616,7 +1616,7 @@ fn substitute_all(
                             &mut context.map,
                             context.stylist,
                             context.computed_context,
-                            attr_provider,
+                            attribute_tracker,
                         );
                     }
                     return None;
@@ -1659,17 +1659,17 @@ fn substitute_all(
 
         let mut self_ref = false;
         let mut lowlink = index;
-        let visit_link =
+        let mut visit_link =
             |var: VarType, context: &mut Context, lowlink: &mut usize, self_ref: &mut bool| {
-                let next_index = match traverse(var, non_custom_references, context, attr_provider)
-                {
-                    Some(index) => index,
-                    // There is nothing to do if the next variable has been
-                    // fully resolved at this point.
-                    None => {
-                        return;
-                    },
-                };
+                let next_index =
+                    match traverse(var, non_custom_references, context, attribute_tracker) {
+                        Some(index) => index,
+                        // There is nothing to do if the next variable has been
+                        // fully resolved at this point.
+                        None => {
+                            return;
+                        },
+                    };
                 let next_info = &context.var_info[next_index];
                 if next_index > index {
                     // The next variable has a larger index than us, so it
@@ -1839,7 +1839,7 @@ fn substitute_all(
                     &mut context.map,
                     context.stylist,
                     context.computed_context,
-                    attr_provider,
+                    attribute_tracker,
                 );
             }
         }
@@ -1916,7 +1916,7 @@ fn substitute_references_if_needed_and_apply(
     custom_properties: &mut ComputedCustomProperties,
     stylist: &Stylist,
     computed_context: &computed::Context,
-    attr_provider: &dyn AttributeProvider,
+    attribute_tracker: &mut AttributeTracker,
 ) {
     let registration = stylist.get_custom_property_registration(&name);
     if !value.has_references() && registration.syntax.is_universal() {
@@ -1933,7 +1933,7 @@ fn substitute_references_if_needed_and_apply(
         custom_properties,
         stylist,
         computed_context,
-        attr_provider,
+        attribute_tracker,
     ) {
         Ok(v) => v,
         Err(..) => {
@@ -2092,7 +2092,7 @@ fn do_substitute_chunk<'a>(
     stylist: &Stylist,
     computed_context: &computed::Context,
     references: &mut std::iter::Peekable<std::slice::Iter<SubstitutionFunctionReference>>,
-    attr_provider: &dyn AttributeProvider,
+    attribute_tracker: &mut AttributeTracker,
 ) -> Result<Substitution<'a>, ()> {
     if start == end {
         // Empty string. Easy.
@@ -2131,7 +2131,7 @@ fn do_substitute_chunk<'a>(
             stylist,
             computed_context,
             references,
-            attr_provider,
+            attribute_tracker,
         )?;
 
         // Optimize the property: var(--...) case to avoid allocating at all.
@@ -2168,7 +2168,7 @@ fn substitute_one_reference<'a>(
     stylist: &Stylist,
     computed_context: &computed::Context,
     references: &mut std::iter::Peekable<std::slice::Iter<SubstitutionFunctionReference>>,
-    attr_provider: &dyn AttributeProvider,
+    attribute_tracker: &mut AttributeTracker,
 ) -> Result<Substitution<'a>, ()> {
     let simple_subst = |s: &str| {
         Some(Substitution::new(
@@ -2197,7 +2197,7 @@ fn substitute_one_reference<'a>(
             let local_name = LocalName::cast(&reference.name);
             #[cfg(feature = "servo")]
             let local_name = LocalName::from(reference.name.as_ref());
-            attr_provider.get_attr(&local_name).map_or_else(
+            attribute_tracker.query(&local_name).map_or_else(
                 || {
                     // Special case when fallback and <attr-type> are omitted.
                     // See FAILURE: https://drafts.csswg.org/css-values-5/#attr-substitution
@@ -2271,7 +2271,7 @@ fn substitute_one_reference<'a>(
         stylist,
         computed_context,
         references,
-        attr_provider,
+        attribute_tracker,
     )
 }
 
@@ -2281,7 +2281,7 @@ fn substitute_internal<'a>(
     custom_properties: &'a ComputedCustomProperties,
     stylist: &Stylist,
     computed_context: &computed::Context,
-    attr_provider: &dyn AttributeProvider,
+    attribute_tracker: &mut AttributeTracker,
 ) -> Result<Substitution<'a>, ()> {
     let mut refs = variable_value.references.refs.iter().peekable();
     do_substitute_chunk(
@@ -2295,7 +2295,7 @@ fn substitute_internal<'a>(
         stylist,
         computed_context,
         &mut refs,
-        attr_provider,
+        attribute_tracker,
     )
 }
 
@@ -2305,7 +2305,7 @@ pub fn substitute<'a>(
     custom_properties: &'a ComputedCustomProperties,
     stylist: &Stylist,
     computed_context: &computed::Context,
-    attr_provider: &dyn AttributeProvider,
+    attribute_tracker: &mut AttributeTracker,
 ) -> Result<Cow<'a, str>, ()> {
     debug_assert!(variable_value.has_references());
     let v = substitute_internal(
@@ -2313,7 +2313,7 @@ pub fn substitute<'a>(
         custom_properties,
         stylist,
         computed_context,
-        attr_provider,
+        attribute_tracker,
     )?;
     Ok(v.css)
 }

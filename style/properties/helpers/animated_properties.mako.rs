@@ -28,7 +28,7 @@ use rustc_hash::FxHashMap;
 use super::ComputedValues;
 use crate::derives::*;
 use crate::properties::OwnedPropertyDeclarationId;
-use crate::dom::AttributeProvider;
+use crate::dom::AttributeTracker;
 use crate::values::animated::{Animate, Procedure, ToAnimatedValue, ToAnimatedZero};
 use crate::values::animated::effects::AnimatedFilter;
 #[cfg(feature = "gecko")] use crate::values::computed::TransitionProperty;
@@ -257,7 +257,7 @@ impl AnimationValue {
         context: &mut Context,
         style: &ComputedValues,
         initial: &ComputedValues,
-        attr_provider: &dyn AttributeProvider,
+        attribute_tracker: &mut AttributeTracker,
     ) -> Option<Self> {
         use super::PropertyDeclarationVariantRepr;
 
@@ -380,7 +380,7 @@ impl AnimationValue {
                         context.builder.stylist.unwrap(),
                         context,
                         &mut cache,
-                        attr_provider,
+                        attribute_tracker,
                     )
                 };
                 return AnimationValue::from_declaration(
@@ -388,7 +388,7 @@ impl AnimationValue {
                     context,
                     style,
                     initial,
-                    attr_provider,
+                    attribute_tracker,
                 )
             },
             PropertyDeclaration::Custom(ref declaration) => {
@@ -396,7 +396,7 @@ impl AnimationValue {
                     declaration,
                     context,
                     initial,
-                    attr_provider
+                    attribute_tracker
                 )?)
             },
             _ => return None // non animatable properties will get included because of shorthands. ignore.

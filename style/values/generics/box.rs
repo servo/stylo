@@ -40,9 +40,8 @@ pub enum BaselineShiftKeyword {
     Super,
     /// Align the line-over edge of the aligned subtree with the line-over edge of the line box.
     Top,
-    // Bug 2010715 - Uncomment to support baseline-shift: center
-    // /// Align the center of the aligned subtree with the center of the line box.
-    // Center,
+    /// Align the center of the aligned subtree with the center of the line box.
+    Center,
     /// Align the line-under edge of the aligned subtree with the line-under edge of the line box.
     Bottom,
 }

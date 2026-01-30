@@ -3683,13 +3683,6 @@ values = "normal small-caps"
 extra_gecko_values = "all-small-caps petite-caps all-petite-caps unicase titling-caps"
 gecko_constant_prefix = "NS_FONT_VARIANT_CAPS"
 
-[font-variant-caps.keyword.custom_consts]
-small-caps = "SMALLCAPS"
-all-small-caps = "ALLSMALL"
-petite-caps = "PETITECAPS"
-all-petite-caps = "ALLPETITE"
-titling-caps = "TITLING"
-
 [font-kerning]
 struct = "font"
 engines = "gecko"
@@ -3966,10 +3959,6 @@ affects = "layout"
 extra_prefixes = "moz:layout.css.prefixes.box-sizing webkit"
 servo_restyle_damage = "rebuild_box"
 keyword = { values = "content-box border-box", gecko_enum_prefix = "StyleBoxSizing" }
-
-[box-sizing.keyword.custom_consts]
-content-box = "Content"
-border-box = "Border"
 
 [object-fit]
 struct = "position"

@@ -173,7 +173,6 @@ class Keyword(object):
         values,
         gecko_constant_prefix=None,
         gecko_enum_prefix=None,
-        custom_consts=None,
         extra_gecko_values=None,
         extra_servo_values=None,
         gecko_aliases=None,
@@ -197,7 +196,6 @@ class Keyword(object):
         self.extra_servo_values = (extra_servo_values or "").split()
         self.gecko_aliases = parse_aliases(gecko_aliases or "")
         self.servo_aliases = parse_aliases(servo_aliases or "")
-        self.consts_map = {} if custom_consts is None else custom_consts
         self.gecko_inexhaustive = gecko_inexhaustive or (gecko_enum_prefix is None)
 
     def values_for(self, engine):
@@ -218,13 +216,12 @@ class Keyword(object):
 
     def gecko_constant(self, value):
         moz_stripped = value.replace("-moz-", "")
-        mapped = self.consts_map.get(value)
         if self.gecko_enum_prefix:
             parts = moz_stripped.replace("-", "_").split("_")
-            parts = mapped if mapped else [p.title() for p in parts]
+            parts = [p.title() for p in parts]
             return self.gecko_enum_prefix + "::" + "".join(parts)
         else:
-            suffix = mapped if mapped else moz_stripped.replace("-", "_")
+            suffix = moz_stripped.replace("-", "_")
             return self.gecko_constant_prefix + "_" + suffix.upper()
 
     def needs_cast(self):

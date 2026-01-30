@@ -16,20 +16,6 @@ LOGICAL_CORNERS = ["start-start", "start-end", "end-start", "end-end"]
 LOGICAL_SIZES = ["block-size", "inline-size"]
 LOGICAL_AXES = ["block", "inline"]
 
-# bool is True when logical
-ALL_SIDES = [(side, False) for side in PHYSICAL_SIDES] + [
-    (side, True) for side in LOGICAL_SIDES
-]
-ALL_SIZES = [(size, False) for size in PHYSICAL_SIZES] + [
-    (size, True) for size in LOGICAL_SIZES
-]
-ALL_CORNERS = [(corner, False) for corner in PHYSICAL_CORNERS] + [
-    (corner, True) for corner in LOGICAL_CORNERS
-]
-ALL_AXES = [(axis, False) for axis in PHYSICAL_AXES] + [
-    (axis, True) for axis in LOGICAL_AXES
-]
-
 SYSTEM_FONT_LONGHANDS = """font_family font_size font_style
                            font_stretch font_weight""".split()
 
@@ -127,14 +113,6 @@ def rule_values_from_arg(that):
     for rule in that.split():
         mask |= RULE_VALUES[rule]
     return mask
-
-
-def maybe_moz_logical_alias(engine, side, prop):
-    if engine == "gecko" and side[1]:
-        axis, dir = side[0].split("-")
-        if axis == "inline":
-            return prop % dir
-    return None
 
 
 def to_rust_ident(name):
@@ -267,15 +245,6 @@ class Keyword(object):
                 + "_"
                 + self.gecko_constant(value).upper().replace("::", "_")
             )
-
-
-def arg_to_bool(arg):
-    if isinstance(arg, bool):
-        return arg
-    assert arg in ["True", "False"], "Unexpected value for boolean arguement: " + repr(
-        arg
-    )
-    return arg == "True"
 
 
 def parse_property_aliases(alias_list):
@@ -426,12 +395,12 @@ class Longhand(Property):
         )
         self.gecko_ffi_name = gecko_ffi_name or "m" + self.camel_case
         self.cast_type = cast_type
-        self.logical = arg_to_bool(logical)
+        self.logical = logical
         self.logical_group = logical_group
         if self.logical:
             assert logical_group, "Property " + name + " must have a logical group"
 
-        self.boxed = arg_to_bool(boxed)
+        self.boxed = boxed
         self.allow_quirks = allow_quirks
         self.ignored_when_colors_disabled = ignored_when_colors_disabled
         self.vector = Vector(**vector) if vector is not None else None

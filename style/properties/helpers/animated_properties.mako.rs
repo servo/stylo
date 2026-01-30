@@ -18,6 +18,7 @@ use crate::properties::{
     PropertyDeclaration, PropertyDeclarationId,
 };
 #[cfg(feature = "gecko")] use crate::properties::{
+    gecko,
     longhands::content_visibility::computed_value::T as ContentVisibility,
     NonCustomPropertyId,
 };
@@ -283,7 +284,7 @@ impl AnimationValue {
                 context.for_non_inherited_property = ${"false" if inherit else "true"};
                 % if system:
                 if let Some(sf) = value.get_system() {
-                    longhands::system_font::resolve_system_font(sf, context)
+                    gecko::system_font::resolve_system_font(sf, context)
                 }
                 % endif
                 % if boxed:

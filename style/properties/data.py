@@ -172,6 +172,22 @@ def parse_aliases(value):
     return aliases
 
 
+class Vector(object):
+    def __init__(
+        self,
+        need_index=False,
+        none_value=None,
+        separator='Comma',
+        animation_type=None,
+        simple_bindings=False,
+    ):
+        self.need_index = need_index
+        self.none_value = none_value
+        self.separator = separator
+        self.animation_type = animation_type
+        self.simple_bindings = simple_bindings
+
+
 class Keyword(object):
     def __init__(
         self,
@@ -184,8 +200,8 @@ class Keyword(object):
         extra_servo_values=None,
         gecko_aliases=None,
         servo_aliases=None,
-        gecko_strip_moz_prefix=None,
         gecko_inexhaustive=None,
+        gecko_needs_conversion=False,
     ):
         self.name = name
         self.values = values.split()
@@ -198,14 +214,12 @@ class Keyword(object):
             gecko_constant_prefix or "NS_STYLE_" + self.name.upper().replace("-", "_")
         )
         self.gecko_enum_prefix = gecko_enum_prefix
+        self.gecko_needs_conversion = gecko_needs_conversion
         self.extra_gecko_values = (extra_gecko_values or "").split()
         self.extra_servo_values = (extra_servo_values or "").split()
         self.gecko_aliases = parse_aliases(gecko_aliases or "")
         self.servo_aliases = parse_aliases(servo_aliases or "")
         self.consts_map = {} if custom_consts is None else custom_consts
-        self.gecko_strip_moz_prefix = (
-            True if gecko_strip_moz_prefix is None else gecko_strip_moz_prefix
-        )
         self.gecko_inexhaustive = gecko_inexhaustive or (gecko_enum_prefix is None)
 
     def values_for(self, engine):
@@ -225,11 +239,7 @@ class Keyword(object):
             raise Exception("Bad engine: " + engine)
 
     def gecko_constant(self, value):
-        moz_stripped = (
-            value.replace("-moz-", "")
-            if self.gecko_strip_moz_prefix
-            else value.replace("-moz-", "moz-")
-        )
+        moz_stripped = value.replace("-moz-", "")
         mapped = self.consts_map.get(value)
         if self.gecko_enum_prefix:
             parts = moz_stripped.replace("-", "_").split("_")
@@ -353,14 +363,16 @@ class Longhand(Property):
         self,
         style_struct,
         name,
+        initial_value=None,
+        initial_specified_value=None,
+        parse_method='parse',
         spec=None,
-        animation_type=None,
+        animation_type="normal",
         keyword=None,
         predefined_type=None,
         servo_pref=None,
         gecko_pref=None,
         enabled_in="content",
-        need_index=False,
         gecko_ffi_name=None,
         has_effect_on_gecko_scrollbars=None,
         rule_types_allowed=DEFAULT_RULES,
@@ -371,10 +383,9 @@ class Longhand(Property):
         extra_prefixes=None,
         boxed=False,
         flags=None,
-        allow_quirks="No",
+        allow_quirks=False,
         ignored_when_colors_disabled=False,
-        simple_vector_bindings=False,
-        vector=False,
+        vector=None,
         servo_restyle_damage="rebuild_box",
         affects=None,
     ):
@@ -394,6 +405,9 @@ class Longhand(Property):
         self.affects = affects
         self.flags += self.affects_flags()
 
+        self.parse_method = parse_method
+        self.initial_value = initial_value
+        self.initial_specified_value = initial_specified_value
         self.keyword = keyword
         self.predefined_type = predefined_type
         self.style_struct = style_struct
@@ -410,7 +424,6 @@ class Longhand(Property):
             + "specified, and must have a value of True or False, iff a "
             + "property is inherited and is behind a Gecko pref or internal"
         )
-        self.need_index = need_index
         self.gecko_ffi_name = gecko_ffi_name or "m" + self.camel_case
         self.cast_type = cast_type
         self.logical = arg_to_bool(logical)
@@ -421,13 +434,8 @@ class Longhand(Property):
         self.boxed = arg_to_bool(boxed)
         self.allow_quirks = allow_quirks
         self.ignored_when_colors_disabled = ignored_when_colors_disabled
-        self.is_vector = vector
-        self.simple_vector_bindings = simple_vector_bindings
+        self.vector = Vector(**vector) if vector is not None else None
 
-        # This is done like this since just a plain bool argument seemed like
-        # really random.
-        if animation_type is None:
-            animation_type = "normal"
         assert animation_type in ["none", "normal", "discrete"]
         self.animation_type = animation_type
         self.animatable = animation_type != "none"
@@ -509,12 +517,12 @@ class Longhand(Property):
             raise Exception("Bad engine: " + engine)
 
     def base_type(self):
-        if self.predefined_type and not self.is_vector:
+        if self.predefined_type and not self.vector:
             return "crate::values::specified::{}".format(self.predefined_type)
         return "longhands::{}::SpecifiedValue".format(self.ident)
 
     def specified_type(self):
-        if self.predefined_type and not self.is_vector:
+        if self.predefined_type and not self.vector:
             ty = "crate::values::specified::{}".format(self.predefined_type)
         else:
             ty = "longhands::{}::SpecifiedValue".format(self.ident)
@@ -564,7 +572,7 @@ class Longhand(Property):
         return self.is_zoom_dependent()
 
     def specified_is_copy(self):
-        if self.is_vector or self.boxed:
+        if self.vector or self.boxed:
             return False
         if self.predefined_type:
             return self.predefined_type in {
@@ -844,6 +852,12 @@ class PropertiesData(object):
         ]
         self.current_style_struct = None
 
+    def style_struct_by_name_lower(self, name):
+        for s in self.style_structs:
+            if s.name_lower == name:
+                return s
+        raise TypeError(f"Unexpected struct name {name}")
+
     def active_style_structs(self):
         return [s for s in self.style_structs if s.longhands]
 
@@ -851,16 +865,16 @@ class PropertiesData(object):
         for prefix, pref in property.extra_prefixes:
             property.aliases.append(("-%s-%s" % (prefix, property.name), pref))
 
-    def declare_longhand(self, name, engines=None, **kwargs):
+    def declare_longhand(self, style_struct, name, engines=None, **kwargs):
         engines = engines.split()
         if self.engine not in engines:
             return
 
-        longhand = Longhand(self.current_style_struct, name, **kwargs)
+        longhand = Longhand(style_struct, name, **kwargs)
         self.add_prefixed_aliases(longhand)
         longhand.aliases = [Alias(xp[0], longhand, xp[1]) for xp in longhand.aliases]
         self.longhand_aliases += longhand.aliases
-        self.current_style_struct.longhands.append(longhand)
+        style_struct.longhands.append(longhand)
         self.longhands.append(longhand)
         self.longhands_by_name[name] = longhand
         if longhand.logical_group:

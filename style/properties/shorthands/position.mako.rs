@@ -891,7 +891,6 @@ ${helpers.four_sides_shorthand(
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-logical/#propdef-inset",
     rule_types_allowed=DEFAULT_RULES_AND_POSITION_TRY,
-    allow_quirks="No",
 )}
 
 ${helpers.two_properties_shorthand(

@@ -12,7 +12,7 @@ ${helpers.four_sides_shorthand(
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-box/#propdef-margin",
     rule_types_allowed=DEFAULT_RULES_AND_PAGE | POSITION_TRY_RULE,
-    allow_quirks="Yes",
+    allow_quirks=True
 )}
 
 ${helpers.two_properties_shorthand(

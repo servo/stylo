@@ -178,7 +178,7 @@ pub struct Context<'a> {
     ///
     /// See properties/longhands/font.mako.rs
     #[cfg(feature = "gecko")]
-    pub cached_system_font: Option<properties::longhands::system_font::ComputedSystemFont>,
+    pub cached_system_font: Option<properties::gecko::system_font::ComputedSystemFont>,
 
     /// A dummy option for servo so initializing a computed::Context isn't
     /// painful.

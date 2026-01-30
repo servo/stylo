@@ -81,10 +81,37 @@ macro_rules! expanded {
 /// A module with all the code for longhand properties.
 #[allow(missing_docs)]
 pub mod longhands {
-    % for style_struct in data.style_structs:
-    <% data.current_style_struct = style_struct %>
-    <%include file="/longhands/${style_struct.name_lower}.mako.rs" />
-    % endfor
+<%
+    from mako.exceptions import TemplateLookupException
+    import toml
+    import os
+
+    longhands_toml = toml.loads(open(os.path.join(os.path.dirname(self.filename), "longhands.toml")).read())
+    for name, args in longhands_toml.items():
+        style_struct = data.style_struct_by_name_lower(args["struct"])
+        del args['struct']
+
+        # Handle keyword properties
+        if 'keyword' in args:
+            keyword_dict = args.pop('keyword')
+            if 'values' not in keyword_dict:
+                raise TypeError(f"{name}: keyword should have 'values'")
+            values = keyword_dict.pop('values')
+            keyword = Keyword(name, values, **keyword_dict)
+            data.declare_longhand(style_struct, name, keyword=keyword, **args)
+        else:
+            # Handle predefined_type properties
+            if 'type' not in args:
+                raise TypeError(f"{name} should have a type")
+            args['predefined_type'] = args.pop('type')
+            if 'initial' not in args and not args.get('vector'):
+                raise TypeError(f"{name} should have an initial value (only vector properties should lack one)")
+            args['initial_value'] = args.pop('initial', None)
+            data.declare_longhand(style_struct, name, **args)
+
+    for longhand in data.longhands:
+        helpers.longhand(longhand)
+%>
 }
 
 
@@ -1528,7 +1555,7 @@ pub mod style_structs {
                         self.${longhand.ident}.clone()
                     }
                 % endif
-                % if longhand.need_index:
+                % if longhand.vector and longhand.vector.need_index:
                     /// If this longhand is indexed, get the number of elements.
                     #[allow(non_snake_case)]
                     pub fn ${longhand.ident}_count(&self) -> usize {
@@ -1598,7 +1625,7 @@ pub mod style_structs {
 % for style_struct in data.active_style_structs():
     impl style_structs::${style_struct.name} {
         % for longhand in style_struct.longhands:
-            % if longhand.need_index:
+            % if longhand.vector and longhand.vector.need_index:
                 /// Iterate over the values of ${longhand.name}.
                 #[allow(non_snake_case)]
                 #[inline]
@@ -1695,7 +1722,7 @@ pub mod style_structs {
     }
 
     % for longhand in style_struct.longhands:
-        % if longhand.need_index:
+        % if longhand.vector and longhand.vector.need_index:
             /// An iterator over the values of the ${longhand.name} properties.
             pub struct ${longhand.camel_case}Iter<'a> {
                 style_struct: &'a style_structs::${style_struct.name},
@@ -2569,7 +2596,7 @@ impl<'a> StyleBuilder<'a> {
     }
     % endif
 
-    % if not property.is_vector or property.simple_vector_bindings or engine == "servo":
+    % if not property.vector or property.vector.simple_bindings or engine == "servo":
     /// Set the `${property.ident}` to the computed value `value`.
     #[allow(non_snake_case)]
     pub fn set_${property.ident}(

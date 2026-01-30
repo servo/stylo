@@ -11,7 +11,7 @@ ${helpers.four_sides_shorthand(
     "specified::Color::parse",
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-backgrounds/#border-color",
-    allow_quirks="Yes",
+    allow_quirks=True
 )}
 
 ${helpers.four_sides_shorthand(

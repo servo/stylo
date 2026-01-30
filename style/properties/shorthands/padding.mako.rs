@@ -10,7 +10,7 @@ ${helpers.four_sides_shorthand(
     "specified::NonNegativeLengthPercentage::parse",
     engines="gecko servo",
     spec="https://drafts.csswg.org/css-box-3/#propdef-padding",
-    allow_quirks="Yes",
+    allow_quirks=True
 )}
 
 ${helpers.two_properties_shorthand(

@@ -48,6 +48,9 @@ macro_rules! pref {
     ("layout.css.contrast-color.enabled") => {
         true
     };
+    ("layout.css.properties-and-values.enabled") => {
+        true
+    };
     ($string:literal) => {
         false
     };

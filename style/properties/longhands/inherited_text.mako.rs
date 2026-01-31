@@ -384,11 +384,12 @@ ${helpers.predefined_type(
 ${helpers.single_keyword(
     "-webkit-text-security",
     "none circle disc square",
-    engines="gecko",
+    engines="gecko servo",
     gecko_enum_prefix="StyleTextSecurity",
     animation_type="discrete",
     spec="https://drafts.csswg.org/css-text/#MISSING",
     affects="layout",
+    servo_restyle_damage="rebuild_box",
 )}
 
 ${helpers.single_keyword(

@@ -1769,6 +1769,30 @@ pub mod position_try {
     }
 }
 
+fn timeline_to_css<W>(
+    name: &[specified::TimelineName],
+    axes: &[specified::ScrollAxis],
+    dest: &mut CssWriter<W>,
+) -> fmt::Result
+where
+    W: fmt::Write,
+{
+    if name.len() != axes.len() {
+        return Ok(());
+    }
+    for (i, (name, axis)) in std::iter::zip(name.iter(), axes.iter()).enumerate() {
+        if i != 0 {
+            dest.write_str(", ")?;
+        }
+        name.to_css(dest)?;
+        if !axis.is_default() {
+            dest.write_char(' ')?;
+            axis.to_css(dest)?;
+        }
+    }
+    Ok(())
+}
+
 pub mod scroll_timeline {
     pub use crate::properties::shorthands_generated::scroll_timeline::*;
 
@@ -1802,22 +1826,11 @@ pub mod scroll_timeline {
         where
             W: fmt::Write,
         {
-            use std::iter::zip;
-            let iter = zip(
-                self.scroll_timeline_name.0.iter(),
-                self.scroll_timeline_axis.0.iter(),
-            );
-            for (i, (name, axis)) in iter.enumerate() {
-                if i != 0 {
-                    dest.write_str(", ")?;
-                }
-                name.to_css(dest)?;
-                if !axis.is_default() {
-                    dest.write_char(' ')?;
-                    axis.to_css(dest)?;
-                }
-            }
-            Ok(())
+            super::timeline_to_css(
+                &self.scroll_timeline_name.0,
+                &self.scroll_timeline_axis.0,
+                dest,
+            )
         }
     }
 }
@@ -1855,22 +1868,7 @@ pub mod view_timeline {
         where
             W: fmt::Write,
         {
-            use std::iter::zip;
-            let iter = zip(
-                self.view_timeline_name.0.iter(),
-                self.view_timeline_axis.0.iter(),
-            );
-            for (i, (name, axis)) in iter.enumerate() {
-                if i != 0 {
-                    dest.write_str(", ")?;
-                }
-                name.to_css(dest)?;
-                if !axis.is_default() {
-                    dest.write_char(' ')?;
-                    axis.to_css(dest)?;
-                }
-            }
-            Ok(())
+            super::timeline_to_css(&self.view_timeline_name.0, &self.view_timeline_axis.0, dest)
         }
     }
 }

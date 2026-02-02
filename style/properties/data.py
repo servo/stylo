@@ -125,6 +125,14 @@ def to_rust_ident(name):
     return name
 
 
+def idl_method(name, camel_case):
+    if name == "float":
+        return "CssFloat"
+    if name.startswith("-x-"):
+        return camel_case[1:]
+    return camel_case
+
+
 def to_snake_case(ident):
     return re.sub("([A-Z]+)", lambda m: "_" + m.group(1).lower(), ident).strip("_")
 
@@ -280,6 +288,7 @@ class Property(object):
         self.camel_case = to_camel_case(self.ident)
         self.servo_pref = servo_pref
         self.gecko_pref = gecko_pref
+        self.idl_method = idl_method(name, self.camel_case)
         self.rule_types_allowed = rule_values_from_arg(rule_types_allowed)
         # For enabled_in, the setup is as follows:
         # It needs to be one of the four values: ["", "ua", "chrome", "content"]
@@ -711,6 +720,7 @@ class Alias(object):
         self.name = name
         self.ident = to_rust_ident(name)
         self.camel_case = to_camel_case(self.ident)
+        self.idl_method = idl_method(name, self.camel_case)
         self.original = original
         self.enabled_in = original.enabled_in
         self.animatable = original.animatable
@@ -1005,6 +1015,9 @@ class PropertiesData(object):
 
     def all_aliases(self):
         return self.longhand_aliases + self.shorthand_aliases
+
+    def all_properties_and_aliases(self):
+        return self.longhands + self.shorthands + self.longhand_aliases + self.shorthand_aliases
 
 
 def _add_logical_props(data, props):

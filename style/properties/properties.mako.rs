@@ -5,6 +5,7 @@
 // This file is a Mako template: http://www.makotemplates.org/
 
 <%namespace name="helpers" file="/helpers.mako.rs" />
+<% from itertools import groupby %>
 
 use servo_arc::{Arc, UniqueArc};
 use std::{ops, ptr, fmt, mem};
@@ -68,32 +69,6 @@ impl<T> MaybeBoxed<Box<T>> for T {
 #[allow(missing_docs)]
 pub mod longhands {
 <%
-    import toml
-    import os
-
-    longhands_toml = toml.loads(open(os.path.join(os.path.dirname(self.filename), "longhands.toml")).read())
-    for name, args in longhands_toml.items():
-        style_struct = data.style_struct_by_name_lower(args["struct"])
-        del args['struct']
-
-        # Handle keyword properties
-        if 'keyword' in args:
-            keyword_dict = args.pop('keyword')
-            if 'values' not in keyword_dict:
-                raise TypeError(f"{name}: keyword should have 'values'")
-            values = keyword_dict.pop('values')
-            keyword = Keyword(name, values, **keyword_dict)
-            data.declare_longhand(style_struct, name, keyword=keyword, **args)
-        else:
-            # Handle predefined_type properties
-            if 'type' not in args:
-                raise TypeError(f"{name} should have a type")
-            args['predefined_type'] = args.pop('type')
-            if 'initial' not in args and not args.get('vector'):
-                raise TypeError(f"{name} should have an initial value (only vector properties should lack one)")
-            args['initial_value'] = args.pop('initial', None)
-            data.declare_longhand(style_struct, name, **args)
-
     for longhand in data.longhands:
         helpers.longhand(longhand)
 %>
@@ -113,129 +88,16 @@ pub mod gecko {
 #[allow(missing_docs)]
 pub mod shorthands_generated {
 <%
-    import toml
-    import os
-
-    shorthands_toml = toml.loads(open(os.path.join(os.path.dirname(self.filename), "shorthands.toml")).read())
-    for name, args in shorthands_toml.items():
-        data.declare_shorthand(name, **args)
-
-    for shorthand in data.shorthands:
+    for shorthand in data.shorthands_except_all():
         helpers.shorthand(shorthand)
-
-    # We didn't define the 'all' shorthand using the regular helpers:shorthand
-    # mechanism, since it causes some very large types to be generated.
-    #
-    # Also, make sure logical properties appear before its physical
-    # counter-parts, in order to prevent bugs like:
-    #
-    #   https://bugzilla.mozilla.org/show_bug.cgi?id=1410028
-    #
-    # FIXME(emilio): Adopt the resolution from:
-    #
-    #   https://github.com/w3c/csswg-drafts/issues/1898
-    #
-    # when there is one, whatever that is.
-    logical_longhands = []
-    other_longhands = []
-
-    for p in data.longhands:
-        if p.name in ['direction', 'unicode-bidi']:
-            continue;
-        if not p.enabled_in_content() and not p.experimental(engine):
-            continue;
-        if "style" not in p.rule_types_allowed_names():
-            continue;
-        if p.logical:
-            logical_longhands.append(p.name)
-        else:
-            other_longhands.append(p.name)
-
-    data.declare_shorthand(
-        "all",
-        logical_longhands + other_longhands,
-        spec="https://drafts.csswg.org/css-cascade-3/#all-shorthand"
-    )
-    ALL_SHORTHAND_LEN = len(logical_longhands) + len(other_longhands);
-    %>
+%>
 }
-
-<%
-    from itertools import groupby
-
-    # After this code, `data.longhands` is sorted in the following order:
-    # - first all keyword variants and all variants known to be Copy,
-    # - second all the other variants, such as all variants with the same field
-    #   have consecutive discriminants.
-    # The variable `variants` contain the same entries as `data.longhands` in
-    # the same order, but must exist separately to the data source, because
-    # we then need to add three additional variants `WideKeywordDeclaration`,
-    # `VariableDeclaration` and `CustomDeclaration`.
-
-    variants = []
-    for property in data.longhands:
-        variants.append({
-            "name": property.camel_case,
-            "type": property.specified_type(),
-            "doc": "`" + property.name + "`",
-            "copy": property.specified_is_copy(),
-        })
-
-    groups = {}
-    keyfunc = lambda x: x["type"]
-    sortkeys = {}
-    for ty, group in groupby(sorted(variants, key=keyfunc), keyfunc):
-        group = list(group)
-        groups[ty] = group
-        for v in group:
-            if len(group) == 1:
-                sortkeys[v["name"]] = (not v["copy"], 1, v["name"], "")
-            else:
-                sortkeys[v["name"]] = (not v["copy"], len(group), ty, v["name"])
-    variants.sort(key=lambda x: sortkeys[x["name"]])
-
-    # It is extremely important to sort the `data.longhands` array here so
-    # that it is in the same order as `variants`, for `LonghandId` and
-    # `PropertyDeclarationId` to coincide.
-    data.longhands.sort(key=lambda x: sortkeys[x.camel_case])
-%>
-
-// WARNING: It is *really* important for the variants of `LonghandId`
-// and `PropertyDeclaration` to be defined in the exact same order,
-// with the exception of `CSSWideKeyword`, `WithVariables` and `Custom`,
-// which don't exist in `LonghandId`.
-
-<%
-    extra_variants = [
-        {
-            "name": "CSSWideKeyword",
-            "type": "WideKeywordDeclaration",
-            "doc": "A CSS-wide keyword.",
-            "copy": False,
-        },
-        {
-            "name": "WithVariables",
-            "type": "VariableDeclaration",
-            "doc": "An unparsed declaration.",
-            "copy": False,
-        },
-        {
-            "name": "Custom",
-            "type": "CustomDeclaration",
-            "doc": "A custom property declaration.",
-            "copy": False,
-        },
-    ]
-    for v in extra_variants:
-        variants.append(v)
-        groups[v["type"]] = [v]
-%>
 
 /// Servo's representation for a property declaration.
 #[derive(ToShmem)]
 #[repr(u16)]
 pub enum PropertyDeclaration {
-    % for variant in variants:
+    % for variant in data.declaration_variants:
     /// ${variant["doc"]}
     ${variant["name"]}(${variant["type"]}),
     % endfor
@@ -256,7 +118,7 @@ impl Clone for PropertyDeclaration {
         use self::PropertyDeclaration::*;
 
         <%
-            [copy, others] = [list(g) for _, g in groupby(variants, key=lambda x: not x["copy"])]
+            [copy, others] = [list(g) for _, g in groupby(data.declaration_variants, key=lambda x: not x["copy"])]
         %>
 
         let self_tag = unsafe {
@@ -342,7 +204,7 @@ impl PartialEq for PropertyDeclaration {
                 return false;
             }
             match *self {
-                % for ty, vs in groupby(variants, key=lambda x: x["type"]):
+                % for ty, vs in groupby(data.declaration_variants, key=lambda x: x["type"]):
                 ${" |\n".join("{}(ref this)".format(v["name"]) for v in vs)} => {
                     let other_repr =
                         &*(other as *const _ as *const PropertyDeclarationVariantRepr<${ty}>);
@@ -360,7 +222,7 @@ impl MallocSizeOf for PropertyDeclaration {
         use self::PropertyDeclaration::*;
 
         match *self {
-            % for ty, vs in groupby(variants, key=lambda x: x["type"]):
+            % for ty, vs in groupby(data.declaration_variants, key=lambda x: x["type"]):
             ${" | ".join("{}(ref value)".format(v["name"]) for v in vs)} => {
                 value.size_of(ops)
             }
@@ -392,7 +254,7 @@ impl PropertyDeclaration {
     /// than one of the special variants in extra_variants.
     fn is_longhand_value(&self) -> bool {
         match *self {
-            % for v in extra_variants:
+            % for v in data.declaration_extra_variants:
             PropertyDeclaration::${v["name"]}(..) => false,
             % endfor
             _ => true,
@@ -407,7 +269,7 @@ impl PropertyDeclaration {
 
         let mut dest = CssWriter::new(dest);
         match *self {
-            % for ty, vs in groupby(variants, key=lambda x: x["type"]):
+            % for ty, vs in groupby(data.declaration_variants, key=lambda x: x["type"]):
             ${" | ".join("{}(ref value)".format(v["name"]) for v in vs)} => {
                 value.to_css(&mut dest)
             }
@@ -420,7 +282,7 @@ impl PropertyDeclaration {
         use self::PropertyDeclaration::*;
 
         match *self {
-            % for ty, vs in groupby(variants, key=lambda x: x["type"]):
+            % for ty, vs in groupby(data.declaration_variants, key=lambda x: x["type"]):
             ${" | ".join("{}(ref value)".format(v["name"]) for v in vs)} => {
                 value.to_typed()
             }
@@ -476,7 +338,7 @@ pub mod property_counts {
     pub const MAX_SHORTHAND_EXPANDED: usize =
         ${max(len(s.sub_properties) for s in data.shorthands_except_all())};
     /// The max amount of longhands that the `all` shorthand will ever contain.
-    pub const ALL_SHORTHAND_EXPANDED: usize = ${ALL_SHORTHAND_LEN};
+    pub const ALL_SHORTHAND_EXPANDED: usize = ${data.all_shorthand_length};
     /// The number of animatable properties.
     pub const ANIMATABLE: usize = ${sum(1 for prop in data.longhands if prop.animatable)};
 }
@@ -697,17 +559,6 @@ static ${name}: LonghandIdSet = LonghandIdSet {
 </%def>
 
 <%
-    logical_groups = defaultdict(list)
-    for prop in data.longhands:
-        if prop.logical_group:
-            logical_groups[prop.logical_group].append(prop)
-
-    for group, props in logical_groups.items():
-        logical_count = sum(1 for p in props if p.logical)
-        if logical_count * 2 != len(props):
-            raise RuntimeError("Logical group {} has ".format(group) +
-                               "unbalanced logical / physical properties")
-
     FIRST_LINE_RESTRICTIONS = PropertyRestrictions.first_line(data)
     FIRST_LETTER_RESTRICTIONS = PropertyRestrictions.first_letter(data)
     MARKER_RESTRICTIONS = PropertyRestrictions.marker(data)
@@ -735,7 +586,7 @@ static ${name}: LonghandIdSet = LonghandIdSet {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[repr(u8)]
 pub enum LogicalGroupId {
-    % for i, group in enumerate(logical_groups.keys()):
+    % for i, group in enumerate(data.logical_groups.keys()):
     /// ${group}
     ${to_camel_case(group)} = ${i},
     % endfor
@@ -744,8 +595,8 @@ pub enum LogicalGroupId {
 impl LogicalGroupId {
     /// Return the list of physical mapped properties for a given logical group.
     fn physical_properties(self) -> &'static [LonghandId] {
-        static PROPS: [[LonghandId; 4]; ${len(logical_groups)}] = [
-        % for group, props in logical_groups.items():
+        static PROPS: [[LonghandId; 4]; ${len(data.logical_groups)}] = [
+        % for group, props in data.logical_groups.items():
         [
             <% physical_props = [p for p in props if p.logical][0].all_physical_mapped_properties(data) %>
             % for phys in physical_props:
@@ -764,7 +615,7 @@ impl LogicalGroupId {
 /// A set of logical groups.
 #[derive(Clone, Copy, Debug, Default, MallocSizeOf, PartialEq)]
 pub struct LogicalGroupSet {
-    storage: [u32; (${len(logical_groups)} - 1 + 32) / 32]
+    storage: [u32; (${len(data.logical_groups)} - 1 + 32) / 32]
 }
 
 impl LogicalGroupSet {

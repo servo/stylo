@@ -3,6 +3,9 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import re
+import toml
+import os
+from itertools import groupby
 from counted_unknown_properties import COUNTED_UNKNOWN_PROPERTIES
 
 # It is important that the order of these physical / logical variants matches
@@ -394,7 +397,7 @@ class Longhand(Property):
         self.logical = logical
         self.logical_group = logical_group
         if self.logical:
-            assert logical_group, "Property " + name + " must have a logical group"
+            assert logical_group, f"Property {name} must have a logical group"
 
         self.boxed = boxed
         self.allow_quirks = allow_quirks
@@ -789,7 +792,7 @@ class PropertiesData(object):
         self.engine = engine
         self.longhands = []
         self.longhands_by_name = {}
-        self.longhands_by_logical_group = {}
+        self.logical_groups = {}
         self.longhand_aliases = []
         self.shorthands = []
         self.shorthands_by_name = {}
@@ -823,7 +826,136 @@ class PropertiesData(object):
             StyleStruct("UI", inherited=False, gecko_name="UIReset"),
             StyleStruct("XUL", inherited=False),
         ]
-        self.current_style_struct = None
+
+        longhands_toml = toml.loads(open(os.path.join(os.path.dirname(__file__), "longhands.toml")).read())
+        for name, args in longhands_toml.items():
+            style_struct = self.style_struct_by_name_lower(args["struct"])
+            del args['struct']
+
+            # Handle keyword properties
+            if 'keyword' in args:
+                keyword_dict = args.pop('keyword')
+                if 'values' not in keyword_dict:
+                    raise TypeError(f"{name}: keyword should have 'values'")
+                values = keyword_dict.pop('values')
+                keyword = Keyword(name, values, **keyword_dict)
+                self.declare_longhand(style_struct, name, keyword=keyword, **args)
+            else:
+                # Handle predefined_type properties
+                if 'type' not in args:
+                    raise TypeError(f"{name} should have a type")
+                args['predefined_type'] = args.pop('type')
+                if 'initial' not in args and not args.get('vector'):
+                    raise TypeError(f"{name} should have an initial value (only vector properties should lack one)")
+                args['initial_value'] = args.pop('initial', None)
+                self.declare_longhand(style_struct, name, **args)
+
+        for group, props in self.logical_groups.items():
+            logical_count = sum(1 for p in props if p.logical)
+            if logical_count * 2 != len(props):
+                raise RuntimeError(f"Logical group {group} has unbalanced logical / physical properties")
+
+        shorthands_toml = toml.loads(open(os.path.join(os.path.dirname(__file__), "shorthands.toml")).read())
+        for name, args in shorthands_toml.items():
+            self.declare_shorthand(name, **args)
+
+        # We didn't define the 'all' shorthand using the regular helpers:shorthand
+        # mechanism, since it causes some very large types to be generated.
+        #
+        # Also, make sure logical properties appear before its physical
+        # counter-parts, in order to prevent bugs like:
+        #
+        #   https://bugzilla.mozilla.org/show_bug.cgi?id=1410028
+        #
+        # FIXME(emilio): Adopt the resolution from:
+        #
+        #   https://github.com/w3c/csswg-drafts/issues/1898
+        #
+        # when there is one, whatever that is.
+        logical_longhands = []
+        other_longhands = []
+        for p in self.longhands:
+            if p.name in ['direction', 'unicode-bidi']:
+                continue;
+            if not p.enabled_in_content() and not p.experimental(engine):
+                continue;
+            if "style" not in p.rule_types_allowed_names():
+                continue;
+            if p.logical:
+                logical_longhands.append(p.name)
+            else:
+                other_longhands.append(p.name)
+
+        self.all_shorthand_length = len(logical_longhands) + len(other_longhands);
+        self.declare_shorthand(
+            "all",
+            logical_longhands + other_longhands,
+            spec="https://drafts.csswg.org/css-cascade-3/#all-shorthand"
+        )
+
+        # After this code, `data.longhands` is sorted in the following order:
+        # - first all keyword variants and all variants known to be Copy,
+        # - second all the other variants, such as all variants with the same field
+        #   have consecutive discriminants.
+        # The variable `variants` contain the same entries as `data.longhands` in
+        # the same order, but must exist separately to the data source, because
+        # we then need to add three additional variants `WideKeywordDeclaration`,
+        # `VariableDeclaration` and `CustomDeclaration`.
+        self.declaration_variants = []
+        for property in self.longhands:
+            self.declaration_variants.append({
+                "name": property.camel_case,
+                "type": property.specified_type(),
+                "doc": "`" + property.name + "`",
+                "copy": property.specified_is_copy(),
+            })
+
+        groups = {}
+        keyfunc = lambda x: x["type"]
+        sortkeys = {}
+        for ty, group in groupby(sorted(self.declaration_variants, key=keyfunc), keyfunc):
+            group = list(group)
+            groups[ty] = group
+            for v in group:
+                if len(group) == 1:
+                    sortkeys[v["name"]] = (not v["copy"], 1, v["name"], "")
+                else:
+                    sortkeys[v["name"]] = (not v["copy"], len(group), ty, v["name"])
+        self.declaration_variants.sort(key=lambda x: sortkeys[x["name"]])
+
+        # It is extremely important to sort the `data.longhands` array here so
+        # that it is in the same order as `variants`, for `LonghandId` and
+        # `PropertyDeclarationId` to coincide.
+        self.longhands.sort(key=lambda x: sortkeys[x.camel_case])
+
+        # WARNING: It is *really* important for the variants of `LonghandId`
+        # and `PropertyDeclaration` to be defined in the exact same order,
+        # with the exception of `CSSWideKeyword`, `WithVariables` and `Custom`,
+        # which don't exist in `LonghandId`.
+        self.declaration_extra_variants = [
+            {
+                "name": "CSSWideKeyword",
+                "type": "WideKeywordDeclaration",
+                "doc": "A CSS-wide keyword.",
+                "copy": False,
+            },
+            {
+                "name": "WithVariables",
+                "type": "VariableDeclaration",
+                "doc": "An unparsed declaration.",
+                "copy": False,
+            },
+            {
+                "name": "Custom",
+                "type": "CustomDeclaration",
+                "doc": "A custom property declaration.",
+                "copy": False,
+            },
+        ]
+        for v in self.declaration_extra_variants:
+            self.declaration_variants.append(v)
+            groups[v["type"]] = [v]
+
 
     def style_struct_by_name_lower(self, name):
         for s in self.style_structs:
@@ -850,7 +982,7 @@ class PropertiesData(object):
         self.longhands.append(longhand)
         self.longhands_by_name[name] = longhand
         if longhand.logical_group:
-            self.longhands_by_logical_group.setdefault(
+            self.logical_groups.setdefault(
                 longhand.logical_group, []
             ).append(longhand)
 
@@ -885,7 +1017,7 @@ def _add_logical_props(data, props):
         if prop.logical_group:
             groups.add(prop.logical_group)
     for group in groups:
-        for prop in data.longhands_by_logical_group[group]:
+        for prop in data.logical_groups[group]:
             props.add(prop.name)
 
 
@@ -913,7 +1045,7 @@ def _remove_common_first_line_and_first_letter_properties(props, engine):
 class PropertyRestrictions:
     @staticmethod
     def logical_group(data, group):
-        return [p.name for p in data.longhands_by_logical_group[group]]
+        return [p.name for p in data.logical_groups[group]]
 
     @staticmethod
     def shorthand(data, shorthand):

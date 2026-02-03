@@ -1369,3 +1369,223 @@ impl TextAutospace {
     }
 }
 */
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+/// Identifies specific font metrics for use in the <text-edge> typedef.
+///
+/// https://drafts.csswg.org/css-inline-3/#typedef-text-edge
+pub enum TextEdgeKeyword {
+    /// Use the text-over baseline/text-under baseline as the over/under edge.
+    Text,
+    /// Use the ideographic-over baseline/ideographic-under baseline as the over/under edge.
+    Ideographic,
+    /// Use the ideographic-ink-over baseline/ideographic-ink-under baseline as the over/under edge.
+    IdeographicInk,
+    /// Use the cap-height baseline as the over edge.
+    Cap,
+    /// Use the x-height baseline as the over edge.
+    Ex,
+    /// Use the alphabetic baseline as the under edge.
+    Alphabetic,
+}
+
+impl TextEdgeKeyword {
+    fn is_valid_for_over(&self) -> bool {
+        match self {
+            TextEdgeKeyword::Text
+            | TextEdgeKeyword::Ideographic
+            | TextEdgeKeyword::IdeographicInk
+            | TextEdgeKeyword::Cap
+            | TextEdgeKeyword::Ex => true,
+            _ => false,
+        }
+    }
+
+    fn is_valid_for_under(&self) -> bool {
+        match self {
+            TextEdgeKeyword::Text
+            | TextEdgeKeyword::Ideographic
+            | TextEdgeKeyword::IdeographicInk
+            | TextEdgeKeyword::Alphabetic => true,
+            _ => false,
+        }
+    }
+}
+
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(C)]
+/// The <text-edge> typedef, used by the `line-fit-edge` and
+/// `text-box-edge` properties.
+///
+/// The first value specifies the text over edge; the second value
+/// specifies the text under edge. If only one value is specified,
+/// both edges are assigned that same keyword if possible; else
+/// text is assumed as the missing value.
+///
+/// https://drafts.csswg.org/css-inline-3/#typedef-text-edge
+pub struct TextEdge {
+    /// Font metric to use for the text over edge.
+    pub over: TextEdgeKeyword,
+    /// Font metric to use for the text under edge.
+    pub under: TextEdgeKeyword,
+}
+
+impl Parse for TextEdge {
+    fn parse<'i, 't>(
+        _context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<TextEdge, ParseError<'i>> {
+        let first = TextEdgeKeyword::parse(input)?;
+
+        if let Ok(second) = input.try_parse(TextEdgeKeyword::parse) {
+            if !first.is_valid_for_over() || !second.is_valid_for_under() {
+                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            }
+
+            return Ok(TextEdge {
+                over: first,
+                under: second,
+            });
+        }
+
+        // https://drafts.csswg.org/css-inline-3/#typedef-text-edge
+        // > If only one value is specified, both edges are assigned that same
+        // > keyword if possible; else 'text' is assumed as the missing value.
+        match (first.is_valid_for_over(), first.is_valid_for_under()) {
+            (true, true) => Ok(TextEdge {
+                over: first,
+                under: first,
+            }),
+            (true, false) => Ok(TextEdge {
+                over: first,
+                under: TextEdgeKeyword::Text,
+            }),
+            (false, true) => Ok(TextEdge {
+                over: TextEdgeKeyword::Text,
+                under: first,
+            }),
+            _ => unreachable!("Parsed keyword will be valid for at least one edge"),
+        }
+    }
+}
+
+impl ToCss for TextEdge {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        match (self.over, self.under) {
+            (over, TextEdgeKeyword::Text) if !over.is_valid_for_under() => over.to_css(dest),
+            (TextEdgeKeyword::Text, under) if !under.is_valid_for_over() => under.to_css(dest),
+            (over, under) => {
+                over.to_css(dest)?;
+
+                if over != under {
+                    dest.write_char(' ')?;
+                    self.under.to_css(dest)?;
+                }
+
+                Ok(())
+            },
+        }
+    }
+}
+
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(C, u8)]
+/// Specified value for the `text-box-edge` property.
+///
+/// https://drafts.csswg.org/css-inline-3/#text-box-edge
+pub enum TextBoxEdge {
+    /// Uses the value of `line-fit-edge`, interpreting `leading` (the initial value) as `text`.
+    Auto,
+    /// Uses the specified font metrics.
+    TextEdge(TextEdge),
+}
+
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    PartialEq,
+    Parse,
+    Serialize,
+    SpecifiedValueInfo,
+    ToCss,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[css(bitflags(single = "none,trim-start,trim-end,trim-both"))]
+#[repr(C)]
+/// Specified value for the `text-box-trim` property.
+///
+/// https://drafts.csswg.org/css-inline-3/#text-box-edge
+pub struct TextBoxTrim(u8);
+bitflags! {
+    impl TextBoxTrim: u8 {
+        /// NONE
+        const NONE = 0;
+        /// TRIM_START
+        const TRIM_START = 1 << 0;
+        /// TRIM_END
+        const TRIM_END = 1 << 1;
+        /// TRIM_BOTH
+        const TRIM_BOTH = Self::TRIM_START.0 | Self::TRIM_END.0;
+    }
+}
+
+impl TextBoxTrim {
+    /// Returns the initial value of text-box-trim
+    #[inline]
+    pub fn none() -> Self {
+        TextBoxTrim::NONE
+    }
+}

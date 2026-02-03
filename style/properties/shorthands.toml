@@ -450,6 +450,12 @@ sub_properties = ["font-synthesis-weight", "font-synthesis-style", "font-synthes
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font-variant"
 derive_value_info = false
 
+[text-box]
+engine = "gecko"
+sub_properties = ["text-box-trim", "text-box-edge"]
+spec = "https://drafts.csswg.org/css-inline/#text-box-shorthand"
+gecko_pref = "layout.css.text-box.enabled"
+
 [text-emphasis]
 engine = "gecko"
 sub_properties = ["text-emphasis-style", "text-emphasis-color"]

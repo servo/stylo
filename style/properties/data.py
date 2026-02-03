@@ -637,6 +637,8 @@ class Longhand(Property):
                 "TextAlign",
                 "TextAlignLast",
                 "TextAutospace",
+                "TextBoxEdge",
+                "TextBoxTrim",
                 "TextDecorationLine",
                 "TextEmphasisPosition",
                 "TextJustify",

@@ -2621,6 +2621,28 @@ has_effect_on_gecko_scrollbars = false
 spec = "https://drafts.csswg.org/css-text-4/#text-autospace-property"
 affects = "layout"
 
+[text-box-edge]
+type = "TextBoxEdge"
+initial = "computed::TextBoxEdge::Auto"
+struct = "inherited_text"
+engine = "gecko"
+animation_type = "discrete"
+gecko_pref = "layout.css.text-box.enabled"
+has_effect_on_gecko_scrollbars = false
+spec = "https://drafts.csswg.org/css-inline/#text-box-edge"
+affects = "layout"
+
+[text-box-trim]
+type = "TextBoxTrim"
+initial = "computed::TextBoxTrim::none()"
+struct = "text"
+engine = "gecko"
+animation_type = "discrete"
+gecko_pref = "layout.css.text-box.enabled"
+has_effect_on_gecko_scrollbars = false
+spec = "https://drafts.csswg.org/css-inline/#text-box-trim"
+affects = "layout"
+
 [text-decoration-skip-ink]
 type = "TextDecorationSkipInk"
 initial = "computed::TextDecorationSkipInk::Auto"

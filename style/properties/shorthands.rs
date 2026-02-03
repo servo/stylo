@@ -3026,6 +3026,74 @@ pub mod font_synthesis {
     }
 }
 
+pub mod text_box {
+    pub use crate::properties::shorthands_generated::text_box::*;
+
+    use super::*;
+    use crate::values::specified::{TextBoxEdge, TextBoxTrim};
+
+    pub fn parse_value<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        let mut trim = None;
+        let mut edge = None;
+
+        if input
+            .try_parse(|input| input.expect_ident_matching("normal"))
+            .is_ok()
+        {
+            return Ok(Longhands {
+                text_box_trim: TextBoxTrim::NONE,
+                text_box_edge: TextBoxEdge::Auto,
+            });
+        }
+
+        loop {
+            try_parse_one!(context, input, trim, TextBoxTrim::parse);
+            try_parse_one!(context, input, edge, TextBoxEdge::parse);
+            break;
+        }
+
+        if trim.is_none() && edge.is_none() {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+
+        // From https://drafts.csswg.org/css-inline-3/#text-box-shorthand:
+        // > Omitting the 'text-box-trim' value sets it to 'trim-both'
+        // > (not the initial value), while omitting the 'text-box-edge'
+        // > value sets it to auto (the initial value).
+        Ok(Longhands {
+            text_box_trim: trim.unwrap_or(TextBoxTrim::TRIM_BOTH),
+            text_box_edge: edge.unwrap_or(TextBoxEdge::Auto),
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a> {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+        where
+            W: fmt::Write,
+        {
+            if *self.text_box_trim == TextBoxTrim::NONE && *self.text_box_edge == TextBoxEdge::Auto
+            {
+                return dest.write_str("normal");
+            }
+
+            let mut writer = SequenceWriter::new(dest, " ");
+            if *self.text_box_trim != specified::TextBoxTrim::TRIM_BOTH {
+                writer.item(self.text_box_trim)?;
+            }
+            if *self.text_box_edge != specified::TextBoxEdge::Auto {
+                writer.item(self.text_box_edge)?;
+            }
+            if !writer.has_written() {
+                self.text_box_trim.to_css(dest)?;
+            }
+            Ok(())
+        }
+    }
+}
+
 pub mod text_emphasis {
     pub use crate::properties::shorthands_generated::text_emphasis::*;
 

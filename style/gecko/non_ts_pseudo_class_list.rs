@@ -30,7 +30,7 @@ macro_rules! apply_non_ts_list {
         $apply_macro! {
             [
                 ("-moz-table-border-nonzero", MozTableBorderNonzero, _, PSEUDO_CLASS_ENABLED_IN_UA_SHEETS),
-                ("-moz-select-list-box", MozSelectListBox, _, PSEUDO_CLASS_ENABLED_IN_UA_SHEETS),
+                ("-moz-select-list-box", MozSelectListBox, _, PSEUDO_CLASS_ENABLED_IN_UA_SHEETS_AND_CHROME),
                 ("link", Link, UNVISITED, _),
                 ("any-link", AnyLink, VISITED_OR_UNVISITED, _),
                 ("visited", Visited, VISITED, _),

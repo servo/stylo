@@ -69,6 +69,7 @@ pub enum PseudoElement {
     // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
     ServoTextControlInnerContainer,
     ServoTextControlInnerEditor,
+    ServoPickerIcon,
 
     // Other Servo-specific pseudos.
     ServoAnonymousBox,
@@ -98,6 +99,7 @@ impl ToCss for PseudoElement {
             Marker => "::marker",
             ColorSwatch => "::color-swatch",
             Placeholder => "::placeholder",
+            ServoPickerIcon => "::-servo-picker-icon",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoAnonymousBox => "::-servo-anonymous-box",
@@ -246,9 +248,10 @@ impl PseudoElement {
             PseudoElement::Backdrop
             | PseudoElement::ColorSwatch
             | PseudoElement::DetailsSummary
+            | PseudoElement::DetailsContent
             | PseudoElement::Marker
             | PseudoElement::Placeholder
-            | PseudoElement::DetailsContent
+            | PseudoElement::ServoPickerIcon
             | PseudoElement::ServoTextControlInnerContainer
             | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
             PseudoElement::ServoAnonymousBox
@@ -650,6 +653,12 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 Placeholder
+            },
+            "-servo-picker-icon" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoPickerIcon
             },
             "-servo-text-control-inner-container" => {
                 if !self.in_user_agent_stylesheet() {

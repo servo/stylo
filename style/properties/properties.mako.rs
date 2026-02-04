@@ -6,6 +6,7 @@
 
 <%namespace name="helpers" file="/helpers.mako.rs" />
 <% from itertools import groupby %>
+<% from data import PropertyRestrictions, to_camel_case, RULE_VALUES, SYSTEM_FONT_LONGHANDS, PRIORITARY_PROPERTIES %>
 
 use servo_arc::{Arc, UniqueArc};
 use std::{ops, ptr, fmt, mem};
@@ -41,13 +42,6 @@ use super::{
     WideKeywordDeclaration, NonCustomPropertyIterator,
 };
 use debug_unreachable::debug_unreachable;
-
-<%!
-    from collections import defaultdict
-    from data import Method, PropertyRestrictions, Keyword, to_rust_ident, \
-                     to_camel_case, RULE_VALUES, SYSTEM_FONT_LONGHANDS, PRIORITARY_PROPERTIES
-    import os.path
-%>
 
 /// Conversion with fewer impls than From/Into
 pub trait MaybeBoxed<Out> {

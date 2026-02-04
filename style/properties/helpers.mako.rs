@@ -2,11 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-<%!
-    from data import Keyword, to_rust_ident, to_phys, to_camel_case, SYSTEM_FONT_LONGHANDS
-    from data import (LOGICAL_CORNERS, PHYSICAL_CORNERS, LOGICAL_SIDES,
-                      PHYSICAL_SIDES, LOGICAL_SIZES, LOGICAL_AXES)
-%>
+<%! from data import to_rust_ident, to_camel_case, SYSTEM_FONT_LONGHANDS %>
 
 <%def name="longhand(property)">
 /// ${property.spec}
@@ -14,33 +10,18 @@ pub mod ${property.ident} {
     #[allow(unused_imports)]
     use crate::derives::*;
     #[allow(unused_imports)]
-    use cssparser::{Parser, BasicParseError, Token};
-    #[allow(unused_imports)]
-    use crate::parser::{Parse, ParserContext};
-    #[allow(unused_imports)]
-    use crate::properties::{self, UnparsedValue, ShorthandId};
-    #[allow(unused_imports)]
-    use crate::error_reporting::ParseErrorReporter;
-    #[allow(unused_imports)]
-    use crate::properties::longhands;
-    #[allow(unused_imports)]
-    use crate::properties::{LonghandId, LonghandIdSet};
-    #[allow(unused_imports)]
-    use crate::properties::{CSSWideKeyword, ComputedValues, PropertyDeclaration};
-    #[allow(unused_imports)]
-    use crate::properties::style_structs;
-    #[allow(unused_imports)]
-    use selectors::parser::SelectorParseErrorKind;
-    #[allow(unused_imports)]
-    use servo_arc::Arc;
-    #[allow(unused_imports)]
-    use style_traits::{ParseError, StyleParseErrorKind};
-    #[allow(unused_imports)]
-    use crate::values::computed::{Context, ToComputedValue};
-    #[allow(unused_imports)]
     use crate::values::{computed, generics, specified};
     #[allow(unused_imports)]
-    use crate::Atom;
+    use crate::values::computed::ToComputedValue;
+    #[allow(unused_imports)]
+    use servo_arc::Arc;
+    use cssparser::Parser;
+    #[allow(unused_imports)]
+    use crate::parser::{Parse, ParserContext};
+    use style_traits::ParseError;
+    #[allow(unused_imports)]
+    use crate::properties::{longhands, LonghandId, CSSWideKeyword, PropertyDeclaration};
+
     #[allow(unused_variables)]
     pub unsafe fn cascade_property(
         declaration: &PropertyDeclaration,
@@ -86,7 +67,7 @@ pub mod ${property.ident} {
                                 let old_zoom = context.builder.effective_zoom;
                                 context.builder.effective_zoom = context.builder.effective_zoom_for_inheritance;
                                 let computed = context.builder.inherited_style.clone_${property.ident}();
-                                let specified = ToComputedValue::from_computed_value(&computed);
+                                let specified = computed::ToComputedValue::from_computed_value(&computed);
                                 % if property.boxed:
                                 let specified = Box::new(specified);
                                 % endif
@@ -121,7 +102,7 @@ pub mod ${property.ident} {
 
         % if property.ident in SYSTEM_FONT_LONGHANDS and engine == "gecko":
         if let Some(sf) = specified_value.get_system() {
-            properties::gecko::system_font::resolve_system_font(sf, context);
+            crate::properties::gecko::system_font::resolve_system_font(sf, context);
         }
         % endif
 
@@ -510,7 +491,7 @@ pub mod ${property.ident} {
     impl SpecifiedValue {
         fn compute_iter<'a, 'cx, 'cx_a>(
             &'a self,
-            context: &'cx Context<'cx_a>,
+            context: &'cx computed::Context<'cx_a>,
         ) -> computed_value::Iter<'a, 'cx, 'cx_a> {
             computed_value::Iter::new(context, &self.0)
         }
@@ -521,7 +502,7 @@ pub mod ${property.ident} {
         type ComputedValue = computed_value::T;
 
         #[inline]
-        fn to_computed_value(&self, context: &Context) -> computed_value::T {
+        fn to_computed_value(&self, context: &computed::Context) -> computed_value::T {
             % if not is_shared_list:
             use std::iter::FromIterator;
             % endif
@@ -537,22 +518,20 @@ pub mod ${property.ident} {
         }
     }
     % endif
-
 }
 </%def>
 
 <%def name="shorthand(shorthand)">
     /// ${shorthand.spec}
     pub mod ${shorthand.ident} {
-        use cssparser::Parser;
+        #[allow(unused_imports)]
+        use crate::derives::*;
         use crate::parser::ParserContext;
         use crate::properties::{PropertyDeclaration, SourcePropertyDeclaration, longhands};
+        use cssparser::Parser;
         #[allow(unused_imports)]
         use std::fmt::{self, Write};
-        #[allow(unused_imports)]
-        use style_traits::{CssWriter, KeywordsCollectFn, SpecifiedValueInfo, ToCss, ParseError};
-        #[allow(unused_imports)]
-        use style_derive::{Animate, ComputeSquaredDistance, ToAnimatedValue, Parse, ToAnimatedZero, ToComputedValue, ToResolvedValue, ToCss, SpecifiedValueInfo, ToTyped};
+        use style_traits::{CssWriter, ToCss, ParseError};
 
         % if shorthand.derive_value_info:
         #[derive(SpecifiedValueInfo)]
@@ -742,7 +721,7 @@ pub mod ${property.ident} {
     impl<'a> ToCss for LonghandsToSerialize<'a> {
         fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
         where
-            W: Write,
+            W: fmt::Write,
         {
             let rect = Rect::new(
                 % for index in range(4):

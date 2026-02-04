@@ -518,7 +518,7 @@ where
         debug!("DocumentStylesheetSet::flush_without_invalidation");
 
         let mut origins = OriginSet::empty();
-        self.invalidations.clear();
+        std::mem::take(&mut self.invalidations);
 
         for (collection, origin) in self.collections.iter_mut_origins() {
             if collection.flush().dirty() {

@@ -111,6 +111,9 @@ playing
 popstate
 postershown
 prefers-color-scheme
+prefers-contrast
+prefers-reduced-motion
+prefers-reduced-transparency
 print
 progress
 radio

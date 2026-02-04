@@ -10,7 +10,10 @@ use crate::gecko_bindings::structs;
 use crate::media_queries::{Device, MediaType};
 use crate::parser::ParserContext;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
-use crate::queries::values::{Orientation, PrefersColorScheme};
+use crate::queries::values::{
+    Orientation, PrefersColorScheme, PrefersContrast, PrefersReducedMotion,
+    PrefersReducedTransparency,
+};
 use crate::values::computed::{CSSPixelLength, Context, Ratio, Resolution};
 use crate::values::specified::color::ForcedColors;
 use app_units::Au;
@@ -183,20 +186,6 @@ fn eval_resolution(context: &Context) -> Resolution {
     Resolution::from_dppx(resolution_dppx)
 }
 
-#[derive(Clone, Copy, Debug, FromPrimitive, Parse, ToCss)]
-#[repr(u8)]
-enum PrefersReducedMotion {
-    NoPreference,
-    Reduce,
-}
-
-#[derive(Clone, Copy, Debug, FromPrimitive, Parse, ToCss)]
-#[repr(u8)]
-enum PrefersReducedTransparency {
-    NoPreference,
-    Reduce,
-}
-
 /// Values for the dynamic-range and video-dynamic-range media features.
 /// https://drafts.csswg.org/mediaqueries-5/#dynamic-range
 /// This implements PartialOrd so that lower values will correctly match
@@ -244,21 +233,6 @@ fn eval_prefers_reduced_transparency(
         PrefersReducedTransparency::NoPreference => !prefers_reduced,
         PrefersReducedTransparency::Reduce => prefers_reduced,
     }
-}
-
-/// Possible values for prefers-contrast media query.
-/// https://drafts.csswg.org/mediaqueries-5/#prefers-contrast
-#[derive(Clone, Copy, Debug, FromPrimitive, Parse, PartialEq, ToCss)]
-#[repr(u8)]
-pub enum PrefersContrast {
-    /// More contrast is preferred.
-    More,
-    /// Low contrast is preferred.
-    Less,
-    /// Custom (not more, not less).
-    Custom,
-    /// The default value if neither high or low contrast is enabled.
-    NoPreference,
 }
 
 /// https://drafts.csswg.org/mediaqueries-5/#prefers-contrast

@@ -401,9 +401,7 @@ where
         &mut attribute_tracker,
     );
 
-    if !attribute_tracker.references.is_empty() {
-        context.builder.attribute_references = Some(attribute_tracker.finalize());
-    }
+    context.builder.attribute_references = attribute_tracker.finalize();
 
     cascade.finished_applying_properties(&mut context.builder);
 

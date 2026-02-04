@@ -996,7 +996,7 @@ pub struct AttributeTracker<'a> {
     /// The element that queries for attributes.
     pub provider: &'a dyn AttributeProvider,
     /// The set of attributes we have queried.
-    pub references: Box<PrecomputedHashSet<AtomIdent>>,
+    pub references: AttributeReferences,
 }
 
 impl<'a> AttributeTracker<'a> {
@@ -1004,7 +1004,7 @@ impl<'a> AttributeTracker<'a> {
     pub fn new(provider: &'a dyn AttributeProvider) -> Self {
         Self {
             provider,
-            references: Default::default(),
+            references: None,
         }
     }
 
@@ -1012,18 +1012,18 @@ impl<'a> AttributeTracker<'a> {
     pub fn new_dummy() -> Self {
         Self {
             provider: &DummyAttributeProvider {},
-            references: Default::default(),
+            references: None,
         }
     }
 
     /// Extract the queried references and consume self
-    pub fn finalize(self) -> Box<PrecomputedHashSet<AtomIdent>> {
+    pub fn finalize(self) -> AttributeReferences {
         self.references
     }
 
     /// Query the value and save the name of the attribtue.
     pub fn query(&mut self, name: &LocalName) -> Option<String> {
-        self.references.insert(name.clone());
+        self.references.get_or_insert_default().insert(name.clone());
         self.provider.get_attr(name)
     }
 }

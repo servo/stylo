@@ -2094,6 +2094,7 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             },
             NonTSPseudoClass::Paused => self.is_html_media_element() && self.state().intersects(ElementState::PAUSED),
             NonTSPseudoClass::Playing => self.is_html_media_element() && !self.state().intersects(ElementState::PAUSED),
+            NonTSPseudoClass::VolumeLocked => false, // Bug 2013371
             NonTSPseudoClass::Dir(ref dir) => self.state().intersects(dir.element_state()),
             NonTSPseudoClass::ActiveViewTransitionType(ref types) => {
                 self.state().intersects(pseudo_class.state_flag())

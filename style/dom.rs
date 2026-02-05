@@ -996,7 +996,7 @@ pub struct AttributeTracker<'a> {
     /// The element that queries for attributes.
     pub provider: &'a dyn AttributeProvider,
     /// The set of attributes we have queried.
-    pub references: Box<PrecomputedHashSet<AtomIdent>>,
+    pub references: Box<PrecomputedHashSet<LocalName>>,
 }
 
 impl<'a> AttributeTracker<'a> {
@@ -1017,7 +1017,7 @@ impl<'a> AttributeTracker<'a> {
     }
 
     /// Extract the queried references and consume self
-    pub fn finalize(self) -> Box<PrecomputedHashSet<AtomIdent>> {
+    pub fn finalize(self) -> Box<PrecomputedHashSet<LocalName>> {
         self.references
     }
 

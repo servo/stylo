@@ -13,11 +13,13 @@ use crate::values::computed::{NonNegativeNumber, Percentage, Zoom};
 use crate::values::generics::length::{
     GenericLengthOrNumber, GenericLengthPercentageOrNormal, GenericMaxSize, GenericSize,
 };
+#[cfg(feature = "gecko")]
 use crate::values::generics::position::TreeScoped;
 use crate::values::generics::NonNegative;
 use crate::values::generics::{length as generics, ClampToNonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 use crate::values::specified::length::{AbsoluteLength, FontBaseSize, LineHeightBase};
+#[cfg(feature = "gecko")]
 use crate::values::DashedIdent;
 use crate::values::{specified, CSSFloat};
 use crate::Zero;

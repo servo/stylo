@@ -18,16 +18,19 @@ rule_types_allowed = ["style", "keyframe", "page", "scope", "position-try"]
 kind = "two_properties"
 
 [scroll-margin]
+engine = "gecko"
 sub_properties = ["scroll-margin-top", "scroll-margin-right", "scroll-margin-bottom", "scroll-margin-left"]
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin"
 kind = "four_sides"
 
 [scroll-margin-block]
+engine = "gecko"
 sub_properties = ["scroll-margin-block-start", "scroll-margin-block-end"]
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-block"
 kind = "two_properties"
 
 [scroll-margin-inline]
+engine = "gecko"
 sub_properties = ["scroll-margin-inline-start", "scroll-margin-inline-end"]
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-margin-inline"
 kind = "two_properties"
@@ -51,16 +54,19 @@ rule_types_allowed = ["style", "keyframe", "page", "scope", "position-try"]
 kind = "two_properties"
 
 [scroll-padding]
+engine = "gecko"
 sub_properties = ["scroll-padding-top", "scroll-padding-right", "scroll-padding-bottom", "scroll-padding-left"]
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding"
 kind = "four_sides"
 
 [scroll-padding-block]
+engine = "gecko"
 sub_properties = ["scroll-padding-block-start", "scroll-padding-block-end"]
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-block"
 kind = "two_properties"
 
 [scroll-padding-inline]
+engine = "gecko"
 sub_properties = ["scroll-padding-inline-start", "scroll-padding-inline-end"]
 spec = "https://drafts.csswg.org/css-scroll-snap-1/#propdef-scroll-padding-inline"
 kind = "two_properties"
@@ -146,13 +152,13 @@ kind = "single_border"
 sub_properties = ["border-inline-start-width", "border-inline-start-style", "border-inline-start-color"]
 spec = "https://drafts.csswg.org/css-logical/#propdef-border-inline-start"
 kind = "single_border"
-aliases = ["-moz-border-start"]
+extra_gecko_aliases = ["-moz-border-start"]
 
 [border-inline-end]
 sub_properties = ["border-inline-end-width", "border-inline-end-style", "border-inline-end-color"]
 spec = "https://drafts.csswg.org/css-logical/#propdef-border-inline-end"
 kind = "single_border"
-aliases = ["-moz-border-end"]
+extra_gecko_aliases = ["-moz-border-end"]
 
 [border-block]
 sub_properties = ["border-block-start-width", "border-block-start-style", "border-block-start-color", "border-block-end-width", "border-block-end-style", "border-block-end-color"]
@@ -412,7 +418,8 @@ spec = "https://drafts.csswg.org/css-multicol/#propdef-column-rule"
 derive_serialize = true
 
 [text-decoration]
-sub_properties = ["text-decoration-color", "text-decoration-line", "text-decoration-style", "text-decoration-thickness"]
+sub_properties = ["text-decoration-color", "text-decoration-line", "text-decoration-style"]
+extra_gecko_sub_properties = ["text-decoration-thickness"]
 spec = "https://drafts.csswg.org/css-text-decor/#propdef-text-decoration"
 
 [font]
@@ -425,7 +432,9 @@ sub_properties = [
   "line-height",
   "font-family",
   "font-optical-sizing",
-  "font-variation-settings",
+  "font-variation-settings"
+]
+extra_gecko_sub_properties = [
   "font-size-adjust",
   "font-kerning",
   "font-variant-alternates",
@@ -441,7 +450,8 @@ spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font"
 derive_value_info = false
 
 [font-variant]
-sub_properties = ["font-variant-caps", "font-variant-alternates", "font-variant-east-asian", "font-variant-emoji", "font-variant-ligatures", "font-variant-numeric", "font-variant-position"]
+sub_properties = ["font-variant-caps"]
+extra_gecko_sub_properties = ["font-variant-alternates", "font-variant-east-asian", "font-variant-emoji", "font-variant-ligatures", "font-variant-numeric", "font-variant-position"]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font-variant"
 
 [font-synthesis]

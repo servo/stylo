@@ -98,6 +98,7 @@ macro_rules! apply_non_ts_list {
                 ("seeking", Seeking, SEEKING, _),
                 ("buffering", Buffering, BUFFERING, _),
                 ("stalled", Stalled, STALLED, _),
+                ("muted", Muted, MUTED, _),
 
 
                 // NOTE(emilio): Pseudo-classes below only depend on document state, and thus

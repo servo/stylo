@@ -980,10 +980,11 @@ class PropertiesData(object):
         for prefix, pref in property.extra_prefixes:
             property.aliases.append(("-%s-%s" % (prefix, property.name), pref))
 
-    def declare_longhand(self, style_struct, name, engine=None, **kwargs):
+    def declare_longhand(self, style_struct, name, extra_gecko_aliases=None, engine=None, **kwargs):
         if engine and self.engine != engine:
             return
-
+        if extra_gecko_aliases and self.engine == "gecko":
+            kwargs.setdefault('aliases', []).extend(extra_gecko_aliases)
         longhand = Longhand(style_struct, name, **kwargs)
         self.add_prefixed_aliases(longhand)
         longhand.aliases = [Alias(xp[0], longhand, xp[1]) for xp in longhand.aliases]

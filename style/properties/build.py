@@ -9,6 +9,7 @@ import sys
 
 BASE = os.path.dirname(__file__.replace("\\", "/"))
 sys.path.insert(0, os.path.join(BASE, "vendored_python", "mako-1.3.10-py3-none-any.whl"))
+sys.path.insert(0, os.path.join(BASE, "vendored_python", "toml-0.10.2-py2.py3-none-any.whl"))
 sys.path.insert(0, os.path.join(BASE, "vendored_python")) # For importing markupsafe
 sys.path.insert(0, BASE)  # For importing `data.py`
 

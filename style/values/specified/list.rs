@@ -8,8 +8,6 @@
 use crate::counter_style::{CounterStyle, CounterStyleParsingFlags};
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-#[cfg(feature = "servo")]
-use crate::properties::longhands::list_style_type::SpecifiedValue as ListStyleType;
 use cssparser::{Parser, Token};
 use style_traits::{ParseError, StyleParseErrorKind};
 
@@ -86,6 +84,127 @@ impl Parse for ListStyleType {
         let flags = CounterStyleParsingFlags::ALLOW_NONE | CounterStyleParsingFlags::ALLOW_STRING;
         Ok(Self(CounterStyle::parse(context, input, flags)?))
     }
+}
+
+/// Specified and computed `list-style-type` property.
+#[cfg(feature = "servo")]
+#[derive(
+    Clone,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToCss,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+pub enum ListStyleType {
+    /// A filled circle, similar to • U+2022 BULLET.
+    /// <https://www.w3.org/TR/css-counter-styles-3/#disc>
+    Disc,
+    /// The element has no marker string.
+    /// <https://www.w3.org/TR/css-lists-3/#valdef-list-style-type-none>
+    None,
+    /// A hollow circle, similar to ◦ U+25E6 WHITE BULLET.
+    /// <https://www.w3.org/TR/css-counter-styles-3/#circle>
+    Circle,
+    /// A filled square, similar to ▪ U+25AA BLACK SMALL SQUARE.
+    /// <https://www.w3.org/TR/css-counter-styles-3/#square>
+    Square,
+    /// Symbol for indicating an open disclosure widget, such as the HTML `<details>` element.
+    /// <https://www.w3.org/TR/css-counter-styles-3/#disclosure-open>
+    DisclosureOpen,
+    /// Symbol for indicating a closed disclosure widget, such as the HTML `<details>` element.
+    /// <https://www.w3.org/TR/css-counter-styles-3/#disclosure-closed>
+    DisclosureClosed,
+    /// Western decimal numbers (e.g., 1, 2, 3, ..., 98, 99, 100).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#decimal>
+    Decimal,
+    /// Lowercase ASCII letters (e.g., a, b, c, ..., z, aa, ab).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#lower-alpha>
+    LowerAlpha,
+    /// Uppercase ASCII letters (e.g., A, B, C, ..., Z, AA, AB).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#upper-alpha>
+    UpperAlpha,
+    /// Arabic-indic numbering (e.g.، ١، ٢، ٣، ٤، ...، ٩٨، ٩٩، ١٠٠).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-arabic-indic>
+    ArabicIndic,
+    /// Bengali numbering (e.g., ১, ২, ৩, ..., ৯৮, ৯৯, ১০০).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-bengali>
+    Bengali,
+    /// Cambodian/Khmer numbering (e.g., ១, ២, ៣, ..., ៩៨, ៩៩, ១០០).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-cambodian>
+    Cambodian,
+    /// Han decimal numbers (e.g., 一, 二, 三, ..., 九八, 九九, 一〇〇).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#cjk-decimal>
+    CjkDecimal,
+    /// devanagari numbering (e.g., १, २, ३, ..., ९८, ९९, १००).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-devanagari>
+    Devanagari,
+    /// Gujarati numbering (e.g., ૧, ૨, ૩, ..., ૯૮, ૯૯, ૧૦૦).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-gujarati>
+    Gujarati,
+    /// Gurmukhi numbering (e.g., ੧, ੨, ੩, ..., ੯੮, ੯੯, ੧੦੦).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-gurmukhi>
+    Gurmukhi,
+    /// Kannada numbering (e.g., ೧, ೨, ೩, ..., ೯೮, ೯೯, ೧೦೦).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-kannada>
+    Kannada,
+    /// Cambodian/Khmer numbering (e.g., ១, ២, ៣, ..., ៩៨, ៩៩, ១០០).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-khmer>
+    Khmer,
+    /// Laotian numbering (e.g., ໑, ໒, ໓, ..., ໙໘, ໙໙, ໑໐໐).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-lao<
+    Lao,
+    /// Malayalam numbering (e.g., ൧, ൨, ൩, ..., ൯൮, ൯൯, ൧൦൦).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-malayalam>
+    Malayalam,
+    /// Mongolian numbering (e.g., ᠑, ᠒, ᠓, ..., ᠙᠘, ᠙᠙, ᠑᠐᠐).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-mongolian>
+    Mongolian,
+    /// Myanmar (Burmese) numbering (e.g., ၁, ၂, ၃, ..., ၉၈, ၉၉, ၁၀၀).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-myanmar>
+    Myanmar,
+    /// Oriya numbering (e.g., ୧, ୨, ୩, ..., ୯୮, ୯୯, ୧୦୦).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-oriya>
+    Oriya,
+    /// Persian numbering (e.g., ۱, ۲, ۳, ۴, ..., ۹۸, ۹۹, ۱۰۰).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-persian>
+    Persian,
+    /// Telugu numbering (e.g., ౧, ౨, ౩, ..., ౯౮, ౯౯, ౧౦౦).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-telugu>
+    Telugu,
+    /// Thai (Siamese) numbering (e.g., ๑, ๒, ๓, ..., ๙๘, ๙๙, ๑๐๐).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-thai>
+    Thai,
+    /// Tibetan numbering (e.g., ༡, ༢, ༣, ..., ༩༨, ༩༩, ༡༠༠).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-tibetan>
+    Tibetan,
+    /// Han "Earthly Branch" ordinals (e.g., 子, 丑, 寅, ..., 亥).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-cjk-earthly-branch>
+    CjkEarthlyBranch,
+    /// Han "Heavenly Stem" ordinals (e.g., 甲, 乙, 丙, ..., 癸)
+    /// <https://www.w3.org/TR/css-counter-styles-3/#valdef-counter-style-name-cjk-heavenly-stem>
+    CjkHeavenlyStem,
+    /// Lowercase classical Greek (e.g., α, β, γ, ..., ω, αα, αβ).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#lower-greek>
+    LowerGreek,
+    /// Dictionary-order hiragana lettering (e.g., あ, い, う, ..., ん, ああ, あい).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#hiragana>
+    Hiragana,
+    /// Iroha-order hiragana lettering (e.g., い, ろ, は, ..., す, いい, いろ).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#hiragana-iroha>
+    HiraganaIroha,
+    /// Dictionary-order katakana lettering (e.g., ア, イ, ウ, ..., ン, アア, アイ).
+    /// <https://www.w3.org/TR/css-counter-styles-3/#katakana>
+    Katakana,
+    /// Iroha-order katakana lettering (e.g., イ, ロ, ハ, ..., ス, イイ, イロ)
+    /// <https://www.w3.org/TR/css-counter-styles-3/#katakana-iroha>
+    KatakanaIroha,
 }
 
 #[cfg(feature = "servo")]

@@ -932,14 +932,6 @@ impl<'le> GeckoElement<'le> {
     pub fn slow_selector_flags(&self) -> ElementSelectorFlags {
         slow_selector_flags_from_node_selector_flags(self.as_node().selector_flags())
     }
-
-    /// Returns whether this element is an HTML <video> or <audio> element.
-    #[inline]
-    pub fn is_html_media_element(&self) -> bool {
-        self.is_html_element()
-            && (self.local_name().as_ptr() == local_name!("video").as_ptr()
-                || self.local_name().as_ptr() == local_name!("audio").as_ptr())
-    }
 }
 
 /// Convert slow selector flags from the raw `NodeSelectorFlags`.
@@ -2085,16 +2077,9 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             | NonTSPseudoClass::MozRevealed
             | NonTSPseudoClass::ActiveViewTransition
             | NonTSPseudoClass::MozValueEmpty
-            | NonTSPseudoClass::MozSuppressForPrintSelection
-            | NonTSPseudoClass::Seeking
-            | NonTSPseudoClass::Buffering
-            | NonTSPseudoClass::Stalled
-            | NonTSPseudoClass::Muted => {
+            | NonTSPseudoClass::MozSuppressForPrintSelection => {
                 self.state().intersects(pseudo_class.state_flag())
             },
-            NonTSPseudoClass::Paused => self.is_html_media_element() && self.state().intersects(ElementState::PAUSED),
-            NonTSPseudoClass::Playing => self.is_html_media_element() && !self.state().intersects(ElementState::PAUSED),
-            NonTSPseudoClass::VolumeLocked => false, // Bug 2013371
             NonTSPseudoClass::Dir(ref dir) => self.state().intersects(dir.element_state()),
             NonTSPseudoClass::ActiveViewTransitionType(ref types) => {
                 self.state().intersects(pseudo_class.state_flag())

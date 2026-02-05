@@ -198,8 +198,11 @@ where
     quirks_mode: QuirksMode,
     needs_selector_flags: NeedsSelectorFlags,
 
-    /// Whether we're matching in the contect of invalidation.
+    /// Whether we're matching in the context of invalidation.
     matching_for_invalidation: MatchingForInvalidation,
+
+    /// Whether we're matching in the context of revalidation.
+    matching_for_revalidation: bool,
 
     /// Caches to speed up expensive selector matches.
     pub selector_caches: &'a mut SelectorCaches,
@@ -221,7 +224,7 @@ where
         needs_selector_flags: NeedsSelectorFlags,
         matching_for_invalidation: MatchingForInvalidation,
     ) -> Self {
-        Self::new_for_visited(
+        Self::new_internal(
             matching_mode,
             bloom_filter,
             selector_caches,
@@ -230,6 +233,29 @@ where
             quirks_mode,
             needs_selector_flags,
             matching_for_invalidation,
+            false,
+        )
+    }
+
+    /// Constructs a new `MatchingContext` for revalidation.
+    pub fn new_for_revalidation(
+        bloom_filter: Option<&'a BloomFilter>,
+        selector_caches: &'a mut SelectorCaches,
+        quirks_mode: QuirksMode,
+        needs_selector_flags: NeedsSelectorFlags,
+    ) -> Self {
+        Self::new_internal(
+            // NB: `MatchingMode` doesn't really matter, given we don't share style
+            // between pseudos.
+            MatchingMode::Normal,
+            bloom_filter,
+            selector_caches,
+            VisitedHandlingMode::AllLinksUnvisited,
+            IncludeStartingStyle::No,
+            quirks_mode,
+            needs_selector_flags,
+            MatchingForInvalidation::No,
+            true,
         )
     }
 
@@ -244,6 +270,30 @@ where
         needs_selector_flags: NeedsSelectorFlags,
         matching_for_invalidation: MatchingForInvalidation,
     ) -> Self {
+        Self::new_internal(
+            matching_mode,
+            bloom_filter,
+            selector_caches,
+            visited_handling,
+            include_starting_style,
+            quirks_mode,
+            needs_selector_flags,
+            matching_for_invalidation,
+            false,
+        )
+    }
+
+    fn new_internal(
+        matching_mode: MatchingMode,
+        bloom_filter: Option<&'a BloomFilter>,
+        selector_caches: &'a mut SelectorCaches,
+        visited_handling: VisitedHandlingMode,
+        include_starting_style: IncludeStartingStyle,
+        quirks_mode: QuirksMode,
+        needs_selector_flags: NeedsSelectorFlags,
+        matching_for_invalidation: MatchingForInvalidation,
+        matching_for_revalidation: bool,
+    ) -> Self {
         Self {
             matching_mode,
             bloom_filter,
@@ -254,6 +304,7 @@ where
             classes_and_ids_case_sensitivity: quirks_mode.classes_and_ids_case_sensitivity(),
             needs_selector_flags,
             matching_for_invalidation,
+            matching_for_revalidation,
             scope_element: None,
             current_host: None,
             featureless: false,
@@ -314,6 +365,12 @@ where
     #[inline]
     pub fn matching_for_invalidation(&self) -> bool {
         self.matching_for_invalidation.is_for_invalidation()
+    }
+
+    /// Whether or not we're matching to revalidate.
+    #[inline]
+    pub fn matching_for_revalidation(&self) -> bool {
+        self.matching_for_revalidation
     }
 
     /// Whether or not we're comparing for invalidation, if we are matching for invalidation.

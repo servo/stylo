@@ -1302,18 +1302,18 @@ where
             None => element.is_root(),
         },
         Component::Scope | Component::ImplicitScope => {
-            if let Some(may_return_unknown) = context.shared.matching_for_invalidation_comparison()
-            {
+            let matching_for_invalidation = context.shared.matching_for_invalidation_comparison();
+            if context.shared.matching_for_revalidation() || matching_for_invalidation.is_some() {
+                let may_return_unknown = matching_for_invalidation.unwrap_or(false);
                 return if may_return_unknown {
                     KleeneValue::Unknown
                 } else {
                     KleeneValue::from(!context.shared.in_negation())
                 };
-            } else {
-                match context.shared.scope_element {
-                    Some(ref scope_element) => element.opaque() == *scope_element,
-                    None => element.is_root(),
-                }
+            }
+            match context.shared.scope_element {
+                Some(ref scope_element) => element.opaque() == *scope_element,
+                None => element.is_root(),
             }
         },
         Component::Nth(ref nth_data) => {

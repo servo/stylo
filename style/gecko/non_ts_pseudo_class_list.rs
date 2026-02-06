@@ -99,6 +99,7 @@ macro_rules! apply_non_ts_list {
                 ("buffering", Buffering, BUFFERING, _),
                 ("stalled", Stalled, STALLED, _),
                 ("muted", Muted, MUTED, _),
+                ("volume-locked", VolumeLocked, _, _),
 
 
                 // NOTE(emilio): Pseudo-classes below only depend on document state, and thus

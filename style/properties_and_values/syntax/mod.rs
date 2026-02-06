@@ -58,8 +58,19 @@ impl Descriptor {
     /// https://drafts.csswg.org/css-values-5/#typedef-syntax
     #[inline]
     pub fn from_css_parser<'i>(input: &mut CSSParser<'i, '_>) -> Result<Self, StyleParseError<'i>> {
-        //TODO(bug 2006624): Should also accept <syntax-string>
         let mut components = vec![];
+
+        if input.try_parse(|i| i.expect_delim('*')).is_ok() {
+            return Ok(Self::universal());
+        }
+
+        // Parse <syntax-string> if given.
+        if let Ok(syntax_string) = input.try_parse(|i| i.expect_string_cloned()) {
+            return Self::from_str(syntax_string.as_ref(), /* save_specified = */ true).or_else(
+                |err| Err(input.new_custom_error(StyleParseErrorKind::PropertySyntaxField(err))),
+            );
+        }
+
         loop {
             let name = Self::try_parse_component_name(input).map_err(|err| {
                 input.new_custom_error(StyleParseErrorKind::PropertySyntaxField(err))

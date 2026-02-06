@@ -866,6 +866,11 @@ impl<E: TElement> StyleSharingCache<E> {
             return None;
         }
 
+        if !checks::have_same_referenced_attrs(target, candidate) {
+            trace!("Miss: Attr references");
+            return None;
+        }
+
         if !checks::revalidate(target, candidate, shared, bloom, selector_caches) {
             trace!("Miss: Revalidation");
             return None;
@@ -907,6 +912,9 @@ impl<E: TElement> StyleSharingCache<E> {
         self.cache_mut().entries.lookup(|candidate| {
             debug_assert_ne!(candidate.element, target);
             if !candidate.parent_style_identity().eq(inherited) {
+                return None;
+            }
+            if !checks::have_same_referenced_attrs(&StyleSharingTarget::new(target), candidate) {
                 return None;
             }
             let data = candidate.element.borrow_data().unwrap();

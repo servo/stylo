@@ -15,7 +15,7 @@ use crate::values::generics::calc::{
 };
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{
-    AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide,
+    AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide, TreeScoped,
 };
 use crate::values::specified::length::{AbsoluteLength, FontRelativeLength, NoCalcLength};
 use crate::values::specified::length::{ContainerRelativeLength, ViewportPercentageLength};
@@ -306,7 +306,7 @@ impl generic::CalcNodeLeaf for Leaf {
         match *self {
             Self::Number(..) => SortKey::Number,
             Self::Percentage(..) => SortKey::Percentage,
-            Self::Time(..) => SortKey::Sec,
+            Self::Time(..) => SortKey::S,
             Self::Resolution(..) => SortKey::Dppx,
             Self::Angle(..) => SortKey::Deg,
             Self::Length(ref l) => match *l {
@@ -558,7 +558,9 @@ impl GenericAnchorFunction<Box<CalcNode>, Box<CalcNode>> {
                 })
                 .ok();
             Ok(Self {
-                target_element: target_element.unwrap_or_else(DashedIdent::empty),
+                target_element: TreeScoped::with_default_level(
+                    target_element.unwrap_or_else(DashedIdent::empty),
+                ),
                 side,
                 fallback: fallback.into(),
             })

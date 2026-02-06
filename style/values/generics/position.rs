@@ -5,14 +5,19 @@
 //! Generic types for CSS handling of specified and computed values of
 //! [`position`](https://drafts.csswg.org/css-backgrounds-3/#position)
 
+use cssparser::Parser;
 use std::fmt::Write;
 
+use style_derive::Animate;
 use style_traits::CssWriter;
+use style_traits::ParseError;
 use style_traits::SpecifiedValueInfo;
 use style_traits::ToCss;
 
 use crate::derives::*;
 use crate::logical_geometry::PhysicalSide;
+use crate::parser::{Parse, ParserContext};
+use crate::rule_tree::CascadeLevel;
 use crate::values::animated::ToAnimatedZero;
 use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::generics::box_::PositionProperty;
@@ -20,6 +25,88 @@ use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::ratio::Ratio;
 use crate::values::generics::Optional;
 use crate::values::DashedIdent;
+
+use crate::values::computed::Context;
+use crate::values::computed::ToComputedValue;
+
+/// A generic type for representing a value scoped to a specific cascade level
+/// in the shadow tree hierarchy.
+#[repr(C)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+    Serialize,
+    Deserialize,
+)]
+#[typed_value(derive_fields)]
+pub struct TreeScoped<T> {
+    /// The scoped value.
+    pub value: T,
+    /// The cascade level in the shadow tree hierarchy.
+    #[css(skip)]
+    pub scope: CascadeLevel,
+}
+
+impl<T> TreeScoped<T> {
+    /// Creates a new `TreeScoped` value.
+    pub fn new(value: T, scope: CascadeLevel) -> Self {
+        Self { value, scope }
+    }
+
+    /// Creates a new `TreeScoped` value with the default cascade level
+    /// (same tree author normal).
+    pub fn with_default_level(value: T) -> Self {
+        Self {
+            value,
+            scope: CascadeLevel::same_tree_author_normal(),
+        }
+    }
+}
+
+impl<T> Parse for TreeScoped<T>
+where
+    T: Parse,
+{
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        Ok(TreeScoped {
+            value: T::parse(context, input)?,
+            scope: CascadeLevel::same_tree_author_normal(),
+        })
+    }
+}
+
+impl<T: ToComputedValue> ToComputedValue for TreeScoped<T> {
+    type ComputedValue = TreeScoped<T::ComputedValue>;
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
+        TreeScoped {
+            value: self.value.to_computed_value(context),
+            scope: if context.current_scope().is_tree() {
+                context.current_scope()
+            } else {
+                self.scope.clone()
+            },
+        }
+    }
+
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        Self {
+            value: ToComputedValue::from_computed_value(&computed.value),
+            scope: computed.scope.clone(),
+        }
+    }
+}
 
 /// A generic type for representing a CSS [position](https://drafts.csswg.org/css-values/#position).
 #[derive(
@@ -353,8 +440,10 @@ pub use self::GenericInset as Inset;
 pub struct GenericAnchorFunction<Percentage, Fallback> {
     /// Anchor name of the element to anchor to.
     /// If omitted, selects the implicit anchor element.
+    /// The shadow cascade order of the tree-scoped anchor name
+    /// associates the name with the host of the originating stylesheet.
     #[animation(constant)]
-    pub target_element: DashedIdent,
+    pub target_element: TreeScoped<DashedIdent>,
     /// Where relative to the target anchor element to position
     /// the anchored element to.
     pub side: GenericAnchorSide<Percentage>,
@@ -372,7 +461,7 @@ where
         W: Write,
     {
         dest.write_str("anchor(")?;
-        if !self.target_element.is_empty() {
+        if !self.target_element.value.is_empty() {
             self.target_element.to_css(dest)?;
             dest.write_str(" ")?;
         }

@@ -272,7 +272,10 @@ impl PseudoElement {
     /// parent element.
     #[inline]
     pub fn animations_stored_in_parent(&self) -> bool {
-        matches!(*self, Self::Before | Self::After | Self::Marker | Self::Backdrop)
+        matches!(
+            *self,
+            Self::Before | Self::After | Self::Marker | Self::Backdrop
+        )
     }
 
     /// Whether this pseudo-element is the ::before pseudo.
@@ -309,12 +312,6 @@ impl PseudoElement {
     #[inline]
     pub fn is_first_line(&self) -> bool {
         *self == PseudoElement::FirstLine
-    }
-
-    /// Whether this pseudo-element is the ::-moz-color-swatch pseudo.
-    #[inline]
-    pub fn is_color_swatch(&self) -> bool {
-        *self == PseudoElement::MozColorSwatch
     }
 
     /// Whether this pseudo-element is lazily-cascaded.
@@ -383,7 +380,6 @@ impl PseudoElement {
     /// Whether this pseudo-element is enabled for all content.
     pub fn enabled_in_content(&self) -> bool {
         match *self {
-            Self::Highlight(..) => pref!("dom.customHighlightAPI.enabled"),
             Self::TargetText => pref!("dom.text_fragments.enabled"),
             Self::SliderFill | Self::SliderTrack | Self::SliderThumb => {
                 pref!("layout.css.modern-range-pseudos.enabled")

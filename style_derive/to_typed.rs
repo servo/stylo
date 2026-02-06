@@ -33,8 +33,8 @@ use synstructure::{BindingInfo, Structure};
 ///     otherwise, they return `None`.
 ///
 /// Unit variants are mapped to keywords using their Rust identifier converted
-/// via `to_css_identifier`. Attributes like `#[css(keyword = "...")]` are not
-/// yet supported in this path (see bug 1995187).
+/// via `to_css_identifier`. Attributes like `#[css(keyword = "...")]` will
+/// override the behavior and use the provided keyword instead.
 ///
 /// For other kinds of types (e.g. unions), no `to_typed` method is generated;
 /// the default implementation applies, which always returns `None`.
@@ -137,18 +137,19 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
 /// `ToTyped` implementation.
 ///
 /// * Unit variants are reified into `TypedValue::Keyword`, using the variant’s
-///   identifier converted with `cg::to_css_identifier`.
+///   identifier converted with `cg::to_css_identifier` or a custom keyword if
+///   provided through `#[css(keyword = "...")]`.
 /// * Variants marked with `#[css(skip)]` or `#[typed_value(skip)]` or
 ///   `#[typed(todo)]` return `None`.
 /// * Variants with fields delegate to `derive_variant_fields_expr()` when
 ///   `derive_fields` is enabled; otherwise they return `None`.
 ///
-/// Note: `#[css(keyword = "...")]` overrides are not handled in this
-/// `derive_variant_arm` path. This is fine for now because all existing cases
-/// that use such overrides (e.g. `#[css(keyword = "preserve-3d")]`) occur in
-/// pure keyword enums, which are covered by the all-unit `ToCss` path. Support
-/// will need to be added here once mixed enums with keyword overrides start
-/// implementing `ToTyped`.
+/// Note: `#[css(keyword = "...")]` overrides are now recognized in this
+/// `derive_variant_arm` path, but the support is not yet exercised because we
+/// currently have no mixed enums that use keyword overrides together with
+/// `ToTyped`. This keeps the behavior the same as before, all existing enums
+/// with keyword overrides (e.g. `#[css(keyword = "preserve-3d")]`) are still
+/// pure keyword enums and are handled through the all-unit `ToCss` path.
 fn derive_variant_arm(
     variant: &synstructure::VariantInfo,
     derive_fields: bool,
@@ -171,11 +172,6 @@ fn derive_variant_arm(
         return quote!(None);
     }
 
-    assert!(
-        css_variant_attrs.keyword.is_none(),
-        "Unhandled keyword attribute"
-    );
-
     // If the variant is explicitly marked #[typed_value(skip)] or
     // #[typed_value(todo)], don’t generate anything for it, always return
     // None.
@@ -186,9 +182,12 @@ fn derive_variant_arm(
     // If the variant has no bindings (i.e. no data fields), treat it as a unit
     // variant and reify it as a keyword.
     if bindings.is_empty() {
-        // Convert the Rust variant name into its CSS identifier form
+        // If #[css(keyword = "...")] is present, use it.
+        // Else convert the Rust variant name into its CSS identifier form
         // (e.g. AvoidColumn -> "avoid-column").
-        let keyword = cg::to_css_identifier(&identifier.to_string());
+        let keyword = css_variant_attrs
+            .keyword
+            .unwrap_or_else(|| cg::to_css_identifier(&identifier.to_string()));
 
         // Emit code to wrap this keyword into a TypedValue.
         quote! {

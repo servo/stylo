@@ -6,7 +6,7 @@
 //! ones used for ShadowRoot.
 
 use crate::derives::*;
-use crate::dom::TElement;
+use crate::invalidation::stylesheets::StylesheetInvalidationSet;
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::stylesheet_set::AuthorStylesheetSet;
 use crate::stylesheets::StylesheetInDocument;
@@ -49,21 +49,22 @@ where
     }
 
     /// Flush the pending sheet changes, updating `data` as appropriate.
-    ///
-    /// TODO(emilio): Need a host element and a snapshot map to do invalidation
-    /// properly.
     #[inline]
-    pub fn flush<E>(&mut self, stylist: &mut Stylist, guard: &SharedRwLockReadGuard)
-    where
-        E: TElement,
-    {
-        let flusher = self
-            .stylesheets
-            .flush::<E>(/* host = */ None, /* snapshot_map = */ None);
-
-        let result = stylist.rebuild_author_data(&self.data, flusher.sheets, guard);
+    pub fn flush(
+        &mut self,
+        stylist: &mut Stylist,
+        guard: &SharedRwLockReadGuard,
+    ) -> StylesheetInvalidationSet {
+        let (flusher, mut invalidations) = self.stylesheets.flush();
+        let result = stylist.rebuild_author_data(
+            &self.data,
+            flusher.sheets,
+            guard,
+            &mut invalidations.cascade_data_difference,
+        );
         if let Ok(Some(new_data)) = result {
             self.data = new_data;
         }
+        invalidations
     }
 }

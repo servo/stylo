@@ -9,6 +9,7 @@ import sys
 
 BASE = os.path.dirname(__file__.replace("\\", "/"))
 sys.path.insert(0, os.path.join(BASE, "vendored_python", "mako-1.3.10-py3-none-any.whl"))
+sys.path.insert(0, os.path.join(BASE, "vendored_python", "toml-0.10.2-py2.py3-none-any.whl"))
 sys.path.insert(0, os.path.join(BASE, "vendored_python")) # For importing markupsafe
 sys.path.insert(0, BASE)  # For importing `data.py`
 
@@ -25,21 +26,17 @@ OUT_DIR = os.environ.get("OUT_DIR", "")
 
 def main():
     usage = (
-        "Usage: %s [ servo | gecko ] [ style-crate | geckolib <template> ]"
+        "Usage: %s [ servo | gecko ]"
         % sys.argv[0]
     )
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         abort(usage)
     engine = sys.argv[1]
-    output = sys.argv[2]
 
-    if engine not in ["servo", "gecko"] or output not in [
-        "style-crate",
-        "geckolib",
-    ]:
+    if engine not in ["servo", "gecko"]:
         abort(usage)
 
-    properties = data.PropertiesData(engine=engine)
+    properties = data.PropertiesData(engine)
     properties_template = os.path.join(BASE, "properties.mako.rs")
     properties_file = render(
         properties_template,
@@ -48,42 +45,37 @@ def main():
         __file__=properties_template,
         OUT_DIR=OUT_DIR,
     )
-    if output == "style-crate":
-        write(OUT_DIR, "properties.rs", properties_file)
+    write(OUT_DIR, "properties.rs", properties_file)
 
-        if engine == "servo":
-            properties_dict = {
-                kind: {
-                    p.name: {"pref": getattr(p, "servo_pref")}
-                    for prop in properties_list
-                    if prop.enabled_in_content()
-                    for p in [prop] + prop.aliases
-                }
-                for kind, properties_list in [
-                    ("longhands", properties.longhands),
-                    ("shorthands", properties.shorthands),
-                ]
-            }
-            as_html = render(
-                os.path.join(BASE, "properties.html.mako"), properties=properties_dict
-            )
-            as_json = json.dumps(properties_dict, indent=4, sort_keys=True)
+    if engine != "servo":
+        return
 
-            # Four dotdots: /path/to/target(4)/debug(3)/build(2)/style-*(1)/out
-            # Do not ascend above the target dir, because it may not be called target
-            # or even have a parent (see CARGO_TARGET_DIR).
-            doc_servo = os.path.join(OUT_DIR, "..", "..", "..", "..", "doc", "stylo")
+    properties_dict = {
+        kind: {
+            p.name: {"pref": getattr(p, "servo_pref")}
+            for prop in properties_list
+            if prop.enabled_in_content()
+            for p in [prop] + prop.aliases
+        }
+        for kind, properties_list in [
+            ("longhands", properties.longhands),
+            ("shorthands", properties.shorthands),
+        ]
+    }
+    as_html = render(
+        os.path.join(BASE, "properties.html.mako"), properties=properties_dict
+    )
+    as_json = json.dumps(properties_dict, indent=4, sort_keys=True)
 
-            write(doc_servo, "css-properties.html", as_html)
-            write(doc_servo, "css-properties.json", as_json)
-            write(OUT_DIR, "css-properties.json", as_json)
-            write(OUT_DIR, "css-properties.html", as_html)
-    elif output == "geckolib":
-        if len(sys.argv) < 4:
-            abort(usage)
-        template = sys.argv[3]
-        header = render(template, data=properties)
-        sys.stdout.write(header)
+    # Four dotdots: /path/to/target(4)/debug(3)/build(2)/style-*(1)/out
+    # Do not ascend above the target dir, because it may not be called target
+    # or even have a parent (see CARGO_TARGET_DIR).
+    doc_servo = os.path.join(OUT_DIR, "..", "..", "..", "..", "doc", "stylo")
+
+    write(doc_servo, "css-properties.html", as_html)
+    write(doc_servo, "css-properties.json", as_json)
+    write(OUT_DIR, "css-properties.json", as_json)
+    write(OUT_DIR, "css-properties.html", as_html)
 
 
 def abort(message):

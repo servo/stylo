@@ -5,6 +5,7 @@
 //! Color mixing/interpolation.
 
 use super::{AbsoluteColor, ColorFlags, ColorSpace};
+use crate::color::ColorMixItemList;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::color::ColorMixFlags;
@@ -148,38 +149,100 @@ impl ToCss for ColorInterpolationMethod {
     }
 }
 
-/// Mix two colors into one.
-pub fn mix(
+/// A color and its weight for use in a color mix.
+pub struct ColorMixItem {
+    /// The color being mixed.
+    pub color: AbsoluteColor,
+    /// How much this color contributes to the final mix.
+    pub weight: f32,
+}
+
+impl ColorMixItem {
+    /// Create a new color item for mixing.
+    #[inline]
+    pub fn new(color: AbsoluteColor, weight: f32) -> Self {
+        Self { color, weight }
+    }
+}
+
+/// Mix N colors into one (left-to-right fold).
+pub fn mix_many(
     interpolation: ColorInterpolationMethod,
-    left_color: &AbsoluteColor,
-    mut left_weight: f32,
-    right_color: &AbsoluteColor,
-    mut right_weight: f32,
+    items: impl IntoIterator<Item = ColorMixItem>,
     flags: ColorMixFlags,
 ) -> AbsoluteColor {
-    // https://drafts.csswg.org/css-color-5/#color-mix-percent-norm
+    let items = items.into_iter().collect::<ColorMixItemList<_>>();
+
+    // Match the behavior when the sum of weights equal 0.
+    if items.is_empty() {
+        return AbsoluteColor::TRANSPARENT_BLACK.to_color_space(interpolation.space);
+    }
+
+    let normalize = flags.contains(ColorMixFlags::NORMALIZE_WEIGHTS);
+    let mut weight_scale = 1.0;
     let mut alpha_multiplier = 1.0;
-    if flags.contains(ColorMixFlags::NORMALIZE_WEIGHTS) {
-        let sum = left_weight + right_weight;
-        if sum != 1.0 {
-            let scale = 1.0 / sum;
-            left_weight *= scale;
-            right_weight *= scale;
+    if normalize {
+        // https://drafts.csswg.org/css-color-5/#color-mix-percent-norm
+        let sum: f32 = items.iter().map(|item| item.weight).sum();
+        if sum == 0.0 {
+            return AbsoluteColor::TRANSPARENT_BLACK.to_color_space(interpolation.space);
+        }
+        if (sum - 1.0).abs() > f32::EPSILON {
+            weight_scale = 1.0 / sum;
             if sum < 1.0 {
                 alpha_multiplier = sum;
             }
         }
     }
 
-    let result = mix_in(
+    // We can unwrap here, because we already checked for no items.
+    let (first, rest) = items.split_first().unwrap();
+    let mut accumulated_color = convert_for_mix(&first.color, interpolation.space);
+    let mut accumulated_weight = first.weight * weight_scale;
+
+    for item in rest {
+        let weight = item.weight * weight_scale;
+        let combined = accumulated_weight + weight;
+        if combined == 0.0 {
+            // If both are 0, this fold doesn't contribute anything to the result.
+            continue;
+        }
+        let right = convert_for_mix(&item.color, interpolation.space);
+
+        let (left_weight, right_weight) = if normalize {
+            (accumulated_weight / combined, weight / combined)
+        } else {
+            (accumulated_weight, weight)
+        };
+
+        accumulated_color = mix_with_weights(
+            &accumulated_color,
+            left_weight,
+            &right,
+            right_weight,
+            interpolation.hue,
+        );
+        accumulated_weight = combined;
+    }
+
+    let components = accumulated_color.raw_components();
+    let alpha = components[3] * alpha_multiplier;
+
+    // FIXME: In rare cases we end up with 0.999995 in the alpha channel,
+    //        so we reduce the precision to avoid serializing to
+    //        rgba(?, ?, ?, 1).  This is not ideal, so we should look into
+    //        ways to avoid it. Maybe pre-multiply all color components and
+    //        then divide after calculations?
+    let alpha = (alpha.clamp(0.0, 1.0) * 1000.0).round() / 1000.0;
+
+    let mut result = AbsoluteColor::new(
         interpolation.space,
-        left_color,
-        left_weight,
-        right_color,
-        right_weight,
-        interpolation.hue,
-        alpha_multiplier,
+        components[0],
+        components[1],
+        components[2],
+        alpha,
     );
+    result.flags = accumulated_color.flags;
 
     if flags.contains(ColorMixFlags::RESULT_IN_MODERN_SYNTAX) {
         // If the result *MUST* be in modern syntax, then make sure it is in a
@@ -190,7 +253,7 @@ pub fn mix(
         } else {
             result
         }
-    } else if left_color.is_legacy_syntax() && right_color.is_legacy_syntax() {
+    } else if items.iter().all(|item| item.color.is_legacy_syntax()) {
         // If both sides of the mix is legacy then convert the result back into
         // legacy.
         result.into_srgb_legacy()
@@ -304,20 +367,16 @@ impl AbsoluteColor {
     }
 }
 
-fn mix_in(
-    color_space: ColorSpace,
-    left_color: &AbsoluteColor,
+/// Mix two colors already in the interpolation color space.
+fn mix_with_weights(
+    left: &AbsoluteColor,
     left_weight: f32,
-    right_color: &AbsoluteColor,
+    right: &AbsoluteColor,
     right_weight: f32,
     hue_interpolation: HueInterpolationMethod,
-    alpha_multiplier: f32,
 ) -> AbsoluteColor {
-    // Convert both colors into the interpolation color space.
-    let mut left = left_color.to_color_space(color_space);
-    left.carry_forward_analogous_missing_components(&left_color);
-    let mut right = right_color.to_color_space(color_space);
-    right.carry_forward_analogous_missing_components(&right_color);
+    debug_assert!(right.color_space == left.color_space);
+    let color_space = left.color_space;
 
     let outcomes = [
         ComponentMixOutcome::from_colors(&left, &right, ColorFlags::C0_IS_NONE),
@@ -340,24 +399,15 @@ fn mix_in(
         &outcomes,
     );
 
-    let alpha = if alpha_multiplier != 1.0 {
-        result[3] * alpha_multiplier
-    } else {
-        result[3]
-    };
-
-    // FIXME: In rare cases we end up with 0.999995 in the alpha channel,
-    //        so we reduce the precision to avoid serializing to
-    //        rgba(?, ?, ?, 1).  This is not ideal, so we should look into
-    //        ways to avoid it. Maybe pre-multiply all color components and
-    //        then divide after calculations?
-    let alpha = (alpha * 1000.0).round() / 1000.0;
-
-    let mut result = AbsoluteColor::new(color_space, result[0], result[1], result[2], alpha);
-
+    let mut result = AbsoluteColor::new(color_space, result[0], result[1], result[2], result[3]);
     result.flags = result_flags;
-
     result
+}
+
+fn convert_for_mix(color: &AbsoluteColor, color_space: ColorSpace) -> AbsoluteColor {
+    let mut converted = color.to_color_space(color_space);
+    converted.carry_forward_analogous_missing_components(color);
+    converted
 }
 
 fn interpolate_premultiplied_component(

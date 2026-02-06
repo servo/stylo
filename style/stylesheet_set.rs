@@ -5,10 +5,8 @@
 //! A centralized set of stylesheets for a document.
 
 use crate::derives::*;
-use crate::dom::TElement;
 use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet};
 use crate::media_queries::Device;
-use crate::selector_parser::SnapshotMap;
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::stylesheets::{
     CssRule, CssRuleRef, CustomMediaMap, Origin, OriginSet, PerOrigin, StylesheetInDocument,
@@ -67,7 +65,6 @@ where
     S: StylesheetInDocument + PartialEq + 'static,
 {
     collections: &'a mut PerOrigin<SheetCollection<S>>,
-    had_invalidations: bool,
 }
 
 /// The type of rebuild that we need to do for a given stylesheet.
@@ -100,13 +97,6 @@ where
     /// Only used for UA sheets.
     pub fn origin_sheets(&self, origin: Origin) -> impl Iterator<Item = &S> {
         self.collections.borrow_for_origin(&origin).iter()
-    }
-
-    /// Returns whether any DOM invalidations were processed as a result of the
-    /// stylesheet flush.
-    #[inline]
-    pub fn had_invalidations(&self) -> bool {
-        self.had_invalidations
     }
 }
 
@@ -448,7 +438,9 @@ macro_rules! sheet_set_methods {
                 // Maybe we could record whether we saw a clone in this flush,
                 // and if so do the conservative thing, otherwise just
                 // early-return.
-                RuleChangeKind::StyleRuleDeclarations => DataValidity::FullyInvalid,
+                RuleChangeKind::PositionTryDeclarations | RuleChangeKind::StyleRuleDeclarations => {
+                    DataValidity::FullyInvalid
+                },
             };
 
             let collection = self.collection_for(&sheet, guard);
@@ -508,24 +500,16 @@ where
                 .any(|(collection, _)| collection.dirty)
     }
 
-    /// Flush the current set, unmarking it as dirty, and returns a
-    /// `DocumentStylesheetFlusher` in order to rebuild the stylist.
-    pub fn flush<E>(
-        &mut self,
-        document_element: Option<E>,
-        snapshots: Option<&SnapshotMap>,
-    ) -> DocumentStylesheetFlusher<'_, S>
-    where
-        E: TElement,
-    {
+    /// Flush the current set, unmarking it as dirty, and returns a `DocumentStylesheetFlusher` in
+    /// order to rebuild the stylist and the invalidation set.
+    pub fn flush(&mut self) -> (DocumentStylesheetFlusher<'_, S>, StylesheetInvalidationSet) {
         debug!("DocumentStylesheetSet::flush");
-
-        let had_invalidations = self.invalidations.flush(document_element, snapshots);
-
-        DocumentStylesheetFlusher {
-            collections: &mut self.collections,
-            had_invalidations,
-        }
+        (
+            DocumentStylesheetFlusher {
+                collections: &mut self.collections,
+            },
+            std::mem::take(&mut self.invalidations),
+        )
     }
 
     /// Flush stylesheets, but without running any of the invalidation passes.
@@ -534,7 +518,7 @@ where
         debug!("DocumentStylesheetSet::flush_without_invalidation");
 
         let mut origins = OriginSet::empty();
-        self.invalidations.clear();
+        std::mem::take(&mut self.invalidations);
 
         for (collection, origin) in self.collections.iter_mut_origins() {
             if collection.flush().dirty() {
@@ -591,8 +575,6 @@ where
 {
     /// The actual flusher for the collection.
     pub sheets: SheetCollectionFlusher<'a, S>,
-    /// Whether any sheet invalidation matched.
-    pub had_invalidations: bool,
 }
 
 impl<S> AuthorStylesheetSet<S>
@@ -652,21 +634,12 @@ where
     }
 
     /// Flush the stylesheets for this author set.
-    ///
-    /// `host` is the root of the affected subtree, like the shadow host, for
-    /// example.
-    pub fn flush<E>(
-        &mut self,
-        host: Option<E>,
-        snapshots: Option<&SnapshotMap>,
-    ) -> AuthorStylesheetFlusher<'_, S>
-    where
-        E: TElement,
-    {
-        let had_invalidations = self.invalidations.flush(host, snapshots);
-        AuthorStylesheetFlusher {
-            sheets: self.collection.flush(),
-            had_invalidations,
-        }
+    pub fn flush(&mut self) -> (AuthorStylesheetFlusher<'_, S>, StylesheetInvalidationSet) {
+        (
+            AuthorStylesheetFlusher {
+                sheets: self.collection.flush(),
+            },
+            std::mem::take(&mut self.invalidations),
+        )
     }
 }

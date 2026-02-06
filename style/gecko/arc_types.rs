@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 //! This file lists all arc FFI types and defines corresponding addref and release functions. This
-//! list loosely corresponds to ServoLockedArcTypeList.h file in Gecko.
+//! list loosely corresponds to ServoLockedArcTypeList.inc file in Gecko.
 
 #![allow(non_snake_case, missing_docs)]
 

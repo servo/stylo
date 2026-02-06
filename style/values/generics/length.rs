@@ -9,11 +9,13 @@ use crate::logical_geometry::PhysicalSide;
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::generics::box_::PositionProperty;
+use crate::values::generics::position::TreeScoped;
 use crate::values::generics::Optional;
 use crate::values::DashedIdent;
 use crate::Zero;
 use cssparser::Parser;
 use std::fmt::Write;
+use style_derive::Animate;
 use style_traits::ParseError;
 use style_traits::StyleParseErrorKind;
 use style_traits::ToCss;
@@ -398,7 +400,7 @@ pub struct GenericAnchorSizeFunction<Fallback> {
     /// Anchor name of the element to anchor to.
     /// If omitted (i.e. empty), selects the implicit anchor element.
     #[animation(constant)]
-    pub target_element: DashedIdent,
+    pub target_element: TreeScoped<DashedIdent>,
     /// Size of the positioned element, expressed in that of the anchor element.
     /// If omitted, defaults to the axis of the property the function is used in.
     pub size: AnchorSizeKeyword,
@@ -425,7 +427,7 @@ where
     {
         dest.write_str("anchor-size(")?;
         let mut previous_entry_printed = false;
-        if !self.target_element.is_empty() {
+        if !self.target_element.value.0.is_empty() {
             previous_entry_printed = true;
             self.target_element.to_css(dest)?;
         }
@@ -520,7 +522,7 @@ impl<LengthPercentage> GenericAnchorSizeFunction<LengthPercentage> {
                 })
                 .ok();
             Ok(GenericAnchorSizeFunction {
-                target_element,
+                target_element: TreeScoped::with_default_level(target_element),
                 size: size.into(),
                 fallback: fallback.into(),
             })

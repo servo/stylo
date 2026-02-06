@@ -5,14 +5,13 @@
 //! Data needed to style a Gecko document.
 
 use crate::derives::*;
-use crate::dom::TElement;
 use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs::{
     self, ServoStyleSetSizes, StyleSheet as DomStyleSheet, StyleSheetInfo,
 };
+use crate::invalidation::stylesheets::StylesheetInvalidationSet;
 use crate::media_queries::{Device, MediaList};
 use crate::properties::ComputedValues;
-use crate::selector_parser::SnapshotMap;
 use crate::shared_lock::{SharedRwLockReadGuard, StylesheetGuards};
 use crate::stylesheets::scope_rule::ImplicitScopeRoot;
 use crate::stylesheets::{StylesheetContents, StylesheetInDocument};
@@ -198,17 +197,11 @@ impl PerDocumentStyleData {
 
 impl PerDocumentStyleDataImpl {
     /// Recreate the style data if the stylesheets have changed.
-    pub fn flush_stylesheets<E>(
+    pub fn flush_stylesheets(
         &mut self,
         guard: &SharedRwLockReadGuard,
-        document_element: Option<E>,
-        snapshots: Option<&SnapshotMap>,
-    ) -> bool
-    where
-        E: TElement,
-    {
-        self.stylist
-            .flush(&StylesheetGuards::same(guard), document_element, snapshots)
+    ) -> StylesheetInvalidationSet {
+        self.stylist.flush(&StylesheetGuards::same(guard))
     }
 
     /// Get the default computed values for this document.

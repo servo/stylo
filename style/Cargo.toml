@@ -91,6 +91,8 @@ smallvec = "1.0"
 static_assertions = "1.1"
 static_prefs = { workspace = true}
 string_cache = { version = "0.9", optional = true }
+strum = "0.27"
+strum_macros = "0.27"
 style_config = { workspace = true, optional = true }
 style_derive = { workspace = true }
 style_traits = { workspace = true }

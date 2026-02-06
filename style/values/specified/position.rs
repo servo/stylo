@@ -20,7 +20,7 @@ use crate::values::generics::position::PositionComponent as GenericPositionCompo
 use crate::values::generics::position::PositionOrAuto as GenericPositionOrAuto;
 use crate::values::generics::position::ZIndex as GenericZIndex;
 use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericAnchorSide};
-use crate::values::generics::position::{GenericAnchorFunction, GenericInset};
+use crate::values::generics::position::{GenericAnchorFunction, GenericInset, TreeScoped};
 use crate::values::specified;
 use crate::values::specified::align::AlignFlags;
 use crate::values::specified::{AllowQuirks, Integer, LengthPercentage, NonNegativeNumber};
@@ -349,8 +349,8 @@ impl<S: Side> PositionComponent<S> {
 }
 
 /// https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name
-#[repr(transparent)]
 #[derive(
+    Animate,
     Clone,
     Debug,
     MallocSizeOf,
@@ -363,25 +363,22 @@ impl<S: Side> PositionComponent<S> {
     ToTyped,
 )]
 #[css(comma)]
-pub struct AnchorName(
+#[repr(transparent)]
+pub struct AnchorNameIdent(
     #[css(iterable, if_empty = "none")]
     #[ignore_malloc_size_of = "Arc"]
+    #[animation(constant)]
     pub crate::ArcSlice<DashedIdent>,
 );
 
-impl AnchorName {
+impl AnchorNameIdent {
     /// Return the `none` value.
     pub fn none() -> Self {
         Self(Default::default())
     }
-
-    /// Returns whether this is the `none` value.
-    pub fn is_none(&self) -> bool {
-        self.0.is_empty()
-    }
 }
 
-impl Parse for AnchorName {
+impl Parse for AnchorNameIdent {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -398,7 +395,17 @@ impl Parse for AnchorName {
         while input.try_parse(|input| input.expect_comma()).is_ok() {
             idents.push(DashedIdent::parse(context, input)?);
         }
-        Ok(AnchorName(ArcSlice::from_iter(idents.drain(..))))
+        Ok(AnchorNameIdent(ArcSlice::from_iter(idents.drain(..))))
+    }
+}
+
+/// https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name
+pub type AnchorName = TreeScoped<AnchorNameIdent>;
+
+impl AnchorName {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::with_default_level(AnchorNameIdent::none())
     }
 }
 
@@ -416,7 +423,7 @@ impl Parse for AnchorName {
     ToTyped,
 )]
 #[repr(u8)]
-pub enum AnchorScope {
+pub enum AnchorScopeKeyword {
     /// `none`
     None,
     /// `all`
@@ -430,19 +437,14 @@ pub enum AnchorScope {
     ),
 }
 
-impl AnchorScope {
+impl AnchorScopeKeyword {
     /// Return the `none` value.
     pub fn none() -> Self {
         Self::None
     }
-
-    /// Returns whether this is the `none` value.
-    pub fn is_none(&self) -> bool {
-        *self == Self::None
-    }
 }
 
-impl Parse for AnchorScope {
+impl Parse for AnchorScopeKeyword {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -462,7 +464,19 @@ impl Parse for AnchorScope {
         while input.try_parse(|input| input.expect_comma()).is_ok() {
             idents.push(DashedIdent::parse(context, input)?);
         }
-        Ok(AnchorScope::Idents(ArcSlice::from_iter(idents.drain(..))))
+        Ok(AnchorScopeKeyword::Idents(ArcSlice::from_iter(
+            idents.drain(..),
+        )))
+    }
+}
+
+/// https://drafts.csswg.org/css-anchor-position-1/#propdef-scope
+pub type AnchorScope = TreeScoped<AnchorScopeKeyword>;
+
+impl AnchorScope {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::with_default_level(AnchorScopeKeyword::none())
     }
 }
 
@@ -481,13 +495,30 @@ impl Parse for AnchorScope {
     ToTyped,
 )]
 #[repr(u8)]
-pub enum PositionAnchor {
+pub enum PositionAnchorKeyword {
     /// `none`
     None,
     /// `auto`
     Auto,
     /// `<dashed-ident>`
     Ident(DashedIdent),
+}
+
+impl PositionAnchorKeyword {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::None
+    }
+}
+
+/// https://drafts.csswg.org/css-anchor-position-1/#propdef-position-anchor
+pub type PositionAnchor = TreeScoped<PositionAnchorKeyword>;
+
+impl PositionAnchor {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::with_default_level(PositionAnchorKeyword::none())
+    }
 }
 
 #[derive(
@@ -1380,9 +1411,21 @@ impl PositionArea {
     /// Turns this <position-area> value into a physical <position-area>.
     pub fn to_physical(mut self, cb_wm: WritingMode, self_wm: WritingMode) -> Self {
         self.make_missing_second_explicit();
-        self.first = self.first.to_physical(cb_wm, self_wm, LogicalAxis::Block);
-        self.second = self.second.to_physical(cb_wm, self_wm, LogicalAxis::Inline);
-        self.canonicalize_order();
+        // If both axes are None, to_physical and canonicalize_order are not useful.
+        // The first value refers to the block axis, the second to the inline axis;
+        // but as a physical type, they will be interpreted as the x- and y-axis
+        // respectively, so if the writing mode is horizontal we need to swap the
+        // values (block -> y, inline -> x).
+        if self.first.axis() == PositionAreaAxis::None
+            && self.second.axis() == PositionAreaAxis::None
+            && !cb_wm.is_vertical()
+        {
+            std::mem::swap(&mut self.first, &mut self.second);
+        } else {
+            self.first = self.first.to_physical(cb_wm, self_wm, LogicalAxis::Block);
+            self.second = self.second.to_physical(cb_wm, self_wm, LogicalAxis::Inline);
+            self.canonicalize_order();
+        }
         self
     }
 
@@ -2133,7 +2176,9 @@ impl Parse for AnchorFunction {
                 })
                 .ok();
             Ok(Self {
-                target_element: target_element.unwrap_or_else(DashedIdent::empty),
+                target_element: TreeScoped::with_default_level(
+                    target_element.unwrap_or_else(DashedIdent::empty),
+                ),
                 side,
                 fallback: fallback.into(),
             })

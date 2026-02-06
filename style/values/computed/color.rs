@@ -75,14 +75,16 @@ impl Color {
             },
             Self::CurrentColor => *current_color,
             Self::ColorMix(ref mix) => {
-                let left = mix.left.resolve_to_absolute(current_color);
-                let right = mix.right.resolve_to_absolute(current_color);
-                crate::color::mix::mix(
+                use crate::color::mix;
+
+                mix::mix_many(
                     mix.interpolation,
-                    &left,
-                    mix.left_percentage.to_percentage(),
-                    &right,
-                    mix.right_percentage.to_percentage(),
+                    mix.items.iter().map(|item| {
+                        mix::ColorMixItem::new(
+                            item.color.resolve_to_absolute(current_color),
+                            item.percentage.to_percentage(),
+                        )
+                    }),
                     mix.flags,
                 )
             },

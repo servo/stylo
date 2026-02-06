@@ -4,23 +4,30 @@
 
 //! Animated types for CSS colors.
 
+use style_traits::owned_slice::OwnedSlice;
+
 use crate::color::mix::ColorInterpolationMethod;
 use crate::color::AbsoluteColor;
 use crate::values::animated::{Animate, Procedure, ToAnimatedZero};
 use crate::values::computed::Percentage;
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
-use crate::values::generics::color::{ColorMixFlags, GenericColor, GenericColorMix};
+use crate::values::generics::color::{
+    ColorMixFlags, GenericColor, GenericColorMix, GenericColorMixItem,
+};
 
 impl Animate for AbsoluteColor {
     #[inline]
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
+        use crate::color::mix;
+
         let (left_weight, right_weight) = procedure.weights();
-        Ok(crate::color::mix::mix(
+
+        Ok(mix::mix_many(
             ColorInterpolationMethod::best_interpolation_between(self, other),
-            self,
-            left_weight as f32,
-            other,
-            right_weight as f32,
+            [
+                mix::ColorMixItem::new(*self, left_weight as f32),
+                mix::ColorMixItem::new(*other, right_weight as f32),
+            ],
             ColorMixFlags::empty(),
         ))
     }
@@ -59,12 +66,19 @@ impl Animate for Color {
     #[inline]
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
         let (left_weight, right_weight) = procedure.weights();
+
         Ok(Self::from_color_mix(ColorMix {
             interpolation: ColorInterpolationMethod::srgb(),
-            left: self.clone(),
-            left_percentage: Percentage(left_weight as f32),
-            right: other.clone(),
-            right_percentage: Percentage(right_weight as f32),
+            items: OwnedSlice::from_slice(&[
+                GenericColorMixItem {
+                    color: self.clone(),
+                    percentage: Percentage(left_weight as f32),
+                },
+                GenericColorMixItem {
+                    color: other.clone(),
+                    percentage: Percentage(right_weight as f32),
+                },
+            ]),
             // See https://github.com/w3c/csswg-drafts/issues/7324
             flags: ColorMixFlags::empty(),
         }))

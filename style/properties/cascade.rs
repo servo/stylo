@@ -10,7 +10,7 @@ use crate::computed_value_flags::ComputedValueFlags;
 use crate::custom_properties::{
     CustomPropertiesBuilder, DeferFontRelativeCustomPropertyResolution,
 };
-use crate::dom::{AttributeProvider, AttributeTracker, DummyAttributeProvider, TElement};
+use crate::dom::{AttributeTracker, TElement};
 #[cfg(feature = "gecko")]
 use crate::font_metrics::FontMetricsOrientation;
 use crate::logical_geometry::WritingMode;
@@ -309,11 +309,10 @@ where
     let mut cascade = Cascade::new(first_line_reparenting, try_tactic, ignore_colors);
     let mut declarations = Default::default();
     let mut shorthand_cache = ShorthandsWithPropertyReferencesCache::default();
-    let attr_provider: &dyn AttributeProvider = match element {
-        Some(ref attr_provider) => attr_provider,
-        None => &DummyAttributeProvider {},
+    let mut attribute_tracker = match element {
+        Some(ref attr_provider) => AttributeTracker::new(attr_provider),
+        None => AttributeTracker::new_dummy(),
     };
-    let mut attribute_tracker = AttributeTracker::new(attr_provider);
     let properties_to_apply = match cascade_mode {
         CascadeMode::Visited { unvisited_context } => {
             context.builder.custom_properties = unvisited_context.builder.custom_properties.clone();

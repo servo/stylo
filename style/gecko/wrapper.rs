@@ -2088,7 +2088,8 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             | NonTSPseudoClass::MozSuppressForPrintSelection
             | NonTSPseudoClass::Seeking
             | NonTSPseudoClass::Buffering
-            | NonTSPseudoClass::Stalled => {
+            | NonTSPseudoClass::Stalled
+            | NonTSPseudoClass::Muted => {
                 self.state().intersects(pseudo_class.state_flag())
             },
             NonTSPseudoClass::Paused => self.is_html_media_element() && self.state().intersects(ElementState::PAUSED),

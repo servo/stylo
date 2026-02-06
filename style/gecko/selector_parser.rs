@@ -229,7 +229,7 @@ impl NonTSPseudoClass {
         }
         if matches!(
             *self,
-            Self::Playing | Self::Paused | Self::Seeking | Self::Buffering | Self::Stalled
+            Self::Playing | Self::Paused | Self::Seeking | Self::Buffering | Self::Stalled | Self::Muted
         ) {
             return static_prefs::pref!("dom.media.pseudo-classes.enabled");
         }

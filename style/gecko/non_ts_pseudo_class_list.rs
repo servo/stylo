@@ -92,6 +92,11 @@ macro_rules! apply_non_ts_list {
                 ("-moz-native-anonymous", MozNativeAnonymous, _, PSEUDO_CLASS_ENABLED_IN_UA_SHEETS),
                 ("-moz-placeholder", MozPlaceholder, _, _),
 
+                // Media element pseudo classes
+                ("paused", Paused, PAUSED, _),
+                ("playing", Playing, PAUSED, _),
+
+
                 // NOTE(emilio): Pseudo-classes below only depend on document state, and thus
                 // conceptually they should probably be media queries instead.
                 //

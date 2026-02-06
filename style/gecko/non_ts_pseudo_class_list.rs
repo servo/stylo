@@ -95,6 +95,7 @@ macro_rules! apply_non_ts_list {
                 // Media element pseudo classes
                 ("paused", Paused, PAUSED, _),
                 ("playing", Playing, PAUSED, _),
+                ("seeking", Seeking, SEEKING, _),
 
 
                 // NOTE(emilio): Pseudo-classes below only depend on document state, and thus

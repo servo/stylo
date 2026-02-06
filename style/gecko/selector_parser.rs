@@ -227,7 +227,10 @@ impl NonTSPseudoClass {
         if matches!(*self, Self::Heading(..)) {
             return static_prefs::pref!("layout.css.heading-selector.enabled");
         }
-        if matches!(*self, Self::Playing | Self::Paused | Self::Seeking) {
+        if matches!(
+            *self,
+            Self::Playing | Self::Paused | Self::Seeking | Self::Buffering | Self::Stalled
+        ) {
             return static_prefs::pref!("dom.media.pseudo-classes.enabled");
         }
         !self.has_any_flag(NonTSPseudoClassFlag::PSEUDO_CLASS_ENABLED_IN_UA_SHEETS_AND_CHROME)

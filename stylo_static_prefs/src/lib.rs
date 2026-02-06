@@ -52,6 +52,6 @@ macro_rules! pref {
         true
     };
     ($string:literal) => {
-        false
+        style_config::get_bool($string);
     };
 }

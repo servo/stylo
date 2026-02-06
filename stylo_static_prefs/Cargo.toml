@@ -9,3 +9,6 @@ keywords = ["css", "style"]
 license = "MPL-2.0"
 edition = "2021"
 readme = "../README.md"
+
+[dependencies]
+style_config = { workspace = true }

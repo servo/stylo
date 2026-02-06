@@ -8,7 +8,7 @@
 //! `pseudo_element_definition.mako.rs`. If you touch that file, you probably
 //! need to update the checked-in files for Servo.
 
-use crate::gecko_bindings::structs::{self, PseudoStyleType};
+use crate::gecko_bindings::structs::PseudoStyleType;
 use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::{ComputedValues, PropertyFlags};
 use crate::selector_parser::{PseudoElementCascadeType, SelectorImpl};
@@ -21,6 +21,45 @@ use selectors::parser::PseudoElement as PseudoElementTrait;
 use static_prefs::pref;
 use std::fmt;
 use style_traits::ParseError;
+
+bitflags! {
+    /// Various pseudo-element flags, see pseudo_elements.toml and anonymous_boxes.toml for the
+    /// meaning.
+    #[derive(Clone, Copy, Default)]
+    pub struct PseudoStyleTypeFlags : u16 {
+        /// No flags
+        const NONE = 0;
+        /// Whether we're enabled in UA sheets.
+        const ENABLED_IN_UA = 1 << 0;
+        /// Whether we're enabled in chrome sheets.
+        const ENABLED_IN_CHROME = 1 << 1;
+        /// Whether we're enabled by a pref.
+        const ENABLED_BY_PREF = 1 << 2;
+        /// Whether we're an anonymous box.
+        const IS_PSEUDO_ELEMENT = 1 << 3;
+        /// Whether we're a CSS2 pseudo-element.
+        const IS_CSS2 = 1 << 4;
+        /// Whether we're an eagerly-cascaded pseudo-element.
+        const IS_EAGER = 1 << 5;
+        /// Whether we can be created by JS
+        const IS_JS_CREATED_NAC = 1 << 6;
+        /// Whether we can be a flex or grid item.
+        const IS_FLEX_OR_GRID_ITEM = 1 << 7;
+        /// Whether we're backed by a real element.
+        const IS_ELEMENT_BACKED = 1 << 8;
+        /// Whether we support user-action state pseudo-classes after the pseudo-element.
+        const SUPPORTS_USER_ACTION_STATE = 1 << 9;
+        /// Whether we are an inheriting anon-box.
+        const IS_INHERITING_ANON_BOX = 1 << 10;
+        /// Whether we are a non-inheriting anon box.
+        const IS_NON_INHERITING_ANON_BOX = 1 << 11;
+        /// Combo of the above to cover all anon boxes.
+        const IS_ANON_BOX = Self::IS_INHERITING_ANON_BOX.bits() |
+                            Self::IS_NON_INHERITING_ANON_BOX.bits();
+        /// Whether we're a wrapping anon box.
+        const IS_WRAPPER_ANON_BOX = 1 << 12;
+    }
+}
 
 include!(concat!(
     env!("OUT_DIR"),
@@ -253,6 +292,37 @@ impl PseudoElement {
         PseudoElementCascadeType::Lazy
     }
 
+    /// Returns an index of the pseudo-element.
+    #[inline]
+    pub fn index(&self) -> usize {
+        self.discriminant() as usize
+    }
+
+    #[inline]
+    fn discriminant(&self) -> u8 {
+        // SAFETY: #[repr(u8) guarantees this, see comments in
+        // https://doc.rust-lang.org/std/mem/fn.discriminant.html
+        unsafe { *(self as *const _ as *const u8) }
+    }
+
+    /// Whether this pseudo-element is an unknown Webkit-prefixed pseudo-element.
+    #[inline]
+    pub fn is_unknown_webkit_pseudo_element(&self) -> bool {
+        matches!(*self, PseudoElement::UnknownWebkit(..))
+    }
+
+    /// Whether this pseudo-element is an anonymous box.
+    #[inline]
+    pub fn is_anon_box(&self) -> bool {
+        self.flags().intersects(PseudoStyleTypeFlags::IS_ANON_BOX)
+    }
+
+    /// Whether this pseudo-element is eagerly-cascaded.
+    #[inline]
+    pub fn is_eager(&self) -> bool {
+        self.flags().intersects(PseudoStyleTypeFlags::IS_EAGER)
+    }
+
     /// Gets the canonical index of this eagerly-cascaded pseudo-element.
     #[inline]
     pub fn eager_index(&self) -> usize {
@@ -374,51 +444,39 @@ impl PseudoElement {
 
     /// Whether this pseudo-element supports user action selectors.
     pub fn supports_user_action_state(&self) -> bool {
-        (self.flags() & structs::CSS_PSEUDO_ELEMENT_SUPPORTS_USER_ACTION_STATE) != 0
+        self.flags()
+            .intersects(PseudoStyleTypeFlags::SUPPORTS_USER_ACTION_STATE)
     }
 
     /// Whether this pseudo-element is enabled for all content.
     pub fn enabled_in_content(&self) -> bool {
-        match *self {
-            Self::TargetText => pref!("dom.text_fragments.enabled"),
-            Self::SliderFill | Self::SliderTrack | Self::SliderThumb => {
-                pref!("layout.css.modern-range-pseudos.enabled")
-            },
-            Self::DetailsContent => {
-                pref!("layout.css.details-content.enabled")
-            },
-            Self::ViewTransition
-            | Self::ViewTransitionGroup(..)
-            | Self::ViewTransitionImagePair(..)
-            | Self::ViewTransitionOld(..)
-            | Self::ViewTransitionNew(..) => pref!("dom.viewTransitions.enabled"),
-            // If it's not explicitly enabled in UA sheets or chrome, then we're enabled for
-            // content.
-            _ => (self.flags() & structs::CSS_PSEUDO_ELEMENT_ENABLED_IN_UA_SHEETS_AND_CHROME) == 0,
-        }
+        Self::type_enabled_in_content(self.pseudo_type())
     }
 
     /// Whether this pseudo is enabled explicitly in UA sheets.
     pub fn enabled_in_ua_sheets(&self) -> bool {
-        (self.flags() & structs::CSS_PSEUDO_ELEMENT_ENABLED_IN_UA_SHEETS) != 0
+        self.flags().intersects(PseudoStyleTypeFlags::ENABLED_IN_UA)
     }
 
     /// Whether this pseudo is enabled explicitly in chrome sheets.
     pub fn enabled_in_chrome(&self) -> bool {
-        (self.flags() & structs::CSS_PSEUDO_ELEMENT_ENABLED_IN_CHROME) != 0
+        self.flags()
+            .intersects(PseudoStyleTypeFlags::ENABLED_IN_CHROME)
     }
 
     /// Whether this pseudo-element skips flex/grid container display-based
     /// fixup.
     #[inline]
     pub fn skip_item_display_fixup(&self) -> bool {
-        (self.flags() & structs::CSS_PSEUDO_ELEMENT_IS_FLEX_OR_GRID_ITEM) == 0
+        !self
+            .flags()
+            .intersects(PseudoStyleTypeFlags::IS_FLEX_OR_GRID_ITEM)
     }
 
     /// Whether this pseudo-element is precomputed.
     #[inline]
     pub fn is_precomputed(&self) -> bool {
-        self.is_anon_box() && !self.is_tree_pseudo_element()
+        self.is_anon_box()
     }
 
     /// Property flag that properties must have to apply to this pseudo-element.

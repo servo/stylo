@@ -89,10 +89,12 @@ enabled_in = "chrome"
 # The selected label of a <select>
 [-moz-select-content]
 enabled_in = "chrome"
+is_element_backed = true
 # The menulist button of a <select>
 # TODO: Maybe unify with the base-appearance ::picker-icon pseudo?
 [-moz-select-picker-icon]
 enabled_in = "chrome"
+is_element_backed = true
 [-moz-progress-bar]
 supports_user_action_state = true
 [-moz-range-track]

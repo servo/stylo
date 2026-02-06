@@ -589,7 +589,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     #[cfg(feature = "gecko")]
     fn adjust_for_fieldset_content(&mut self) {
         use crate::selector_parser::PseudoElement;
-        if self.style.pseudo != Some(&PseudoElement::FieldsetContent) {
+        if self.style.pseudo != Some(&PseudoElement::MozFieldsetContent) {
             return;
         }
         let parent_display = self.style.get_parent_box().clone_display();

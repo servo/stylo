@@ -9,16 +9,14 @@ import os
 import sys
 
 from io import BytesIO
-
-GECKO_DIR = os.path.dirname(__file__.replace("\\", "/"))
-sys.path.insert(0, os.path.join(os.path.dirname(GECKO_DIR), "properties"))
+from pseudo_elements import PseudoElementData
 
 import build
 
 
-# Matches lines like `GK_ATOM(foo, "foo", 0x12345678, true, nsStaticAtom, PseudoElementAtom)`.
+# Matches lines like `GK_ATOM(foo, "foo", 0x12345678, true)`.
 PATTERN = re.compile(
-    r'^GK_ATOM\(([^,]*),[^"]*"([^"]*)",\s*(0x[0-9a-f]+),\s*[^,]*,\s*([^,]*),\s*([^)]*)\)',
+    r'^GK_ATOM\(([^,]*),[^"]*"([^"]*)",\s*(0x[0-9a-f]+),\s*[^,]*\)',
     re.MULTILINE,
 )
 FILE = "include/nsGkAtomList.h"
@@ -42,68 +40,11 @@ def map_atom(ident):
 
 
 class Atom:
-    def __init__(self, ident, value, hash, ty, atom_type):
+    def __init__(self, ident, value, hash):
         self.ident = "nsGkAtoms_{}".format(ident)
         self.original_ident = ident
         self.value = value
         self.hash = hash
-        # The Gecko type: "nsStaticAtom", "nsCSSPseudoElementStaticAtom", or
-        # "nsAnonBoxPseudoStaticAtom".
-        self.ty = ty
-        # The type of atom: "Atom", "PseudoElement", "NonInheritingAnonBox",
-        # or "InheritingAnonBox".
-        self.atom_type = atom_type
-
-        if (
-            self.is_pseudo_element()
-            or self.is_anon_box()
-            or self.is_tree_pseudo_element()
-        ):
-            self.pseudo_ident = (ident.split("_", 1))[1]
-
-        if self.is_anon_box():
-            assert self.is_inheriting_anon_box() or self.is_non_inheriting_anon_box()
-
-    def type(self):
-        return self.ty
-
-    def capitalized_pseudo(self):
-        return self.pseudo_ident[0].upper() + self.pseudo_ident[1:]
-
-    def is_pseudo_element(self):
-        return self.atom_type == "PseudoElementAtom"
-
-    def is_anon_box(self):
-        if self.is_tree_pseudo_element():
-            return False
-        return self.is_non_inheriting_anon_box() or self.is_inheriting_anon_box()
-
-    def is_non_inheriting_anon_box(self):
-        assert not self.is_tree_pseudo_element()
-        return self.atom_type == "NonInheritingAnonBoxAtom"
-
-    def is_inheriting_anon_box(self):
-        if self.is_tree_pseudo_element():
-            return False
-        return self.atom_type == "InheritingAnonBoxAtom"
-
-    def is_tree_pseudo_element(self):
-        return self.value.startswith(":-moz-tree-")
-
-    def is_named_view_transition_pseudo(self) -> bool:
-        return (
-            self.pseudo_ident == "viewTransitionGroup"
-            or self.pseudo_ident == "viewTransitionImagePair"
-            or self.pseudo_ident == "viewTransitionOld"
-            or self.pseudo_ident == "viewTransitionNew"
-        )
-
-    def is_simple_pseudo_element(self) -> bool:
-        return not (
-            self.is_tree_pseudo_element()
-            or self.pseudo_ident == "highlight"
-            or self.is_named_view_transition_pseudo()
-        )
 
 
 def collect_atoms(objdir):
@@ -118,8 +59,6 @@ def collect_atoms(objdir):
                     result.group(1),
                     result.group(2),
                     result.group(3),
-                    result.group(4),
-                    result.group(5),
                 )
             )
     return atoms
@@ -198,33 +137,31 @@ def write_atom_macro(atoms, file_name):
         f.write(MACRO_TEMPLATE.format(body="".join(macro_rules)))
 
 
-def write_pseudo_elements(atoms, target_filename):
-    pseudos = []
-    for atom in atoms:
-        if (
-            atom.type() == "nsCSSPseudoElementStaticAtom"
-            or atom.type() == "nsCSSAnonBoxPseudoStaticAtom"
-        ):
-            pseudos.append(atom)
-
-    pseudo_definition_template = os.path.join(
-        GECKO_DIR, "pseudo_element_definition.mako.rs"
-    )
-    print("cargo:rerun-if-changed={}".format(pseudo_definition_template))
-    contents = build.render(pseudo_definition_template, PSEUDOS=pseudos)
-
-    with FileAvoidWrite(target_filename) as f:
-        f.write(contents)
-
-
 def generate_atoms(dist, out):
     atoms = collect_atoms(dist)
     write_atom_macro(atoms, os.path.join(out, "atom_macro.rs"))
-    write_pseudo_elements(atoms, os.path.join(out, "pseudo_element_definition.rs"))
+
+
+def generate_pseudo_elements(dist, out):
+    data = PseudoElementData()
+    pseudo_definition_template = os.path.join(
+        os.path.dirname(__file__), "pseudo_element_definition.mako.rs"
+    )
+
+    print(f"cargo:rerun-if-changed={pseudo_definition_template}")
+    for f in data.path_dependencies:
+        print(f"cargo:rerun-if-changed={f}")
+
+    target = os.path.join(out, "pseudo_element_definition.rs")
+    with FileAvoidWrite(target) as f:
+        f.write(build.render(pseudo_definition_template, PSEUDOS=data.all_pseudos()))
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: {} dist out".format(sys.argv[0]))
         exit(2)
-    generate_atoms(sys.argv[1], sys.argv[2])
+    dist = sys.argv[1]
+    out = sys.argv[2]
+    generate_atoms(dist, out)
+    generate_pseudo_elements(dist, out)

@@ -384,8 +384,15 @@ fn invalidation_can_collapse(
         // Cases like `:is(.item .foo) :is(.item .foo)` where `.item` invalidates would
         // point to different dependencies, pointing to the same outer selector, but
         // differing in selector offset.
-        let a_n = &a_deps.as_ref().slice()[0];
-        let b_n = &b_deps.as_ref().slice()[0];
+        let a_nexts = a_deps.as_ref().slice();
+        let b_nexts = b_deps.as_ref().slice();
+        if a_nexts.is_empty()|| b_nexts.is_empty() {
+            // Can happen when we get out to empty @scope() rules.
+            // If they're both empty, we can just do nothing for both.
+            return a_nexts.is_empty() == b_nexts.is_empty();
+        }
+        let a_n = &a_nexts[0];
+        let b_n = &b_nexts[0];
         if SelectorKey::new(&a_n.selector) != SelectorKey::new(&b_n.selector) {
             return false;
         }

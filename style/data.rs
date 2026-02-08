@@ -207,10 +207,21 @@ impl ElementStyles {
             ViewportUnitUsage::None
         }
 
-        let mut usage = usage_from_flags(self.primary().flags);
+        let primary = self.primary();
+        let mut usage = usage_from_flags(primary.flags);
+
+        // Check cached lazy pseudos on the primary style.
+        primary.each_cached_lazy_pseudo(|style| {
+            usage = std::cmp::max(usage, usage_from_flags(style.flags));
+        });
+
         for pseudo_style in self.pseudos.as_array() {
             if let Some(ref pseudo_style) = pseudo_style {
                 usage = std::cmp::max(usage, usage_from_flags(pseudo_style.flags));
+                // Also check cached lazy pseudos on eager pseudo styles.
+                pseudo_style.each_cached_lazy_pseudo(|style| {
+                    usage = std::cmp::max(usage, usage_from_flags(style.flags));
+                });
             }
         }
 

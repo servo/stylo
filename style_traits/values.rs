@@ -601,6 +601,20 @@ pub mod specified {
     }
 }
 
+/// A single numeric value with an associated unit.
+///
+/// This corresponds to `CSSUnitValue` in the Typed OM specification. The
+/// numeric component is stored separately from the textual unit identifier.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct UnitValue {
+    /// The numeric component of the value.
+    pub value: f32,
+
+    /// The textual unit string (e.g. `"px"`, `"em"`, `"%"`, `"deg"`).
+    pub unit: CssString,
+}
+
 /// A numeric value used by the Typed OM.
 ///
 /// This corresponds to `CSSNumericValue` and its subclasses in the Typed OM
@@ -615,15 +629,8 @@ pub mod specified {
 pub enum NumericValue {
     /// A single numeric value with a concrete unit.
     ///
-    /// This corresponds to `CSSUnitValue`. The `value` field stores the raw
-    /// numeric component, and the `unit` field stores the textual unit
-    /// identifier (e.g. `"px"`, `"em"`, `"%"`, `"deg"`).
-    Unit {
-        /// The numeric component of the value.
-        value: f32,
-        /// The textual unit string (e.g. `"px"`, `"em"`, `"deg"`).
-        unit: CssString,
-    },
+    /// This corresponds to `CSSUnitValue`.
+    Unit(UnitValue),
 
     /// A sum of multiple numeric values.
     ///
@@ -712,7 +719,10 @@ impl ToTyped for Au {
     fn to_typed(&self) -> Option<TypedValue> {
         let value = self.to_f32_px();
         let unit = CssString::from("px");
-        Some(TypedValue::Numeric(NumericValue::Unit { value, unit }))
+        Some(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            value,
+            unit,
+        })))
     }
 }
 

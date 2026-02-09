@@ -26,7 +26,7 @@ use std::ops::Add;
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{
     CssString, CssWriter, NumericValue, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
-    ToTyped, TypedValue,
+    ToTyped, TypedValue, UnitValue,
 };
 
 pub use self::align::{ContentDistribution, ItemPlacement, JustifyItems, SelfAlignment};
@@ -361,7 +361,10 @@ impl ToTyped for Number {
     fn to_typed(&self) -> Option<TypedValue> {
         let value = self.value;
         let unit = CssString::from("number");
-        Some(TypedValue::Numeric(NumericValue::Unit { value, unit }))
+        Some(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            value,
+            unit,
+        })))
     }
 }
 

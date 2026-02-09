@@ -81,7 +81,7 @@ pub mod gecko {
 /// A module with code for all the shorthand css properties, and a few
 /// serialization helpers.
 #[allow(missing_docs)]
-pub mod shorthands_generated {
+pub mod shorthands {
 <%
     for shorthand in data.shorthands_except_all():
         helpers.shorthand(shorthand)
@@ -501,7 +501,7 @@ impl NonCustomPropertyId {
             % if prop.name == "all":
                 0, // 'all' accepts no value other than CSS-wide keywords
             % else:
-                <shorthands_generated::${prop.ident}::Longhands as SpecifiedValueInfo>::SUPPORTED_TYPES,
+                <shorthands::${prop.ident}::Longhands as SpecifiedValueInfo>::SUPPORTED_TYPES,
             % endif
             % endfor
         ];
@@ -520,7 +520,7 @@ impl NonCustomPropertyId {
             % if prop.name == "all":
                 do_nothing, // 'all' accepts no value other than CSS-wide keywords
             % else:
-                <shorthands_generated::${prop.ident}::Longhands as SpecifiedValueInfo>::
+                <shorthands::${prop.ident}::Longhands as SpecifiedValueInfo>::
                     collect_completion_keywords,
             % endif
             % endfor
@@ -998,7 +998,7 @@ impl ShorthandId {
             % if shorthand.ident == "all":
                 all_to_css,
             % else:
-                shorthands_generated::${shorthand.ident}::to_css,
+                shorthands::${shorthand.ident}::to_css,
             % endif
             % endfor
         ];
@@ -1065,7 +1065,7 @@ impl ShorthandId {
             % if shorthand.ident == "all":
             parse_all,
             % else:
-            shorthands_generated::${shorthand.ident}::parse_into,
+            shorthands::${shorthand.ident}::parse_into,
             % endif
             % endfor
         ];

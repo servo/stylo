@@ -668,14 +668,14 @@ pub mod ${property.ident} {
 <%def name="two_properties_shorthand(shorthand)">
     type Single = crate::properties::longhands::${shorthand.sub_properties[0].ident}::SpecifiedValue;
 
-    pub fn parse_value<'i, 't>(
+    fn parse_value<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
         let first = <Single as crate::parser::Parse>::parse(context, input)?;
         let second =
             input.try_parse(|input| <Single as crate::parser::Parse>::parse(context, input)).unwrap_or_else(|_| first.clone());
-        Ok(expanded! {
+        Ok(crate::properties::shorthands::expanded! {
             ${shorthand.sub_properties[0].ident}: first,
             ${shorthand.sub_properties[1].ident}: second,
         })
@@ -700,7 +700,7 @@ pub mod ${property.ident} {
     use crate::values::generics::rect::Rect;
 
     type Single = crate::properties::longhands::${shorthand.sub_properties[0].ident}::SpecifiedValue;
-    pub fn parse_value<'i, 't>(
+    fn parse_value<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
@@ -711,7 +711,7 @@ pub mod ${property.ident} {
             <Single as crate::parser::Parse>::parse(c, i)
         % endif
         })?;
-        Ok(expanded! {
+        Ok(crate::properties::shorthands::expanded! {
         % for index in range(4):
             ${shorthand.sub_properties[index].ident}: rect.${index},
         % endfor
@@ -734,12 +734,12 @@ pub mod ${property.ident} {
 </%def>
 
 <%def name="single_border_shorthand(shorthand)">
-    pub fn parse_value<'i, 't>(
+    fn parse_value<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
         let (width, style, color) = crate::properties::shorthands::parse_border(context, input)?;
-        Ok(expanded! {
+        Ok(crate::properties::shorthands::expanded! {
             ${shorthand.sub_properties[0].ident}: width,
             ${shorthand.sub_properties[1].ident}: style,
             ${shorthand.sub_properties[2].ident}: color,

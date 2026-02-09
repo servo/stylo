@@ -5,7 +5,6 @@
 //! Manual shorthand parsing and serialization
 #![allow(missing_docs)]
 
-use super::expanded;
 use crate::parser::{Parse, ParserContext};
 use crate::values::specified;
 use cssparser::Parser;
@@ -14,6 +13,20 @@ use style_traits::{
     values::SequenceWriter, CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo,
     StyleParseErrorKind, ToCss,
 };
+
+macro_rules! expanded {
+    ( $( $name: ident: $value: expr ),+ ) => {
+        expanded!( $( $name: $value, )+ )
+    };
+    ( $( $name: ident: $value: expr, )+ ) => {
+        Longhands {
+            $(
+                $name: $crate::properties::MaybeBoxed::maybe_boxed($value),
+            )+
+        }
+    }
+}
+pub(crate) use expanded;
 
 macro_rules! try_parse_one {
     ($context: expr, $input: expr, $var: ident, $parse_path: path) => {
@@ -109,7 +122,7 @@ pub fn parse_border<'i, 't>(
 
 pub mod border_block {
     use super::*;
-    pub use crate::properties::shorthands_generated::border_block::*;
+    pub use crate::properties::generated::shorthands::border_block::*;
 
     pub fn parse_value<'i, 't>(
         context: &ParserContext,
@@ -144,7 +157,7 @@ pub mod border_block {
 
 pub mod border_inline {
     use super::*;
-    pub use crate::properties::shorthands_generated::border_inline::*;
+    pub use crate::properties::generated::shorthands::border_inline::*;
 
     pub fn parse_value<'i, 't>(
         context: &ParserContext,
@@ -178,7 +191,7 @@ pub mod border_inline {
 }
 
 pub mod border_radius {
-    pub use crate::properties::shorthands_generated::border_radius::*;
+    pub use crate::properties::generated::shorthands::border_radius::*;
 
     use super::*;
     use crate::values::generics::border::BorderCornerRadius;
@@ -219,7 +232,7 @@ pub mod border_radius {
 }
 
 pub mod border_image {
-    pub use crate::properties::shorthands_generated::border_image::*;
+    pub use crate::properties::generated::shorthands::border_image::*;
 
     use super::*;
     use crate::properties::longhands::{
@@ -373,14 +386,14 @@ pub mod border_image {
 }
 
 pub mod border {
-    pub use crate::properties::shorthands_generated::border::*;
+    pub use crate::properties::generated::shorthands::border::*;
 
     use super::*;
+    pub use crate::properties::generated::shorthands::border_left;
     use crate::properties::longhands::{
         border_image_outset, border_image_repeat, border_image_slice, border_image_source,
         border_image_width,
     };
-    pub use crate::properties::shorthands_generated::border_left;
 
     pub fn parse_value<'i, 't>(
         context: &ParserContext,
@@ -499,7 +512,7 @@ pub mod border {
 #[cfg(feature = "gecko")]
 pub mod container {
     use super::*;
-    pub use crate::properties::shorthands_generated::container::*;
+    pub use crate::properties::generated::shorthands::container::*;
 
     use crate::values::specified::{ContainerName, ContainerType};
 
@@ -537,7 +550,7 @@ pub mod container {
 
 pub mod vertical_align {
     use super::*;
-    pub use crate::properties::shorthands_generated::vertical_align::*;
+    pub use crate::properties::generated::shorthands::vertical_align::*;
 
     use crate::values::specified::{AlignmentBaseline, BaselineShift, BaselineSource};
 
@@ -598,7 +611,7 @@ pub mod vertical_align {
 #[cfg(feature = "gecko")]
 pub mod page_break_before {
     use super::*;
-    pub use crate::properties::shorthands_generated::page_break_before::*;
+    pub use crate::properties::generated::shorthands::page_break_before::*;
 
     use crate::values::specified::BreakBetween;
 
@@ -623,7 +636,7 @@ pub mod page_break_before {
 
 #[cfg(feature = "gecko")]
 pub mod page_break_after {
-    pub use crate::properties::shorthands_generated::page_break_after::*;
+    pub use crate::properties::generated::shorthands::page_break_after::*;
 
     use super::*;
     use crate::values::specified::BreakBetween;
@@ -650,7 +663,7 @@ pub mod page_break_after {
 #[cfg(feature = "gecko")]
 pub mod page_break_inside {
     use super::*;
-    pub use crate::properties::shorthands_generated::page_break_inside::*;
+    pub use crate::properties::generated::shorthands::page_break_inside::*;
     use crate::values::specified::BreakWithin;
 
     pub fn parse_value<'i>(
@@ -675,7 +688,7 @@ pub mod page_break_inside {
 #[cfg(feature = "gecko")]
 pub mod offset {
     use super::*;
-    pub use crate::properties::shorthands_generated::offset::*;
+    pub use crate::properties::generated::shorthands::offset::*;
     use crate::values::specified::{
         LengthPercentage, OffsetPath, OffsetPosition, OffsetRotate, PositionOrAuto,
     };
@@ -772,7 +785,7 @@ pub mod offset {
 }
 
 pub mod _webkit_perspective {
-    pub use crate::properties::shorthands_generated::_webkit_perspective::*;
+    pub use crate::properties::generated::shorthands::_webkit_perspective::*;
 
     use super::*;
 
@@ -799,7 +812,7 @@ pub mod _webkit_perspective {
 }
 
 pub mod _webkit_transform {
-    pub use crate::properties::shorthands_generated::_webkit_transform::*;
+    pub use crate::properties::generated::shorthands::_webkit_transform::*;
 
     use super::*;
 
@@ -815,7 +828,7 @@ pub mod _webkit_transform {
 }
 
 pub mod columns {
-    pub use crate::properties::shorthands_generated::columns::*;
+    pub use crate::properties::generated::shorthands::columns::*;
 
     use super::*;
     use crate::properties::longhands::{column_count, column_width};
@@ -886,7 +899,7 @@ pub mod columns {
 
 #[cfg(feature = "gecko")]
 pub mod column_rule {
-    pub use crate::properties::shorthands_generated::column_rule::*;
+    pub use crate::properties::generated::shorthands::column_rule::*;
 
     use super::*;
     use crate::properties::longhands::column_rule_color;
@@ -921,7 +934,7 @@ pub mod column_rule {
 
 #[cfg(feature = "gecko")]
 pub mod text_wrap {
-    pub use crate::properties::shorthands_generated::text_wrap::*;
+    pub use crate::properties::generated::shorthands::text_wrap::*;
 
     use super::*;
     use crate::properties::longhands::{text_wrap_mode, text_wrap_style};
@@ -972,7 +985,7 @@ pub mod text_wrap {
 }
 
 pub mod white_space {
-    pub use crate::properties::shorthands_generated::white_space::*;
+    pub use crate::properties::generated::shorthands::white_space::*;
 
     use super::*;
     use crate::properties::longhands::{text_wrap_mode, white_space_collapse};
@@ -1079,7 +1092,7 @@ pub mod white_space {
 
 #[cfg(feature = "gecko")]
 pub mod _webkit_text_stroke {
-    pub use crate::properties::shorthands_generated::_webkit_text_stroke::*;
+    pub use crate::properties::generated::shorthands::_webkit_text_stroke::*;
 
     use super::*;
     use crate::properties::longhands::{_webkit_text_stroke_color, _webkit_text_stroke_width};
@@ -1109,7 +1122,7 @@ pub mod _webkit_text_stroke {
 }
 
 pub mod list_style {
-    pub use crate::properties::shorthands_generated::list_style::*;
+    pub use crate::properties::generated::shorthands::list_style::*;
 
     use super::*;
     use crate::properties::longhands::{list_style_image, list_style_position, list_style_type};
@@ -1219,7 +1232,7 @@ pub mod list_style {
 }
 
 pub mod gap {
-    pub use crate::properties::shorthands_generated::gap::*;
+    pub use crate::properties::generated::shorthands::gap::*;
 
     use super::*;
     use crate::properties::longhands::{column_gap, row_gap};
@@ -1256,7 +1269,7 @@ pub mod gap {
 
 #[cfg(feature = "gecko")]
 pub mod marker {
-    pub use crate::properties::shorthands_generated::marker::*;
+    pub use crate::properties::generated::shorthands::marker::*;
 
     use super::*;
     use crate::values::specified::url::UrlOrNone;
@@ -1289,7 +1302,7 @@ pub mod marker {
 }
 
 pub mod flex_flow {
-    pub use crate::properties::shorthands_generated::flex_flow::*;
+    pub use crate::properties::generated::shorthands::flex_flow::*;
 
     use super::*;
     use crate::properties::longhands::{flex_direction, flex_wrap};
@@ -1338,7 +1351,7 @@ pub mod flex_flow {
 }
 
 pub mod flex {
-    pub use crate::properties::shorthands_generated::flex::*;
+    pub use crate::properties::generated::shorthands::flex::*;
 
     use super::*;
     use crate::properties::longhands::flex_basis::SpecifiedValue as FlexBasis;
@@ -1404,7 +1417,7 @@ pub mod flex {
 }
 
 pub mod place_content {
-    pub use crate::properties::shorthands_generated::place_content::*;
+    pub use crate::properties::generated::shorthands::place_content::*;
 
     use super::*;
     use crate::values::specified::align::ContentDistribution;
@@ -1450,7 +1463,7 @@ pub mod place_content {
 }
 
 pub mod place_self {
-    pub use crate::properties::shorthands_generated::place_self::*;
+    pub use crate::properties::generated::shorthands::place_self::*;
 
     use super::*;
     use crate::values::specified::align::SelfAlignment;
@@ -1492,7 +1505,7 @@ pub mod place_self {
 }
 
 pub mod place_items {
-    pub use crate::properties::shorthands_generated::place_items::*;
+    pub use crate::properties::generated::shorthands::place_items::*;
 
     use super::*;
     use crate::values::specified::align::{ItemPlacement, JustifyItems};
@@ -1528,7 +1541,7 @@ pub mod place_items {
 }
 
 pub mod grid_row {
-    pub use crate::properties::shorthands_generated::grid_row::*;
+    pub use crate::properties::generated::shorthands::grid_row::*;
 
     use super::*;
     use crate::values::specified::GridLine;
@@ -1572,7 +1585,7 @@ pub mod grid_row {
 }
 
 pub mod grid_column {
-    pub use crate::properties::shorthands_generated::grid_column::*;
+    pub use crate::properties::generated::shorthands::grid_column::*;
 
     use super::*;
     use crate::values::specified::GridLine;
@@ -1616,7 +1629,7 @@ pub mod grid_column {
 }
 
 pub mod grid_area {
-    pub use crate::properties::shorthands_generated::grid_area::*;
+    pub use crate::properties::generated::shorthands::grid_area::*;
 
     use super::*;
     use crate::values::specified::GridLine;
@@ -1700,7 +1713,7 @@ pub mod grid_area {
 
 #[cfg(feature = "gecko")]
 pub mod position_try {
-    pub use crate::properties::shorthands_generated::position_try::*;
+    pub use crate::properties::generated::shorthands::position_try::*;
 
     use super::*;
     use crate::values::specified::position::{PositionTryFallbacks, PositionTryOrder};
@@ -1765,7 +1778,7 @@ where
 
 #[cfg(feature = "gecko")]
 pub mod scroll_timeline {
-    pub use crate::properties::shorthands_generated::scroll_timeline::*;
+    pub use crate::properties::generated::shorthands::scroll_timeline::*;
 
     use super::*;
     use crate::properties::longhands::{scroll_timeline_axis, scroll_timeline_name};
@@ -1808,7 +1821,7 @@ pub mod scroll_timeline {
 
 #[cfg(feature = "gecko")]
 pub mod view_timeline {
-    pub use crate::properties::shorthands_generated::view_timeline::*;
+    pub use crate::properties::generated::shorthands::view_timeline::*;
 
     use super::*;
     use crate::properties::longhands::{view_timeline_axis, view_timeline_name};
@@ -1846,7 +1859,7 @@ pub mod view_timeline {
 }
 
 pub mod transition {
-    pub use crate::properties::shorthands_generated::transition::*;
+    pub use crate::properties::generated::shorthands::transition::*;
 
     use super::*;
     use crate::properties::longhands::{
@@ -2057,7 +2070,7 @@ pub mod transition {
 }
 
 pub mod outline {
-    pub use crate::properties::shorthands_generated::outline::*;
+    pub use crate::properties::generated::shorthands::outline::*;
 
     use super::*;
     use crate::properties::longhands::{outline_color, outline_style, outline_width};
@@ -2113,7 +2126,7 @@ pub mod outline {
 }
 
 pub mod background_position {
-    pub use crate::properties::shorthands_generated::background_position::*;
+    pub use crate::properties::generated::shorthands::background_position::*;
 
     use super::*;
     use crate::properties::longhands::{background_position_x, background_position_y};
@@ -2171,7 +2184,7 @@ pub mod background_position {
 }
 
 pub mod background {
-    pub use crate::properties::shorthands_generated::background::*;
+    pub use crate::properties::generated::shorthands::background::*;
 
     use super::*;
     use crate::properties::longhands::background_clip;
@@ -2442,7 +2455,7 @@ pub mod background {
 }
 
 pub mod font {
-    pub use crate::properties::shorthands_generated::font::*;
+    pub use crate::properties::generated::shorthands::font::*;
 
     use super::*;
     #[cfg(feature = "gecko")]
@@ -2772,7 +2785,7 @@ pub mod font {
 }
 
 pub mod font_variant {
-    pub use crate::properties::shorthands_generated::font_variant::*;
+    pub use crate::properties::generated::shorthands::font_variant::*;
 
     use super::*;
     use crate::properties::longhands::font_variant_caps;
@@ -2955,7 +2968,7 @@ pub mod font_variant {
 
 #[cfg(feature = "gecko")]
 pub mod font_synthesis {
-    pub use crate::properties::shorthands_generated::font_synthesis::*;
+    pub use crate::properties::generated::shorthands::font_synthesis::*;
 
     use super::*;
     use crate::values::specified::{FontSynthesis, FontSynthesisStyle};
@@ -3062,7 +3075,7 @@ pub mod font_synthesis {
 }
 
 pub mod text_box {
-    pub use crate::properties::shorthands_generated::text_box::*;
+    pub use crate::properties::generated::shorthands::text_box::*;
 
     use super::*;
     use crate::values::specified::{TextBoxEdge, TextBoxTrim};
@@ -3131,7 +3144,7 @@ pub mod text_box {
 
 #[cfg(feature = "gecko")]
 pub mod text_emphasis {
-    pub use crate::properties::shorthands_generated::text_emphasis::*;
+    pub use crate::properties::generated::shorthands::text_emphasis::*;
 
     use super::*;
     use crate::properties::longhands::{text_emphasis_color, text_emphasis_style};
@@ -3161,7 +3174,7 @@ pub mod text_emphasis {
 }
 
 pub mod text_decoration {
-    pub use crate::properties::shorthands_generated::text_decoration::*;
+    pub use crate::properties::generated::shorthands::text_decoration::*;
 
     use super::*;
     #[cfg(feature = "gecko")]
@@ -3249,7 +3262,7 @@ pub mod text_decoration {
 }
 
 pub mod animation {
-    pub use crate::properties::shorthands_generated::animation::*;
+    pub use crate::properties::generated::shorthands::animation::*;
 
     use super::*;
     use crate::properties::longhands::{
@@ -3498,7 +3511,7 @@ pub mod animation {
 
 #[cfg(feature = "gecko")]
 pub mod mask {
-    pub use crate::properties::shorthands_generated::mask::*;
+    pub use crate::properties::generated::shorthands::mask::*;
 
     use super::*;
     use crate::parser::Parse;
@@ -3779,7 +3792,7 @@ pub mod mask {
 
 #[cfg(feature = "gecko")]
 pub mod mask_position {
-    pub use crate::properties::shorthands_generated::mask_position::*;
+    pub use crate::properties::generated::shorthands::mask_position::*;
 
     use super::*;
     use crate::properties::longhands::{mask_position_x, mask_position_y};
@@ -3839,7 +3852,7 @@ pub mod mask_position {
 }
 
 pub mod grid_template {
-    pub use crate::properties::shorthands_generated::grid_template::*;
+    pub use crate::properties::generated::shorthands::grid_template::*;
 
     use super::*;
     use crate::parser::Parse;
@@ -4076,7 +4089,7 @@ pub mod grid_template {
 }
 
 pub mod grid {
-    pub use crate::properties::shorthands_generated::grid::*;
+    pub use crate::properties::generated::shorthands::grid::*;
 
     use super::*;
     use crate::parser::Parse;

@@ -94,7 +94,7 @@ impl ToCss for PseudoElement {
             Selection => "::selection",
             Backdrop => "::backdrop",
             DetailsSummary => "::-servo-details-summary",
-            DetailsContent => "::-servo-details-content",
+            DetailsContent => "::details-content",
             Marker => "::marker",
             ColorSwatch => "::color-swatch",
             Placeholder => "::placeholder",
@@ -248,10 +248,10 @@ impl PseudoElement {
             | PseudoElement::DetailsSummary
             | PseudoElement::Marker
             | PseudoElement::Placeholder
+            | PseudoElement::DetailsContent
             | PseudoElement::ServoTextControlInnerContainer
             | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
-            PseudoElement::DetailsContent
-            | PseudoElement::ServoAnonymousBox
+            PseudoElement::ServoAnonymousBox
             | PseudoElement::ServoAnonymousTable
             | PseudoElement::ServoAnonymousTableCell
             | PseudoElement::ServoAnonymousTableRow
@@ -638,12 +638,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 DetailsSummary
             },
-            "-servo-details-content" => {
-                if !self.in_user_agent_stylesheet() {
-                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
-                }
-                DetailsContent
-            },
+            "details-content" => DetailsContent,
             "color-swatch" => ColorSwatch,
             "placeholder" => {
                 if !self.in_user_agent_stylesheet() {

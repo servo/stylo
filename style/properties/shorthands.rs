@@ -1953,12 +1953,6 @@ pub mod transition {
             }
         }
 
-        let mut propertys = Vec::new();
-        let mut durations = Vec::new();
-        let mut timing_functions = Vec::new();
-        let mut delays = Vec::new();
-        let mut behaviors = Vec::new();
-
         let mut first = true;
         let mut has_transition_property_none = false;
         let results = input.parse_comma_separated(|i| {
@@ -1970,20 +1964,29 @@ pub mod transition {
             has_transition_property_none = transition.transition_property.is_none();
             Ok(transition)
         })?;
+
+        let len = results.len();
+        let mut property = Vec::with_capacity(len);
+        let mut duration = Vec::with_capacity(len);
+        let mut timing_function = Vec::with_capacity(len);
+        let mut delay = Vec::with_capacity(len);
+        let mut behavior = Vec::with_capacity(len);
         for result in results {
-            propertys.push(result.transition_property);
-            durations.push(result.transition_duration);
-            timing_functions.push(result.transition_timing_function);
-            delays.push(result.transition_delay);
-            behaviors.push(result.transition_behavior);
+            property.push(result.transition_property);
+            duration.push(result.transition_duration);
+            timing_function.push(result.transition_timing_function);
+            delay.push(result.transition_delay);
+            behavior.push(result.transition_behavior);
         }
 
-        Ok(expanded! {
-            transition_property: transition_property::SpecifiedValue(propertys.into()),
-            transition_duration: transition_duration::SpecifiedValue(durations.into()),
-            transition_timing_function: transition_timing_function::SpecifiedValue(timing_functions.into()),
-            transition_delay: transition_delay::SpecifiedValue(delays.into()),
-            transition_behavior: transition_behavior::SpecifiedValue(behaviors.into()),
+        Ok(Longhands {
+            transition_property: transition_property::SpecifiedValue(property.into()),
+            transition_duration: transition_duration::SpecifiedValue(duration.into()),
+            transition_timing_function: transition_timing_function::SpecifiedValue(
+                timing_function.into(),
+            ),
+            transition_delay: transition_delay::SpecifiedValue(delay.into()),
+            transition_behavior: transition_behavior::SpecifiedValue(behavior.into()),
         })
     }
 
@@ -1995,40 +1998,23 @@ pub mod transition {
             use crate::Zero;
             use style_traits::values::SequenceWriter;
 
-            let property_len = self.transition_property.0.len();
-
-            if property_len == 0 {
-                if self.transition_duration.0.len() != 1 {
-                    return Ok(());
-                }
-                if self.transition_delay.0.len() != 1 {
-                    return Ok(());
-                }
-                if self.transition_timing_function.0.len() != 1 {
-                    return Ok(());
-                }
-
-                if self.transition_behavior.0.len() != 1 {
-                    return Ok(());
-                }
-            } else {
-                if self.transition_duration.0.len() != property_len {
-                    return Ok(());
-                }
-                if self.transition_delay.0.len() != property_len {
-                    return Ok(());
-                }
-                if self.transition_timing_function.0.len() != property_len {
-                    return Ok(());
-                }
-
-                if self.transition_behavior.0.len() != property_len {
-                    return Ok(());
-                }
+            let len = self.transition_property.0.len();
+            debug_assert_ne!(
+                len, 0,
+                "We should always have at least one transition-property, even if none"
+            );
+            if self.transition_duration.0.len() != len {
+                return Ok(());
             }
-
-            let len = self.transition_duration.0.len();
-
+            if self.transition_delay.0.len() != len {
+                return Ok(());
+            }
+            if self.transition_timing_function.0.len() != len {
+                return Ok(());
+            }
+            if self.transition_behavior.0.len() != len {
+                return Ok(());
+            }
             for i in 0..len {
                 if i != 0 {
                     dest.write_str(", ")?;
@@ -2041,25 +2027,18 @@ pub mod transition {
                 let has_any = has_duration || has_timing || has_delay || has_behavior;
 
                 let mut writer = SequenceWriter::new(dest, " ");
-
-                if property_len == 0 {
-                    writer.raw_item("none")?;
-                } else if !self.transition_property.0[i].is_all() || !has_any {
+                if !self.transition_property.0[i].is_all() || !has_any {
                     writer.item(&self.transition_property.0[i])?;
                 }
-
                 if has_duration || has_delay {
                     writer.item(&self.transition_duration.0[i])?;
                 }
-
                 if has_timing {
                     writer.item(&self.transition_timing_function.0[i])?;
                 }
-
                 if has_delay {
                     writer.item(&self.transition_delay.0[i])?;
                 }
-
                 if has_behavior {
                     writer.item(&self.transition_behavior.0[i])?;
                 }

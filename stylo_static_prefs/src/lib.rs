@@ -2,10 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-//! A list of static preferences exposed to the style crate. These should
-//! be kept sync with the preferences used by the style.
+/// Returns the default value for a preference exposed to the style crate.
+/// This is what will be used if the embedder has not set the preference.
 #[macro_export]
-macro_rules! pref {
+macro_rules! default_value {
     ("layout.css.contrast-color.enabled") => {
         true
     };
@@ -39,6 +39,11 @@ macro_rules! pref {
     ("layout.css.stylo-local-work-queue.in-worker") => {
         0
     };
+    ("layout.threads") => {
+       // Negative means auto, 0 disables the thread-pool (main-thread styling),
+       // other numbers override as specified.
+        -1
+    };
     ("layout.css.stylo-work-unit-size") => {
         16
     };
@@ -52,6 +57,15 @@ macro_rules! pref {
         true
     };
     ($string:literal) => {
-        style_config::get_bool($string);
+        false
+    };
+}
+
+/// Returns the value of a preference exposed to the style crate. If the embedder
+/// has not set a value for it, this returns the default value of the preference.
+#[macro_export]
+macro_rules! pref {
+    ($string:tt) => {
+        style_config::Getter::get($string, $crate::default_value!($string))
     };
 }

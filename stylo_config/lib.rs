@@ -14,14 +14,14 @@ pub struct Preferences {
 }
 
 impl Preferences {
-    pub fn get_bool(&self, key: &str) -> bool {
+    pub fn get_bool(&self, key: &str, default: bool) -> bool {
         let prefs = self.bool_prefs.read().expect("RwLock is poisoned");
-        *prefs.get(key).unwrap_or(&false)
+        *prefs.get(key).unwrap_or(&default)
     }
 
-    pub fn get_i32(&self, key: &str) -> i32 {
+    pub fn get_i32(&self, key: &str, default: i32) -> i32 {
         let prefs = self.i32_prefs.read().expect("RwLock is poisoned");
-        *prefs.get(key).unwrap_or(&0)
+        *prefs.get(key).unwrap_or(&default)
     }
 
     pub fn set_bool(&self, key: &str, value: bool) {
@@ -47,12 +47,12 @@ impl Preferences {
     }
 }
 
-pub fn get_bool(key: &str) -> bool {
-    PREFS.get_bool(key)
+pub fn get_bool(key: &str, default: bool) -> bool {
+    PREFS.get_bool(key, default)
 }
 
-pub fn get_i32(key: &str) -> i32 {
-    PREFS.get_i32(key)
+pub fn get_i32(key: &str, default: i32) -> i32 {
+    PREFS.get_i32(key, default)
 }
 
 pub fn set_bool(key: &str, value: bool) {
@@ -63,29 +63,54 @@ pub fn set_i32(key: &str, value: i32) {
     PREFS.set_i32(key, value)
 }
 
+pub trait Getter {
+    fn get(key: &str, default: Self) -> Self;
+}
+
+impl Getter for bool {
+    fn get(key: &str, default: Self) -> Self {
+        get_bool(key, default)
+    }
+}
+
+impl Getter for i32 {
+    fn get(key: &str, default: Self) -> Self {
+        get_i32(key, default)
+    }
+}
+
 #[test]
 fn test() {
     let prefs = Preferences::default();
 
-    // Prefs have default values when unset.
-    assert_eq!(prefs.get_bool("foo"), false);
-    assert_eq!(prefs.get_i32("bar"), 0);
+    // We get the default value when the pref is not set.
+    assert_eq!(prefs.get_bool("foo", false), false);
+    assert_eq!(prefs.get_bool("foo", true), true);
+    assert_eq!(prefs.get_i32("bar", 0), 0);
+    assert_eq!(prefs.get_i32("bar", 1), 1);
+    assert_eq!(prefs.get_i32("bar", 2), 2);
 
     // Prefs can be set and retrieved.
     prefs.set_bool("foo", true);
     prefs.set_i32("bar", 1);
-    assert_eq!(prefs.get_bool("foo"), true);
-    assert_eq!(prefs.get_i32("bar"), 1);
+    assert_eq!(prefs.get_bool("foo", false), true);
+    assert_eq!(prefs.get_bool("foo", true), true);
+    assert_eq!(prefs.get_i32("bar", 0), 1);
+    assert_eq!(prefs.get_i32("bar", 1), 1);
+    assert_eq!(prefs.get_i32("bar", 2), 1);
     prefs.set_bool("foo", false);
     prefs.set_i32("bar", 2);
-    assert_eq!(prefs.get_bool("foo"), false);
-    assert_eq!(prefs.get_i32("bar"), 2);
+    assert_eq!(prefs.get_bool("foo", false), false);
+    assert_eq!(prefs.get_bool("foo", true), false);
+    assert_eq!(prefs.get_i32("bar", 0), 2);
+    assert_eq!(prefs.get_i32("bar", 1), 2);
+    assert_eq!(prefs.get_i32("bar", 2), 2);
 
     // Each value type currently has an independent namespace.
     prefs.set_i32("foo", 3);
     prefs.set_bool("bar", true);
-    assert_eq!(prefs.get_i32("foo"), 3);
-    assert_eq!(prefs.get_bool("foo"), false);
-    assert_eq!(prefs.get_bool("bar"), true);
-    assert_eq!(prefs.get_i32("bar"), 2);
+    assert_eq!(prefs.get_i32("foo", 0), 3);
+    assert_eq!(prefs.get_bool("foo", false), false);
+    assert_eq!(prefs.get_bool("bar", false), true);
+    assert_eq!(prefs.get_i32("bar", 0), 2);
 }

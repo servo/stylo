@@ -397,7 +397,10 @@ impl NonCustomPropertyId {
                             pref = getattr(property, "servo_pref")
                         %>
                         % if pref:
-                            Some("${pref}"),
+                            {
+                                const_assert!(!static_prefs::default_value!("${pref}"));
+                                Some("${pref}")
+                            },
                         % else:
                             None,
                         % endif
@@ -408,7 +411,8 @@ impl NonCustomPropertyId {
                     Some(pref) => pref,
                 };
 
-                style_config::get_bool(pref)
+                // The assertions above guarantee that the pref defaults to false.
+                style_config::get_bool(pref, false)
             % endif
         };
 

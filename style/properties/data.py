@@ -1001,9 +1001,14 @@ class PropertiesData(object):
 
         return longhand
 
-    def declare_shorthand(self, name, sub_properties, engine=None, *args, **kwargs):
+    def declare_shorthand(self, name, sub_properties, extra_gecko_sub_properties=None, extra_gecko_aliases=None, engine=None, *args, **kwargs):
         if engine and self.engine != engine:
             return
+        if self.engine == "gecko":
+            if extra_gecko_sub_properties:
+                sub_properties.extend(extra_gecko_sub_properties)
+            if extra_gecko_aliases:
+                kwargs.setdefault('aliases', []).extend(extra_gecko_aliases)
         sub_properties = [self.longhands_by_name[s] for s in sub_properties]
         shorthand = Shorthand(name, sub_properties, *args, **kwargs)
         self.add_prefixed_aliases(shorthand)

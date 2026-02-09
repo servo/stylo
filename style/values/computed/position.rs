@@ -12,10 +12,12 @@ use crate::values::computed::{
     Context, Integer, LengthPercentage, NonNegativeNumber, Percentage, ToComputedValue,
 };
 use crate::values::generics;
+#[cfg(feature = "gecko")]
+use crate::values::generics::position::TreeScoped;
 use crate::values::generics::position::{
     AnchorSideKeyword, AspectRatio as GenericAspectRatio, GenericAnchorFunction, GenericAnchorSide,
     GenericInset, Position as GenericPosition, PositionComponent as GenericPositionComponent,
-    PositionOrAuto as GenericPositionOrAuto, TreeScoped, ZIndex as GenericZIndex,
+    PositionOrAuto as GenericPositionOrAuto, ZIndex as GenericZIndex,
 };
 pub use crate::values::specified::position::{
     AnchorName, AnchorScope, DashedIdentAndOrTryTactic, GridAutoFlow, GridTemplateAreas,

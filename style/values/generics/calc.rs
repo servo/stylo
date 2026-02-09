@@ -16,7 +16,7 @@ use std::fmt::{self, Write};
 use std::ops::{Add, Mul, Neg, Rem, Sub};
 use std::{cmp, mem};
 use strum_macros::AsRefStr;
-use style_traits::{CssWriter, NumericValue, ToCss, ToTyped, TypedValue};
+use style_traits::{CssWriter, MathSum, NumericValue, ToCss, ToTyped, TypedValue};
 
 use thin_vec::ThinVec;
 
@@ -1961,14 +1961,14 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         values.push(inner);
                     }
                 }
-                Some(TypedValue::Numeric(NumericValue::Sum { values }))
+                Some(TypedValue::Numeric(NumericValue::Sum(MathSum { values })))
             },
             Self::Leaf(ref l) => match l.to_typed() {
                 Some(TypedValue::Numeric(inner)) => match level {
                     ArgumentLevel::CalculationRoot => {
-                        Some(TypedValue::Numeric(NumericValue::Sum {
+                        Some(TypedValue::Numeric(NumericValue::Sum(MathSum {
                             values: ThinVec::from([inner]),
-                        }))
+                        })))
                     },
                     ArgumentLevel::ArgumentRoot | ArgumentLevel::Nested => {
                         Some(TypedValue::Numeric(inner))

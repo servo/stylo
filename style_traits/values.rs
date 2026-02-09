@@ -615,11 +615,23 @@ pub struct UnitValue {
     pub unit: CssString,
 }
 
+/// A sum of numeric values.
+///
+/// This corresponds to `CSSMathSum` in the Typed OM specification. A sum
+/// value represents an expression such as `10px + 2em`. Each entry is itself
+/// a `NumericValue`, allowing nested sums if needed.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MathSum {
+    /// The list of numeric terms that make up the sum.
+    pub values: ThinVec<NumericValue>,
+}
+
 /// A numeric value used by the Typed OM.
 ///
 /// This corresponds to `CSSNumericValue` and its subclasses in the Typed OM
 /// specification. It represents numbers that can appear in CSS values,
-/// including both simple unit quantities and sums of numeric terms.
+/// including both simple unit quantities and composite expressions..
 ///
 /// Unlike the parser-level representation, `NumericValue` is property-agnostic
 /// and suitable for conversion to or from the `CSSNumericValue` family of DOM
@@ -632,15 +644,10 @@ pub enum NumericValue {
     /// This corresponds to `CSSUnitValue`.
     Unit(UnitValue),
 
-    /// A sum of multiple numeric values.
+    /// A sum of numeric values.
     ///
-    /// This corresponds to `CSSMathSum`, representing an expression such as
-    /// `10px + 2em`. Each entry in `values` is another `NumericValue`, which
-    /// may itself be a unit value or a nested sum.
-    Sum {
-        /// The list of numeric terms that make up the sum.
-        values: ThinVec<NumericValue>,
-    },
+    /// This corresponds to `CSSMathSum`.
+    Sum(MathSum),
 }
 
 /// A property-agnostic representation of a value, used by Typed OM.

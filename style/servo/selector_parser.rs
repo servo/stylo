@@ -574,6 +574,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "indeterminate" => NonTSPseudoClass::Indeterminate,
             "invalid" => NonTSPseudoClass::Invalid,
             "link" => NonTSPseudoClass::Link,
+            "modal" => NonTSPseudoClass::Modal,
             "open" => NonTSPseudoClass::Open,
             "optional" => NonTSPseudoClass::Optional,
             "out-of-range" => NonTSPseudoClass::OutOfRange,

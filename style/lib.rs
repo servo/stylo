@@ -110,6 +110,7 @@ pub mod stylist;
 pub mod thread_state;
 pub mod traversal;
 pub mod traversal_flags;
+pub mod typed_om;
 pub mod use_counters;
 
 #[macro_use]

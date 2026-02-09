@@ -2587,10 +2587,10 @@ boxed = true
 type = "LineBreak"
 initial = "computed::LineBreak::Auto"
 struct = "inherited_text"
-engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-3/#line-break-property"
 affects = "layout"
+servo_restyle_damage = "rebuild_box"
 
 [ruby-position]
 type = "RubyPosition"

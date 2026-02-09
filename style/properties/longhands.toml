@@ -3926,10 +3926,10 @@ keyword = { values = ["auto", "optimizespeed", "optimizelegibility", "geometricp
 
 [-webkit-text-security]
 struct = "inherited_text"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-text/#MISSING"
 animation_type = "discrete"
 affects = "layout"
+servo_restyle_damage = "rebuild_box"
 keyword = { values = ["none", "circle", "disc", "square"] }
 
 [text-wrap-mode]

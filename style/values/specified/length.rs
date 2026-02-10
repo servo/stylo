@@ -873,6 +873,27 @@ impl AbsoluteLength {
         }
     }
 
+    // Return the canonical unit for this value.
+    fn canonical_unit(&self) -> Option<&'static str> {
+        Some("px")
+    }
+
+    // Convert this value to the specified unit, if possible.
+    fn to(&self, unit: &str) -> Result<Self, ()> {
+        let px = self.to_px();
+
+        Ok(match_ignore_ascii_case! { unit,
+            "px" => Self::Px(px),
+            "in" => Self::In(px / PX_PER_IN),
+            "cm" => Self::Cm(px / PX_PER_CM),
+            "mm" => Self::Mm(px / PX_PER_MM),
+            "q" => Self::Q(px / PX_PER_Q),
+            "pt" => Self::Pt(px / PX_PER_PT),
+            "pc" => Self::Pc(px / PX_PER_PC),
+             _ => return Err(()),
+        })
+    }
+
     /// Convert this into a pixel value.
     #[inline]
     pub fn to_px(&self) -> CSSFloat {
@@ -1099,6 +1120,22 @@ impl NoCalcLength {
             Self::ViewportPercentage(v) => v.unit(),
             Self::ContainerRelative(v) => v.unit(),
             Self::ServoCharacterWidth(_) => "",
+        }
+    }
+
+    /// Return the canonical unit for this value, if one exists.
+    pub fn canonical_unit(&self) -> Option<&'static str> {
+        match *self {
+            Self::Absolute(v) => v.canonical_unit(),
+            _ => None,
+        }
+    }
+
+    /// Convert this value to the specified unit, if possible.
+    pub fn to(&self, unit: &str) -> Result<Self, ()> {
+        match self {
+            Self::Absolute(v) => Ok(Self::Absolute(v.to(unit)?)),
+            _ => Err(()),
         }
     }
 

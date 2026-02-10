@@ -1091,8 +1091,8 @@ impl NoCalcLength {
         }
     }
 
-    // Return the unit, as a string.
-    fn unit(&self) -> &'static str {
+    /// Return the unit, as a string.
+    pub fn unit(&self) -> &'static str {
         match *self {
             Self::Absolute(v) => v.unit(),
             Self::FontRelative(v) => v.unit(),

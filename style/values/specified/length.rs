@@ -32,8 +32,8 @@ use std::cmp;
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{
-    CssString, CssWriter, NumericValue, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
-    ToTyped, TypedValue, UnitValue,
+    CssString, CssWriter, NumericValue, ParseError, ParsingMode, SpecifiedValueInfo,
+    StyleParseErrorKind, ToCss, ToTyped, TypedValue, UnitValue,
 };
 
 pub use super::image::Image;
@@ -1171,11 +1171,14 @@ impl NoCalcLength {
     }
 
     /// Parse a given absolute or relative dimension.
-    pub fn parse_dimension(
-        context: &ParserContext,
+    pub fn parse_dimension_with_flags(
+        parsing_mode: ParsingMode,
+        in_page_rule: bool,
         value: CSSFloat,
         unit: &str,
     ) -> Result<Self, ()> {
+        let allows_computational_dependence = parsing_mode.allows_computational_dependence();
+
         Ok(match_ignore_ascii_case! { unit,
             "px" => Self::Absolute(AbsoluteLength::Px(value)),
             "in" => Self::Absolute(AbsoluteLength::In(value)),
@@ -1185,113 +1188,122 @@ impl NoCalcLength {
             "pt" => Self::Absolute(AbsoluteLength::Pt(value)),
             "pc" => Self::Absolute(AbsoluteLength::Pc(value)),
             // font-relative
-            "em" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Em(value)),
-            "ex" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Ex(value)),
-            "rex" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Rex(value)),
-            "ch" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Ch(value)),
-            "rch" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Rch(value)),
-            "cap" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Cap(value)),
-            "rcap" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Rcap(value)),
-            "ic" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Ic(value)),
-            "ric" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Ric(value)),
-            "rem" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Rem(value)),
-            "lh" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Lh(value)),
-            "rlh" if context.allows_computational_dependence() => Self::FontRelative(FontRelativeLength::Rlh(value)),
+            "em" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Em(value)),
+            "ex" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Ex(value)),
+            "rex" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Rex(value)),
+            "ch" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Ch(value)),
+            "rch" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Rch(value)),
+            "cap" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Cap(value)),
+            "rcap" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Rcap(value)),
+            "ic" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Ic(value)),
+            "ric" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Ric(value)),
+            "rem" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Rem(value)),
+            "lh" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Lh(value)),
+            "rlh" if allows_computational_dependence => Self::FontRelative(FontRelativeLength::Rlh(value)),
             // viewport percentages
-            "vw" if !context.in_page_rule() => {
+            "vw" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Vw(value))
             },
-            "svw" if !context.in_page_rule() => {
+            "svw" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Svw(value))
             },
-            "lvw" if !context.in_page_rule() => {
+            "lvw" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Lvw(value))
             },
-            "dvw" if !context.in_page_rule() => {
+            "dvw" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Dvw(value))
             },
-            "vh" if !context.in_page_rule() => {
+            "vh" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Vh(value))
             },
-            "svh" if !context.in_page_rule() => {
+            "svh" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Svh(value))
             },
-            "lvh" if !context.in_page_rule() => {
+            "lvh" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Lvh(value))
             },
-            "dvh" if !context.in_page_rule() => {
+            "dvh" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Dvh(value))
             },
-            "vmin" if !context.in_page_rule() => {
+            "vmin" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Vmin(value))
             },
-            "svmin" if !context.in_page_rule() => {
+            "svmin" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Svmin(value))
             },
-            "lvmin" if !context.in_page_rule() => {
+            "lvmin" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Lvmin(value))
             },
-            "dvmin" if !context.in_page_rule() => {
+            "dvmin" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Dvmin(value))
             },
-            "vmax" if !context.in_page_rule() => {
+            "vmax" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Vmax(value))
             },
-            "svmax" if !context.in_page_rule() => {
+            "svmax" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Svmax(value))
             },
-            "lvmax" if !context.in_page_rule() => {
+            "lvmax" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Lvmax(value))
             },
-            "dvmax" if !context.in_page_rule() => {
+            "dvmax" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Dvmax(value))
             },
-            "vb" if !context.in_page_rule() => {
+            "vb" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Vb(value))
             },
-            "svb" if !context.in_page_rule() => {
+            "svb" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Svb(value))
             },
-            "lvb" if !context.in_page_rule() => {
+            "lvb" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Lvb(value))
             },
-            "dvb" if !context.in_page_rule() => {
+            "dvb" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Dvb(value))
             },
-            "vi" if !context.in_page_rule() => {
+            "vi" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Vi(value))
             },
-            "svi" if !context.in_page_rule() => {
+            "svi" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Svi(value))
             },
-            "lvi" if !context.in_page_rule() => {
+            "lvi" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Lvi(value))
             },
-            "dvi" if !context.in_page_rule() => {
+            "dvi" if !in_page_rule => {
                 Self::ViewportPercentage(ViewportPercentageLength::Dvi(value))
             },
             // Container query lengths. Inherit the limitation from viewport units since
             // we may fall back to them.
-            "cqw" if !context.in_page_rule() && cfg!(feature = "gecko") => {
+            "cqw" if !in_page_rule && cfg!(feature = "gecko") => {
                 Self::ContainerRelative(ContainerRelativeLength::Cqw(value))
             },
-            "cqh" if !context.in_page_rule() && cfg!(feature = "gecko") => {
+            "cqh" if !in_page_rule && cfg!(feature = "gecko") => {
                 Self::ContainerRelative(ContainerRelativeLength::Cqh(value))
             },
-            "cqi" if !context.in_page_rule() && cfg!(feature = "gecko") => {
+            "cqi" if !in_page_rule && cfg!(feature = "gecko") => {
                 Self::ContainerRelative(ContainerRelativeLength::Cqi(value))
             },
-            "cqb" if !context.in_page_rule() && cfg!(feature = "gecko") => {
+            "cqb" if !in_page_rule && cfg!(feature = "gecko") => {
                 Self::ContainerRelative(ContainerRelativeLength::Cqb(value))
             },
-            "cqmin" if !context.in_page_rule() && cfg!(feature = "gecko") => {
+            "cqmin" if !in_page_rule && cfg!(feature = "gecko") => {
                 Self::ContainerRelative(ContainerRelativeLength::Cqmin(value))
             },
-            "cqmax" if !context.in_page_rule() && cfg!(feature = "gecko") => {
+            "cqmax" if !in_page_rule && cfg!(feature = "gecko") => {
                 Self::ContainerRelative(ContainerRelativeLength::Cqmax(value))
             },
             _ => return Err(()),
         })
+    }
+
+    /// Parse a given absolute or relative dimension.
+    pub fn parse_dimension_with_context(
+        context: &ParserContext,
+        value: CSSFloat,
+        unit: &str,
+    ) -> Result<Self, ()> {
+        Self::parse_dimension_with_flags(context.parsing_mode, context.in_page_rule(), value, unit)
     }
 
     pub(crate) fn try_op<O>(&self, other: &Self, op: O) -> Result<Self, ()>
@@ -1602,7 +1614,7 @@ impl Length {
             Token::Dimension {
                 value, ref unit, ..
             } if num_context.is_ok(context.parsing_mode, value) => {
-                NoCalcLength::parse_dimension(context, value, unit)
+                NoCalcLength::parse_dimension_with_context(context, value, unit)
                     .map(Length::NoCalc)
                     .map_err(|()| location.new_unexpected_token_error(token.clone()))
             },
@@ -1846,7 +1858,7 @@ impl LengthPercentage {
             Token::Dimension {
                 value, ref unit, ..
             } if num_context.is_ok(context.parsing_mode, value) => {
-                return NoCalcLength::parse_dimension(context, value, unit)
+                return NoCalcLength::parse_dimension_with_context(context, value, unit)
                     .map(LengthPercentage::Length)
                     .map_err(|()| location.new_unexpected_token_error(token.clone()));
             },

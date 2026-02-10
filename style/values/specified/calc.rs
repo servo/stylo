@@ -616,7 +616,8 @@ impl CalcNode {
                 value, ref unit, ..
             } => {
                 if allowed.includes(CalcUnits::LENGTH) {
-                    if let Ok(l) = NoCalcLength::parse_dimension(context, value, unit) {
+                    if let Ok(l) = NoCalcLength::parse_dimension_with_context(context, value, unit)
+                    {
                         return Ok(CalcNode::Leaf(Leaf::Length(l)));
                     }
                 }

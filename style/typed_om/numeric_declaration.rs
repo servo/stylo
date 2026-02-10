@@ -43,7 +43,7 @@ impl Parse for NumericDeclaration {
             Token::Dimension {
                 value, ref unit, ..
             } => {
-                NoCalcLength::parse_dimension(context, value, unit)
+                NoCalcLength::parse_dimension_with_context(context, value, unit)
                     .map(NoCalcNumeric::Length)
                     .map(Self::NoCalc)
                     .map_err(|()| location.new_unexpected_token_error(token.clone()))

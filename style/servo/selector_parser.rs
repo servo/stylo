@@ -65,9 +65,9 @@ pub enum PseudoElement {
     // their appropriate styles.
     ColorSwatch,
     Placeholder,
-    ServoRangeProgress,
-    ServoRangeThumb,
-    ServoRangeTrack,
+    ServoSliderFill,
+    ServoSliderThumb,
+    ServoSliderTrack,
 
     // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
     ServoTextControlInnerContainer,
@@ -101,9 +101,9 @@ impl ToCss for PseudoElement {
             Marker => "::marker",
             ColorSwatch => "::color-swatch",
             Placeholder => "::placeholder",
-            ServoRangeProgress => "::-servo-range-progress",
-            ServoRangeTrack => "::-servo-range-track",
-            ServoRangeThumb => "::-servo-range-thumb",
+            ServoSliderFill => "::-servo-slider-fill",
+            ServoSliderTrack => "::-servo-slider-track",
+            ServoSliderThumb => "::-servo-slider-thumb",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoAnonymousBox => "::-servo-anonymous-box",
@@ -255,9 +255,9 @@ impl PseudoElement {
             | PseudoElement::Marker
             | PseudoElement::Placeholder
             | PseudoElement::DetailsContent
-            | PseudoElement::ServoRangeProgress
-            | PseudoElement::ServoRangeThumb
-            | PseudoElement::ServoRangeTrack
+            | PseudoElement::ServoSliderFill
+            | PseudoElement::ServoSliderThumb
+            | PseudoElement::ServoSliderTrack
             | PseudoElement::ServoTextControlInnerContainer
             | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
             PseudoElement::ServoAnonymousBox
@@ -672,23 +672,23 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 ServoTextControlInnerEditor
             },
-            "-servo-range-progress" => {
+            "-servo-slider-fill" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoRangeProgress
+                ServoSliderFill
             },
-            "-servo-range-thumb" => {
+            "-servo-slider-thumb" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoRangeThumb
+                ServoSliderThumb
             },
-            "-servo-range-track" => {
+            "-servo-slider-track" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
-                ServoRangeTrack
+                ServoSliderTrack
             },
             "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {

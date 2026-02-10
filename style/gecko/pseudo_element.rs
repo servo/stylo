@@ -409,6 +409,14 @@ impl PseudoElement {
         *self == PseudoElement::TargetText
     }
 
+    /// Whether this is a highlight pseudo-element that is styled lazily during
+    /// painting rather than during the restyle traversal. These pseudos need
+    /// explicit repaint triggering when their styles change.
+    #[inline]
+    pub fn is_lazy_painted_highlight_pseudo(&self) -> bool {
+        self.is_selection() || self.is_highlight() || self.is_target_text()
+    }
+
     /// Whether this pseudo-element is a named view transition pseudo-element.
     pub fn is_named_view_transition(&self) -> bool {
         matches!(

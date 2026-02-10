@@ -801,6 +801,11 @@ pub trait TElement:
         return data.hint.has_animation_hint();
     }
 
+    /// Called when a highlight pseudo-element (::selection, ::highlight,
+    /// ::target-text) style is invalidated. These pseudos need explicit repaint
+    /// triggering since their styles are resolved lazily during painting.
+    fn note_highlight_pseudo_style_invalidated(&self) {}
+
     /// The shadow root this element is a host of.
     fn shadow_root(&self) -> Option<<Self::ConcreteNode as TNode>::ConcreteShadowRoot>;
 

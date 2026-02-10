@@ -169,6 +169,12 @@ where
     /// `of`.
     fn invalidated_sibling(&mut self, sibling: E, of: E);
 
+    /// Called when a highlight pseudo-element (::selection, ::highlight,
+    /// ::target-text) style is invalidated. These pseudos have their styles
+    /// resolved lazily during painting rather than during the restyle traversal,
+    /// so style changes don't automatically trigger repaints.
+    fn invalidated_highlight_pseudo(&mut self, _element: E) {}
+
     /// Executes an action when any descendant of `Self` is invalidated.
     fn invalidated_descendants(&mut self, element: E, child: E);
 
@@ -1299,15 +1305,19 @@ where
                     //
                     // Note that we'll also restyle the pseudo-element because it would
                     // match this invalidation.
-                    //
-                    // FIXME: For non-element-backed pseudos this is still not quite
-                    // correct. For example for ::selection even though we invalidate
-                    // the style properly there's nothing that triggers a repaint
-                    // necessarily. Though this matches old Gecko behavior, and the
-                    // ::selection implementation needs to change significantly anyway
-                    // to implement https://github.com/w3c/csswg-drafts/issues/2474 for
-                    // example.
                     result.invalidated_self = true;
+
+                    // For highlight pseudos (::selection, ::highlight, ::target-text),
+                    // we also need to trigger a repaint since their styles are resolved
+                    // lazily during painting.
+                    if next_invalidation
+                        .dependency
+                        .selector
+                        .pseudo_element()
+                        .is_some_and(|p| p.is_lazy_painted_highlight_pseudo())
+                    {
+                        self.processor.invalidated_highlight_pseudo(self.element);
+                    }
                 }
 
                 debug!(

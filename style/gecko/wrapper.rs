@@ -1173,6 +1173,13 @@ impl<'le> TElement for GeckoElement<'le> {
         unsafe { slots.mShadowRoot.mRawPtr.as_ref().map(GeckoShadowRoot) }
     }
 
+    fn note_highlight_pseudo_style_invalidated(&self) {
+        let doc = self.as_node().owner_doc().0;
+        unsafe {
+            bindings::Gecko_NoteHighlightPseudoStyleInvalidated(doc);
+        }
+    }
+
     #[inline]
     fn containing_shadow(&self) -> Option<GeckoShadowRoot<'le>> {
         let slots = self.extended_slots()?;

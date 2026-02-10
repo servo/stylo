@@ -456,6 +456,10 @@ where
         debug_assert_ne!(element, self.element);
         invalidated_sibling(element, of);
     }
+
+    fn invalidated_highlight_pseudo(&mut self, element: E) {
+        element.note_highlight_pseudo_style_invalidated();
+    }
 }
 
 impl<'a, 'b, 'selectors, E> Collector<'a, 'b, 'selectors, E>
@@ -640,12 +644,26 @@ where
             self.matching_context.scope_element.clone(),
         );
 
-        self.invalidates_self |= push_invalidation(
+        let invalidated_self = push_invalidation(
             invalidation,
             invalidation_kind,
             self.descendant_invalidations,
             self.sibling_invalidations,
         );
+
+        // For highlight pseudos (::selection, ::highlight, ::target-text), we need
+        // to trigger a repaint since their styles are resolved lazily during
+        // painting rather than during the restyle traversal.
+        if invalidated_self
+            && dependency
+                .selector
+                .pseudo_element()
+                .is_some_and(|p| p.is_lazy_painted_highlight_pseudo())
+        {
+            self.element.note_highlight_pseudo_style_invalidated();
+        }
+
+        self.invalidates_self |= invalidated_self;
     }
 
     /// Returns whether `dependency` may cause us to invalidate the style of

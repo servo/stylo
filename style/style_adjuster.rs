@@ -284,10 +284,10 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             || self
                 .style
                 .get_parent_flags()
-                .contains(ComputedValueFlags::DIPLAY_CONTENTS_IN_ITEM_CONTAINER)
+                .contains(ComputedValueFlags::DISPLAY_CONTENTS_IN_ITEM_CONTAINER)
         {
             self.style
-                .add_flags(ComputedValueFlags::DIPLAY_CONTENTS_IN_ITEM_CONTAINER);
+                .add_flags(ComputedValueFlags::DISPLAY_CONTENTS_IN_ITEM_CONTAINER);
         }
 
         if self.style.pseudo.is_some_and(|p| p.is_first_line()) {

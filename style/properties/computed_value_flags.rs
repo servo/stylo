@@ -137,7 +137,7 @@ bitflags! {
         /// child of an item container or another `display: contents` element, the style of which
         /// has this flag set, marked in order to cascade beyond them to the descendants of the
         /// the item container that do generate a box.
-        const DIPLAY_CONTENTS_IN_ITEM_CONTAINER = 1 << 27;
+        const DISPLAY_CONTENTS_IN_ITEM_CONTAINER = 1 << 27;
 
         /// Whether there are author-specific rules for `text-shadow`.
         const HAS_AUTHOR_SPECIFIED_TEXT_SHADOW = 1 << 28;
@@ -169,7 +169,7 @@ impl ComputedValueFlags {
     fn maybe_inherited_flags() -> Self {
         Self::inherited_flags()
             | Self::SHOULD_SUPPRESS_LINEBREAK
-            | Self::DIPLAY_CONTENTS_IN_ITEM_CONTAINER
+            | Self::DISPLAY_CONTENTS_IN_ITEM_CONTAINER
     }
 
     /// Flags that are an input to the cascade.

@@ -82,7 +82,7 @@ pub use self::starting_style_rule::StartingStyleRule;
 pub use self::style_rule::StyleRule;
 pub use self::stylesheet::{AllowImportRules, SanitizationData, SanitizationKind};
 pub use self::stylesheet::{DocumentStyleSheet, Namespaces, Stylesheet};
-pub use self::stylesheet::{StylesheetContents, StylesheetInDocument, UserAgentStylesheets};
+pub use self::stylesheet::{StylesheetContents, StylesheetInDocument};
 pub use self::supports_rule::SupportsRule;
 
 /// The CORS mode used for a CSS load.

@@ -6,7 +6,7 @@
 
 use crate::typed_om::numeric_values::NoCalcNumeric;
 use std::collections::HashMap;
-use style_traits::NumericValue;
+use style_traits::{CssString, NumericValue, UnitValue};
 
 type UnitMap = HashMap<String, i32>;
 
@@ -15,6 +15,36 @@ type UnitMap = HashMap<String, i32>;
 struct SumValueItem {
     value: f32,
     unit_map: UnitMap,
+}
+
+impl SumValueItem {
+    /// <https://drafts.css-houdini.org/css-typed-om-1/#create-a-cssunitvalue-from-a-sum-value-item>
+    fn to_unit_value(&self) -> Result<UnitValue, ()> {
+        // Step 1.
+        if self.unit_map.len() > 1 {
+            return Err(());
+        }
+
+        // Step 2.
+        if self.unit_map.is_empty() {
+            return Ok(UnitValue {
+                value: self.value,
+                unit: CssString::from("number"),
+            });
+        }
+
+        // Step 3.
+        let (unit, power) = self.unit_map.iter().next().unwrap();
+        if *power != 1 {
+            return Err(());
+        }
+
+        // Step 4.
+        Ok(UnitValue {
+            value: self.value,
+            unit: CssString::from(unit),
+        })
+    }
 }
 
 /// <https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-sum-value>
@@ -93,5 +123,30 @@ impl SumValue {
                 Ok(SumValue(values))
             },
         }
+    }
+
+    /// Step 3 of:
+    /// https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-to
+    pub fn resolve_to_unit(&self, unit: &str) -> Result<UnitValue, ()> {
+        if self.0.len() != 1 {
+            return Err(());
+        }
+
+        let sole_item = &self.0[0];
+
+        let item = sole_item.to_unit_value()?;
+
+        let item = {
+            let numeric =
+                NoCalcNumeric::parse_unit_value(item.value, item.unit.to_string().as_str())?;
+            let converted = numeric.to(unit)?;
+
+            UnitValue {
+                value: converted.unitless_value(),
+                unit: CssString::from(converted.unit()),
+            }
+        };
+
+        Ok(item)
     }
 }

@@ -18,9 +18,6 @@ macro_rules! pref {
     ("layout.css.gradient-color-interpolation-method.enabled") => {
         true
     };
-    ("layout.css.marker.restricted") => {
-        true
-    };
     ("layout.css.outline-offset.snapping") => {
         1
     };

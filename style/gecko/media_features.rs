@@ -78,8 +78,8 @@ fn eval_device_orientation(context: &Context, value: Option<Orientation>) -> boo
     Orientation::eval(device_size(context.device()), value)
 }
 
-fn document_picture_in_picture_enabled(_: &ParserContext) -> bool {
-    static_prefs::pref!("dom.documentpip.enabled")
+fn document_picture_in_picture_enabled(context: &ParserContext) -> bool {
+    static_prefs::pref!("dom.documentpip.enabled") || context.chrome_rules_enabled()
 }
 
 /// Values for the display-mode media feature.

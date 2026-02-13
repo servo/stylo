@@ -65,6 +65,9 @@ pub enum PseudoElement {
     // their appropriate styles.
     ColorSwatch,
     Placeholder,
+    ServoSliderFill,
+    ServoSliderThumb,
+    ServoSliderTrack,
 
     // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
     ServoTextControlInnerContainer,
@@ -98,6 +101,9 @@ impl ToCss for PseudoElement {
             Marker => "::marker",
             ColorSwatch => "::color-swatch",
             Placeholder => "::placeholder",
+            ServoSliderFill => "::-servo-slider-fill",
+            ServoSliderTrack => "::-servo-slider-track",
+            ServoSliderThumb => "::-servo-slider-thumb",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoAnonymousBox => "::-servo-anonymous-box",
@@ -249,6 +255,9 @@ impl PseudoElement {
             | PseudoElement::Marker
             | PseudoElement::Placeholder
             | PseudoElement::DetailsContent
+            | PseudoElement::ServoSliderFill
+            | PseudoElement::ServoSliderThumb
+            | PseudoElement::ServoSliderTrack
             | PseudoElement::ServoTextControlInnerContainer
             | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
             PseudoElement::ServoAnonymousBox
@@ -662,6 +671,24 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
                 }
                 ServoTextControlInnerEditor
+            },
+            "-servo-slider-fill" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoSliderFill
+            },
+            "-servo-slider-thumb" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoSliderThumb
+            },
+            "-servo-slider-track" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
+                }
+                ServoSliderTrack
             },
             "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {

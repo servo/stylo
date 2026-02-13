@@ -412,7 +412,7 @@ impl NonCustomPropertyId {
                 };
 
                 // The assertions above guarantee that the pref defaults to false.
-                style_config::get_bool(pref, false)
+                static_prefs::get_bool(pref, false)
             % endif
         };
 

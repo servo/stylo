@@ -47,8 +47,7 @@ These crates are largely implementation details of Stylo, although you may need 
 | style_traits       | [![Crates.io](https://img.shields.io/crates/v/stylo_traits.svg)](https://crates.io/crates/stylo_traits)             | Types and traits which allow other code to interoperate with Stylo without depending on the main crate directly.  |
 | stylo_dom          | [![Crates.io](https://img.shields.io/crates/v/stylo_dom.svg)](https://crates.io/crates/stylo_dom)                   | Similar to stylo_traits (but much smaller)                                                                        |
 | stylo_atoms        | [![Crates.io](https://img.shields.io/crates/v/stylo_atoms.svg)](https://crates.io/crates/stylo_atoms)               | [Atoms](https://docs.rs/string_cache/latest/string_cache/struct.Atom.html) for CSS and HTML event related strings |
-| stylo_config       | [![Crates.io](https://img.shields.io/crates/v/stylo_config.svg)](https://crates.io/crates/stylo_config)             | Configuration for Stylo. Can be used to set runtime preferences (enabling/disabling properties, etc)              |
-| stylo_static_prefs | [![Crates.io](https://img.shields.io/crates/v/stylo_static_prefs.svg)](https://crates.io/crates/stylo_static_prefs) | Static configuration for Stylo. Config be overridden by patching in a replacement crate.                          |
+| stylo_static_prefs | [![Crates.io](https://img.shields.io/crates/v/stylo_static_prefs.svg)](https://crates.io/crates/stylo_static_prefs) | Configuration for Stylo. Can be used to set runtime preferences (enabling/disabling properties, etc)              |
 | style_derive       | [![Crates.io](https://img.shields.io/crates/v/stylo_derive.svg)](https://crates.io/crates/stylo_derive)             | Internal derive macro for stylo crate                                                                             |
 
 ### Standalone Crates
@@ -80,11 +79,11 @@ Assuming your local `servo` and `stylo` directories are siblings, you can build 
 [patch."https://github.com/servo/stylo"]
 selectors = { path = "../stylo/selectors" }
 servo_arc = { path = "../stylo/servo_arc" }
-stylo_atoms = { path = "../stylo/stylo_atoms" }
 stylo = { path = "../stylo/style" }
-stylo_config = { path = "../stylo/stylo_config" }
+stylo_atoms = { path = "../stylo/stylo_atoms" }
 stylo_dom = { path = "../stylo/stylo_dom" }
 stylo_malloc_size_of = { path = "../stylo/malloc_size_of" }
+stylo_static_prefs = { path = "../stylo/stylo_static_prefs" }
 stylo_traits = { path = "../stylo/style_traits" }
 ```
 
@@ -93,7 +92,6 @@ stylo_traits = { path = "../stylo/style_traits" }
 Releases are made every time this repository rebases its changes on top of the latest version of upstream Stylo. There are a lot of crates here. In order to publish them, they must be done in order. One order that works is:
 
 - selectors
-- stylo_config
 - stylo_static_prefs
 - stylo_atoms
 - stylo_malloc_size_of

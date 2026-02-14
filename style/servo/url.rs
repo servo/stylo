@@ -125,7 +125,10 @@ impl CssUrl {
     pub fn new_for_testing(url: &str) -> Self {
         CssUrl(Arc::new(CssUrlData {
             original: Some(Arc::new(url.into())),
-            resolved: ::url::Url::parse(url).ok().map(Arc::new),
+            resolved: (!url.is_empty())
+                .then(|| ::url::Url::parse(url))
+                .and_then(Result::ok)
+                .map(Arc::new),
         }))
     }
 

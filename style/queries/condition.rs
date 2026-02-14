@@ -138,8 +138,17 @@ impl StyleFeature {
                         }
                     },
                     CSSWideKeyword::Inherit => {
-                        // TODO: figure this out
-                        false
+                        if let Some(inherited) = ctx
+                            .container_info
+                            .as_ref()
+                            .expect("queries should provide container info")
+                            .inherited_style()
+                        {
+                            current_value
+                                == inherited.custom_properties().get(registration, &self.name)
+                        } else {
+                            false
+                        }
                     },
                     // Cascade-dependent keywords, such as revert and revert-layer,
                     // are invalid as values in a style feature, and cause the

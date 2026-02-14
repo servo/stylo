@@ -229,7 +229,17 @@ impl ContainerCondition {
         let style = style.to_arc();
         TraversalResult::Done(ContainerLookupResult {
             element: potential_container,
-            info: ContainerInfo { size, wm },
+            info: ContainerInfo {
+                size,
+                wm,
+                inherited_style: {
+                    potential_container.traversal_parent().and_then(|parent| {
+                        parent
+                            .borrow_data()
+                            .and_then(|data| data.styles.get_primary().cloned())
+                    })
+                },
+            },
             style,
         })
     }
@@ -308,15 +318,21 @@ impl ContainerCondition {
 }
 
 /// Information needed to evaluate an individual container query.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct ContainerInfo {
     size: Size2D<Option<Au>>,
     wm: WritingMode,
+    inherited_style: Option<Arc<ComputedValues>>,
 }
 
 impl ContainerInfo {
     fn size(&self) -> Option<Size2D<Au>> {
         Some(Size2D::new(self.size.width?, self.size.height?))
+    }
+
+    /// Get a reference to the container's inherited style, if any.
+    pub fn inherited_style(&self) -> Option<&ComputedValues> {
+        self.inherited_style.as_deref()
     }
 }
 

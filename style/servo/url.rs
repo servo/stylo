@@ -94,6 +94,11 @@ impl CssUrl {
 
     /// Returns the resolved url if it was valid.
     pub fn url(&self) -> Option<&Arc<Url>> {
+        // Per https://drafts.csswg.org/css-values-4/#url-empty
+        // If the original url is empty, then the resolved url is considered invalid.
+        if self.original.as_ref().is_some_and(|url| url.is_empty()) {
+            return None;
+        }
         self.resolved.as_ref()
     }
 

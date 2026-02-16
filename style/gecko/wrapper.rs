@@ -1183,14 +1183,7 @@ impl<'le> TElement for GeckoElement<'le> {
     #[inline]
     fn containing_shadow(&self) -> Option<GeckoShadowRoot<'le>> {
         let slots = self.extended_slots()?;
-        unsafe {
-            slots
-                ._base
-                .mContainingShadow
-                .mRawPtr
-                .as_ref()
-                .map(GeckoShadowRoot)
-        }
+        unsafe { slots._base.mContainingShadow.as_ref().map(GeckoShadowRoot) }
     }
 
     fn each_anonymous_content_child<F>(&self, mut f: F)

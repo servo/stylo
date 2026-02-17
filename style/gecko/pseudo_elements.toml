@@ -77,15 +77,19 @@ enabled_in = "ua"
 [-moz-number-spin-box]
 supports_user_action_state = true
 enabled_in = "chrome"
+is_element_backed = true
 [-moz-number-spin-down]
 supports_user_action_state = true
 enabled_in = "chrome"
+is_element_backed = true
 [-moz-number-spin-up]
 supports_user_action_state = true
 enabled_in = "chrome"
+is_element_backed = true
 [-moz-search-clear-button]
 supports_user_action_state = true
 enabled_in = "chrome"
+is_element_backed = true
 # The selected label of a <select>
 [-moz-select-content]
 enabled_in = "chrome"
@@ -107,17 +111,21 @@ supports_user_action_state = true
 supports_user_action_state = true
 [placeholder]
 supports_user_action_state = true
+is_element_backed = true
 [-moz-color-swatch]
 supports_user_action_state = true
 # The root of the text value anonymous content inside an <input> or <textarea>.
 [-moz-text-control-editing-root]
 enabled_in = "ua"
+is_element_backed = true
 # The element that shows the autofill value.
 [-moz-text-control-preview]
 enabled_in = "ua"
+is_element_backed = true
 # The Reveal Password button for <input type=password>.
 [-moz-reveal]
 enabled_in = "ua"
+is_element_backed = true
 # The button in an <input type=file>
 [file-selector-button]
 supports_user_action_state = true

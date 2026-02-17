@@ -31,6 +31,11 @@ fn grid_enabled() -> bool {
     style_config::get_bool("layout.grid.enabled")
 }
 
+#[inline]
+fn appearance_base_select_enabled(_context: &ParserContext) -> bool {
+    static_prefs::pref!("layout.css.appearance-base-select.enabled")
+}
+
 /// The specified value of `overflow-clip-margin`.
 pub type OverflowClipMargin = GenericOverflowClipMargin<NonNegativeLength>;
 
@@ -1626,6 +1631,10 @@ pub enum Appearance {
     Textfield,
     /// The dropdown button(s) that open up a dropdown list.
     MenulistButton,
+    /// Only relevant to the <select> element and ::picker(select) pseudo-element,
+    /// allowing them to be styled.
+    #[parse(condition = "appearance_base_select_enabled")]
+    BaseSelect,
     /// Menu Popup background.
     #[parse(condition = "ParserContext::chrome_rules_enabled")]
     Menupopup,

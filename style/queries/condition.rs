@@ -14,7 +14,7 @@ use crate::properties::CSSWideKeyword;
 use crate::stylesheets::CustomMediaEvaluator;
 use crate::values::{computed, AtomString, DashedIdent};
 use crate::{error_reporting::ContextualParseError, parser::Parse, parser::ParserContext};
-use cssparser::{match_ignore_ascii_case, Parser, SourcePosition, Token};
+use cssparser::{match_ignore_ascii_case, parse_important, Parser, SourcePosition, Token};
 use selectors::kleene_value::KleeneValue;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
@@ -95,10 +95,13 @@ impl StyleFeature {
             if let Ok(keyword) = input.try_parse(|i| CSSWideKeyword::parse(i)) {
                 StyleFeatureValue::Keyword(keyword)
             } else {
-                StyleFeatureValue::Value(Some(Arc::new(custom_properties::SpecifiedValue::parse(
+                let value = custom_properties::SpecifiedValue::parse(
                     input,
                     &context.url_data,
-                )?)))
+                )?;
+                // `!important` is allowed (but ignored) after the value.
+                let _ = input.try_parse(parse_important);
+                StyleFeatureValue::Value(Some(Arc::new(value)))
             }
         } else {
             StyleFeatureValue::Value(None)

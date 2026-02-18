@@ -404,6 +404,44 @@ impl AnimationValue {
         Some(animatable)
     }
 
+    /// Returns whether the animated value of `property` is different in `before` and `after`, in
+    /// order to determine whether a transition should be started.
+    /// NOTE(emilio): We don't need to convert to animated values here, if the computed value is
+    /// different the animated value should be different too.
+    pub fn is_different_for(
+        property: PropertyDeclarationId,
+        before: &ComputedValues,
+        after: &ComputedValues,
+    ) -> bool {
+        let longhand = match property {
+            PropertyDeclarationId::Longhand(id) => id,
+            PropertyDeclarationId::Custom(ref name) => {
+                // FIXME(bug 1869476): This should use a stylist to determine whether the name
+                // corresponds to an inherited custom property and then choose the
+                // inherited/non_inherited map accordingly.
+                let before = before.custom_properties();
+                let before_value = before.inherited.get(*name).or_else(|| before.non_inherited.get(*name));
+                let after = after.custom_properties();
+                let after_value = after.inherited.get(*name).or_else(|| after.non_inherited.get(*name));
+                return before_value != after_value
+            }
+        };
+
+        match longhand {
+            % for prop in data.longhands:
+            % if prop.animatable and not prop.logical:
+            LonghandId::${prop.camel_case} => {
+                // TODO: Could avoid some clones here.
+                let before_value = before.clone_${prop.ident}();
+                let after_value = after.clone_${prop.ident}();
+                before_value != after_value
+            }
+            % endif
+            % endfor
+            _ => false,
+        }
+    }
+
     /// Get an AnimationValue for an declaration id from a given computed values.
     pub fn from_computed_values(
         property: PropertyDeclarationId,

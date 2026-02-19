@@ -41,7 +41,6 @@ servo = [
     "serde",
     "servo_arc/servo",
     "stylo_atoms",
-    "style_config",
     "string_cache",
     "style_traits/servo",
     "url",
@@ -93,7 +92,6 @@ static_prefs = { workspace = true}
 string_cache = { version = "0.9", optional = true }
 strum = "0.27"
 strum_macros = "0.27"
-style_config = { workspace = true, optional = true }
 style_derive = { workspace = true }
 style_traits = { workspace = true }
 to_shmem = { workspace = true}

@@ -33,7 +33,7 @@ fn grid_enabled() -> bool {
 
 #[inline]
 fn appearance_base_select_enabled(_context: &ParserContext) -> bool {
-    static_prefs::pref!("layout.css.appearance-base-select.enabled")
+    static_prefs::pref!("dom.select.customizable_select.enabled")
 }
 
 /// The specified value of `overflow-clip-margin`.

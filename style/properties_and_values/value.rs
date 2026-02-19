@@ -200,9 +200,9 @@ impl<Component: ToCss> ToCss for ComponentList<Component> {
 }
 
 /// A struct for a single specified registered custom property value that includes its original URL
-// data so the value can be uncomputed later.
+/// data so the value can be uncomputed later.
 #[derive(
-    Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToComputedValue, ToResolvedValue, ToShmem,
+    Clone, Debug, MallocSizeOf, ToCss, ToComputedValue, ToResolvedValue, ToShmem,
 )]
 pub struct Value<Component> {
     /// The registered custom property value.
@@ -211,6 +211,13 @@ pub struct Value<Component> {
     /// necessary to uncompute registered custom properties.
     #[css(skip)]
     url_data: UrlExtraData,
+}
+
+impl<Component: PartialEq> PartialEq for Value<Component> {
+    // Ignore the url_data field when comparing values for equality.
+    fn eq(&self, other: &Self) -> bool {
+        self.v == other.v
+    }
 }
 
 impl<Component: Animate> Animate for Value<Component> {

@@ -10,8 +10,15 @@
 use super::{FeatureFlags, FeatureType, QueryFeatureExpression};
 use crate::custom_properties;
 use crate::derives::*;
+use crate::dom::AttributeTracker;
 use crate::properties::CSSWideKeyword;
+use crate::properties_and_values::registry::PropertyRegistrationData;
+use crate::properties_and_values::value::{
+    AllowComputationallyDependent, ComputedValue as ComputedRegisteredValue,
+    SpecifiedValue as SpecifiedRegisteredValue,
+};
 use crate::stylesheets::CustomMediaEvaluator;
+use crate::stylist::Stylist;
 use crate::values::{computed, AtomString, DashedIdent};
 use crate::{error_reporting::ContextualParseError, parser::Parse, parser::ParserContext};
 use cssparser::{match_ignore_ascii_case, parse_important, Parser, SourcePosition, Token};
@@ -95,10 +102,7 @@ impl StyleFeature {
             if let Ok(keyword) = input.try_parse(|i| CSSWideKeyword::parse(i)) {
                 StyleFeatureValue::Keyword(keyword)
             } else {
-                let value = custom_properties::SpecifiedValue::parse(
-                    input,
-                    &context.url_data,
-                )?;
+                let value = custom_properties::SpecifiedValue::parse(input, &context.url_data)?;
                 // `!important` is allowed (but ignored) after the value.
                 let _ = input.try_parse(parse_important);
                 StyleFeatureValue::Value(Some(Arc::new(value)))
@@ -109,21 +113,69 @@ impl StyleFeature {
         Ok(Self { name, value })
     }
 
+    // Substitute custom-property references in `value`, then re-parse and compute it,
+    // and compare against `current_value`.
+    fn substitute_and_compare(
+        value: &Arc<custom_properties::SpecifiedValue>,
+        registration: &PropertyRegistrationData,
+        stylist: &Stylist,
+        ctx: &computed::Context,
+        current_value: Option<&ComputedRegisteredValue>,
+    ) -> bool {
+        let substituted = match crate::custom_properties::substitute(
+            &value,
+            ctx.inherited_custom_properties(),
+            stylist,
+            ctx,
+            // FIXME: do we need to pass a real AttributeTracker for the query?
+            &mut AttributeTracker::new_dummy(),
+        ) {
+            Ok(sub) => sub,
+            Err(_) => return current_value.is_none(),
+        };
+        if registration.syntax.is_universal() {
+            return match current_value {
+                Some(v) => v.as_universal().is_some_and(|v| v.css == substituted),
+                None => substituted.is_empty(),
+            };
+        }
+        let mut input = cssparser::ParserInput::new(&substituted);
+        let mut parser = Parser::new(&mut input);
+        let computed = SpecifiedRegisteredValue::compute(
+            &mut parser,
+            registration,
+            &value.url_data,
+            ctx,
+            AllowComputationallyDependent::Yes,
+        )
+        .ok();
+        computed.as_ref() == current_value
+    }
+
     fn matches(&self, ctx: &computed::Context) -> KleeneValue {
         // FIXME(emilio): Confirm this is the right style to query.
-        let registration = ctx
+        let stylist = ctx
             .builder
             .stylist
-            .expect("container queries should have a stylist around")
-            .get_custom_property_registration(&self.name);
+            .expect("container queries should have a stylist around");
+        let registration = stylist.get_custom_property_registration(&self.name);
         let current_value = ctx
             .inherited_custom_properties()
             .get(registration, &self.name);
         KleeneValue::from(match self.value {
-            StyleFeatureValue::Value(Some(ref v)) => current_value.is_some_and(|cur| {
-                custom_properties::compute_variable_value(v, registration, ctx)
-                    .is_some_and(|v| v == *cur)
-            }),
+            StyleFeatureValue::Value(Some(ref v)) => {
+                if ctx.container_info.is_none() {
+                    // If no container, custom props are guaranteed-unknown.
+                    false
+                } else if v.has_references() {
+                    // If there are --var() references in the query value,
+                    // try to substitute them before comparing to current.
+                    Self::substitute_and_compare(v, registration, stylist, ctx, current_value)
+                } else {
+                    custom_properties::compute_variable_value(&v, registration, ctx).as_ref()
+                        == current_value
+                }
+            },
             StyleFeatureValue::Value(None) => current_value.is_some(),
             StyleFeatureValue::Keyword(kw) => {
                 match kw {

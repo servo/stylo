@@ -40,7 +40,7 @@ use super::{
     PropertyDeclarationId, PropertyId, NonCustomPropertyId,
     NonCustomPropertyIdSet, PropertyFlags, SourcePropertyDeclaration,
     LonghandIdSet, VariableDeclaration, CustomDeclaration,
-    WideKeywordDeclaration, NonCustomPropertyIterator,
+    WideKeywordDeclaration, NonCustomPropertyIterator, TransitionPropertyIterator,
 };
 use debug_unreachable::debug_unreachable;
 
@@ -1821,10 +1821,8 @@ impl ComputedValues {
     }
 
     /// Create a `TransitionPropertyIterator` for this styles transition properties.
-    pub fn transition_properties<'a>(
-        &'a self
-    ) -> animated_properties::TransitionPropertyIterator<'a> {
-        animated_properties::TransitionPropertyIterator::from_style(self)
+    pub fn transition_properties<'a>(&'a self) -> TransitionPropertyIterator<'a> {
+        TransitionPropertyIterator::from_style(self)
     }
 }
 

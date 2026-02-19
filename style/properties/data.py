@@ -868,44 +868,6 @@ class PropertiesData(object):
             if logical_count * 2 != len(props):
                 raise RuntimeError(f"Logical group {group} has unbalanced logical / physical properties")
 
-        shorthands_toml = toml.loads(open(os.path.join(os.path.dirname(__file__), "shorthands.toml")).read())
-        for name, args in shorthands_toml.items():
-            self.declare_shorthand(name, **args)
-
-        # We didn't define the 'all' shorthand using the regular helpers:shorthand
-        # mechanism, since it causes some very large types to be generated.
-        #
-        # Also, make sure logical properties appear before its physical
-        # counter-parts, in order to prevent bugs like:
-        #
-        #   https://bugzilla.mozilla.org/show_bug.cgi?id=1410028
-        #
-        # FIXME(emilio): Adopt the resolution from:
-        #
-        #   https://github.com/w3c/csswg-drafts/issues/1898
-        #
-        # when there is one, whatever that is.
-        logical_longhands = []
-        other_longhands = []
-        for p in self.longhands:
-            if p.name in ['direction', 'unicode-bidi']:
-                continue;
-            if not p.enabled_in_content() and not p.experimental(engine):
-                continue;
-            if "style" not in p.rule_types_allowed_names():
-                continue;
-            if p.logical:
-                logical_longhands.append(p.name)
-            else:
-                other_longhands.append(p.name)
-
-        self.all_shorthand_length = len(logical_longhands) + len(other_longhands);
-        self.declare_shorthand(
-            "all",
-            logical_longhands + other_longhands,
-            spec="https://drafts.csswg.org/css-cascade-3/#all-shorthand"
-        )
-
         # After this code, `data.longhands` is sorted in the following order:
         # - first all keyword variants and all variants known to be Copy,
         # - second all the other variants, such as all variants with the same field
@@ -922,10 +884,13 @@ class PropertiesData(object):
                 "doc": "`" + property.name + "`",
                 "copy": property.specified_is_copy(),
             })
-
         groups = {}
         keyfunc = lambda x: x["type"]
         sortkeys = {}
+        # WARNING: It is *really* important for the variants of `LonghandId`
+        # and `PropertyDeclaration` to be defined in the exact same order,
+        # with the exception of `CSSWideKeyword`, `WithVariables` and `Custom`,
+        # which don't exist in `LonghandId`.
         for ty, group in groupby(sorted(self.declaration_variants, key=keyfunc), keyfunc):
             group = list(group)
             groups[ty] = group
@@ -934,17 +899,11 @@ class PropertiesData(object):
                     sortkeys[v["name"]] = (not v["copy"], 1, v["name"], "")
                 else:
                     sortkeys[v["name"]] = (not v["copy"], len(group), ty, v["name"])
-        self.declaration_variants.sort(key=lambda x: sortkeys[x["name"]])
-
         # It is extremely important to sort the `data.longhands` array here so
         # that it is in the same order as `variants`, for `LonghandId` and
         # `PropertyDeclarationId` to coincide.
         self.longhands.sort(key=lambda x: sortkeys[x.camel_case])
-
-        # WARNING: It is *really* important for the variants of `LonghandId`
-        # and `PropertyDeclaration` to be defined in the exact same order,
-        # with the exception of `CSSWideKeyword`, `WithVariables` and `Custom`,
-        # which don't exist in `LonghandId`.
+        self.declaration_variants.sort(key=lambda x: sortkeys[x["name"]])
         self.declaration_extra_variants = [
             {
                 "name": "CSSWideKeyword",
@@ -968,6 +927,57 @@ class PropertiesData(object):
         for v in self.declaration_extra_variants:
             self.declaration_variants.append(v)
             groups[v["type"]] = [v]
+
+        shorthands_toml = toml.loads(open(os.path.join(os.path.dirname(__file__), "shorthands.toml")).read())
+        for name, args in shorthands_toml.items():
+            self.declare_shorthand(name, **args)
+        self.declare_all_shorthand()
+
+
+    def declare_all_shorthand(self):
+        # We don't define the 'all' shorthand using the regular helpers:shorthand
+        # mechanism, since it causes some very large types to be generated.
+        #
+        # Make sure logical properties appear before its physical
+        # counter-parts, in order to prevent bugs like:
+        #
+        #   https://bugzilla.mozilla.org/show_bug.cgi?id=1410028
+        #
+        # FIXME(emilio): Adopt the resolution from:
+        #
+        #   https://github.com/w3c/csswg-drafts/issues/1898
+        #
+        # when there is one, whatever that is.
+        logical_longhands = []
+        other_longhands = []
+        for p in self.longhands:
+            if p.name in ['direction', 'unicode-bidi']:
+                continue;
+            if not p.enabled_in_content() and not p.experimental(self.engine):
+                continue;
+            if "style" not in p.rule_types_allowed_names():
+                continue;
+            if p.logical:
+                logical_longhands.append(p)
+            else:
+                other_longhands.append(p)
+
+        # Cache locality when iterating over the `all` shorthand is important
+        # for transition handling, so we sort by style struct.
+        # We technically don't care about the logical prop order (because those
+        # are not animated themselves), but we sort them the same way for
+        # consistency.
+        logical_longhands.sort(key=lambda p: p.style_struct.name)
+        other_longhands.sort(key=lambda p: p.style_struct.name)
+
+        all_names = list(map(lambda p: p.name, logical_longhands + other_longhands))
+
+        self.all_shorthand_length = len(all_names)
+        self.declare_shorthand(
+            "all",
+            all_names,
+            spec="https://drafts.csswg.org/css-cascade-3/#all-shorthand"
+        )
 
 
     def style_struct_by_name_lower(self, name):

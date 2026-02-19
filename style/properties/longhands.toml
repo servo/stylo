@@ -4157,12 +4157,13 @@ servo_restyle_damage = "repaint"
 keyword = { values = ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity", "plus-lighter"], gecko_enum_prefix = "StyleBlend" }
 
 [dominant-baseline]
-struct = "inherited_svg"
+type = "DominantBaseline"
+initial = "computed::DominantBaseline::Auto"
+struct = "inherited_box"
 engine = "gecko"
-spec = "https://www.w3.org/TR/css-inline-3/#propdef-dominant-baseline"
 animation_type = "discrete"
+spec = "https://drafts.csswg.org/css-inline-3/#dominant-baseline-property"
 affects = "layout"
-keyword = { values = ["auto", "ideographic", "alphabetic", "hanging", "mathematical", "central", "middle", "text-after-edge", "text-before-edge"] }
 
 [-moz-math-variant]
 struct = "font"

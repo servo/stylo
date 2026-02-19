@@ -573,6 +573,7 @@ class Longhand(Property):
                 "ContentVisibility",
                 "ContainerType",
                 "Display",
+                "DominantBaseline",
                 "FillRule",
                 "Float",
                 "FontLanguageOverride",

@@ -5,7 +5,7 @@
 //! Typed OM Numeric Values.
 
 use crate::derives::*;
-use crate::values::specified::NoCalcLength;
+use crate::values::specified::{NoCalcLength, Percentage};
 use crate::values::CSSFloat;
 use style_traits::ParsingMode;
 
@@ -18,6 +18,11 @@ pub enum NoCalcNumeric {
     ///
     /// <https://drafts.csswg.org/css-values/#lengths>
     Length(NoCalcLength),
+
+    /// A `<percentage>` value.
+    ///
+    /// <https://drafts.csswg.org/css-values/#percentages>
+    Percentage(Percentage),
     // TODO: Add other values.
 }
 
@@ -26,6 +31,7 @@ impl NoCalcNumeric {
     pub fn unitless_value(&self) -> CSSFloat {
         match *self {
             Self::Length(v) => v.unitless_value(),
+            Self::Percentage(v) => v.get(),
         }
     }
 
@@ -37,6 +43,7 @@ impl NoCalcNumeric {
     pub fn unit(&self) -> &'static str {
         match *self {
             Self::Length(v) => v.unit(),
+            Self::Percentage(v) => v.unit(),
         }
     }
 
@@ -47,6 +54,7 @@ impl NoCalcNumeric {
     pub fn canonical_unit(&self) -> Option<&'static str> {
         match *self {
             Self::Length(v) => v.canonical_unit(),
+            Self::Percentage(v) => v.canonical_unit(),
         }
     }
 
@@ -57,19 +65,27 @@ impl NoCalcNumeric {
     pub fn to(&self, unit: &str) -> Result<Self, ()> {
         match self {
             Self::Length(v) => Ok(Self::Length(v.to(unit)?)),
+            Self::Percentage(v) => Ok(Self::Percentage(v.to(unit)?)),
         }
     }
 
     /// Parse a given unit value.
     pub fn parse_unit_value(value: CSSFloat, unit: &str) -> Result<Self, ()> {
-        NoCalcLength::parse_dimension_with_flags(
+        if let Ok(length) = NoCalcLength::parse_dimension_with_flags(
             ParsingMode::DEFAULT,
             /* in_page_rule = */ false,
             value,
             unit,
-        )
-        .map(NoCalcNumeric::Length)
+        ) {
+            return Ok(NoCalcNumeric::Length(length));
+        }
+
+        if unit.eq_ignore_ascii_case("percent") {
+            return Ok(NoCalcNumeric::Percentage(Percentage::new(value)));
+        }
 
         // TODO: Add support for other values.
+
+        Err(())
     }
 }

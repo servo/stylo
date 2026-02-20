@@ -17,7 +17,9 @@ pub use cssparser::{SourceLocation, Token};
 use precomputed_hash::PrecomputedHash;
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Debug, Write};
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::{
+    CssString, CssWriter, NumericValue, ParseError, StyleParseErrorKind, ToCss, UnitValue,
+};
 use to_shmem::impl_trivial_to_shmem;
 
 #[cfg(feature = "gecko")]
@@ -447,6 +449,14 @@ where
 {
     (value * 100.).to_css(dest)?;
     dest.write_char('%')
+}
+
+/// Reify a value into percentage numeric value.
+pub fn reify_percentage(value: CSSFloat) -> NumericValue {
+    NumericValue::Unit(UnitValue {
+        value: value * 100.,
+        unit: CssString::from("percent"),
+    })
 }
 
 /// Convenience void type to disable some properties and values through types.

@@ -7,10 +7,10 @@
 use crate::derives::*;
 use crate::values::generics::{ClampToNonNegative, NonNegative};
 use crate::values::specified::percentage::ToPercentage;
-use crate::values::{serialize_normalized_percentage, CSSFloat};
+use crate::values::{reify_percentage, serialize_normalized_percentage, CSSFloat};
 use crate::Zero;
 use std::fmt;
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssWriter, ToCss, ToTyped, TypedValue};
 
 /// A computed percentage.
 #[derive(
@@ -31,7 +31,6 @@ use style_traits::{CssWriter, ToCss};
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
-    ToTyped,
 )]
 #[repr(C)]
 pub struct Percentage(pub CSSFloat);
@@ -109,6 +108,12 @@ impl ToCss for Percentage {
         W: fmt::Write,
     {
         serialize_normalized_percentage(self.0, dest)
+    }
+}
+
+impl ToTyped for Percentage {
+    fn to_typed(&self) -> Option<TypedValue> {
+        Some(TypedValue::Numeric(reify_percentage(self.0)))
     }
 }
 

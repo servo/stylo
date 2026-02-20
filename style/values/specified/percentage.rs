@@ -11,14 +11,17 @@ use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::NonNegative;
 use crate::values::specified::calc::CalcNode;
 use crate::values::specified::Number;
-use crate::values::{normalize, serialize_percentage, CSSFloat};
+use crate::values::{normalize, reify_percentage, serialize_percentage, CSSFloat};
 use cssparser::{Parser, Token};
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss};
+use style_traits::{
+    CssWriter, MathSum, NumericValue, ParseError, SpecifiedValueInfo, ToCss, ToTyped, TypedValue,
+};
+use thin_vec::ThinVec;
 
 /// A percentage value.
-#[derive(Clone, Copy, Debug, Default, MallocSizeOf, PartialEq, ToShmem, ToTyped)]
+#[derive(Clone, Copy, Debug, Default, MallocSizeOf, PartialEq, ToShmem)]
 pub struct Percentage {
     /// The percentage value as a float.
     ///
@@ -44,6 +47,20 @@ impl ToCss for Percentage {
             dest.write_char(')')?;
         }
         Ok(())
+    }
+}
+
+impl ToTyped for Percentage {
+    fn to_typed(&self) -> Option<TypedValue> {
+        let numeric_value = reify_percentage(self.value);
+
+        if self.calc_clamping_mode.is_some() {
+            Some(TypedValue::Numeric(NumericValue::Sum(MathSum {
+                values: ThinVec::from([numeric_value]),
+            })))
+        } else {
+            Some(TypedValue::Numeric(numeric_value))
+        }
     }
 }
 

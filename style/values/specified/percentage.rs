@@ -88,6 +88,28 @@ impl Percentage {
             .map_or(self.value, |mode| mode.clamp(self.value))
     }
 
+    /// Return the unit, as a string.
+    pub fn unit(&self) -> &'static str {
+        "percent"
+    }
+
+    /// Return no canonical unit (percent values do not have one).
+    pub fn canonical_unit(&self) -> Option<&'static str> {
+        None
+    }
+
+    /// Convert only if the unit is the same (conversion to other units does
+    /// not make sense).
+    pub fn to(&self, unit: &str) -> Result<Self, ()> {
+        if !unit.eq_ignore_ascii_case("percent") {
+            return Err(());
+        }
+        Ok(Self {
+            value: self.value,
+            calc_clamping_mode: self.calc_clamping_mode,
+        })
+    }
+
     /// Returns this percentage as a number.
     pub fn to_number(&self) -> Number {
         Number::new_with_clamping_mode(self.value, self.calc_clamping_mode)

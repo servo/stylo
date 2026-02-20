@@ -48,6 +48,245 @@ enum StyleFeatureValue {
     Keyword(CSSWideKeyword),
 }
 
+/// Trait for query elements that parse a series of conditions separated by
+/// AND or OR operators, or prefixed with NOT.
+///
+/// This is used by both QueryCondition and StyleQuery as they support similar
+/// syntax for combining multiple conditions with a boolean operator.
+trait OperationParser: Sized {
+    /// https://drafts.csswg.org/mediaqueries-5/#typedef-media-condition or
+    /// https://drafts.csswg.org/mediaqueries-5/#typedef-media-condition-without-or
+    /// (depending on `allow_or`).
+    fn parse_internal<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        feature_type: FeatureType,
+        allow_or: AllowOr,
+    ) -> Result<Self, ParseError<'i>> {
+        let location = input.current_source_location();
+
+        if input.try_parse(|i| i.expect_ident_matching("not")).is_ok() {
+            let inner_condition = Self::parse_in_parens(context, input, feature_type)?;
+            return Ok(Self::new_not(Box::new(inner_condition)));
+        }
+
+        let first_condition = Self::parse_in_parens(context, input, feature_type)?;
+        let operator = match input.try_parse(Operator::parse) {
+            Ok(op) => op,
+            Err(..) => return Ok(first_condition),
+        };
+
+        if allow_or == AllowOr::No && operator == Operator::Or {
+            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+
+        let mut conditions = vec![];
+        conditions.push(Self::new_in_parens(Box::new(first_condition)));
+        conditions.push(Self::parse_in_parens(context, input, feature_type)?);
+
+        let delim = match operator {
+            Operator::And => "and",
+            Operator::Or => "or",
+        };
+
+        loop {
+            if input.try_parse(|i| i.expect_ident_matching(delim)).is_err() {
+                return Ok(Self::new_operation(conditions.into_boxed_slice(), operator));
+            }
+
+            conditions.push(Self::new_in_parens(Box::new(Self::parse_in_parens(
+                context,
+                input,
+                feature_type,
+            )?)));
+        }
+    }
+
+    // Parse a condition in parentheses, or `<general-enclosed>`.
+    fn parse_in_parens<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        feature_type: FeatureType,
+    ) -> Result<Self, ParseError<'i>>;
+
+    // Helpers to create the appropriate enum variant of the implementing type:
+    // Create a Not result that encapsulates the `inner` condition.
+    fn new_not(inner: Box<Self>) -> Self;
+
+    // Create an Operation result with the given list of `conditions` using `operator`.
+    fn new_operation(conditions: Box<[Self]>, operator: Operator) -> Self;
+
+    // Create an InParens result containing the given `condition`.
+    fn new_in_parens(condition: Box<Self>) -> Self;
+}
+
+/// https://drafts.csswg.org/css-conditional-5/#typedef-style-query
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub enum StyleQuery {
+    /// A negation of a condition.
+    Not(Box<StyleQuery>),
+    /// A set of joint operations.
+    Operation(Box<[StyleQuery]>, Operator),
+    /// A condition wrapped in parenthesis.
+    InParens(Box<StyleQuery>),
+    /// A feature query (`--foo: bar` or just `--foo`).
+    Feature(StyleFeature),
+    /// An unknown "general-enclosed" term.
+    GeneralEnclosed(String),
+}
+
+impl ToCss for StyleQuery {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        match *self {
+            StyleQuery::Not(ref c) => {
+                dest.write_str("not ")?;
+                c.to_css(dest)
+            },
+            StyleQuery::Operation(ref list, op) => {
+                let mut iter = list.iter();
+                iter.next().unwrap().to_css(dest)?;
+                for item in iter {
+                    dest.write_char(' ')?;
+                    op.to_css(dest)?;
+                    dest.write_char(' ')?;
+                    item.to_css(dest)?;
+                }
+                Ok(())
+            },
+            StyleQuery::InParens(ref c) => {
+                dest.write_char('(')?;
+                c.to_css(dest)?;
+                dest.write_char(')')
+            },
+            StyleQuery::Feature(ref f) => f.to_css(dest),
+            StyleQuery::GeneralEnclosed(ref s) => dest.write_str(&s),
+        }
+    }
+}
+
+impl StyleQuery {
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        feature_type: FeatureType,
+    ) -> Result<Self, ParseError<'i>> {
+        if !static_prefs::pref!("layout.css.style-queries.enabled")
+            || feature_type != FeatureType::Container
+        {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+
+        if let Ok(feature) = input.try_parse(|input| StyleFeature::parse(context, input)) {
+            return Ok(Self::Feature(feature));
+        }
+
+        Self::parse_internal(context, input, feature_type, AllowOr::Yes)
+    }
+
+    fn parse_in_parenthesis_block<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        // Base case. Make sure to preserve this error as it's more generally
+        // relevant.
+        let feature_error = match input.try_parse(|input| StyleFeature::parse(context, input)) {
+            Ok(feature) => return Ok(Self::Feature(feature)),
+            Err(e) => e,
+        };
+
+        if let Ok(inner) = Self::parse(context, input, FeatureType::Container) {
+            return Ok(Self::InParens(Box::new(inner)));
+        }
+
+        Err(feature_error)
+    }
+
+    fn try_parse_block<'i, T, F>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+        start: SourcePosition,
+        parse: F,
+    ) -> Option<T>
+    where
+        F: for<'tt> FnOnce(&mut Parser<'i, 'tt>) -> Result<T, ParseError<'i>>,
+    {
+        let nested = input.try_parse(|input| input.parse_nested_block(parse));
+        match nested {
+            Ok(nested) => Some(nested),
+            Err(e) => {
+                // We're about to swallow the error in a `<general-enclosed>`
+                // condition, so report it while we can.
+                let loc = e.location;
+                let error = ContextualParseError::InvalidMediaRule(input.slice_from(start), e);
+                context.log_css_error(loc, error);
+                None
+            },
+        }
+    }
+
+    fn matches(&self, ctx: &computed::Context) -> KleeneValue {
+        match *self {
+            StyleQuery::Feature(ref f) => f.matches(ctx),
+            StyleQuery::Not(ref c) => !c.matches(ctx),
+            StyleQuery::InParens(ref c) => c.matches(ctx),
+            StyleQuery::Operation(ref conditions, op) => {
+                debug_assert!(!conditions.is_empty(), "We never create an empty op");
+                match op {
+                    Operator::And => KleeneValue::any_false(conditions.iter(), |c| c.matches(ctx)),
+                    Operator::Or => KleeneValue::any(conditions.iter(), |c| c.matches(ctx)),
+                }
+            },
+            StyleQuery::GeneralEnclosed(_) => KleeneValue::Unknown,
+        }
+    }
+}
+
+impl OperationParser for StyleQuery {
+    fn parse_in_parens<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        feature_type: FeatureType,
+    ) -> Result<Self, ParseError<'i>> {
+        assert!(feature_type == FeatureType::Container);
+        input.skip_whitespace();
+        let start = input.position();
+        let start_location = input.current_source_location();
+        match *input.next()? {
+            Token::ParenthesisBlock => {
+                if let Some(nested) = Self::try_parse_block(context, input, start, |i| {
+                    Self::parse_in_parenthesis_block(context, i)
+                }) {
+                    return Ok(nested);
+                }
+                // Accept <ident>: <any-value> as a GeneralEnclosed (which evaluates
+                // to false, but does not invalidate the query as a whole).
+                input.parse_nested_block(|i| {
+                    i.expect_ident()?;
+                    i.expect_colon()?;
+                    consume_any_value(i)
+                })?;
+                Ok(Self::GeneralEnclosed(input.slice_from(start).to_owned()))
+            },
+            ref t => return Err(start_location.new_unexpected_token_error(t.clone())),
+        }
+    }
+
+    fn new_in_parens(condition: Box<Self>) -> Self {
+        Self::InParens(condition)
+    }
+
+    fn new_not(inner: Box<Self>) -> Self {
+        Self::Not(inner)
+    }
+
+    fn new_operation(conditions: Box<[Self]>, operator: Operator) -> Self {
+        Self::Operation(conditions, operator)
+    }
+}
+
 /// A style query feature:
 /// https://drafts.csswg.org/css-conditional-5/#typedef-style-feature
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
@@ -83,14 +322,7 @@ impl StyleFeature {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
-        feature_type: FeatureType,
     ) -> Result<Self, ParseError<'i>> {
-        if !static_prefs::pref!("layout.css.style-queries.enabled")
-            || feature_type != FeatureType::Container
-        {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-        }
-        // TODO: Allow parsing nested style feature queries.
         let ident = input.expect_ident()?;
         // TODO(emilio): Maybe support non-custom properties?
         let name = match custom_properties::parse_name(ident.as_ref()) {
@@ -336,7 +568,7 @@ pub enum QueryCondition {
     /// A condition wrapped in parenthesis.
     InParens(Box<QueryCondition>),
     /// A <style> query.
-    Style(StyleFeature),
+    Style(StyleQuery),
     /// A -moz-pref() query.
     MozPref(MozPrefFeature),
     /// [ <function-token> <any-value>? ) ] | [ ( <any-value>? ) ]
@@ -454,52 +686,6 @@ impl QueryCondition {
         Self::parse_internal(context, input, feature_type, AllowOr::No)
     }
 
-    /// https://drafts.csswg.org/mediaqueries-5/#typedef-media-condition or
-    /// https://drafts.csswg.org/mediaqueries-5/#typedef-media-condition-without-or
-    /// (depending on `allow_or`).
-    fn parse_internal<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-        feature_type: FeatureType,
-        allow_or: AllowOr,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
-        if input.try_parse(|i| i.expect_ident_matching("not")).is_ok() {
-            let inner_condition = Self::parse_in_parens(context, input, feature_type)?;
-            return Ok(QueryCondition::Not(Box::new(inner_condition)));
-        }
-
-        let first_condition = Self::parse_in_parens(context, input, feature_type)?;
-        let operator = match input.try_parse(Operator::parse) {
-            Ok(op) => op,
-            Err(..) => return Ok(first_condition),
-        };
-
-        if allow_or == AllowOr::No && operator == Operator::Or {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-        }
-
-        let mut conditions = vec![];
-        conditions.push(first_condition);
-        conditions.push(Self::parse_in_parens(context, input, feature_type)?);
-
-        let delim = match operator {
-            Operator::And => "and",
-            Operator::Or => "or",
-        };
-
-        loop {
-            if input.try_parse(|i| i.expect_ident_matching(delim)).is_err() {
-                return Ok(QueryCondition::Operation(
-                    conditions.into_boxed_slice(),
-                    operator,
-                ));
-            }
-
-            conditions.push(Self::parse_in_parens(context, input, feature_type)?);
-        }
-    }
-
     fn parse_in_parenthesis_block<'i>(
         context: &ParserContext,
         input: &mut Parser<'i, '_>,
@@ -547,53 +733,6 @@ impl QueryCondition {
         }
     }
 
-    /// Parse a condition in parentheses, or `<general-enclosed>`.
-    ///
-    /// https://drafts.csswg.org/mediaqueries/#typedef-media-in-parens
-    pub fn parse_in_parens<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-        feature_type: FeatureType,
-    ) -> Result<Self, ParseError<'i>> {
-        input.skip_whitespace();
-        let start = input.position();
-        let start_location = input.current_source_location();
-        match *input.next()? {
-            Token::ParenthesisBlock => {
-                let nested = Self::try_parse_block(context, input, start, |input| {
-                    Self::parse_in_parenthesis_block(context, input, feature_type)
-                });
-                if let Some(nested) = nested {
-                    return Ok(nested);
-                }
-            },
-            Token::Function(ref name) => {
-                match_ignore_ascii_case! { name,
-                    "style" => {
-                        let feature = Self::try_parse_block(context, input, start, |input| {
-                            StyleFeature::parse(context, input, feature_type)
-                        });
-                        if let Some(feature) = feature {
-                            return Ok(Self::Style(feature));
-                        }
-                    },
-                    "-moz-pref" => {
-                        let feature = Self::try_parse_block(context, input, start, |input| {
-                            MozPrefFeature::parse(context, input, feature_type)
-                        });
-                        if let Some(feature) = feature {
-                            return Ok(Self::MozPref(feature));
-                        }
-                    },
-                    _ => {},
-                }
-            },
-            ref t => return Err(start_location.new_unexpected_token_error(t.clone())),
-        }
-        input.parse_nested_block(consume_any_value)?;
-        Ok(Self::GeneralEnclosed(input.slice_from(start).to_owned()))
-    }
-
     /// Whether this condition matches the device and quirks mode.
     /// https://drafts.csswg.org/mediaqueries/#evaluating
     /// https://drafts.csswg.org/mediaqueries/#typedef-general-enclosed
@@ -624,5 +763,66 @@ impl QueryCondition {
                 }
             },
         }
+    }
+}
+
+impl OperationParser for QueryCondition {
+    /// Parse a condition in parentheses, or `<general-enclosed>`.
+    ///
+    /// https://drafts.csswg.org/mediaqueries/#typedef-media-in-parens
+    fn parse_in_parens<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+        feature_type: FeatureType,
+    ) -> Result<Self, ParseError<'i>> {
+        input.skip_whitespace();
+        let start = input.position();
+        let start_location = input.current_source_location();
+        match *input.next()? {
+            Token::ParenthesisBlock => {
+                let nested = Self::try_parse_block(context, input, start, |input| {
+                    Self::parse_in_parenthesis_block(context, input, feature_type)
+                });
+                if let Some(nested) = nested {
+                    return Ok(nested);
+                }
+            },
+            Token::Function(ref name) => {
+                match_ignore_ascii_case! { name,
+                    "style" => {
+                        let query = Self::try_parse_block(context, input, start, |input| {
+                            StyleQuery::parse(context, input, feature_type)
+                        });
+                        if let Some(query) = query {
+                            return Ok(Self::Style(query));
+                        }
+                    },
+                    "-moz-pref" => {
+                        let feature = Self::try_parse_block(context, input, start, |input| {
+                            MozPrefFeature::parse(context, input, feature_type)
+                        });
+                        if let Some(feature) = feature {
+                            return Ok(Self::MozPref(feature));
+                        }
+                    },
+                    _ => {},
+                }
+            },
+            ref t => return Err(start_location.new_unexpected_token_error(t.clone())),
+        }
+        input.parse_nested_block(consume_any_value)?;
+        Ok(Self::GeneralEnclosed(input.slice_from(start).to_owned()))
+    }
+
+    fn new_in_parens(condition: Box<Self>) -> Self {
+        Self::InParens(condition)
+    }
+
+    fn new_not(inner: Box<Self>) -> Self {
+        Self::Not(inner)
+    }
+
+    fn new_operation(conditions: Box<[Self]>, operator: Operator) -> Self {
+        Self::Operation(conditions, operator)
     }
 }

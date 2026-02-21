@@ -26,6 +26,7 @@ use style_traits::{CssWriter, ToCss};
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -65,6 +66,7 @@ pub enum BaselineShiftKeyword {
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed_value(derive_fields)]
 pub enum GenericBaselineShift<LengthPercentage> {
     /// One of the baseline-shift keywords
     Keyword(BaselineShiftKeyword),

@@ -160,6 +160,7 @@ impl<LengthPercentage: Parse> Parse for LengthPercentageOrAuto<LengthPercentage>
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed_value(derive_fields)]
 pub enum GenericSize<LengthPercent> {
     LengthPercentage(LengthPercent),
     Auto,
@@ -239,6 +240,7 @@ impl<LengthPercentage> Size<LengthPercentage> {
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed_value(derive_fields)]
 pub enum GenericMaxSize<LengthPercent> {
     LengthPercentage(LengthPercent),
     None,
@@ -394,6 +396,7 @@ impl<LengthPercent> LengthPercentageOrNormal<LengthPercent> {
     ToResolvedValue,
     Serialize,
     Deserialize,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericAnchorSizeFunction<Fallback> {

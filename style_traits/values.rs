@@ -713,6 +713,15 @@ pub trait ToTyped {
     }
 }
 
+impl<'a, T> ToTyped for &'a T
+where
+    T: ToTyped + ?Sized,
+{
+    fn to_typed(&self) -> Option<TypedValue> {
+        (*self).to_typed()
+    }
+}
+
 impl<T> ToTyped for Box<T>
 where
     T: ?Sized + ToTyped,

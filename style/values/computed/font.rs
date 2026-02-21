@@ -27,7 +27,7 @@ use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use num_traits::abs;
 use num_traits::cast::AsPrimitive;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError, ToCss};
+use style_traits::{CssWriter, ParseError, ToCss, ToTyped, TypedValue};
 
 pub use crate::values::computed::Length as MozScriptMinSize;
 pub use crate::values::specified::font::MozScriptSizeMultiplier;
@@ -1262,15 +1262,7 @@ pub type FontStretchFixedPoint = FixedPoint<u16, FONT_STRETCH_FRACTION_BITS>;
 /// cbindgen:derive-gt
 /// cbindgen:derive-gte
 #[derive(
-    Clone,
-    ComputeSquaredDistance,
-    Copy,
-    Debug,
-    MallocSizeOf,
-    PartialEq,
-    PartialOrd,
-    ToResolvedValue,
-    ToTyped,
+    Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[repr(C)]
@@ -1393,6 +1385,15 @@ impl ToCss for FontStretch {
         W: fmt::Write,
     {
         self.to_percentage().to_css(dest)
+    }
+}
+
+impl ToTyped for FontStretch {
+    fn to_typed(&self) -> Option<TypedValue> {
+        self.as_keyword()
+            .map_or(self.to_percentage().to_typed(), |keyword| {
+                keyword.to_typed()
+            })
     }
 }
 

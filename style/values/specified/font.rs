@@ -405,6 +405,7 @@ impl ToComputedValue for FontStyle {
 #[derive(
     Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
+#[typed_value(derive_fields)]
 pub enum FontStretch {
     Stretch(NonNegativePercentage),
     Keyword(FontStretchKeyword),
@@ -414,7 +415,7 @@ pub enum FontStretch {
 
 /// A keyword value for `font-stretch`.
 #[derive(
-    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 #[allow(missing_docs)]
 pub enum FontStretchKeyword {

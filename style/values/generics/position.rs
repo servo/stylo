@@ -368,6 +368,7 @@ impl<N> ToAnimatedZero for AspectRatio<N> {
     ToTyped,
 )]
 #[repr(C)]
+#[typed_value(derive_fields)]
 pub enum GenericInset<P, LP> {
     /// A `<length-percentage>` value.
     LengthPercentage(LP),
@@ -435,6 +436,7 @@ pub use self::GenericInset as Inset;
     ToResolvedValue,
     Serialize,
     Deserialize,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericAnchorFunction<Percentage, Fallback> {

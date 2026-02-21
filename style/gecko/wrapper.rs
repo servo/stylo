@@ -307,6 +307,11 @@ impl<'ln> GeckoNode<'ln> {
     }
 
     #[inline]
+    fn may_have_element_children(&self) -> bool {
+        self.flags() & structs::NODE_MAY_HAVE_ELEMENT_CHILDREN != 0
+    }
+
+    #[inline]
     fn selector_flags_atomic(&self) -> &AtomicU32 {
         Self::flags_atomic_for(&self.0.mSelectorFlags)
     }
@@ -416,6 +421,9 @@ impl<'ln> GeckoNode<'ln> {
     /// Returns the previous sibling of this node that is an element.
     #[inline]
     pub fn prev_sibling_element(&self) -> Option<GeckoElement<'ln>> {
+        if !self.parent_node()?.may_have_element_children() {
+            return None;
+        }
         let mut prev = self.prev_sibling();
         while let Some(p) = prev {
             if let Some(e) = p.as_element() {
@@ -429,6 +437,9 @@ impl<'ln> GeckoNode<'ln> {
     /// Returns the next sibling of this node that is an element.
     #[inline]
     pub fn next_sibling_element(&self) -> Option<GeckoElement<'ln>> {
+        if !self.parent_node()?.may_have_element_children() {
+            return None;
+        }
         let mut next = self.next_sibling();
         while let Some(n) = next {
             if let Some(e) = n.as_element() {

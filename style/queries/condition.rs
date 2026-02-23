@@ -7,7 +7,7 @@
 //! https://drafts.csswg.org/mediaqueries-4/#typedef-media-condition
 //! https://drafts.csswg.org/css-contain-3/#typedef-container-condition
 
-use super::{FeatureFlags, FeatureType, QueryFeatureExpression};
+use super::{FeatureFlags, FeatureType, QueryFeatureExpression, QueryStyleRange};
 use crate::custom_properties;
 use crate::derives::*;
 use crate::dom::AttributeTracker;
@@ -299,14 +299,46 @@ impl OperationParser for StyleQuery {
 
 /// A style query feature:
 /// https://drafts.csswg.org/css-conditional-5/#typedef-style-feature
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem)]
+pub enum StyleFeature {
+    /// A property name and optional value to match.
+    Plain(StyleFeaturePlain),
+    /// A style query range expression.
+    Range(QueryStyleRange),
+}
+
+impl StyleFeature {
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        if let Ok(range) = input.try_parse(|i| QueryStyleRange::parse(context, i)) {
+            return Ok(Self::Range(range));
+        }
+
+        Ok(Self::Plain(StyleFeaturePlain::parse(context, input)?))
+    }
+
+    fn matches(&self, ctx: &computed::Context) -> KleeneValue {
+        match self {
+            Self::Plain(plain) => plain.matches(ctx),
+            Self::Range(_range) => {
+                // To be implemented in next patch.
+                KleeneValue::False
+            },
+        }
+    }
+}
+
+/// A style feature consisting of a custom property name and (optionally) value.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
-pub struct StyleFeature {
+pub struct StyleFeaturePlain {
     name: custom_properties::Name,
     #[ignore_malloc_size_of = "StyleFeatureValue has an Arc variant"]
     value: StyleFeatureValue,
 }
 
-impl ToCss for StyleFeature {
+impl ToCss for StyleFeaturePlain {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: fmt::Write,
@@ -328,7 +360,7 @@ impl ToCss for StyleFeature {
     }
 }
 
-impl StyleFeature {
+impl StyleFeaturePlain {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,

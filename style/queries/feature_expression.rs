@@ -7,19 +7,23 @@
 
 use super::feature::{Evaluator, QueryFeatureDescription};
 use super::feature::{FeatureFlags, KeywordDiscriminant};
+use crate::context::QuirksMode;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::CSSWideKeyword;
+use crate::properties_and_values::value::{ComputedValueComponent as Component, ValueInner};
+use crate::selector_map::PrecomputedHashSet;
 use crate::str::{starts_with_ignore_ascii_case, string_as_ascii_lowercase};
-use crate::values::computed::{self, Ratio, ToComputedValue};
+use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
+use crate::values::computed::{self, CSSPixelLength, Ratio, ToComputedValue};
 use crate::values::specified::{Angle, Integer, Length, Number, Percentage, Resolution, Time};
 use crate::values::{CSSFloat, DashedIdent};
 use crate::{Atom, Zero};
-use cssparser::{Parser, Token};
+use cssparser::{Parser, ParserInput, Token};
 use selectors::kleene_value::KleeneValue;
 use std::cmp::Ordering;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::{CssWriter, ParseError, ParsingMode, StyleParseErrorKind, ToCss};
 
 /// Whether we're parsing a media or container query feature.
 #[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToShmem)]
@@ -561,7 +565,7 @@ impl QueryFeatureExpression {
         Ok(Self::new(feature_type, feature_index, kind))
     }
 
-    /// Returns whether this query evaluates to true for the given device.
+    /// Returns whether this "plain" feature query evaluates to true for the given device.
     pub fn matches(&self, context: &computed::Context) -> KleeneValue {
         macro_rules! expect {
             ($variant:ident, $v:expr) => {
@@ -883,5 +887,164 @@ impl QueryStyleRange {
             op1,
             value2,
         })
+    }
+
+    /// Returns whether this style-range query evaluates to true for the given context.
+    pub fn evaluate(&self, context: &computed::Context) -> KleeneValue {
+        match self {
+            QueryStyleRange::StyleRange2 {
+                ref value1,
+                ref op1,
+                ref value2,
+            } => Self::compare_values(
+                Self::resolve_value(value1, context, &mut PrecomputedHashSet::default()).as_ref(),
+                Self::resolve_value(value2, context, &mut PrecomputedHashSet::default()).as_ref(),
+            )
+            .is_some_and(|c| op1.evaluate(c))
+            .into(),
+
+            QueryStyleRange::StyleRange3 {
+                ref value1,
+                ref op1,
+                ref value2,
+                ref op2,
+                ref value3,
+            } => {
+                let v1 = Self::resolve_value(value1, context, &mut PrecomputedHashSet::default());
+                let v2 = Self::resolve_value(value2, context, &mut PrecomputedHashSet::default());
+                Self::compare_values(v1.as_ref(), v2.as_ref())
+                    .is_some_and(|c1| {
+                        op1.evaluate(c1)
+                            && Self::compare_values(
+                                v2.as_ref(),
+                                Self::resolve_value(
+                                    value3,
+                                    context,
+                                    &mut PrecomputedHashSet::default(),
+                                )
+                                .as_ref(),
+                            )
+                            .is_some_and(|c2| op2.evaluate(c2))
+                    })
+                    .into()
+            },
+        }
+    }
+
+    // Resolve a QueryExpressionValue to its computed value for comparison.
+    fn resolve_value(
+        value: &QueryExpressionValue,
+        context: &computed::Context,
+        visited_set: &mut PrecomputedHashSet<DashedIdent>,
+    ) -> Option<Component> {
+        match value {
+            QueryExpressionValue::Custom(ident) => {
+                // `ident` is the dashed ident, but we need the name
+                // without "--" for custom-property lookup.
+                let name = Atom::from(&ident.0.as_slice()[2..]);
+                let stylist = context
+                    .builder
+                    .stylist
+                    .expect("container queries should have a stylist around");
+                let registration = stylist.get_custom_property_registration(&name);
+                let current_value = context
+                    .inherited_custom_properties()
+                    .get(registration, &name)?;
+                match &current_value.v {
+                    ValueInner::Component(component) => Some(component.clone()),
+                    ValueInner::Universal(v) => {
+                        // If visited_set.insert() returns false, ident was already seen
+                        // and we risk infinite recursion, so instead return None
+                        // (i.e. the value cannot be resolved).
+                        if visited_set.insert(ident.clone()) {
+                            Self::resolve_universal(&v.css, &v.url_data, context, visited_set)
+                        } else {
+                            None
+                        }
+                    },
+                    ValueInner::List(_) => {
+                        debug_assert!(false, "We don't parse list values in style queries");
+                        None
+                    },
+                }
+            },
+            QueryExpressionValue::Length(v) => {
+                Some(Component::Length(v.to_computed_value(context)))
+            },
+            QueryExpressionValue::Float(v) => Some(Component::Number(v.to_computed_value(context))),
+            QueryExpressionValue::Resolution(v) => {
+                Some(Component::Resolution(v.to_computed_value(context)))
+            },
+            QueryExpressionValue::Percentage(v) => {
+                Some(Component::Percentage(v.to_computed_value(context)))
+            },
+            QueryExpressionValue::Angle(v) => Some(Component::Angle(v.to_computed_value(context))),
+            QueryExpressionValue::Time(v) => Some(Component::Time(v.to_computed_value(context))),
+            // It's unclear to me what CSS-wide keywords would mean in a style-range query;
+            // for now, at least, they'll just fail to resolve.
+            QueryExpressionValue::Keyword(_) => None,
+            _ => {
+                debug_assert!(false, "unexpected value type in style range");
+                None
+            },
+        }
+    }
+
+    // If a custom-property QueryExpressionValue has a "universal-syntax" value, we need to
+    // send the current CSS text of the value to QueryExpressionValue::parse_for_style_range
+    // to try and resolve to a specific typed value.
+    // After parsing, this will call back to QueryExpressionValue::resolve_value with the
+    // parsed result, which has the potential for mutual recursion; we keep track of a
+    // visited_set of custom property names to protect against this.
+    fn resolve_universal(
+        css_text: &str,
+        url_data: &UrlExtraData,
+        context: &computed::Context,
+        visited_set: &mut PrecomputedHashSet<DashedIdent>,
+    ) -> Option<Component> {
+        let parser_context = ParserContext::new(
+            Origin::Author,
+            url_data,
+            Some(CssRuleType::Container),
+            ParsingMode::DEFAULT,
+            QuirksMode::NoQuirks,
+            /* namespaces = */ Default::default(),
+            /* error_reporter = */ None,
+            /* use_counters = */ None,
+        );
+        let mut input = ParserInput::new(css_text);
+        QueryExpressionValue::parse_for_style_range(&parser_context, &mut Parser::new(&mut input))
+            .ok()
+            .and_then(|parsed| Self::resolve_value(&parsed, context, visited_set))
+    }
+
+    fn compare_values(value1: Option<&Component>, value2: Option<&Component>) -> Option<Ordering> {
+        let value1 = value1?;
+        let value2 = value2?;
+        match (value1, value2) {
+            (Component::Length(v1), Component::Length(v2)) => v1.partial_cmp(&v2),
+            (Component::Number(v1), Component::Number(v2)) => v1.partial_cmp(&v2),
+            (Component::Resolution(v1), Component::Resolution(v2)) => {
+                v1.dppx().partial_cmp(&v2.dppx())
+            },
+            (Component::Percentage(v1), Component::Percentage(v2)) => v1.partial_cmp(&v2),
+            (Component::Angle(v1), Component::Angle(v2)) => v1.partial_cmp(&v2),
+            (Component::Time(v1), Component::Time(v2)) => v1.partial_cmp(&v2),
+            (Component::Length(v1), Component::Number(v2)) => {
+                if v2.is_zero() {
+                    v1.partial_cmp(&CSSPixelLength::zero())
+                } else {
+                    None
+                }
+            },
+            (Component::Number(v1), Component::Length(v2)) => {
+                if v1.is_zero() {
+                    CSSPixelLength::zero().partial_cmp(&v2)
+                } else {
+                    None
+                }
+            },
+            _ => None,
+        }
     }
 }

@@ -430,12 +430,7 @@ impl AnimationValue {
         match longhand {
             % for prop in data.longhands:
             % if prop.animatable and not prop.logical:
-            LonghandId::${prop.camel_case} => {
-                // TODO: Could avoid some clones here.
-                let before_value = before.clone_${prop.ident}();
-                let after_value = after.clone_${prop.ident}();
-                before_value != after_value
-            }
+            LonghandId::${prop.camel_case} => !before.${prop.ident}_equals(after),
             % endif
             % endfor
             _ => false,

@@ -1379,6 +1379,12 @@ pub mod style_structs {
                     pub fn clone_${longhand.ident}(&self) -> longhands::${longhand.ident}::computed_value::T {
                         self.${longhand.ident}.clone()
                     }
+
+                    #[allow(non_snake_case)]
+                    #[inline]
+                    pub fn ${longhand.ident}_equals(&self, other: &Self) -> bool {
+                        self.${longhand.ident} == other.${longhand.ident}
+                    }
                 % endif
                 % if longhand.vector and longhand.vector.need_index:
                     /// If this longhand is indexed, get the number of elements.
@@ -1675,7 +1681,14 @@ impl ComputedValues {
     pub fn clone_${prop.ident}(
         &self,
     ) -> longhands::${prop.ident}::computed_value::T {
-        self.get_${prop.style_struct.ident.strip("_")}().clone_${prop.ident}()
+        self.get_${prop.style_struct.name_lower}().clone_${prop.ident}()
+    }
+
+    /// Gets the computed value of a given property.
+    #[inline(always)]
+    #[allow(non_snake_case)]
+    pub fn ${prop.ident}_equals(&self, other: &Self) -> bool {
+        self.get_${prop.style_struct.name_lower}().${prop.ident}_equals(other.get_${prop.style_struct.name_lower}())
     }
 % endif
 % endfor

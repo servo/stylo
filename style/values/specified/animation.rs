@@ -8,6 +8,7 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::{NonCustomPropertyId, PropertyId, ShorthandId};
 use crate::values::generics::animation as generics;
+use crate::values::generics::position::TreeScoped;
 use crate::values::specified::{LengthPercentage, NonNegativeNumber, Time};
 use crate::values::{CustomIdent, DashedIdent, KeyframesName};
 use crate::Atom;
@@ -562,6 +563,16 @@ impl generics::ViewFunction<LengthPercentage> {
 ///
 /// https://drafts.csswg.org/scroll-animations-1/#scroll-timeline-name
 /// https://drafts.csswg.org/scroll-animations-1/#view-timeline-name
+pub type TimelineName = TreeScoped<TimelineIdent>;
+
+impl TimelineName {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::with_default_level(TimelineIdent::none())
+    }
+}
+
+/// The identifier for a timeline name.
 #[derive(
     Clone,
     Debug,
@@ -575,9 +586,9 @@ impl generics::ViewFunction<LengthPercentage> {
     ToShmem,
 )]
 #[repr(C)]
-pub struct TimelineName(DashedIdent);
+pub struct TimelineIdent(DashedIdent);
 
-impl TimelineName {
+impl TimelineIdent {
     /// Returns the `none` value.
     pub fn none() -> Self {
         Self(DashedIdent::empty())
@@ -589,7 +600,7 @@ impl TimelineName {
     }
 }
 
-impl Parse for TimelineName {
+impl Parse for TimelineIdent {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -598,11 +609,11 @@ impl Parse for TimelineName {
             return Ok(Self::none());
         }
 
-        DashedIdent::parse(context, input).map(TimelineName)
+        DashedIdent::parse(context, input).map(TimelineIdent)
     }
 }
 
-impl ToCss for TimelineName {
+impl ToCss for TimelineIdent {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: Write,

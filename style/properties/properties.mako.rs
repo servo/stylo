@@ -1519,14 +1519,14 @@ pub mod style_structs {
             /// scroll-timeline-name other than `none`.
             #[cfg(feature = "gecko")]
             pub fn specifies_scroll_timelines(&self) -> bool {
-                self.scroll_timeline_name_iter().any(|name| !name.is_none())
+                self.scroll_timeline_name_iter().any(|name| !name.value.is_none())
             }
 
             /// Returns whether there is any named progress timeline specified with
             /// view-timeline-name other than `none`.
             #[cfg(feature = "gecko")]
             pub fn specifies_view_timelines(&self) -> bool {
-                self.view_timeline_name_iter().any(|name| !name.is_none())
+                self.view_timeline_name_iter().any(|name| !name.value.is_none())
             }
 
             /// Returns true if animation properties are equal between styles, but without

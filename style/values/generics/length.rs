@@ -608,6 +608,7 @@ impl TryTacticAdjustment for AnchorSizeKeyword {
     ToTyped,
 )]
 #[repr(C)]
+#[typed_value(derive_fields)]
 pub enum GenericMargin<LP> {
     /// A `<length-percentage>` value.
     LengthPercentage(LP),

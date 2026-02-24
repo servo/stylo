@@ -104,13 +104,10 @@ impl ToTyped for LetterSpacing {
     // is collected to update the Property-specific Rules section to align with
     // observed test expectations.
     fn to_typed(&self) -> Option<TypedValue> {
-        if self.0.is_zero() {
+        if !self.0.has_percentage() && self.0.is_zero() {
             return Some(TypedValue::Keyword(CssString::from("normal")));
         }
-        // XXX According to the test, should return TypedValue::Numeric with
-        // unit "px" or "percent" once that variant is available. Tracked in
-        // bug 1990419.
-        None
+        self.0.to_typed()
     }
 }
 

@@ -30,6 +30,7 @@ pub type InitialLetter = GenericInitialLetter<Number, Integer>;
 
 /// A spacing value used by either the `letter-spacing` or `word-spacing` properties.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
+#[typed_value(derive_fields)]
 pub enum Spacing {
     /// `normal`
     Normal,

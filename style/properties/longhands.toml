@@ -187,8 +187,8 @@ spec = "https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name"
 affects = ""
 
 [anchor-scope]
-type = "ScopedName"
-initial = "computed::ScopedName::none()"
+type = "AnchorScope"
+initial = "computed::AnchorScope::none()"
 struct = "box"
 engine = "gecko"
 animation_type = "discrete"
@@ -4183,13 +4183,3 @@ animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
 keyword = { values = ["collapse", "preserve", "preserve-breaks", "break-spaces"], extra_gecko_values = ["preserve-spaces"], gecko_aliases = ["-moz-pre-space=preserve-spaces"] }
-
-[timeline-scope]
-type = "ScopedName"
-initial = "computed::ScopedName::none()"
-struct = "box"
-engine = "gecko"
-animation_type = "none"
-gecko_pref = "layout.css.scroll-driven-animations.enabled"
-spec = "https://drafts.csswg.org/scroll-animations-1/#timeline-scope"
-affects = ""

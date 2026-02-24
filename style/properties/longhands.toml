@@ -187,8 +187,8 @@ spec = "https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name"
 affects = ""
 
 [anchor-scope]
-type = "AnchorScope"
-initial = "computed::AnchorScope::none()"
+type = "ScopedName"
+initial = "computed::ScopedName::none()"
 struct = "box"
 engine = "gecko"
 animation_type = "discrete"

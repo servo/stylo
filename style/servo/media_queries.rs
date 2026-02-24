@@ -14,7 +14,9 @@ use crate::media_queries::MediaType;
 use crate::properties::style_structs::Font;
 use crate::properties::ComputedValues;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
-use crate::queries::values::PrefersColorScheme;
+use crate::queries::values::{
+    PrefersColorScheme, PrefersContrast, PrefersReducedMotion, PrefersReducedTransparency,
+};
 use crate::values::computed::font::GenericFontFamily;
 use crate::values::computed::{
     CSSPixelLength, Context, Length, LineHeight, NonNegativeLength, Resolution,
@@ -117,6 +119,15 @@ pub struct Device {
     /// Whether the user prefers light mode or dark mode
     #[ignore_malloc_size_of = "Pure stack type"]
     prefers_color_scheme: PrefersColorScheme,
+    /// The users contrast preference
+    #[ignore_malloc_size_of = "Pure stack type"]
+    prefers_contrast: PrefersContrast,
+    /// The users motion preference
+    #[ignore_malloc_size_of = "Pure stack type"]
+    prefers_reduced_motion: PrefersReducedMotion,
+    /// The users transparency preference
+    #[ignore_malloc_size_of = "Pure stack type"]
+    prefers_reduced_transparency: PrefersReducedTransparency,
     /// The CssEnvironment object responsible of getting CSS environment
     /// variables.
     environment: CssEnvironment,
@@ -138,6 +149,9 @@ impl Device {
         font_metrics_provider: Box<dyn FontMetricsProvider>,
         default_computed_values: Arc<ComputedValues>,
         prefers_color_scheme: PrefersColorScheme,
+        prefers_contrast: PrefersContrast,
+        prefers_reduced_motion: PrefersReducedMotion,
+        prefers_reduced_transparency: PrefersReducedTransparency,
     ) -> Device {
         let default_values =
             ComputedValues::initial_values_with_font_override(Font::initial_values());
@@ -160,6 +174,9 @@ impl Device {
             used_font_metrics: AtomicBool::new(false),
             used_viewport_units: AtomicBool::new(false),
             prefers_color_scheme,
+            prefers_contrast,
+            prefers_reduced_motion,
+            prefers_reduced_transparency,
             environment: CssEnvironment,
             font_metrics_provider,
             default_computed_values,
@@ -505,6 +522,51 @@ impl Device {
         false
     }
 
+    /// Set the [`PrefersContrast`] value on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_prefers_contrast(&mut self, new_prefers_contrast: PrefersContrast) {
+        self.prefers_contrast = new_prefers_contrast;
+    }
+
+    /// Returns the preferred contrast of this [`Device`].
+    pub fn prefers_contrast(&self) -> PrefersContrast {
+        self.prefers_contrast
+    }
+
+    /// Set the [`PrefersReducedMotion`] value on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_prefers_reduced_motion(&mut self, new_prefers_reduced_motion: PrefersReducedMotion) {
+        self.prefers_reduced_motion = new_prefers_reduced_motion;
+    }
+
+    /// Returns the preferred contrast of this [`Device`].
+    pub fn prefers_reduced_motion(&self) -> PrefersReducedMotion {
+        self.prefers_reduced_motion
+    }
+
+    /// Set the [`PrefersReducedTransparency`] value on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_prefers_reduced_transparency(
+        &mut self,
+        new_prefers_reduced_transparency: PrefersReducedTransparency,
+    ) {
+        self.prefers_reduced_transparency = new_prefers_reduced_transparency;
+    }
+
+    /// Returns the preferred contrast of this [`Device`].
+    pub fn prefers_reduced_transparency(&self) -> PrefersReducedTransparency {
+        self.prefers_reduced_transparency
+    }
+
     /// Returns safe area insets
     pub fn safe_area_insets(&self) -> SideOffsets2D<f32, CSSPixel> {
         SideOffsets2D::zero()
@@ -570,8 +632,38 @@ fn eval_prefers_color_scheme(context: &Context, query_value: Option<PrefersColor
     }
 }
 
+fn eval_prefers_contrast(context: &Context, query_value: Option<PrefersContrast>) -> bool {
+    let prefers_contrast = context.device().prefers_contrast;
+    match query_value {
+        Some(v) => prefers_contrast == v,
+        None => prefers_contrast != PrefersContrast::NoPreference,
+    }
+}
+
+fn eval_prefers_reduced_motion(
+    context: &Context,
+    query_value: Option<PrefersReducedMotion>,
+) -> bool {
+    let prefers_reduced_motion = context.device().prefers_reduced_motion;
+    match query_value {
+        Some(v) => prefers_reduced_motion == v,
+        None => prefers_reduced_motion != PrefersReducedMotion::NoPreference,
+    }
+}
+
+fn eval_prefers_reduced_transparency(
+    context: &Context,
+    query_value: Option<PrefersReducedTransparency>,
+) -> bool {
+    let prefers_reduced_transparency = context.device().prefers_reduced_transparency;
+    match query_value {
+        Some(v) => prefers_reduced_transparency == v,
+        None => prefers_reduced_transparency != PrefersReducedTransparency::NoPreference,
+    }
+}
+
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 6] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 9] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -606,6 +698,27 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 6] = [
         atom!("prefers-color-scheme"),
         AllowsRanges::No,
         keyword_evaluator!(eval_prefers_color_scheme, PrefersColorScheme),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-contrast"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_prefers_contrast, PrefersContrast),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-reduced-motion"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_prefers_reduced_motion, PrefersReducedMotion),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-reduced-transparency"),
+        AllowsRanges::No,
+        keyword_evaluator!(
+            eval_prefers_reduced_transparency,
+            PrefersReducedTransparency
+        ),
         FeatureFlags::empty(),
     ),
 ];

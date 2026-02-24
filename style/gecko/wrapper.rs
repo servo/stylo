@@ -922,7 +922,11 @@ impl<'le> GeckoElement<'le> {
             return false;
         }
 
-        AnimationValue::is_different_for(property_declaration_id, before_change_style, after_change_style)
+        AnimationValue::is_different_for(
+            property_declaration_id,
+            before_change_style,
+            after_change_style,
+        )
     }
 
     /// Get slow selector flags required for nth-of invalidation.
@@ -2089,11 +2093,13 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             | NonTSPseudoClass::Seeking
             | NonTSPseudoClass::Buffering
             | NonTSPseudoClass::Stalled
-            | NonTSPseudoClass::Muted => {
-                self.state().intersects(pseudo_class.state_flag())
+            | NonTSPseudoClass::Muted => self.state().intersects(pseudo_class.state_flag()),
+            NonTSPseudoClass::Paused => {
+                self.is_html_media_element() && self.state().intersects(ElementState::PAUSED)
             },
-            NonTSPseudoClass::Paused => self.is_html_media_element() && self.state().intersects(ElementState::PAUSED),
-            NonTSPseudoClass::Playing => self.is_html_media_element() && !self.state().intersects(ElementState::PAUSED),
+            NonTSPseudoClass::Playing => {
+                self.is_html_media_element() && !self.state().intersects(ElementState::PAUSED)
+            },
             NonTSPseudoClass::VolumeLocked => false, // Bug 2013371
             NonTSPseudoClass::Dir(ref dir) => self.state().intersects(dir.element_state()),
             NonTSPseudoClass::ActiveViewTransitionType(ref types) => {

@@ -16,9 +16,11 @@ use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles, ResolvedStyle};
 use malloc_size_of::MallocSizeOfOps;
 use selectors::matching::SelectorCaches;
 use servo_arc::Arc;
-use std::fmt;
-use std::mem;
 use std::ops::{Deref, DerefMut};
+use std::{fmt, mem};
+
+#[cfg(debug_assertions)]
+use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 
 bitflags! {
     /// Various flags stored on ElementData.
@@ -274,6 +276,79 @@ pub struct ElementData {
 
     /// Flags.
     pub flags: ElementDataFlags,
+}
+
+/// A struct that wraps ElementData, giving it the ability of doing thread-safety checks.
+#[derive(Debug, Default)]
+pub struct ElementDataWrapper {
+    inner: std::cell::UnsafeCell<ElementData>,
+    /// Implements optional (debug_assertions-only) thread-safety checking.
+    #[cfg(debug_assertions)]
+    refcell: AtomicRefCell<()>,
+}
+
+/// A read-only reference to ElementData.
+#[derive(Debug)]
+pub struct ElementDataMut<'a> {
+    v: &'a mut ElementData,
+    #[cfg(debug_assertions)]
+    _borrow: AtomicRefMut<'a, ()>,
+}
+
+/// A mutable reference to ElementData.
+#[derive(Debug)]
+pub struct ElementDataRef<'a> {
+    v: &'a ElementData,
+    #[cfg(debug_assertions)]
+    _borrow: AtomicRef<'a, ()>,
+}
+
+impl ElementDataWrapper {
+    /// Gets a non-exclusive reference to this ElementData.
+    #[inline(always)]
+    pub fn borrow(&self) -> ElementDataRef<'_> {
+        #[cfg(debug_assertions)]
+        let borrow = self.refcell.borrow();
+        ElementDataRef {
+            v: unsafe { &*self.inner.get() },
+            #[cfg(debug_assertions)]
+            _borrow: borrow,
+        }
+    }
+
+    /// Gets an exclusive reference to this ElementData.
+    #[inline(always)]
+    pub fn borrow_mut(&self) -> ElementDataMut<'_> {
+        #[cfg(debug_assertions)]
+        let borrow = self.refcell.borrow_mut();
+        ElementDataMut {
+            v: unsafe { &mut *self.inner.get() },
+            #[cfg(debug_assertions)]
+            _borrow: borrow,
+        }
+    }
+}
+
+impl<'a> Deref for ElementDataRef<'a> {
+    type Target = ElementData;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &*self.v
+    }
+}
+
+impl<'a> Deref for ElementDataMut<'a> {
+    type Target = ElementData;
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &*self.v
+    }
+}
+
+impl<'a> DerefMut for ElementDataMut<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut *self.v
+    }
 }
 
 // There's one of these per rendered elements so it better be small.

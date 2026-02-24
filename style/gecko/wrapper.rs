@@ -17,7 +17,7 @@
 use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::each_relevant_element_hash;
 use crate::context::{QuirksMode, SharedStyleContext, UpdateAnimationsTasks};
-use crate::data::ElementData;
+use crate::data::{ElementDataMut, ElementDataRef, ElementDataWrapper};
 use crate::dom::{
     AttributeProvider, LayoutIterator, NodeInfo, OpaqueNode, TDocument, TElement, TNode,
     TShadowRoot,
@@ -71,7 +71,6 @@ use crate::values::{AtomIdent, AtomString};
 use crate::CaseSensitivityExt;
 use crate::LocalName;
 use app_units::Au;
-use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 use dom::{DocumentState, ElementState};
 use euclid::default::Size2D;
 use nsstring::nsString;
@@ -85,11 +84,9 @@ use selectors::sink::Push;
 use selectors::{Element, OpaqueElement};
 use servo_arc::{Arc, ArcBorrow};
 use std::cell::Cell;
-use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::mem;
-use std::ptr;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::{fmt, mem, ptr};
 
 #[inline]
 fn elements_with_id<'a, 'le>(
@@ -656,9 +653,9 @@ impl<'le> fmt::Debug for GeckoElement<'le> {
 }
 
 impl<'le> GeckoElement<'le> {
-    /// Gets the raw `ElementData` refcell for the element.
+    /// Gets the raw `ElementDataWrapper` for the element.
     #[inline(always)]
-    pub fn get_data(&self) -> Option<&AtomicRefCell<ElementData>> {
+    pub fn get_data(&self) -> Option<&ElementDataWrapper> {
         unsafe { self.0.mServoData.get().as_ref() }
     }
 
@@ -832,13 +829,9 @@ impl<'le> GeckoElement<'le> {
             "Animation restyle hints should not appear with non-animation restyle hints"
         );
 
-        // See comments on borrow_assert_main_thread and co.
-        let data = match self.get_data() {
-            Some(d) => d,
-            None => {
-                debug!("(Element not styled, discarding hints)");
-                return;
-            },
+        let Some(mut data) = self.mutate_data() else {
+            debug!("(Element not styled, discarding hints)");
+            return;
         };
 
         // Propagate the bit up the chain.
@@ -847,11 +840,6 @@ impl<'le> GeckoElement<'le> {
         } else {
             bindings::Gecko_NoteDirtyElement(self.0);
         }
-
-        #[cfg(debug_assertions)]
-        let mut data = data.borrow_mut();
-        #[cfg(not(debug_assertions))]
-        let data = &mut *data.as_ptr();
 
         data.hint.insert(restyle_hint);
         data.damage |= damage;
@@ -1439,16 +1427,22 @@ impl<'le> TElement for GeckoElement<'le> {
         panic!("Atomic child count not implemented in Gecko");
     }
 
-    unsafe fn ensure_data(&self) -> AtomicRefMut<'_, ElementData> {
+    unsafe fn ensure_data(&self) -> ElementDataMut<'_> {
         if !self.has_data() {
             debug!("Creating ElementData for {:?}", self);
-            let ptr = Box::into_raw(Box::new(AtomicRefCell::new(ElementData::default())));
+            let ptr = Box::into_raw(Box::new(ElementDataWrapper::default()));
             self.0.mServoData.set(ptr);
         }
         self.mutate_data().unwrap()
     }
 
     unsafe fn clear_data(&self) {
+        #[cfg(debug_assertions)]
+        {
+            // Perform a mutable borrow of the data in debug builds. This serves as an assertion
+            // that there are no outstanding borrows when we destroy the data.
+            let _ = self.mutate_data();
+        }
         let ptr = self.0.mServoData.get();
         self.unset_flags(
             ELEMENT_HAS_SNAPSHOT
@@ -1458,16 +1452,8 @@ impl<'le> TElement for GeckoElement<'le> {
         );
         if !ptr.is_null() {
             debug!("Dropping ElementData for {:?}", self);
-            let data = Box::from_raw(self.0.mServoData.get());
+            let _data = Box::from_raw(self.0.mServoData.get());
             self.0.mServoData.set(ptr::null_mut());
-
-            // Perform a mutable borrow of the data in debug builds. This
-            // serves as an assertion that there are no outstanding borrows
-            // when we destroy the data.
-            debug_assert!({
-                let _ = data.borrow_mut();
-                true
-            });
         }
     }
 
@@ -1594,13 +1580,13 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     /// Immutably borrows the ElementData.
-    fn borrow_data(&self) -> Option<AtomicRef<'_, ElementData>> {
-        self.get_data().map(|x| x.borrow())
+    fn borrow_data(&self) -> Option<ElementDataRef<'_>> {
+        self.get_data().map(|d| d.borrow())
     }
 
     /// Mutably borrows the ElementData.
-    fn mutate_data(&self) -> Option<AtomicRefMut<'_, ElementData>> {
-        self.get_data().map(|x| x.borrow_mut())
+    fn mutate_data(&self) -> Option<ElementDataMut<'_>> {
+        self.get_data().map(|d| d.borrow_mut())
     }
 
     #[inline]

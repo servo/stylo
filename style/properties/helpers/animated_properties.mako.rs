@@ -26,6 +26,7 @@ use std::ptr;
 use std::mem;
 use rustc_hash::FxHashMap;
 use super::ComputedValues;
+#[cfg(feature = "servo")] use crate::context::SharedStyleContext;
 use crate::derives::*;
 use crate::properties::OwnedPropertyDeclarationId;
 use crate::dom::AttributeTracker;
@@ -397,7 +398,7 @@ impl AnimationValue {
                     context,
                     initial,
                     attribute_tracker
-                )?)
+                ))
             },
             _ => return None // non animatable properties will get included because of shorthands. ignore.
         };
@@ -449,7 +450,7 @@ impl AnimationValue {
                 // corresponds to an inherited custom property and then choose the
                 // inherited/non_inherited map accordingly.
                 let p = &style.custom_properties();
-                let value = p.inherited.get(*name).or_else(|| p.non_inherited.get(*name))?;
+                let value = p.inherited.get(*name).or_else(|| p.non_inherited.get(*name));
                 return Some(AnimationValue::Custom(CustomAnimatedValue::from_computed(name, value)))
             }
         };
@@ -478,7 +479,7 @@ impl AnimationValue {
     /// SERVO ONLY: This doesn't properly handle things like updating 'em' units
     /// when animated font-size.
     #[cfg(feature = "servo")]
-    pub fn set_in_style_for_servo(&self, style: &mut ComputedValues) {
+    pub fn set_in_style_for_servo(&self, style: &mut ComputedValues, context: &SharedStyleContext) {
         match self {
             % for prop in data.longhands:
             % if prop.animatable and not prop.logical:
@@ -495,13 +496,14 @@ impl AnimationValue {
             AnimationValue::${prop.camel_case}(..) => unreachable!(),
             % endif
             % endfor
-            AnimationValue::Custom(..) => unreachable!(),
+            AnimationValue::Custom(CustomAnimatedValue { name, value }) => {
+                let registration = context.stylist.get_custom_property_registration(&name);
+                match value {
+                    Some(value) => style.custom_properties.insert(registration, name, value.clone()),
+                    None => style.custom_properties.remove(registration, name),
+                }
+            },
         }
-    }
-
-    /// As above, but a stub for Gecko.
-    #[cfg(feature = "gecko")]
-    pub fn set_in_style_for_servo(&self, _: &mut ComputedValues) {
     }
 }
 

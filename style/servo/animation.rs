@@ -895,13 +895,13 @@ impl ElementAnimationSet {
         let mutable_style = Arc::make_mut(style);
         if let Some(map) = self.get_value_map_for_active_animations(now) {
             for value in map.values() {
-                value.set_in_style_for_servo(mutable_style);
+                value.set_in_style_for_servo(mutable_style, context);
             }
         }
 
         if let Some(map) = self.get_value_map_for_transitions(now, IgnoreTransitions::Canceled) {
             for value in map.values() {
-                value.set_in_style_for_servo(mutable_style);
+                value.set_in_style_for_servo(mutable_style, context);
             }
         }
     }

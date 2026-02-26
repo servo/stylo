@@ -85,6 +85,7 @@ impl ToComputedValue for LetterSpacing {
 #[derive(
     Clone, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
+#[typed_value(derive_fields)]
 pub struct WordSpacing(pub Spacing);
 
 impl ToComputedValue for WordSpacing {

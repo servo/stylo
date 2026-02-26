@@ -12,16 +12,18 @@ use super::{
         data_type::DataType, Component as SyntaxComponent, ComponentName, Descriptor, Multiplier,
     },
 };
+use crate::custom_properties::ComputedValue as ComputedPropertyValue;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties;
+use crate::properties::{CSSWideKeyword, CustomDeclarationValue};
+use crate::properties_and_values::rule::Inherits;
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
 use crate::values::{
     animated::{self, Animate, Procedure},
     computed::{self, ToComputedValue},
     specified, CustomIdent,
 };
-use crate::{custom_properties::ComputedValue as ComputedPropertyValue, dom::AttributeTracker};
 use cssparser::{BasicParseErrorKind, ParseErrorKind, Parser as CSSParser, TokenSerializationType};
 use selectors::matching::QuirksMode;
 use servo_arc::Arc;
@@ -201,9 +203,7 @@ impl<Component: ToCss> ToCss for ComponentList<Component> {
 
 /// A struct for a single specified registered custom property value that includes its original URL
 /// data so the value can be uncomputed later.
-#[derive(
-    Clone, Debug, MallocSizeOf, ToCss, ToComputedValue, ToResolvedValue, ToShmem,
-)]
+#[derive(Clone, Debug, MallocSizeOf, ToCss, ToComputedValue, ToResolvedValue, ToShmem)]
 pub struct Value<Component> {
     /// The registered custom property value.
     pub(crate) v: ValueInner<Component>,
@@ -597,7 +597,8 @@ pub struct CustomAnimatedValue {
     /// The name of the custom property.
     pub(crate) name: crate::custom_properties::Name,
     /// The computed value of the custom property.
-    value: ComputedValue,
+    /// `None` represents the guaranteed-invalid value.
+    pub(crate) value: Option<ComputedValue>,
 }
 
 impl Animate for CustomAnimatedValue {
@@ -616,22 +617,20 @@ impl Animate for CustomAnimatedValue {
 impl CustomAnimatedValue {
     pub(crate) fn from_computed(
         name: &crate::custom_properties::Name,
-        value: &ComputedValue,
+        value: Option<&ComputedValue>,
     ) -> Self {
         Self {
             name: name.clone(),
-            value: value.clone(),
+            value: value.cloned(),
         }
     }
 
     pub(crate) fn from_declaration(
         declaration: &properties::CustomDeclaration,
         context: &mut computed::Context,
-        _initial: &properties::ComputedValues,
-        _attribute_tracker: &mut AttributeTracker,
     ) -> Option<Self> {
         let computed_value = match declaration.value {
-            properties::CustomDeclarationValue::Unparsed(ref value) => {
+            properties::CustomDeclarationValue::Unparsed(ref value) => Some({
                 debug_assert!(
                     context.builder.stylist.is_some(),
                     "Need a Stylist to get property registration!"
@@ -662,11 +661,41 @@ impl CustomAnimatedValue {
                         url_data: value.url_data.clone(),
                     })
                 }
+            }),
+            properties::CustomDeclarationValue::Parsed(ref v) => Some(v.to_computed_value(context)),
+            properties::CustomDeclarationValue::CSSWideKeyword(keyword) => {
+                let stylist = context.builder.stylist.unwrap();
+                let registration = stylist.get_custom_property_registration(&declaration.name);
+                match keyword {
+                    CSSWideKeyword::Initial => stylist
+                        .get_custom_property_initial_values()
+                        .get(registration, &declaration.name),
+                    CSSWideKeyword::Inherit => context
+                        .builder
+                        .inherited_custom_properties()
+                        .get(registration, &declaration.name),
+                    CSSWideKeyword::Unset => match registration.inherits {
+                        Inherits::False => stylist
+                            .get_custom_property_initial_values()
+                            .get(registration, &declaration.name),
+                        Inherits::True => context
+                            .builder
+                            .inherited_custom_properties()
+                            .get(registration, &declaration.name),
+                    },
+                    // FIXME(emilio, bug 1533327): I think revert (and
+                    // revert-layer) handling is not fine here, but what to
+                    // do instead?
+                    //
+                    // Seems we'd need the computed value as if it was
+                    // revert, somehow. Returning `None` seems fine for now...
+                    //
+                    // Note that once this is fixed, this method should be
+                    // able to return `Self` instead of Option<Self>`.
+                    CSSWideKeyword::Revert | CSSWideKeyword::RevertLayer => return None,
+                }
+                .cloned()
             },
-            properties::CustomDeclarationValue::Parsed(ref v) => v.to_computed_value(context),
-            // FIXME: This should be made to work to the extent possible like for non-custom
-            // properties (using `initial` at least to handle unset / inherit).
-            properties::CustomDeclarationValue::CSSWideKeyword(..) => return None,
         };
         Some(Self {
             name: declaration.name.clone(),
@@ -677,7 +706,10 @@ impl CustomAnimatedValue {
     pub(crate) fn to_declaration(&self) -> properties::PropertyDeclaration {
         properties::PropertyDeclaration::Custom(properties::CustomDeclaration {
             name: self.name.clone(),
-            value: self.value.to_declared_value(),
+            value: match &self.value {
+                Some(value) => value.to_declared_value(),
+                None => CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Initial),
+            },
         })
     }
 }

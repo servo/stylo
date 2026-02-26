@@ -15,7 +15,6 @@ use super::{
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties;
-use crate::properties::{CSSWideKeyword, CustomDeclarationValue};
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
 use crate::values::{
     animated::{self, Animate, Procedure},
@@ -598,8 +597,7 @@ pub struct CustomAnimatedValue {
     /// The name of the custom property.
     pub(crate) name: crate::custom_properties::Name,
     /// The computed value of the custom property.
-    /// `None` represents the guaranteed-invalid value.
-    pub(crate) value: Option<ComputedValue>,
+    value: ComputedValue,
 }
 
 impl Animate for CustomAnimatedValue {
@@ -618,11 +616,11 @@ impl Animate for CustomAnimatedValue {
 impl CustomAnimatedValue {
     pub(crate) fn from_computed(
         name: &crate::custom_properties::Name,
-        value: Option<&ComputedValue>,
+        value: &ComputedValue,
     ) -> Self {
         Self {
             name: name.clone(),
-            value: value.cloned(),
+            value: value.clone(),
         }
     }
 
@@ -631,9 +629,9 @@ impl CustomAnimatedValue {
         context: &mut computed::Context,
         _initial: &properties::ComputedValues,
         _attribute_tracker: &mut AttributeTracker,
-    ) -> Self {
+    ) -> Option<Self> {
         let computed_value = match declaration.value {
-            properties::CustomDeclarationValue::Unparsed(ref value) => Some({
+            properties::CustomDeclarationValue::Unparsed(ref value) => {
                 debug_assert!(
                     context.builder.stylist.is_some(),
                     "Need a Stylist to get property registration!"
@@ -664,25 +662,22 @@ impl CustomAnimatedValue {
                         url_data: value.url_data.clone(),
                     })
                 }
-            }),
-            properties::CustomDeclarationValue::Parsed(ref v) => Some(v.to_computed_value(context)),
+            },
+            properties::CustomDeclarationValue::Parsed(ref v) => v.to_computed_value(context),
             // FIXME: This should be made to work to the extent possible like for non-custom
             // properties (using `initial` at least to handle unset / inherit).
-            properties::CustomDeclarationValue::CSSWideKeyword(_) => None,
+            properties::CustomDeclarationValue::CSSWideKeyword(..) => return None,
         };
-        Self {
+        Some(Self {
             name: declaration.name.clone(),
             value: computed_value,
-        }
+        })
     }
 
     pub(crate) fn to_declaration(&self) -> properties::PropertyDeclaration {
         properties::PropertyDeclaration::Custom(properties::CustomDeclaration {
             name: self.name.clone(),
-            value: match &self.value {
-                Some(value) => value.to_declared_value(),
-                None => CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Initial),
-            },
+            value: self.value.to_declared_value(),
         })
     }
 }

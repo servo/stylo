@@ -811,3 +811,98 @@ impl Parse for ViewTransitionClass {
         )))
     }
 }
+
+/// The <timeline-range-name> value type, which indicates a CSS identifier representing one of the
+/// predefined named timeline ranges.
+/// https://drafts.csswg.org/scroll-animations-1/#named-ranges
+///
+/// For now, only view timeline ranges use this type.
+/// https://drafts.csswg.org/scroll-animations-1/#view-timelines-ranges
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum TimelineRangeName {
+    /// The default value. No timeline range name specified.
+    #[css(skip)]
+    None,
+    /// Represents the full range of the view progress timeline
+    Cover,
+    /// Represents the range during which the principal box is either fully contained by, or fully
+    /// covers, its view progress visibility range within the scrollport.
+    Contain,
+    /// Represents the range during which the principal box is entering the view progress
+    /// visibility range.
+    Entry,
+    /// Represents the range during which the principal box is exiting the view progress visibility
+    /// range.
+    Exit,
+    /// Represents the range during which the principal box crosses the end border edge.
+    EntryCrossing,
+    /// Represents the range during which the principal box crosses the start border edge.
+    ExitCrossing,
+    /// Represents the full range of the scroll container on which the view progress timeline is
+    /// defined.
+    Scroll,
+}
+
+/// The internal value for `animation-range-start` and `animation-range-end`.
+type AnimationRangeValue = generics::GenericAnimationRangeValue<LengthPercentage>;
+
+fn parse_animation_range<'i, 't>(
+    context: &ParserContext,
+    input: &mut Parser<'i, 't>,
+    default_percentage: LengthPercentage,
+) -> Result<AnimationRangeValue, ParseError<'i>> {
+    if input
+        .try_parse(|i| i.expect_ident_matching("normal"))
+        .is_ok()
+    {
+        return Ok(AnimationRangeValue::default());
+    }
+
+    if let Ok(lp) = input.try_parse(|i| LengthPercentage::parse(context, i)) {
+        return Ok(AnimationRangeValue::length_percentage(lp));
+    }
+
+    let name = TimelineRangeName::parse(input)?;
+    let lp = input
+        .try_parse(|i| LengthPercentage::parse(context, i))
+        .unwrap_or(default_percentage);
+    Ok(AnimationRangeValue::timeline_range(name, lp))
+}
+
+/// A specified value for the `animation-range-start`.
+pub type AnimationRangeStart = generics::GenericAnimationRangeStart<LengthPercentage>;
+
+impl Parse for AnimationRangeStart {
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        parse_animation_range(context, input, LengthPercentage::zero_percent()).map(Self)
+    }
+}
+
+/// A specified value for the `animation-range-end`.
+pub type AnimationRangeEnd = generics::GenericAnimationRangeEnd<LengthPercentage>;
+
+impl Parse for AnimationRangeEnd {
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        parse_animation_range(context, input, LengthPercentage::hundred_percent()).map(Self)
+    }
+}

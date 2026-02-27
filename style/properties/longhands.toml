@@ -279,6 +279,32 @@ spec = "https://drafts.csswg.org/css-animations/#propdef-animation-play-state"
 rule_types_allowed = ["style", "scope"]
 affects = ""
 
+[animation-range-end]
+type = "AnimationRangeEnd"
+initial = "computed::AnimationRangeEnd::default()"
+struct = "ui"
+servo_pref = "layout.unimplemented"
+initial_specified_value = "specified::AnimationRangeEnd::default()"
+vector = { need_index = true }
+animation_type = "none"
+gecko_pref = "layout.css.scroll-driven-animations.enabled"
+spec = "https://drafts.csswg.org/scroll-animations-1/#animation-range-end"
+rule_types_allowed = ["style", "scope"]
+affects = ""
+
+[animation-range-start]
+type = "AnimationRangeStart"
+initial = "computed::AnimationRangeStart::default()"
+struct = "ui"
+servo_pref = "layout.unimplemented"
+initial_specified_value = "specified::AnimationRangeStart::default()"
+vector = { need_index = true }
+animation_type = "none"
+gecko_pref = "layout.css.scroll-driven-animations.enabled"
+spec = "https://drafts.csswg.org/scroll-animations-1/#animation-range-start"
+rule_types_allowed = ["style", "scope"]
+affects = ""
+
 [animation-timeline]
 type = "AnimationTimeline"
 initial = "computed::AnimationTimeline::auto()"

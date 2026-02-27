@@ -1260,6 +1260,7 @@ mask-mode mask-repeat mask-clip mask-origin mask-composite mask-position-x mask-
                           animation-direction animation-fill-mode
                           animation-play-state animation-iteration-count
                           animation-timing-function animation-composition animation-timeline
+                          animation-range-start animation-range-end
                           transition-behavior transition-duration transition-delay
                           transition-timing-function transition-property
                           scroll-timeline-name scroll-timeline-axis
@@ -1306,6 +1307,8 @@ mask-mode mask-repeat mask-clip mask-origin mask-composite mask-position-x mask-
             && self.mAnimationTimingFunctionCount == other.mAnimationTimingFunctionCount
             && self.mAnimationCompositionCount == other.mAnimationCompositionCount
             && self.mAnimationTimelineCount == other.mAnimationTimelineCount
+            && self.mAnimationRangeStartCount == other.mAnimationRangeStartCount
+            && self.mAnimationRangeEndCount == other.mAnimationRangeEndCount
             && unsafe { bindings::Gecko_StyleAnimationsEquals(&self.mAnimations, &other.mAnimations) }
     }
 
@@ -1319,6 +1322,8 @@ mask-mode mask-repeat mask-clip mask-origin mask-composite mask-position-x mask-
     ${impl_coordinated_property('animation', 'iteration_count', 'IterationCount')}
     ${impl_coordinated_property('animation', 'timeline', 'Timeline')}
     ${impl_coordinated_property('animation', 'timing_function', 'TimingFunction')}
+    ${impl_coordinated_property('animation', 'range_start', 'RangeStart')}
+    ${impl_coordinated_property('animation', 'range_end', 'RangeEnd')}
 
     ${impl_coordinated_property('scroll_timeline', 'name', 'Name')}
     ${impl_coordinated_property('scroll_timeline', 'axis', 'Axis')}

@@ -85,3 +85,9 @@ pub type AnimationTimeline = generics::GenericAnimationTimeline<LengthPercentage
 
 /// A computed value for the `view-timeline-inset` property.
 pub type ViewTimelineInset = generics::GenericViewTimelineInset<LengthPercentage>;
+
+/// A computed value for the `animation-range-start` property.
+pub type AnimationRangeStart = generics::GenericAnimationRangeStart<LengthPercentage>;
+
+/// A computed value for the `animation-range-end` property.
+pub type AnimationRangeEnd = generics::GenericAnimationRangeEnd<LengthPercentage>;

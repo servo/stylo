@@ -1219,6 +1219,9 @@ class PropertyRestrictions:
     def marker(data):
         return set(
             [
+                # animation-range-* are defined in [scroll-animations].
+                "animation-range-end",
+                "animation-range-start",
                 "color",
                 "content",
                 "counter-increment",

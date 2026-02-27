@@ -5,15 +5,13 @@
 //! Parsing for registered custom properties.
 
 use std::fmt::{self, Write};
-
+use crate::derives::*;
 use super::{
     registry::PropertyRegistrationData,
     syntax::{
         data_type::DataType, Component as SyntaxComponent, ComponentName, Descriptor, Multiplier,
     },
 };
-use crate::custom_properties::ComputedValue as ComputedPropertyValue;
-use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties;
 use crate::properties::{CSSWideKeyword, CustomDeclarationValue};
@@ -24,7 +22,10 @@ use crate::values::{
     computed::{self, ToComputedValue},
     specified, CustomIdent,
 };
+use crate::custom_properties::ComputedValue as ComputedPropertyValue;
+use crate::{Namespace, Prefix};
 use cssparser::{BasicParseErrorKind, ParseErrorKind, Parser as CSSParser, TokenSerializationType};
+use rustc_hash::FxHashMap;
 use selectors::matching::QuirksMode;
 use servo_arc::Arc;
 use smallvec::SmallVec;
@@ -302,6 +303,7 @@ impl SpecifiedValue {
     pub fn compute<'i, 't>(
         input: &mut CSSParser<'i, 't>,
         registration: &PropertyRegistrationData,
+        namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         url_data: &UrlExtraData,
         context: &computed::Context,
         allow_computationally_dependent: AllowComputationallyDependent,
@@ -311,6 +313,7 @@ impl SpecifiedValue {
             input,
             &registration.syntax,
             url_data,
+            namespaces,
             allow_computationally_dependent,
         ) else {
             return Err(());
@@ -325,10 +328,11 @@ impl SpecifiedValue {
         mut input: &mut CSSParser<'i, 't>,
         syntax: &Descriptor,
         url_data: &UrlExtraData,
+        namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         allow_computationally_dependent: AllowComputationallyDependent,
     ) -> Result<Self, StyleParseError<'i>> {
         if syntax.is_universal() {
-            let parsed = ComputedPropertyValue::parse(&mut input, url_data)?;
+            let parsed = ComputedPropertyValue::parse(&mut input, namespaces, url_data)?;
             return Ok(SpecifiedValue {
                 v: ValueInner::Universal(Arc::new(parsed)),
                 url_data: url_data.clone(),
@@ -652,6 +656,7 @@ impl CustomAnimatedValue {
                     SpecifiedValue::compute(
                         &mut input,
                         registration,
+                        None,
                         &value.url_data,
                         context,
                         AllowComputationallyDependent::Yes,

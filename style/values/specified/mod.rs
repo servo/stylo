@@ -21,6 +21,7 @@ use crate::values::specified::calc::CalcNode;
 use crate::values::{serialize_atom_identifier, serialize_number, AtomString};
 use crate::{Atom, Namespace, One, Prefix, Zero};
 use cssparser::{Parser, Token};
+use rustc_hash::FxHashMap;
 use std::fmt::{self, Write};
 use std::ops::Add;
 use style_traits::values::specified::AllowedNumericType;
@@ -898,6 +899,37 @@ impl AllowQuirks {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, MallocSizeOf, ToShmem)]
+/// A namespace wrapper to distinguish between valid variants
+pub enum ParsedNamespace {
+    /// Unregistered namespace
+    Unknown,
+    /// Registered namespace
+    Known(Namespace),
+}
+
+impl ParsedNamespace {
+    /// Parse a namespace prefix and resolve it to the correct
+    /// namespace URI.
+    pub fn parse<'i, 't>(
+        namespaces: &FxHashMap<Prefix, Namespace>,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        // We don't need to keep the prefix because different
+        // prefixes can resolve to the same id. Additionally,
+        // we also don't need it for serialization as substitution
+        // functions serialize from the direct css declaration.
+        parse_namespace(namespaces, input, /*allow_non_registered*/ true)
+            .map(|(_prefix, namespace)| namespace)
+    }
+}
+
+impl Default for ParsedNamespace {
+    fn default() -> Self {
+        Self::Known(Namespace::default())
+    }
+}
+
 /// An attr(...) rule
 ///
 /// `[namespace? `|`]? ident`
@@ -935,16 +967,13 @@ impl Parse for Attr {
     }
 }
 
-/// Get the Namespace for a given prefix from the namespace map.
-fn get_namespace_for_prefix(prefix: &Prefix, context: &ParserContext) -> Option<Namespace> {
-    context.namespaces.prefixes.get(prefix).cloned()
-}
-
 /// Try to parse a namespace and return it if parsed, or none if there was not one present
-fn parse_namespace<'i, 't>(
-    context: &ParserContext,
+pub fn parse_namespace<'i, 't>(
+    namespaces: &FxHashMap<Prefix, Namespace>,
     input: &mut Parser<'i, 't>,
-) -> Result<(Prefix, Namespace), ParseError<'i>> {
+    // TODO: Once general attr is enabled, we should remove this flag
+    allow_non_registered: bool,
+) -> Result<(Prefix, ParsedNamespace), ParseError<'i>> {
     let ns_prefix = match input.next()? {
         Token::Ident(ref prefix) => Some(Prefix::from(prefix.as_ref())),
         Token::Delim('|') => None,
@@ -956,13 +985,19 @@ fn parse_namespace<'i, 't>(
     }
 
     if let Some(prefix) = ns_prefix {
-        let ns = match get_namespace_for_prefix(&prefix, context) {
-            Some(ns) => ns,
-            None => return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+        let ns = match namespaces.get(&prefix).cloned() {
+            Some(ns) => ParsedNamespace::Known(ns),
+            None => {
+                if allow_non_registered {
+                    ParsedNamespace::Unknown
+                } else {
+                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                }
+            },
         };
         Ok((prefix, ns))
     } else {
-        Ok((Prefix::default(), Namespace::default()))
+        Ok((Prefix::default(), ParsedNamespace::default()))
     }
 }
 
@@ -975,10 +1010,19 @@ impl Attr {
     ) -> Result<Attr, ParseError<'i>> {
         // Syntax is `[namespace? '|']? ident [',' fallback]?`
         let namespace = input
-            .try_parse(|input| parse_namespace(context, input))
+            .try_parse(|input| {
+                parse_namespace(
+                    &context.namespaces.prefixes,
+                    input,
+                    /*allow_non_registered*/ false,
+                )
+            })
             .ok();
         let namespace_is_some = namespace.is_some();
         let (namespace_prefix, namespace_url) = namespace.unwrap_or_default();
+        let ParsedNamespace::Known(namespace_url) = namespace_url else {
+            unreachable!("Non-registered url not allowed (see parse namespace flag).")
+        };
 
         // If there is a namespace, ensure no whitespace following '|'
         let attribute = Atom::from(if namespace_is_some {

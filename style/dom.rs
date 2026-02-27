@@ -14,19 +14,20 @@ use crate::context::UpdateAnimationsTasks;
 use crate::data::{ElementData, ElementDataMut, ElementDataRef};
 use crate::media_queries::Device;
 use crate::properties::{AnimationDeclarations, ComputedValues, PropertyDeclarationBlock};
-use crate::selector_map::PrecomputedHashSet;
+use crate::selector_map::PrecomputedHashMap;
 use crate::selector_parser::{AttrValue, Lang, PseudoElement, RestyleDamage, SelectorImpl};
 use crate::shared_lock::{Locked, SharedRwLock};
 use crate::stylesheets::scope_rule::ImplicitScopeRoot;
 use crate::stylist::CascadeData;
 use crate::values::computed::Display;
 use crate::values::AtomIdent;
-use crate::{LocalName, WeakAtom};
+use crate::{LocalName, Namespace, WeakAtom};
 use dom::ElementState;
 use selectors::matching::{ElementSelectorFlags, QuirksMode, VisitedHandlingMode};
 use selectors::sink::Push;
 use selectors::{Element as SelectorsElement, OpaqueElement};
 use servo_arc::{Arc, ArcBorrow};
+use smallvec::SmallVec;
 use std::fmt;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -989,11 +990,11 @@ pub trait TElement:
 /// The attribute provider trait
 pub trait AttributeProvider {
     /// Return the value of the given custom attibute if it exists.
-    fn get_attr(&self, attr: &LocalName) -> Option<String>;
+    fn get_attr(&self, attr: &LocalName, namespace: &Namespace) -> Option<String>;
 }
 
 /// A set of the attributes used to compute a style that uses `attr()`
-pub type AttributeReferences = Option<Box<PrecomputedHashSet<LocalName>>>;
+pub type AttributeReferences = Option<Box<PrecomputedHashMap<LocalName, SmallVec<[Namespace; 1]>>>>;
 
 /// A data structure to keep track of the names queried from a provider.
 pub struct AttributeTracker<'a> {
@@ -1026,9 +1027,18 @@ impl<'a> AttributeTracker<'a> {
     }
 
     /// Query the value and save the name of the attribtue.
-    pub fn query(&mut self, name: &LocalName) -> Option<String> {
-        self.references.get_or_insert_default().insert(name.clone());
-        self.provider.get_attr(name)
+    pub fn query(&mut self, name: &LocalName, namespace: &Namespace) -> Option<String> {
+        // We need to save namespaces in case we are thinking of sharing this element's
+        // style with another.
+        // i.e if elment a has ns1::attr="blue"
+        // and element b has ns2::attr="blue"
+        // a and b can only share style if ns1 and ns2 resolve to the same namespace.
+        self.references
+            .get_or_insert_default()
+            .entry(name.clone())
+            .or_default()
+            .push(namespace.clone());
+        self.provider.get_attr(name, namespace)
     }
 }
 
@@ -1037,7 +1047,7 @@ impl<'a> AttributeTracker<'a> {
 struct DummyAttributeProvider;
 
 impl AttributeProvider for DummyAttributeProvider {
-    fn get_attr(&self, _attr: &LocalName) -> Option<String> {
+    fn get_attr(&self, _attr: &LocalName, _namespace: &Namespace) -> Option<String> {
         None
     }
 }

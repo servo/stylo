@@ -158,9 +158,11 @@ where
         return true;
     };
 
-    attrs_used
-        .iter()
-        .all(|name| target.get_attr(name) == candidate.get_attr(name))
+    attrs_used.iter().all(|(name, namespaces)| {
+        namespaces.iter().all(|namespace| {
+            target.get_attr(name, namespace) == candidate.get_attr(name, namespace)
+        })
+    })
 }
 
 /// Whether a given element and a candidate share a set of scope activations

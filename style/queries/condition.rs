@@ -373,7 +373,11 @@ impl StyleFeaturePlain {
             if let Ok(keyword) = input.try_parse(|i| CSSWideKeyword::parse(i)) {
                 StyleFeatureValue::Keyword(keyword)
             } else {
-                let value = custom_properties::SpecifiedValue::parse(input, &context.url_data)?;
+                let value = custom_properties::SpecifiedValue::parse(
+                    input,
+                    Some(&context.namespaces.prefixes),
+                    &context.url_data,
+                )?;
                 // `!important` is allowed (but ignored) after the value.
                 let _ = input.try_parse(parse_important);
                 StyleFeatureValue::Value(Some(Arc::new(value)))
@@ -415,6 +419,7 @@ impl StyleFeaturePlain {
         let computed = SpecifiedRegisteredValue::compute(
             &mut parser,
             registration,
+            None,
             &value.url_data,
             ctx,
             AllowComputationallyDependent::Yes,

@@ -40,7 +40,7 @@ use crate::values::generics::length::AnchorResolutionResult;
 use crate::values::generics::position::GenericAnchorSide;
 use crate::values::generics::{calc, ClampToNonNegative, NonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
-use crate::values::specified::length::{FontBaseSize, LineHeightBase};
+use crate::values::specified::length::{FontBaseSize, EqualsPercentage, LineHeightBase};
 use crate::values::{specified, CSSFloat};
 use crate::{Zero, ZeroNoPercent};
 use app_units::Au;
@@ -205,6 +205,15 @@ impl ToResolvedValue for LengthPercentage {
     #[inline]
     fn from_resolved_value(value: Self::ResolvedValue) -> Self {
         value
+    }
+}
+
+impl EqualsPercentage for LengthPercentage {
+    fn equals_percentage(&self, v: CSSFloat) -> bool {
+        match self.unpack() {
+            Unpacked::Percentage(p) => p.0 == v,
+            _ => false,
+        }
     }
 }
 

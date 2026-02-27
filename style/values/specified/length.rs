@@ -2040,6 +2040,22 @@ impl ZeroNoPercent for LengthPercentage {
     }
 }
 
+/// Check if this equal to a specific percentage.
+pub trait EqualsPercentage {
+    /// Returns true if this is a specific percentage value. This should exclude calc() even if it
+    /// only contains percentage component.
+    fn equals_percentage(&self, v: CSSFloat) -> bool;
+}
+
+impl EqualsPercentage for LengthPercentage {
+    fn equals_percentage(&self, v: CSSFloat) -> bool {
+        match *self {
+            LengthPercentage::Percentage(p) => p.0 == v,
+            _ => false,
+        }
+    }
+}
+
 /// A specified type for `<length-percentage> | auto`.
 pub type LengthPercentageOrAuto = generics::LengthPercentageOrAuto<LengthPercentage>;
 

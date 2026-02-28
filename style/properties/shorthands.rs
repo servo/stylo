@@ -3324,8 +3324,8 @@ pub mod animation {
     use super::*;
     use crate::properties::longhands::{
         animation_delay, animation_direction, animation_duration, animation_fill_mode,
-        animation_iteration_count, animation_name, animation_play_state, animation_timeline,
-        animation_timing_function,
+        animation_iteration_count, animation_name, animation_play_state, animation_range_end,
+        animation_range_start, animation_timeline, animation_timing_function,
     };
 
     pub fn parse_value<'i, 't>(
@@ -3460,6 +3460,15 @@ pub mod animation {
             animation_timeline: animation_timeline::SpecifiedValue(
                 vec![animation_timeline::single_value::get_initial_specified_value()].into()
             ),
+            // The animation-range properties are reset-only sub-properties of the animation
+            // shorthand.
+            // https://drafts.csswg.org/scroll-animations-1/#named-range-animation-declaration
+            animation_range_start: animation_range_start::SpecifiedValue(
+                vec![animation_range_start::single_value::get_initial_specified_value()].into()
+            ),
+            animation_range_end: animation_range_end::SpecifiedValue(
+                vec![animation_range_end::single_value::get_initial_specified_value()].into()
+            ),
         })
     }
 
@@ -3502,9 +3511,23 @@ pub mod animation {
                 return Ok(());
             }
 
+            // We don't serialize animation-timeline, animation-range-start and animation-range-end
+            // if any of them are not the initial value.
             if self
                 .animation_timeline
                 .map_or(false, |v| v.0.len() != 1 || !v.0[0].is_auto())
+            {
+                return Ok(());
+            }
+            if self
+                .animation_range_start
+                .map_or(false, |v| v.0.len() != 1 || !v.0[0].0.is_normal())
+            {
+                return Ok(());
+            }
+            if self
+                .animation_range_end
+                .map_or(false, |v| v.0.len() != 1 || !v.0[0].0.is_normal())
             {
                 return Ok(());
             }

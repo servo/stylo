@@ -1878,19 +1878,22 @@ pub mod animation_range {
                 .try_parse(|i| animation_range_end::single_value::parse(context, i))
                 .unwrap_or_else(|_| {
                     use crate::values::generics::animation::AnimationRangeEnd;
-                    use crate::values::specified::animation::AnimationRangeValue;
+                    use crate::values::specified::animation::{
+                        AnimationRangeValue, TimelineRangeName,
+                    };
 
-                    if !start.0.name.is_none() {
-                        // If `<animation-range-start>` includes a timeline range name,
-                        // `animation-range-end` is set to that same timeline range name and 100%.
-                        AnimationRangeEnd(AnimationRangeValue::timeline_range(
-                            start.0.name,
-                            LengthPercentage::hundred_percent(),
-                        ))
+                    // If `<animation-range-start>` includes a timeline range name,
+                    // `animation-range-end` is set to that same timeline range name and 100%.
+                    // Otherwise, any omitted longhand is set to its initial value.
+                    let name = if start.0.name.is_none() {
+                        TimelineRangeName::Normal
                     } else {
-                        // Otherwise, any omitted longhand is set to its initial value.
-                        animation_range_end::single_value::get_initial_specified_value()
-                    }
+                        start.0.name
+                    };
+                    AnimationRangeEnd(AnimationRangeValue::new(
+                        name,
+                        LengthPercentage::hundred_percent(),
+                    ))
                 });
 
             starts.push(start);
@@ -1909,11 +1912,9 @@ pub mod animation_range {
         where
             W: fmt::Write,
         {
-            use crate::values::generics::Optional;
-
+            use crate::values::specified::length::EqualsPercentage;
             let starts = &self.animation_range_start.0;
             let ends = &self.animation_range_end.0;
-
             if starts.len() != ends.len() {
                 return Ok(());
             }
@@ -1922,21 +1923,10 @@ pub mod animation_range {
                 if i != 0 {
                     dest.write_str(", ")?;
                 }
-
                 start.to_css(dest)?;
-
-                let can_omit = if start.0.name == end.0.name {
-                    match end.0.lp {
-                        // If both have the same range name, or they don't have range name, we omit
-                        // the end value if it is 100%.
-                        Optional::Some(ref p) => p == &LengthPercentage::hundred_percent(),
-                        // The end value is `normal`.
-                        Optional::None => end.0.name.is_none(),
-                    }
-                } else {
-                    false
-                };
-                if !can_omit {
+                let can_omit_end = (start.0.name == end.0.name && end.0.lp.equals_percentage(1.0))
+                    || (start.0.name.is_none() && end.0.name.is_normal());
+                if !can_omit_end {
                     dest.write_char(' ')?;
                     end.to_css(dest)?;
                 }

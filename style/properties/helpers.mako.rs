@@ -163,9 +163,7 @@ pub mod ${property.ident} {
     }
     % if property.initial_value:
     #[inline] pub fn get_initial_value() -> computed_value::T { ${property.initial_value} }
-    % endif
-    % if property.initial_specified_value:
-    #[inline] pub fn get_initial_specified_value() -> SpecifiedValue { ${property.initial_specified_value} }
+    #[inline] pub fn get_initial_specified_value() -> SpecifiedValue { ToComputedValue::from_computed_value(&get_initial_value()) }
     % endif
     #[allow(unused_variables)]
     #[inline]

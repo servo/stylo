@@ -306,6 +306,28 @@ impl Number {
         .max(f32::MIN)
     }
 
+    /// Return the unit, as a string.
+    pub fn unit(&self) -> &'static str {
+        "number"
+    }
+
+    /// Return no canonical unit (number values do not have one).
+    pub fn canonical_unit(&self) -> Option<&'static str> {
+        None
+    }
+
+    /// Convert only if the unit is the same (conversion to other units does
+    /// not make sense).
+    pub fn to(&self, unit: &str) -> Result<Self, ()> {
+        if !unit.eq_ignore_ascii_case("number") {
+            return Err(());
+        }
+        Ok(Self {
+            value: self.value,
+            calc_clamping_mode: self.calc_clamping_mode,
+        })
+    }
+
     #[allow(missing_docs)]
     pub fn parse_non_negative<'i, 't>(
         context: &ParserContext,

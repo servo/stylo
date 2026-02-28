@@ -1219,9 +1219,6 @@ class PropertyRestrictions:
     def marker(data):
         return set(
             [
-                # animation-range-* are defined in [scroll-animations].
-                "animation-range-end",
-                "animation-range-start",
                 "color",
                 "content",
                 "counter-increment",
@@ -1242,6 +1239,7 @@ class PropertyRestrictions:
                 "unicode-bidi",
                 "-moz-osx-font-smoothing",
             ]
+            + PropertyRestrictions.shorthand(data, "animation-range")
             + PropertyRestrictions.shorthand(data, "text-wrap")
             + PropertyRestrictions.shorthand(data, "white-space")
             + PropertyRestrictions.spec(data, "css-fonts")

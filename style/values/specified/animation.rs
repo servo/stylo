@@ -857,8 +857,16 @@ pub enum TimelineRangeName {
     Scroll,
 }
 
+impl TimelineRangeName {
+    /// Returns true if it is None.
+    #[inline]
+    pub fn is_none(&self) -> bool {
+        matches!(*self, Self::None)
+    }
+}
+
 /// The internal value for `animation-range-start` and `animation-range-end`.
-type AnimationRangeValue = generics::GenericAnimationRangeValue<LengthPercentage>;
+pub type AnimationRangeValue = generics::GenericAnimationRangeValue<LengthPercentage>;
 
 fn parse_animation_range<'i, 't>(
     context: &ParserContext,

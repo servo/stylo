@@ -1858,6 +1858,94 @@ pub mod view_timeline {
     }
 }
 
+#[cfg(feature = "gecko")]
+pub mod animation_range {
+    pub use crate::properties::generated::shorthands::animation_range::*;
+
+    use super::*;
+    use crate::properties::longhands::{animation_range_end, animation_range_start};
+    use crate::values::specified::LengthPercentage;
+
+    pub fn parse_value<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        let mut starts = Vec::with_capacity(1);
+        let mut ends = Vec::with_capacity(1);
+        input.parse_comma_separated(|input| {
+            let start = animation_range_start::single_value::parse(context, input)?;
+            let end = input
+                .try_parse(|i| animation_range_end::single_value::parse(context, i))
+                .unwrap_or_else(|_| {
+                    use crate::values::generics::animation::AnimationRangeEnd;
+                    use crate::values::specified::animation::AnimationRangeValue;
+
+                    if !start.0.name.is_none() {
+                        // If `<animation-range-start>` includes a timeline range name,
+                        // `animation-range-end` is set to that same timeline range name and 100%.
+                        AnimationRangeEnd(AnimationRangeValue::timeline_range(
+                            start.0.name,
+                            LengthPercentage::hundred_percent(),
+                        ))
+                    } else {
+                        // Otherwise, any omitted longhand is set to its initial value.
+                        animation_range_end::single_value::get_initial_specified_value()
+                    }
+                });
+
+            starts.push(start);
+            ends.push(end);
+            Ok(())
+        })?;
+
+        Ok(expanded! {
+            animation_range_start: animation_range_start::SpecifiedValue(starts.into()),
+            animation_range_end: animation_range_end::SpecifiedValue(ends.into()),
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a> {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+        where
+            W: fmt::Write,
+        {
+            use crate::values::generics::Optional;
+
+            let starts = &self.animation_range_start.0;
+            let ends = &self.animation_range_end.0;
+
+            if starts.len() != ends.len() {
+                return Ok(());
+            }
+
+            for (i, (start, end)) in std::iter::zip(starts.iter(), ends.iter()).enumerate() {
+                if i != 0 {
+                    dest.write_str(", ")?;
+                }
+
+                start.to_css(dest)?;
+
+                let can_omit = if start.0.name == end.0.name {
+                    match end.0.lp {
+                        // If both have the same range name, or they don't have range name, we omit
+                        // the end value if it is 100%.
+                        Optional::Some(ref p) => p == &LengthPercentage::hundred_percent(),
+                        // The end value is `normal`.
+                        Optional::None => end.0.name.is_none(),
+                    }
+                } else {
+                    false
+                };
+                if !can_omit {
+                    dest.write_char(' ')?;
+                    end.to_css(dest)?;
+                }
+            }
+            Ok(())
+        }
+    }
+}
+
 pub mod transition {
     pub use crate::properties::generated::shorthands::transition::*;
 

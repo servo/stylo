@@ -222,7 +222,7 @@ pub struct GenericAnimationRangeValue<LengthPercent> {
     /// The specific timeline range. If it is None, the animation range only has length-percentage
     /// component.
     pub name: TimelineRangeName,
-    /// Used to measure the specific point from the start of the named timeline.
+    /// Used to measure the specific point from the start of the named timeline. This is set to
     pub lp: LengthPercent,
 }
 
@@ -245,12 +245,6 @@ impl<LengthPercent> AnimationRangeValue<LengthPercent> {
     #[inline]
     pub fn new(name: TimelineRangeName, lp: LengthPercent) -> Self {
         Self { name, lp }
-    }
-
-    /// Returns true if it is "normal".
-    #[inline]
-    pub fn is_normal(&self) -> bool {
-        self.name.is_normal()
     }
 }
 

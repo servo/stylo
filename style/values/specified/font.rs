@@ -737,8 +737,9 @@ impl Parse for FamilyName {
 /// A factor for one of the font-size-adjust metrics, which may be either a number
 /// or the `from-font` keyword.
 #[derive(
-    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem,
+    Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
+#[typed_value(derive_fields)]
 pub enum FontSizeAdjustFactor {
     /// An explicitly-specified number.
     Number(NonNegativeNumber),

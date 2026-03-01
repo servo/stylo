@@ -1170,14 +1170,6 @@ impl FontVariantAlternates {
     }
 }
 
-impl FontVariantAlternates {
-    #[inline]
-    /// Get initial specified value with VariantAlternatesList
-    pub fn get_initial_specified_value() -> Self {
-        Default::default()
-    }
-}
-
 impl Parse for FontVariantAlternates {
     /// normal |
     ///  [ stylistic(<feature-value-name>)           ||

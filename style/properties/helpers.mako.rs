@@ -162,10 +162,16 @@ pub mod ${property.ident} {
         pub use crate::values::computed::${property.predefined_type} as T;
     }
     % if property.initial_value:
-    #[inline] pub fn get_initial_value() -> computed_value::T { ${property.initial_value} }
-    % endif
+    #[inline]
+    pub fn get_initial_value() -> computed_value::T { ${property.initial_value} }
+    #[inline]
+    pub fn get_initial_specified_value() -> SpecifiedValue {
     % if property.initial_specified_value:
-    #[inline] pub fn get_initial_specified_value() -> SpecifiedValue { ${property.initial_specified_value} }
+        ${property.initial_specified_value}
+    % else:
+        ToComputedValue::from_computed_value(&get_initial_value())
+    % endif
+    }
     % endif
     #[allow(unused_variables)]
     #[inline]

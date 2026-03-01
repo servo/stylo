@@ -746,9 +746,10 @@ macro_rules! impl_to_typed_for_predefined_type {
     ($name: ty) => {
         impl<'a> ToTyped for $name {
             fn to_typed(&self) -> Option<TypedValue> {
-                // XXX Should return TypedValue::Numeric with unit "number"
-                // once that variant is available. Tracked in bug 1990419.
-                None
+                Some(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+                    value: *self as f32,
+                    unit: CssString::from("number"),
+                })))
             }
         }
     };

@@ -18,7 +18,7 @@ use crate::context::QuirksMode;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::specified::calc::CalcNode;
-use crate::values::{serialize_atom_identifier, serialize_number, AtomString};
+use crate::values::{reify_number, serialize_atom_identifier, serialize_number, AtomString};
 use crate::{Atom, Namespace, One, Prefix, Zero};
 use cssparser::{Parser, Token};
 use rustc_hash::FxHashMap;
@@ -26,9 +26,10 @@ use std::fmt::{self, Write};
 use std::ops::Add;
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{
-    CssString, CssWriter, NumericValue, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
-    ToTyped, TypedValue, UnitValue,
+    CssWriter, MathSum, NumericValue, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
+    ToTyped, TypedValue,
 };
+use thin_vec::ThinVec;
 
 pub use self::align::{ContentDistribution, ItemPlacement, JustifyItems, SelfAlignment};
 pub use self::angle::{AllowUnitlessZeroAngle, Angle};
@@ -382,12 +383,16 @@ impl ToCss for Number {
 
 impl ToTyped for Number {
     fn to_typed(&self) -> Option<TypedValue> {
-        let value = self.value;
-        let unit = CssString::from("number");
-        Some(TypedValue::Numeric(NumericValue::Unit(UnitValue {
-            value,
-            unit,
-        })))
+        let numeric_value = reify_number(self.value);
+
+        // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-math-expression
+        if self.calc_clamping_mode.is_some() {
+            Some(TypedValue::Numeric(NumericValue::Sum(MathSum {
+                values: ThinVec::from([numeric_value]),
+            })))
+        } else {
+            Some(TypedValue::Numeric(numeric_value))
+        }
     }
 }
 

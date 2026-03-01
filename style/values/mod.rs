@@ -103,6 +103,14 @@ where
     serialize_specified_dimension(v, "", was_calc, dest)
 }
 
+/// Reify a value into number numeric value.
+pub fn reify_number(v: f32) -> NumericValue {
+    NumericValue::Unit(UnitValue {
+        value: v,
+        unit: CssString::from("number"),
+    })
+}
+
 /// Serialize a specified dimension with unit, calc, and NaN/infinity handling (if enabled)
 pub fn serialize_specified_dimension<W>(
     v: f32,

@@ -341,6 +341,7 @@ class Longhand(Property):
         style_struct,
         name,
         initial_value=None,
+        initial_specified_value=None,
         parse_method='parse',
         spec=None,
         animation_type="normal",
@@ -383,6 +384,7 @@ class Longhand(Property):
 
         self.parse_method = parse_method
         self.initial_value = initial_value
+        self.initial_specified_value = initial_specified_value
         self.keyword = keyword
         self.predefined_type = predefined_type
         self.style_struct = style_struct

@@ -6,6 +6,7 @@
 
 use crate::derives::*;
 use crate::values::generics::length::GenericLengthPercentageOrAuto;
+use crate::values::generics::Optional;
 use crate::values::specified::animation::{
     ScrollAxis, ScrollFunction, TimelineName, TimelineRangeName,
 };
@@ -223,28 +224,38 @@ pub struct GenericAnimationRangeValue<LengthPercent> {
     /// component.
     pub name: TimelineRangeName,
     /// Used to measure the specific point from the start of the named timeline. This is set to
-    pub lp: LengthPercent,
+    /// None only for `normal` keyword. Otherwise, we should always set it to Some().
+    pub lp: Optional<LengthPercent>,
 }
 
 pub use self::GenericAnimationRangeValue as AnimationRangeValue;
 
-impl<LengthPercent> AnimationRangeValue<LengthPercent> {
-    /// Returns the "normal" value
-    #[inline]
-    pub fn normal(lp: LengthPercent) -> Self {
-        Self::new(TimelineRangeName::Normal, lp)
+impl<LengthPercent> Default for AnimationRangeValue<LengthPercent> {
+    fn default() -> Self {
+        Self {
+            name: TimelineRangeName::None,
+            lp: Optional::None,
+        }
     }
+}
 
+impl<LengthPercent> AnimationRangeValue<LengthPercent> {
     /// Returns Self as a LengthPercentage.
     #[inline]
     pub fn length_percentage(lp: LengthPercent) -> Self {
-        Self::new(TimelineRangeName::None, lp)
+        Self {
+            name: TimelineRangeName::None,
+            lp: Optional::Some(lp),
+        }
     }
 
     /// Returns Self as a tuple of TimelineRangeName range name and LengthPercentage.
     #[inline]
-    pub fn new(name: TimelineRangeName, lp: LengthPercent) -> Self {
-        Self { name, lp }
+    pub fn timeline_range(name: TimelineRangeName, lp: LengthPercent) -> Self {
+        Self {
+            name,
+            lp: Optional::Some(lp),
+        }
     }
 }
 
@@ -261,33 +272,44 @@ impl<LengthPercent> AnimationRangeValue<LengthPercent> {
     ToResolvedValue,
     ToShmem,
 )]
-#[repr(transparent)]
+#[repr(C)]
 pub struct GenericAnimationRangeStart<LengthPercent>(pub GenericAnimationRangeValue<LengthPercent>);
 
 pub use self::GenericAnimationRangeStart as AnimationRangeStart;
 
+impl<LengthPercent> Default for AnimationRangeStart<LengthPercent> {
+    fn default() -> Self {
+        Self(AnimationRangeValue::default())
+    }
+}
+
 fn to_css_with_default<LengthPercent, W>(
     value: &AnimationRangeValue<LengthPercent>,
     dest: &mut CssWriter<W>,
-    default: f32,
+    default: crate::values::CSSFloat,
 ) -> fmt::Result
 where
     LengthPercent: ToCss + EqualsPercentage,
     W: Write,
 {
-    if matches!(value.name, TimelineRangeName::Normal) {
-        return dest.write_str("normal");
-    }
     if matches!(value.name, TimelineRangeName::None) {
-        return value.lp.to_css(dest);
+        return match value.lp {
+            // `normal`
+            Optional::None => dest.write_str("normal"),
+            // <length-percentage>
+            Optional::Some(ref lp) => lp.to_css(dest),
+        };
     }
+
     // <timeline-range-name> <length-percentage>?
     value.name.to_css(dest)?;
-    if !value.lp.equals_percentage(default) {
-        dest.write_char(' ')?;
-        value.lp.to_css(dest)?;
+    match value.lp {
+        Optional::Some(ref lp) if !lp.equals_percentage(default) => {
+            dest.write_char(' ')?;
+            lp.to_css(dest)
+        },
+        _ => Ok(()),
     }
-    Ok(())
 }
 
 impl<LengthPercent: ToCss + EqualsPercentage> ToCss for AnimationRangeStart<LengthPercent> {
@@ -312,10 +334,16 @@ impl<LengthPercent: ToCss + EqualsPercentage> ToCss for AnimationRangeStart<Leng
     ToResolvedValue,
     ToShmem,
 )]
-#[repr(transparent)]
+#[repr(C)]
 pub struct GenericAnimationRangeEnd<LengthPercent>(pub GenericAnimationRangeValue<LengthPercent>);
 
 pub use self::GenericAnimationRangeEnd as AnimationRangeEnd;
+
+impl<LengthPercent> Default for AnimationRangeEnd<LengthPercent> {
+    fn default() -> Self {
+        Self(AnimationRangeValue::default())
+    }
+}
 
 impl<LengthPercent: ToCss + EqualsPercentage> ToCss for AnimationRangeEnd<LengthPercent> {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result

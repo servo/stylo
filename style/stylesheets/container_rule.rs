@@ -305,15 +305,15 @@ impl ContainerCondition {
             size_query_container_lookup,
             |context| {
                 let matches = condition.matches(context, &mut CustomMediaEvaluator::none());
-                if context
-                    .style()
-                    .flags()
-                    .contains(ComputedValueFlags::USES_VIEWPORT_UNITS)
-                {
+                let flags = context.style().flags();
+                if flags.contains(ComputedValueFlags::USES_VIEWPORT_UNITS) {
                     // TODO(emilio): Might need something similar to improve
                     // invalidation of font relative container-query lengths.
                     invalidation_flags
                         .insert(ComputedValueFlags::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES);
+                }
+                if flags.contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY) {
+                    invalidation_flags.insert(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
                 }
                 matches
             },

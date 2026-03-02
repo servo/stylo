@@ -141,6 +141,9 @@ bitflags! {
 
         /// Whether there are author-specific rules for `text-shadow`.
         const HAS_AUTHOR_SPECIFIED_TEXT_SHADOW = 1 << 28;
+
+        /// Whether this style depends on container style query.
+        const DEPENDS_ON_CONTAINER_STYLE_QUERY = 1 << 29;
     }
 }
 

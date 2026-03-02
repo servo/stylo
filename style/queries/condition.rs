@@ -8,6 +8,7 @@
 //! https://drafts.csswg.org/css-contain-3/#typedef-container-condition
 
 use super::{FeatureFlags, FeatureType, QueryFeatureExpression, QueryStyleRange};
+use crate::computed_value_flags::ComputedValueFlags;
 use crate::custom_properties;
 use crate::derives::*;
 use crate::dom::AttributeTracker;
@@ -242,6 +243,7 @@ impl StyleQuery {
     }
 
     fn matches(&self, ctx: &computed::Context) -> KleeneValue {
+        ctx.builder.add_flags(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
         match *self {
             StyleQuery::Feature(ref f) => f.matches(ctx),
             StyleQuery::Not(ref c) => !c.matches(ctx),

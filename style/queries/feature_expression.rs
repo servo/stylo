@@ -678,6 +678,9 @@ pub enum QueryExpressionValue {
     Time(Time),
     /// A custom property name.
     Custom(DashedIdent),
+    /// A simple var(...) reference without a default (equivalent to a bare Custom ident,
+    /// but will serialize with the `var()` wrapper)
+    Var(DashedIdent),
 }
 
 impl QueryExpressionValue {
@@ -701,6 +704,11 @@ impl QueryExpressionValue {
             QueryExpressionValue::Angle(v) => v.to_css(dest),
             QueryExpressionValue::Time(v) => v.to_css(dest),
             QueryExpressionValue::Custom(ref v) => v.to_css(dest),
+            QueryExpressionValue::Var(ref v) => {
+                dest.write_str("var(")?;
+                v.to_css(dest)?;
+                dest.write_char(')')
+            },
             QueryExpressionValue::Enumerated(value) => match for_expr
                 .expect("caller should have passed for_expr")
                 .feature()
@@ -784,6 +792,19 @@ impl QueryExpressionValue {
         }
         if let Ok(keyword) = input.try_parse(|i| CSSWideKeyword::parse(i)) {
             return Ok(Self::Keyword(keyword));
+        }
+        if let Ok(Token::Function(ref name)) = input.next() {
+            // Here, we only handle simple `var(--foo)` references when used as individual
+            // query expression values. More complex usages such as `var(...)` with default,
+            // or `var(...)` used within `calc(...)` expressions, will be substituted and
+            // resolved at query evaluation time.
+            if name.eq_ignore_ascii_case("var") {
+                if let Ok(ident) =
+                    input.try_parse(|i| i.parse_nested_block(|i| DashedIdent::parse(context, i)))
+                {
+                    return Ok(Self::Var(ident));
+                }
+            }
         }
         Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
@@ -938,7 +959,7 @@ impl QueryStyleRange {
         visited_set: &mut PrecomputedHashSet<DashedIdent>,
     ) -> Option<Component> {
         match value {
-            QueryExpressionValue::Custom(ident) => {
+            QueryExpressionValue::Custom(ident) | QueryExpressionValue::Var(ident) => {
                 // `ident` is the dashed ident, but we need the name
                 // without "--" for custom-property lookup.
                 let name = Atom::from(&ident.0.as_slice()[2..]);

@@ -258,6 +258,12 @@ impl LengthPercentage {
         Self::new_percent(Percentage::zero())
     }
 
+    /// 100%
+    #[inline]
+    pub fn hundred_percent() -> Self {
+        Self::new_percent(Percentage::hundred())
+    }
+
     fn to_calc_node(&self) -> CalcNode {
         match self.unpack() {
             Unpacked::Length(l) => CalcNode::Leaf(CalcLengthPercentageLeaf::Length(l)),

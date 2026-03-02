@@ -274,7 +274,7 @@ affects = ""
 
 [animation-range-end]
 type = "AnimationRangeEnd"
-initial = "computed::AnimationRangeEnd::default()"
+initial = "computed::AnimationRangeEnd::normal()"
 struct = "ui"
 servo_pref = "layout.unimplemented"
 vector = { need_index = true }
@@ -286,7 +286,7 @@ affects = ""
 
 [animation-range-start]
 type = "AnimationRangeStart"
-initial = "computed::AnimationRangeStart::default()"
+initial = "computed::AnimationRangeStart::normal()"
 struct = "ui"
 servo_pref = "layout.unimplemented"
 vector = { need_index = true }

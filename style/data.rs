@@ -115,7 +115,7 @@ impl fmt::Debug for EagerPseudoArray {
 #[cfg(feature = "gecko")]
 const EMPTY_PSEUDO_ARRAY: &'static EagerPseudoArrayInner = &[None, None, None, None];
 #[cfg(feature = "servo")]
-const EMPTY_PSEUDO_ARRAY: &'static EagerPseudoArrayInner = &[None, None, None];
+const EMPTY_PSEUDO_ARRAY: &'static EagerPseudoArrayInner = &[None, None, None, None];
 
 impl EagerPseudoStyles {
     /// Returns whether there are any pseudo styles.

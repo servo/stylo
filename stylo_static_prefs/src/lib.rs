@@ -9,17 +9,59 @@ use std::sync::{LazyLock, RwLock};
 /// This is what will be used if the embedder has not set the preference.
 #[macro_export]
 macro_rules! default_value {
+    ("layout.columns.enabled") => {
+        false
+    };
+    ("layout.container-queries.enabled") => {
+        false
+    };
+    ("layout.css.anchor-positioning.enabled") => {
+        false
+    };
+    ("layout.css.at-scope.enabled") => {
+        false
+    };
+    ("layout.css.attr.enabled") => {
+        false
+    };
+    ("layout.css.basic-shape-shape.enabled") => {
+        false
+    };
+    ("layout.css.color-mix-multi-color.enabled") => {
+        false
+    };
+    ("layout.css.content.alt-text.enabled") => {
+        false
+    };
     ("layout.css.contrast-color.enabled") => {
         true
     };
+    ("layout.css.custom-media.enabled") => {
+        false
+    };
     ("layout.css.fit-content-function.enabled") => {
         true
+    };
+    ("layout.css.font-palette.enabled") => {
+        false
+    };
+    ("layout.css.font-tech.enabled") => {
+        false
     };
     ("layout.css.font-variations.enabled") => {
         true
     };
     ("layout.css.gradient-color-interpolation-method.enabled") => {
         true
+    };
+    ("layout.css.light-dark.images.enabled") => {
+        false
+    };
+    ("layout.css.margin-rules.enabled") => {
+        false
+    };
+    ("layout.css.motion-path-url.enabled") => {
+        false
     };
     ("layout.css.outline-offset.snapping") => {
         1
@@ -30,8 +72,20 @@ macro_rules! default_value {
     ("layout.css.relative-color-syntax.enabled") => {
         true
     };
+    ("layout.css.scroll-driven-animations.enabled") => {
+        false
+    };
+    ("layout.css.scroll-state.enabled") => {
+        false
+    };
+    ("layout.css.starting-style-at-rules.enabled") => {
+        false
+    };
     ("layout.css.stretch-size-keyword.enabled") => {
         true
+    };
+    ("layout.css.style-queries.enabled") => {
+        false
     };
     ("layout.css.stylo-local-work-queue.in-main-thread") => {
         32
@@ -51,12 +105,21 @@ macro_rules! default_value {
     ("layout.css.webkit-fill-available.enabled") => {
         true
     };
+    ("layout.grid.enabled") => {
+        false
+    };
     ("layout.threads") => {
         // Negative means auto, 0 disables the thread-pool (main-thread styling),
         // other numbers override as specified.
         -1
     };
-    ($string:literal) => {
+    ("layout.unimplemented") => {
+        false
+    };
+    ("layout.variable_fonts.enabled") => {
+        false
+    };
+    ("layout.writing-mode.enabled") => {
         false
     };
 }
@@ -66,7 +129,18 @@ macro_rules! default_value {
 #[macro_export]
 macro_rules! pref {
     ($string:tt) => {
-        $crate::Getter::get($string, $crate::default_value!($string))
+        $crate::Preference::get($string, $crate::default_value!($string))
+    };
+}
+
+/// Sets a preference to the provided value.
+#[macro_export]
+macro_rules! set_pref {
+    ($string:tt, $($value:expr)+) => {
+        let value = $($value)+;
+        // This comparison ensures that the provided value belongs to the expected type.
+        let _ = $crate::default_value!($string) == value;
+        $crate::Preference::set($string, value)
     };
 }
 
@@ -112,35 +186,33 @@ impl Preferences {
     }
 }
 
-pub fn get_bool(key: &str, default: bool) -> bool {
-    PREFS.get_bool(key, default)
-}
-
-pub fn get_i32(key: &str, default: i32) -> i32 {
-    PREFS.get_i32(key, default)
-}
-
-pub fn set_bool(key: &str, value: bool) {
-    PREFS.set_bool(key, value)
-}
-
-pub fn set_i32(key: &str, value: i32) {
-    PREFS.set_i32(key, value)
-}
-
-pub trait Getter {
+pub trait Preference: Sized {
+    /// Gets the value of a preference, falling back to the provided default.
+    /// Prefer using [`pref!()`] instead, since it ensures that the preference
+    /// exists and uses the correct default automatically.
     fn get(key: &str, default: Self) -> Self;
+
+    /// Sets a preference to the provided value. Prefer using [`set_pref!()`]
+    /// instead, since it ensures that the preference exists and the value
+    /// belongs to the expected type.
+    fn set(key: &str, value: Self);
 }
 
-impl Getter for bool {
+impl Preference for bool {
     fn get(key: &str, default: Self) -> Self {
-        get_bool(key, default)
+        PREFS.get_bool(key, default)
+    }
+    fn set(key: &str, value: Self) {
+        PREFS.set_bool(key, value)
     }
 }
 
-impl Getter for i32 {
+impl Preference for i32 {
     fn get(key: &str, default: Self) -> Self {
-        get_i32(key, default)
+        PREFS.get_i32(key, default)
+    }
+    fn set(key: &str, value: Self) {
+        PREFS.set_i32(key, value)
     }
 }
 

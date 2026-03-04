@@ -246,7 +246,8 @@ impl StyleQuery {
     }
 
     fn matches(&self, ctx: &computed::Context) -> KleeneValue {
-        ctx.builder.add_flags(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
+        ctx.builder
+            .add_flags(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
         match *self {
             StyleQuery::Feature(ref f) => f.matches(ctx),
             StyleQuery::Not(ref c) => !c.matches(ctx),
@@ -490,7 +491,9 @@ impl StyleFeaturePlain {
                     // are invalid as values in a style feature, and cause the
                     // container style query to be false.
                     // https://drafts.csswg.org/css-conditional-5/#evaluate-a-style-range
-                    CSSWideKeyword::Revert | CSSWideKeyword::RevertLayer => false,
+                    CSSWideKeyword::Revert
+                    | CSSWideKeyword::RevertLayer
+                    | CSSWideKeyword::RevertRule => false,
                 }
             },
         })

@@ -327,6 +327,7 @@ impl AnimationValue {
                         let style_struct = match declaration.keyword {
                             % if not prop.style_struct.inherited:
                             CSSWideKeyword::Revert |
+                            CSSWideKeyword::RevertRule |
                             CSSWideKeyword::RevertLayer |
                             CSSWideKeyword::Unset |
                             % endif
@@ -335,6 +336,7 @@ impl AnimationValue {
                             },
                             % if prop.style_struct.inherited:
                             CSSWideKeyword::Revert |
+                            CSSWideKeyword::RevertRule |
                             CSSWideKeyword::RevertLayer |
                             CSSWideKeyword::Unset |
                             % endif

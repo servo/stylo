@@ -83,17 +83,6 @@ impl Ord for CascadePriority {
     }
 }
 
-/// The kind of revert that we're applying.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum RevertKind {
-    /// revert
-    Origin,
-    /// revert-layer
-    Layer,
-    /// revert-rule
-    Rule,
-}
-
 impl CascadePriority {
     /// Construct a new CascadePriority for a given (level, order) pair.
     pub fn new(cascade_level: CascadeLevel, layer_order: LayerOrder) -> Self {
@@ -115,17 +104,16 @@ impl CascadePriority {
         self.cascade_level
     }
 
-    /// Whether this declaration should be allowed if `revert` / `revert-layer` / `revert-rule`
+    /// Whether this declaration should be allowed if `revert` or `revert-layer`
     /// have been specified on a given origin.
     ///
-    /// `self` is the priority at which the revert has been specified.
-    pub fn allows_when_reverted(&self, other: &Self, kind: RevertKind) -> bool {
-        match kind {
-            RevertKind::Origin => other.cascade_level.origin() < self.cascade_level.origin(),
-            RevertKind::Layer => other.unimportant() < self.unimportant(),
-            // Any other declaration for the same property we apply in the cascade needs to come
-            // from another rule effectively.
-            RevertKind::Rule => true,
+    /// `self` is the priority at which the `revert` or `revert-layer` keyword
+    /// have been specified.
+    pub fn allows_when_reverted(&self, other: &Self, origin_revert: bool) -> bool {
+        if origin_revert {
+            other.cascade_level.origin() < self.cascade_level.origin()
+        } else {
+            other.unimportant() < self.unimportant()
         }
     }
 

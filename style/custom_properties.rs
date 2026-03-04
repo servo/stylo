@@ -6,7 +6,7 @@
 //!
 //! [custom]: https://drafts.csswg.org/css-variables/
 
-use crate::applicable_declarations::{CascadePriority, RevertKind};
+use crate::applicable_declarations::CascadePriority;
 use crate::custom_properties_map::CustomPropertiesMap;
 use crate::dom::AttributeTracker;
 use crate::media_queries::Device;
@@ -1037,7 +1037,7 @@ pub struct CustomPropertiesBuilder<'a, 'b: 'a> {
     may_have_cycles: bool,
     has_color_scheme: bool,
     custom_properties: ComputedCustomProperties,
-    reverted: PrecomputedHashMap<&'a Name, (CascadePriority, RevertKind)>,
+    reverted: PrecomputedHashMap<&'a Name, (CascadePriority, bool)>,
     stylist: &'a Stylist,
     computed_context: &'a mut computed::Context<'b>,
     references_from_non_custom_properties: NonCustomReferenceMap<Vec<Name>>,
@@ -1125,8 +1125,8 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
             ref value,
         } = *declaration;
 
-        if let Some(&(reverted_priority, revert_kind)) = self.reverted.get(&name) {
-            if !reverted_priority.allows_when_reverted(&priority, revert_kind) {
+        if let Some(&(reverted_priority, is_origin_revert)) = self.reverted.get(&name) {
+            if !reverted_priority.allows_when_reverted(&priority, is_origin_revert) {
                 return;
             }
         }
@@ -1182,35 +1182,31 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                 let value = parsed_value.to_computed_value(&self.computed_context);
                 map.insert(registration, name, value);
             },
-            CustomDeclarationValue::CSSWideKeyword(keyword) => match keyword.revert_kind() {
-                Some(revert_kind) => {
+            CustomDeclarationValue::CSSWideKeyword(keyword) => match keyword {
+                CSSWideKeyword::RevertLayer | CSSWideKeyword::Revert => {
+                    let origin_revert = matches!(keyword, CSSWideKeyword::Revert);
                     self.seen.remove(name);
-                    self.reverted.insert(name, (priority, revert_kind));
+                    self.reverted.insert(name, (priority, origin_revert));
                 },
-                None => match keyword {
-                    CSSWideKeyword::Initial => {
-                        // For non-inherited custom properties, 'initial' was handled in value_may_affect_style.
-                        debug_assert!(registration.inherits(), "Should've been handled earlier");
-                        remove_and_insert_initial_value(name, registration, map);
-                    },
-                    CSSWideKeyword::Inherit => {
-                        // For inherited custom properties, 'inherit' was handled in value_may_affect_style.
-                        debug_assert!(!registration.inherits(), "Should've been handled earlier");
-                        if let Some(inherited_value) = self
-                            .computed_context
-                            .inherited_custom_properties()
-                            .non_inherited
-                            .get(name)
-                        {
-                            map.insert(registration, name, inherited_value.clone());
-                        }
-                    },
-                    // handled in value_may_affect_style or in the revert_kind branch above.
-                    CSSWideKeyword::Revert
-                    | CSSWideKeyword::RevertLayer
-                    | CSSWideKeyword::RevertRule
-                    | CSSWideKeyword::Unset => unreachable!(),
+                CSSWideKeyword::Initial => {
+                    // For non-inherited custom properties, 'initial' was handled in value_may_affect_style.
+                    debug_assert!(registration.inherits(), "Should've been handled earlier");
+                    remove_and_insert_initial_value(name, registration, map);
                 },
+                CSSWideKeyword::Inherit => {
+                    // For inherited custom properties, 'inherit' was handled in value_may_affect_style.
+                    debug_assert!(!registration.inherits(), "Should've been handled earlier");
+                    if let Some(inherited_value) = self
+                        .computed_context
+                        .inherited_custom_properties()
+                        .non_inherited
+                        .get(name)
+                    {
+                        map.insert(registration, name, inherited_value.clone());
+                    }
+                },
+                // handled in value_may_affect_style
+                CSSWideKeyword::Unset => unreachable!(),
             },
         }
     }
@@ -1398,9 +1394,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                     CSSWideKeyword::Unset => {
                         debug_assert!(false, "Should've been handled earlier");
                     },
-                    CSSWideKeyword::Revert
-                    | CSSWideKeyword::RevertLayer
-                    | CSSWideKeyword::RevertRule => {},
+                    CSSWideKeyword::Revert | CSSWideKeyword::RevertLayer => {},
                 }
                 None
             },
@@ -2007,18 +2001,15 @@ fn substitute_references_if_needed_and_apply(
                 (CSSWideKeyword::Initial, _, _)
                 | (CSSWideKeyword::Revert, false, _)
                 | (CSSWideKeyword::RevertLayer, false, _)
-                | (CSSWideKeyword::RevertRule, false, _)
                 | (CSSWideKeyword::Unset, false, _)
                 | (CSSWideKeyword::Revert, true, true)
                 | (CSSWideKeyword::RevertLayer, true, true)
-                | (CSSWideKeyword::RevertRule, true, true)
                 | (CSSWideKeyword::Unset, true, true)
                 | (CSSWideKeyword::Inherit, _, true) => {
                     remove_and_insert_initial_value(name, registration, custom_properties);
                 },
                 (CSSWideKeyword::Revert, true, false)
                 | (CSSWideKeyword::RevertLayer, true, false)
-                | (CSSWideKeyword::RevertRule, true, false)
                 | (CSSWideKeyword::Inherit, _, false)
                 | (CSSWideKeyword::Unset, true, false) => {
                     match inherited.get(registration, name) {

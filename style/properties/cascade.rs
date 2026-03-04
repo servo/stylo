@@ -4,7 +4,7 @@
 
 //! The main cascading algorithm of the style system.
 
-use crate::applicable_declarations::{CascadePriority, RevertKind};
+use crate::applicable_declarations::CascadePriority;
 use crate::color::AbsoluteColor;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::custom_properties::{
@@ -654,7 +654,7 @@ struct Cascade<'b> {
     seen: LonghandIdSet,
     author_specified: LonghandIdSet,
     reverted_set: LonghandIdSet,
-    reverted: FxHashMap<LonghandId, (CascadePriority, RevertKind)>,
+    reverted: FxHashMap<LonghandId, (CascadePriority, bool)>,
     declarations_to_apply_unless_overridden: DeclarationsToApplyUnlessOverriden,
 }
 
@@ -960,8 +960,8 @@ impl<'b> Cascade<'b> {
         }
 
         if self.reverted_set.contains(longhand_id) {
-            if let Some(&(reverted_priority, revert_kind)) = self.reverted.get(&longhand_id) {
-                if !reverted_priority.allows_when_reverted(&priority, revert_kind) {
+            if let Some(&(reverted_priority, is_origin_revert)) = self.reverted.get(&longhand_id) {
+                if !reverted_priority.allows_when_reverted(&priority, is_origin_revert) {
                     return;
                 }
             }
@@ -983,11 +983,15 @@ impl<'b> Cascade<'b> {
         }
         let can_skip_apply = match declaration.get_css_wide_keyword() {
             Some(keyword) => {
-                if let Some(revert_kind) = keyword.revert_kind() {
+                if matches!(
+                    keyword,
+                    CSSWideKeyword::RevertLayer | CSSWideKeyword::Revert
+                ) {
+                    let origin_revert = keyword == CSSWideKeyword::Revert;
                     // We intentionally don't want to insert it into `self.seen`, `reverted` takes
                     // care of rejecting other declarations as needed.
                     self.reverted_set.insert(longhand_id);
-                    self.reverted.insert(longhand_id, (priority, revert_kind));
+                    self.reverted.insert(longhand_id, (priority, origin_revert));
                     return;
                 }
 
@@ -995,9 +999,7 @@ impl<'b> Cascade<'b> {
                 let zoomed = !context.builder.effective_zoom_for_inheritance.is_one()
                     && longhand_id.zoom_dependent();
                 match keyword {
-                    CSSWideKeyword::Revert
-                    | CSSWideKeyword::RevertLayer
-                    | CSSWideKeyword::RevertRule => unreachable!(),
+                    CSSWideKeyword::Revert | CSSWideKeyword::RevertLayer => unreachable!(),
                     CSSWideKeyword::Unset => !zoomed || !inherited,
                     CSSWideKeyword::Inherit => inherited && !zoomed,
                     CSSWideKeyword::Initial => !inherited,

@@ -83,10 +83,9 @@ pub mod ${property.ident} {
                             context.builder.inherit_${property.ident}();
                         % endif
                     }
-                    CSSWideKeyword::RevertRule |
                     CSSWideKeyword::RevertLayer |
                     CSSWideKeyword::Revert => {
-                        declaration.debug_crash("Found revert* not dealt with");
+                        declaration.debug_crash("Found revert/revert-layer not dealt with");
                     },
                 }
                 return;

@@ -21,7 +21,6 @@ pub mod generated {
     include!(concat!(env!("OUT_DIR"), "/properties.rs"));
 }
 
-use crate::applicable_declarations::RevertKind;
 use crate::custom_properties::{self, ComputedCustomProperties};
 use crate::derives::*;
 use crate::dom::AttributeTracker;
@@ -96,32 +95,30 @@ pub enum CSSWideKeyword {
     Revert,
     /// The `revert-layer` keyword.
     RevertLayer,
-    /// The `revert-rule` keyword.
-    RevertRule,
 }
 
 impl CSSWideKeyword {
     /// Returns the string representation of the keyword.
     pub fn to_str(&self) -> &'static str {
         match *self {
-            Self::Initial => "initial",
-            Self::Inherit => "inherit",
-            Self::Unset => "unset",
-            Self::Revert => "revert",
-            Self::RevertLayer => "revert-layer",
-            Self::RevertRule => "revert-rule",
+            CSSWideKeyword::Initial => "initial",
+            CSSWideKeyword::Inherit => "inherit",
+            CSSWideKeyword::Unset => "unset",
+            CSSWideKeyword::Revert => "revert",
+            CSSWideKeyword::RevertLayer => "revert-layer",
         }
     }
+}
 
+impl CSSWideKeyword {
     /// Parses a CSS wide keyword from a CSS identifier.
     pub fn from_ident(ident: &str) -> Result<Self, ()> {
         Ok(match_ignore_ascii_case! { ident,
-            "initial" => Self::Initial,
-            "inherit" => Self::Inherit,
-            "unset" => Self::Unset,
-            "revert" => Self::Revert,
-            "revert-layer" => Self::RevertLayer,
-            "revert-rule" if static_prefs::pref!("layout.css.revert-rule.enabled") => Self::RevertRule,
+            "initial" => CSSWideKeyword::Initial,
+            "inherit" => CSSWideKeyword::Inherit,
+            "unset" => CSSWideKeyword::Unset,
+            "revert" => CSSWideKeyword::Revert,
+            "revert-layer" => CSSWideKeyword::RevertLayer,
             _ => return Err(()),
         })
     }
@@ -134,16 +131,6 @@ impl CSSWideKeyword {
         };
         input.expect_exhausted().map_err(|_| ())?;
         Ok(keyword)
-    }
-
-    /// Returns the revert kind for this wide keyword.
-    pub fn revert_kind(self) -> Option<RevertKind> {
-        Some(match self {
-            Self::Initial | Self::Inherit | Self::Unset => return None,
-            Self::Revert => RevertKind::Origin,
-            Self::RevertLayer => RevertKind::Layer,
-            Self::RevertRule => RevertKind::Rule,
-        })
     }
 }
 

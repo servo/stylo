@@ -4,14 +4,14 @@
 
 //! Parsing for registered custom properties.
 
+use std::fmt::{self, Write};
+use crate::derives::*;
 use super::{
     registry::PropertyRegistrationData,
     syntax::{
         data_type::DataType, Component as SyntaxComponent, ComponentName, Descriptor, Multiplier,
     },
 };
-use crate::custom_properties::ComputedValue as ComputedPropertyValue;
-use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties;
 use crate::properties::{CSSWideKeyword, CustomDeclarationValue};
@@ -22,13 +22,13 @@ use crate::values::{
     computed::{self, ToComputedValue},
     specified, CustomIdent,
 };
+use crate::custom_properties::ComputedValue as ComputedPropertyValue;
 use crate::{Namespace, Prefix};
 use cssparser::{BasicParseErrorKind, ParseErrorKind, Parser as CSSParser, TokenSerializationType};
 use rustc_hash::FxHashMap;
 use selectors::matching::QuirksMode;
 use servo_arc::Arc;
 use smallvec::SmallVec;
-use std::fmt::{self, Write};
 use style_traits::{
     owned_str::OwnedStr, CssWriter, ParseError as StyleParseError, ParsingMode,
     PropertySyntaxParseError, StyleParseErrorKind, ToCss,
@@ -697,9 +697,7 @@ impl CustomAnimatedValue {
                     //
                     // Note that once this is fixed, this method should be
                     // able to return `Self` instead of Option<Self>`.
-                    CSSWideKeyword::Revert
-                    | CSSWideKeyword::RevertRule
-                    | CSSWideKeyword::RevertLayer => return None,
+                    CSSWideKeyword::Revert | CSSWideKeyword::RevertLayer => return None,
                 }
                 .cloned()
             },

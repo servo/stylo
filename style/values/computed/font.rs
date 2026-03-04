@@ -145,7 +145,6 @@ pub type FontWeightFixedPoint = FixedPoint<u16, FONT_WEIGHT_FRACTION_BITS>;
     PartialEq,
     PartialOrd,
     ToResolvedValue,
-    ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
@@ -170,6 +169,12 @@ impl ToCss for FontWeight {
         W: fmt::Write,
     {
         self.value().to_css(dest)
+    }
+}
+
+impl ToTyped for FontWeight {
+    fn to_typed(&self) -> Option<TypedValue> {
+        self.value().to_typed()
     }
 }
 

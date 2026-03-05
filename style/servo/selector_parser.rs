@@ -290,6 +290,25 @@ impl PseudoElement {
 
         true
     }
+
+    /// Whether this pseudo-element is the ::highlight pseudo.
+    pub fn is_highlight(&self) -> bool {
+        false
+    }
+
+    /// Whether this pseudo-element is the ::target-text pseudo.
+    #[inline]
+    pub fn is_target_text(&self) -> bool {
+        false
+    }
+
+    /// Whether this is a highlight pseudo-element that is styled lazily during
+    /// painting rather than during the restyle traversal. These pseudos need
+    /// explicit repaint triggering when their styles change.
+    #[inline]
+    pub fn is_lazy_painted_highlight_pseudo(&self) -> bool {
+        self.is_selection() || self.is_highlight() || self.is_target_text()
+    }
 }
 
 /// The type used for storing `:lang` arguments.

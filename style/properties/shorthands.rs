@@ -3141,6 +3141,7 @@ pub mod font_synthesis {
     }
 }
 
+#[cfg(feature = "gecko")]
 pub mod text_box {
     pub use crate::properties::generated::shorthands::text_box::*;
 

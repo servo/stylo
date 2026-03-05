@@ -9,6 +9,9 @@ use std::sync::{LazyLock, RwLock};
 /// This is what will be used if the embedder has not set the preference.
 #[macro_export]
 macro_rules! default_value {
+    ("dom.select.customizable_select.enabled") => {
+        false
+    };
     ("layout.columns.enabled") => {
         false
     };
@@ -16,9 +19,6 @@ macro_rules! default_value {
         false
     };
     ("layout.css.anchor-positioning.enabled") => {
-        false
-    };
-    ("layout.css.appearance-base-select.enabled") => {
         false
     };
     ("layout.css.at-scope.enabled") => {

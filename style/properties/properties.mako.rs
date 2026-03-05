@@ -1952,6 +1952,14 @@ impl ComputedValues {
             }
         }
     }
+
+    /// Calls the given function for each cached lazy pseudo-element style.
+    pub fn each_cached_lazy_pseudo<F>(&self, mut _f: F)
+    where
+        F: FnMut(&Self),
+    {
+        // Servo doesn't currently cache lazy pseudo-element styles.
+    }
 }
 
 #[cfg(feature = "servo")]

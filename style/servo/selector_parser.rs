@@ -276,7 +276,10 @@ impl PseudoElement {
     /// Property flag that properties must have to apply to this pseudo-element.
     #[inline]
     pub fn property_restriction(&self) -> Option<PropertyFlags> {
-        None
+        match *self {
+            PseudoElement::FirstLetter => Some(PropertyFlags::APPLIES_TO_FIRST_LETTER),
+            _ => None
+        }
     }
 
     /// Whether this pseudo-element should actually exist if it has

@@ -464,13 +464,14 @@ trait PrivateMatchMethods: TElement {
 
         if old_values.as_deref().map_or_else(
             || {
-                use crate::values::specified::ScopedNameKeyword;
-
-                new_styles.primary_style().get_box().mTimelineScope.value != ScopedNameKeyword::None
+                new_styles
+                    .primary_style()
+                    .get_ui()
+                    .specifies_timeline_scope()
             },
             |old| {
-                !old.get_box()
-                    .timeline_scope_equals(new_styles.primary_style().get_box())
+                !old.get_ui()
+                    .timeline_scope_equals(new_styles.primary_style().get_ui())
             },
         ) {
             tasks.insert(UpdateAnimationsTasks::TIMELINE_SCOPES);

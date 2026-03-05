@@ -18,6 +18,9 @@ macro_rules! default_value {
     ("layout.css.anchor-positioning.enabled") => {
         false
     };
+    ("layout.css.appearance-base-select.enabled") => {
+        false
+    };
     ("layout.css.at-scope.enabled") => {
         false
     };

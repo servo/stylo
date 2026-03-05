@@ -242,9 +242,10 @@ impl PseudoElement {
     #[inline]
     pub fn cascade_type(&self) -> PseudoElementCascadeType {
         match *self {
-            PseudoElement::After | PseudoElement::Before | PseudoElement::Selection | PseudoElement::FirstLetter => {
-                PseudoElementCascadeType::Eager
-            },
+            PseudoElement::After
+            | PseudoElement::Before
+            | PseudoElement::Selection
+            | PseudoElement::FirstLetter => PseudoElementCascadeType::Eager,
             PseudoElement::Backdrop
             | PseudoElement::ColorSwatch
             | PseudoElement::DetailsSummary
@@ -281,6 +282,7 @@ impl PseudoElement {
                 PropertyFlags::APPLIES_TO_MARKER
             },
             PseudoElement::Placeholder => PropertyFlags::APPLIES_TO_PLACEHOLDER,
+            PseudoElement::FirstLetter => PropertyFlags::APPLIES_TO_FIRST_LETTER,
             _ => return None,
         })
     }

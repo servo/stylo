@@ -646,6 +646,20 @@ impl DashedIdent {
     pub fn is_empty(&self) -> bool {
         self.0 == atom!("")
     }
+
+    /// Returns an atom with the same value, but without the starting "--".
+    ///
+    /// # Panics
+    ///
+    /// Panics when used on the special `DashedIdent::empty()`.
+    pub(crate) fn undashed(&self) -> Atom {
+        assert!(!self.is_empty(), "Can't undash the empty DashedIdent");
+        #[cfg(feature = "gecko")]
+        let name = &self.0.as_slice()[2..];
+        #[cfg(feature = "servo")]
+        let name = &self.0[2..];
+        Atom::from(name)
+    }
 }
 
 impl Parse for DashedIdent {

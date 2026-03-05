@@ -1384,6 +1384,7 @@ pub mod style_structs {
                         self.${longhand.ident}.clone()
                     }
 
+                    /// Whether `self` and `other` have the same computed value for ${longhand.name}.
                     #[allow(non_snake_case)]
                     #[inline]
                     pub fn ${longhand.ident}_equals(&self, other: &Self) -> bool {

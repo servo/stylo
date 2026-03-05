@@ -49,6 +49,8 @@ pub enum StyleChange {
     Changed {
         /// Whether only reset structs changed.
         reset_only: bool,
+        /// Whether custom properties changed.
+        _custom_properties_changed: bool,
     },
 }
 
@@ -815,7 +817,10 @@ trait PrivateMatchMethods: TElement {
 
         match difference.change {
             StyleChange::Unchanged => return ChildRestyleRequirement::CanSkipCascade,
-            StyleChange::Changed { reset_only } => {
+            StyleChange::Changed {
+                reset_only,
+                _custom_properties_changed,
+            } => {
                 // If inherited properties changed, the best we can do is
                 // cascade the children.
                 if !reset_only {

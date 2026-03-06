@@ -37,6 +37,7 @@ extern crate gecko_profiler;
 pub mod gecko_string_cache;
 #[macro_use]
 extern crate log;
+#[macro_use]
 extern crate serde;
 pub use servo_arc;
 #[cfg(feature = "servo")]

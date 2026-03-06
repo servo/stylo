@@ -962,7 +962,7 @@ impl QueryStyleRange {
             QueryExpressionValue::Custom(ident) | QueryExpressionValue::Var(ident) => {
                 // `ident` is the dashed ident, but we need the name
                 // without "--" for custom-property lookup.
-                let name = Atom::from(&ident.0.as_slice()[2..]);
+                let name = ident.undashed();
                 let stylist = context
                     .builder
                     .stylist

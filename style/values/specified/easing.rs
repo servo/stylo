@@ -78,7 +78,7 @@ impl TimingFunction {
         let position = input
             .try_parse(|i| {
                 i.expect_comma()?;
-                StepPosition::parse(context, i)
+                StepPosition::parse(i)
             })
             .unwrap_or(StepPosition::End);
 

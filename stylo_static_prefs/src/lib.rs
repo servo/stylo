@@ -63,6 +63,9 @@ macro_rules! default_value {
     ("layout.css.margin-rules.enabled") => {
         false
     };
+    ("layout.css.marker.restricted") => {
+        true
+    };
     ("layout.css.motion-path-url.enabled") => {
         false
     };

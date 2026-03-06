@@ -6,7 +6,6 @@
 //! https://drafts.csswg.org/css-easing/#timing-functions
 
 use crate::derives::*;
-use crate::parser::ParserContext;
 
 /// A generic easing function.
 #[derive(
@@ -82,16 +81,6 @@ pub enum BeforeFlag {
     Set,
 }
 
-#[cfg(feature = "gecko")]
-fn step_position_jump_enabled(_context: &ParserContext) -> bool {
-    true
-}
-
-#[cfg(feature = "servo")]
-fn step_position_jump_enabled(_context: &ParserContext) -> bool {
-    false
-}
-
 #[allow(missing_docs)]
 #[derive(
     Clone,
@@ -110,13 +99,9 @@ fn step_position_jump_enabled(_context: &ParserContext) -> bool {
 )]
 #[repr(u8)]
 pub enum StepPosition {
-    #[parse(condition = "step_position_jump_enabled")]
     JumpStart,
-    #[parse(condition = "step_position_jump_enabled")]
     JumpEnd,
-    #[parse(condition = "step_position_jump_enabled")]
     JumpNone,
-    #[parse(condition = "step_position_jump_enabled")]
     JumpBoth,
     Start,
     End,

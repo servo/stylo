@@ -112,9 +112,6 @@ impl fmt::Debug for EagerPseudoArray {
 
 // Can't use [None; EAGER_PSEUDO_COUNT] here because it complains
 // about Copy not being implemented for our Arc type.
-#[cfg(feature = "gecko")]
-const EMPTY_PSEUDO_ARRAY: &'static EagerPseudoArrayInner = &[None, None, None, None];
-#[cfg(feature = "servo")]
 const EMPTY_PSEUDO_ARRAY: &'static EagerPseudoArrayInner = &[None, None, None, None];
 
 impl EagerPseudoStyles {

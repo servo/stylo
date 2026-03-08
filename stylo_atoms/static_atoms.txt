@@ -20,6 +20,7 @@ animationend
 animationiteration
 animationstart
 aspect-ratio
+beforeinput
 beforetoggle
 beforeunload
 block-size

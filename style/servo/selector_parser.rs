@@ -49,9 +49,9 @@ pub enum PseudoElement {
 
     // If/when :first-line is added, update is_first_line accordingly.
 
-    // If/when ::first-letter, ::first-line, or ::placeholder are added, adjust
-    // our property_restriction implementation to do property filtering for
-    // them.  Also, make sure the UA sheet has the !important rules some of the
+    // If/when ::first-letter or ::first-line are added, adjust our
+    // property_restriction implementation to do property filtering for them.
+    // Also, make sure the UA sheet has the !important rules some of the
     // APPLIES_TO_PLACEHOLDER properties expect!
 
     // Non-eager pseudos.
@@ -274,7 +274,13 @@ impl PseudoElement {
     /// Property flag that properties must have to apply to this pseudo-element.
     #[inline]
     pub fn property_restriction(&self) -> Option<PropertyFlags> {
-        None
+        Some(match self {
+            PseudoElement::Marker if static_prefs::pref!("layout.css.marker.restricted") => {
+                PropertyFlags::APPLIES_TO_MARKER
+            },
+            PseudoElement::Placeholder => PropertyFlags::APPLIES_TO_PLACEHOLDER,
+            _ => return None,
+        })
     }
 
     /// Whether this pseudo-element should actually exist if it has
@@ -664,12 +670,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             },
             "details-content" => DetailsContent,
             "color-swatch" => ColorSwatch,
-            "placeholder" => {
-                if !self.in_user_agent_stylesheet() {
-                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
-                }
-                Placeholder
-            },
+            "placeholder" => Placeholder,
             "-servo-text-control-inner-container" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))

@@ -13,7 +13,7 @@ use cssparser::Parser;
 use std::fmt::{self, Write};
 use std::io::Cursor;
 use style_traits::{
-    CssString, CssWriter, ParseError, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
+    CssString, CssWriter, KeywordValue, ParseError, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
 };
 
 /// A trait for values that are labelled with a FontTag (for feature and
@@ -297,7 +297,7 @@ impl<Factor: ToCss> ToCss for GenericFontSizeAdjust<Factor> {
 impl<Factor: ToTyped> ToTyped for GenericFontSizeAdjust<Factor> {
     fn to_typed(&self) -> Option<TypedValue> {
         match self {
-            Self::None => Some(TypedValue::Keyword(CssString::from("none"))),
+            Self::None => Some(TypedValue::Keyword(KeywordValue(CssString::from("none")))),
             Self::ExHeight(v) => v.to_typed(),
             _ => None,
         }

@@ -16,7 +16,7 @@ use crate::values::specified::text::{TextEmphasisFillMode, TextEmphasisShapeKeyw
 use crate::values::{CSSFloat, CSSInteger};
 use crate::Zero;
 use std::fmt::{self, Write};
-use style_traits::{CssString, CssWriter, ToCss, ToTyped, TypedValue};
+use style_traits::{CssString, CssWriter, KeywordValue, ToCss, ToTyped, TypedValue};
 
 pub use crate::values::specified::text::{
     HyphenateCharacter, LineBreak, MozControlCharacterVisibility, OverflowWrap, RubyPosition,
@@ -105,7 +105,7 @@ impl ToTyped for LetterSpacing {
     // observed test expectations.
     fn to_typed(&self) -> Option<TypedValue> {
         if !self.0.has_percentage() && self.0.is_zero() {
-            return Some(TypedValue::Keyword(CssString::from("normal")));
+            return Some(TypedValue::Keyword(KeywordValue(CssString::from("normal"))));
         }
         self.0.to_typed()
     }

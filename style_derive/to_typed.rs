@@ -70,7 +70,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
                 quote! {
                     fn to_typed(&self) -> Option<style_traits::TypedValue> {
                       let s = style_traits::ToCss::to_css_cssstring(self);
-                      Some(style_traits::TypedValue::Keyword(s))
+                      Some(style_traits::TypedValue::Keyword(style_traits::KeywordValue(s)))
                     }
                 }
             } else {
@@ -192,7 +192,7 @@ fn derive_variant_arm(
         // Emit code to wrap this keyword into a TypedValue.
         quote! {
             Some(style_traits::TypedValue::Keyword(
-                style_traits::CssString::from(#keyword)
+                style_traits::KeywordValue(style_traits::CssString::from(#keyword))
             ))
         }
     } else if derive_fields {

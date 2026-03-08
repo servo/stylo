@@ -601,6 +601,16 @@ pub mod specified {
     }
 }
 
+/// A keyword value used by the Typed OM.
+///
+/// This corresponds to `CSSKeywordValue` in the Typed OM specification.
+/// The keyword is stored as a `CssString` so it can be represented and
+/// transferred independently of any specific property (e.g. `"none"`,
+/// `"block"`, `"thin"`).
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct KeywordValue(pub CssString);
+
 /// A single numeric value with an associated unit.
 ///
 /// This corresponds to `CSSUnitValue` in the Typed OM specification. The
@@ -658,12 +668,12 @@ pub enum NumericValue {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub enum TypedValue {
-    /// A keyword value (e.g. `"block"`, `"none"`, `"thin"`).
+    /// A keyword value such as `"block"`, `"none"`, or `"thin"`.
     ///
-    /// Keywords are stored as a `CssString` so they can be represented and
-    /// transferred independently of any specific property. This corresponds
-    /// to `CSSKeywordValue` in the Typed OM specification.
-    Keyword(CssString),
+    /// This corresponds to `CSSKeywordValue` in the Typed OM specification.
+    /// Keywords are represented as a standalone `KeywordValue` so they can
+    /// be carried and compared independently of any particular property.
+    Keyword(KeywordValue),
 
     /// A numeric value such as a length, angle, time, or a sum thereof.
     ///

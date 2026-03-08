@@ -467,21 +467,6 @@ trait PrivateMatchMethods: TElement {
                 new_styles
                     .primary_style()
                     .get_ui()
-                    .specifies_timeline_scope()
-            },
-            |old| {
-                !old.get_ui()
-                    .timeline_scope_equals(new_styles.primary_style().get_ui())
-            },
-        ) {
-            tasks.insert(UpdateAnimationsTasks::TIMELINE_SCOPES);
-        }
-
-        if old_values.as_deref().map_or_else(
-            || {
-                new_styles
-                    .primary_style()
-                    .get_ui()
                     .specifies_scroll_timelines()
             },
             |old| {

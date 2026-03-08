@@ -4139,7 +4139,7 @@ keyword = { values = ["collapse", "preserve", "preserve-breaks", "break-spaces"]
 [timeline-scope]
 type = "ScopedName"
 initial = "computed::ScopedName::none()"
-struct = "ui"
+struct = "box"
 engine = "gecko"
 animation_type = "none"
 gecko_pref = "layout.css.scroll-driven-animations.enabled"

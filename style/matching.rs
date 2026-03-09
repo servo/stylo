@@ -464,6 +464,20 @@ trait PrivateMatchMethods: TElement {
 
         if old_values.as_deref().map_or_else(
             || {
+                use crate::values::specified::ScopedNameKeyword;
+
+                new_styles.primary_style().get_box().mTimelineScope.value != ScopedNameKeyword::None
+            },
+            |old| {
+                !old.get_box()
+                    .timeline_scope_equals(new_styles.primary_style().get_box())
+            },
+        ) {
+            tasks.insert(UpdateAnimationsTasks::TIMELINE_SCOPES);
+        }
+
+        if old_values.as_deref().map_or_else(
+            || {
                 new_styles
                     .primary_style()
                     .get_ui()

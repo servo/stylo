@@ -479,6 +479,11 @@ impl ScopedName {
     pub fn none() -> Self {
         Self::with_default_level(ScopedNameKeyword::none())
     }
+
+    /// Returns true if no scoped name is specified.
+    pub fn is_none(&self) -> bool {
+        self.value == ScopedNameKeyword::none()
+    }
 }
 
 /// https://drafts.csswg.org/css-anchor-position-1/#propdef-position-anchor

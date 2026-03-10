@@ -9,19 +9,14 @@
 use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
-pub use crate::properties::counter_style::{DescriptorId, Descriptors};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
 use crate::values::specified::Integer;
 use crate::values::{AtomString, CustomIdent};
 use crate::Atom;
 use cssparser::{
-    ascii_case_insensitive_phf_map, match_ignore_ascii_case, CowRcStr, Parser, ParserState,
+    ascii_case_insensitive_phf_map, match_ignore_ascii_case, CowRcStr, Parser, RuleBodyParser,
     SourceLocation, Token,
 };
-use cssparser::{
-    AtRuleParser, DeclarationParser, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser,
-};
-use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Write};
 use std::mem;
 use std::num::Wrapping;
@@ -29,6 +24,8 @@ use style_traits::{
     Comma, CssStringWriter, CssWriter, KeywordsCollectFn, OneOrMoreSeparated, ParseError,
     SpecifiedValueInfo, StyleParseErrorKind, ToCss,
 };
+
+pub use crate::properties::counter_style::{DescriptorId, DescriptorParser, Descriptors};
 
 /// https://drafts.csswg.org/css-counter-styles/#typedef-symbols-type
 #[allow(missing_docs)]
@@ -263,9 +260,9 @@ pub fn parse_counter_style_body<'i, 't>(
     let start = input.current_source_location();
     let mut rule = CounterStyleRule::empty(name, location);
     {
-        let mut parser = CounterStyleRuleParser {
+        let mut parser = DescriptorParser {
             context,
-            rule: &mut rule.descriptors,
+            descriptors: &mut rule.descriptors,
         };
         let mut iter = RuleBodyParser::new(input, &mut parser);
         while let Some(declaration) = iter.next() {
@@ -315,55 +312,6 @@ pub fn parse_counter_style_body<'i, 't>(
         Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     } else {
         Ok(rule)
-    }
-}
-
-struct CounterStyleRuleParser<'a, 'b: 'a> {
-    context: &'a ParserContext<'b>,
-    rule: &'a mut Descriptors,
-}
-
-/// Default methods reject all at rules.
-impl<'a, 'b, 'i> AtRuleParser<'i> for CounterStyleRuleParser<'a, 'b> {
-    type Prelude = ();
-    type AtRule = ();
-    type Error = StyleParseErrorKind<'i>;
-}
-
-impl<'a, 'b, 'i> QualifiedRuleParser<'i> for CounterStyleRuleParser<'a, 'b> {
-    type Prelude = ();
-    type QualifiedRule = ();
-    type Error = StyleParseErrorKind<'i>;
-}
-
-impl<'a, 'b, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind<'i>>
-    for CounterStyleRuleParser<'a, 'b>
-{
-    fn parse_qualified(&self) -> bool {
-        false
-    }
-    fn parse_declarations(&self) -> bool {
-        true
-    }
-}
-
-impl<'a, 'b, 'i> DeclarationParser<'i> for CounterStyleRuleParser<'a, 'b> {
-    type Declaration = ();
-    type Error = StyleParseErrorKind<'i>;
-
-    fn parse_value<'t>(
-        &mut self,
-        name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
-        _declaration_start: &ParserState,
-    ) -> Result<(), ParseError<'i>> {
-        let Ok(id) = DescriptorId::from_ident(name.as_ref()) else {
-            return Err(
-                input.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone()))
-            );
-        };
-        self.rule.set(id, self.context, input)?;
-        Ok(())
     }
 }
 

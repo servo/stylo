@@ -20,13 +20,10 @@ use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
 use crate::values::{computed, serialize_atom_name};
 use cssparser::{
-    AtRuleParser, BasicParseErrorKind, CowRcStr, DeclarationParser, ParseErrorKind, Parser,
-    ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser,
-    SourceLocation,
+    BasicParseErrorKind, ParseErrorKind, Parser, ParserInput, RuleBodyParser, SourceLocation,
 };
 #[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
-use selectors::parser::SelectorParseErrorKind;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
 use style_traits::{
@@ -36,7 +33,7 @@ use style_traits::{
 use to_shmem::{SharedMemoryBuilder, ToShmem};
 
 pub use super::syntax::Descriptor as SyntaxDescriptor;
-pub use crate::properties::property::{DescriptorId, Descriptors};
+pub use crate::properties::property::{DescriptorId, DescriptorParser, Descriptors};
 
 /// Parse the block inside a `@property` rule.
 ///
@@ -49,7 +46,7 @@ pub fn parse_property_block<'i, 't>(
     source_location: SourceLocation,
 ) -> Result<PropertyRegistration, ParseError<'i>> {
     let mut descriptors = Descriptors::default();
-    let mut parser = PropertyRuleParser {
+    let mut parser = DescriptorParser {
         context,
         descriptors: &mut descriptors,
     };
@@ -136,55 +133,6 @@ pub fn parse_property_block<'i, 't>(
         url_data: context.url_data.clone(),
         source_location,
     })
-}
-
-struct PropertyRuleParser<'a, 'b: 'a> {
-    context: &'a ParserContext<'b>,
-    descriptors: &'a mut Descriptors,
-}
-
-/// Default methods reject all at rules.
-impl<'a, 'b, 'i> AtRuleParser<'i> for PropertyRuleParser<'a, 'b> {
-    type Prelude = ();
-    type AtRule = ();
-    type Error = StyleParseErrorKind<'i>;
-}
-
-impl<'a, 'b, 'i> QualifiedRuleParser<'i> for PropertyRuleParser<'a, 'b> {
-    type Prelude = ();
-    type QualifiedRule = ();
-    type Error = StyleParseErrorKind<'i>;
-}
-
-impl<'a, 'b, 'i> DeclarationParser<'i> for PropertyRuleParser<'a, 'b> {
-    type Declaration = ();
-    type Error = StyleParseErrorKind<'i>;
-
-    fn parse_value<'t>(
-        &mut self,
-        name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
-        _declaration_start: &ParserState,
-    ) -> Result<(), ParseError<'i>> {
-        let Ok(id) = DescriptorId::from_ident(name.as_ref()) else {
-            return Err(
-                input.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone()))
-            );
-        };
-        self.descriptors.set(id, self.context, input)?;
-        Ok(())
-    }
-}
-
-impl<'a, 'b, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind<'i>>
-    for PropertyRuleParser<'a, 'b>
-{
-    fn parse_qualified(&self) -> bool {
-        false
-    }
-    fn parse_declarations(&self) -> bool {
-        true
-    }
 }
 
 /// Errors that can happen when registering a property.

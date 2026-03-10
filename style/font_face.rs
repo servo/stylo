@@ -12,15 +12,11 @@ use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
 use crate::values::generics::font::FontStyle as GenericFontStyle;
 use crate::values::specified::{url::SpecifiedUrl, Angle};
-use cssparser::{
-    AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserState, QualifiedRuleParser,
-    RuleBodyItemParser, RuleBodyParser, SourceLocation,
-};
-use selectors::parser::SelectorParseErrorKind;
+use cssparser::{Parser, RuleBodyParser, SourceLocation};
 use std::fmt::{self, Write};
 use style_traits::{CssStringWriter, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 
-pub use crate::properties::font_face::{DescriptorId, Descriptors};
+pub use crate::properties::font_face::{DescriptorId, DescriptorParser, Descriptors};
 pub use crate::values::computed::font::{FamilyName, FontStretch};
 pub use crate::values::specified::font::{
     AbsoluteFontWeight, FontFeatureSettings, FontLanguageOverride,
@@ -492,9 +488,9 @@ pub fn parse_font_face_block(
 ) -> FontFaceRule {
     let mut rule = FontFaceRule::empty(source_location);
     {
-        let mut parser = FontFaceRuleParser {
+        let mut parser = DescriptorParser {
             context,
-            rule: &mut rule.descriptors,
+            descriptors: &mut rule.descriptors,
         };
         let mut iter = RuleBodyParser::new(input, &mut parser);
         while let Some(declaration) = iter.next() {
@@ -511,52 +507,6 @@ pub fn parse_font_face_block(
 /// A @font-face rule that is known to have font-family and src declarations.
 #[cfg(feature = "servo")]
 pub struct FontFace<'a>(&'a FontFaceRuleData);
-
-struct FontFaceRuleParser<'a, 'b: 'a> {
-    context: &'a ParserContext<'b>,
-    rule: &'a mut Descriptors,
-}
-
-/// Default methods reject all at rules.
-impl<'a, 'b, 'i> AtRuleParser<'i> for FontFaceRuleParser<'a, 'b> {
-    type Prelude = ();
-    type AtRule = ();
-    type Error = StyleParseErrorKind<'i>;
-}
-
-impl<'a, 'b, 'i> QualifiedRuleParser<'i> for FontFaceRuleParser<'a, 'b> {
-    type Prelude = ();
-    type QualifiedRule = ();
-    type Error = StyleParseErrorKind<'i>;
-}
-
-impl<'a, 'b, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind<'i>>
-    for FontFaceRuleParser<'a, 'b>
-{
-    fn parse_qualified(&self) -> bool {
-        false
-    }
-    fn parse_declarations(&self) -> bool {
-        true
-    }
-}
-impl<'a, 'b, 'i> DeclarationParser<'i> for FontFaceRuleParser<'a, 'b> {
-    type Declaration = ();
-    type Error = StyleParseErrorKind<'i>;
-
-    fn parse_value<'t>(
-        &mut self,
-        name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
-        _declaration_start: &ParserState,
-    ) -> Result<(), ParseError<'i>> {
-        let Ok(desc) = DescriptorId::from_ident(name.as_ref()) else {
-            return Err(input.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name)));
-        };
-        self.rule.set(desc, self.context, input)?;
-        Ok(())
-    }
-}
 
 impl Parse for Source {
     fn parse<'i, 't>(

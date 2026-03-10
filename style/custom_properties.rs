@@ -8,8 +8,8 @@
 
 use crate::applicable_declarations::CascadePriority;
 use crate::custom_properties_map::CustomPropertiesMap;
+use crate::device::Device;
 use crate::dom::AttributeTracker;
-use crate::media_queries::Device;
 use crate::properties::{
     CSSWideKeyword, CustomDeclaration, CustomDeclarationValue, LonghandId, LonghandIdSet,
     PropertyDeclaration,

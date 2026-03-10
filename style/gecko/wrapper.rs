@@ -18,6 +18,7 @@ use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::each_relevant_element_hash;
 use crate::context::{QuirksMode, SharedStyleContext, UpdateAnimationsTasks};
 use crate::data::{ElementDataMut, ElementDataRef, ElementDataWrapper};
+use crate::device::Device;
 use crate::dom::{
     AttributeProvider, LayoutIterator, NodeInfo, OpaqueNode, TDocument, TElement, TNode,
     TShadowRoot,
@@ -54,7 +55,6 @@ use crate::gecko_bindings::structs::{nsAtom, nsIContent, nsINode_BooleanFlag};
 use crate::gecko_bindings::structs::{nsINode as RawGeckoNode, Element as RawGeckoElement};
 use crate::global_style_data::GLOBAL_STYLE_DATA;
 use crate::invalidation::element::restyle_hints::RestyleHint;
-use crate::media_queries::Device;
 use crate::properties::{
     animated_properties::{AnimationValue, AnimationValueMap},
     ComputedValues, Importance, OwnedPropertyDeclarationId, PropertyDeclaration,

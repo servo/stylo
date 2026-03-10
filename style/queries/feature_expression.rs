@@ -39,7 +39,7 @@ impl FeatureType {
         #[cfg(feature = "gecko")]
         use crate::gecko::media_features::MEDIA_FEATURES;
         #[cfg(feature = "servo")]
-        use crate::servo::media_queries::MEDIA_FEATURES;
+        use crate::servo::media_features::MEDIA_FEATURES;
 
         use crate::stylesheets::container_rule::CONTAINER_FEATURES;
 

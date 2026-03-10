@@ -72,6 +72,7 @@ pub mod counter_style;
 pub mod custom_properties;
 pub mod custom_properties_map;
 pub mod data;
+pub mod device;
 pub mod dom;
 pub mod dom_apis;
 pub mod driver;

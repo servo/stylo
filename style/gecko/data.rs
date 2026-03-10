@@ -5,12 +5,13 @@
 //! Data needed to style a Gecko document.
 
 use crate::derives::*;
+use crate::device::Device;
 use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs::{
     self, ServoStyleSetSizes, StyleSheet as DomStyleSheet, StyleSheetInfo,
 };
 use crate::invalidation::stylesheets::StylesheetInvalidationSet;
-use crate::media_queries::{Device, MediaList};
+use crate::media_queries::MediaList;
 use crate::properties::ComputedValues;
 use crate::shared_lock::{SharedRwLockReadGuard, StylesheetGuards};
 use crate::stylesheets::scope_rule::ImplicitScopeRoot;

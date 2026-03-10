@@ -12,7 +12,7 @@ use crate::context::SharedStyleContext;
 #[cfg(feature = "gecko")]
 use crate::context::UpdateAnimationsTasks;
 use crate::data::{ElementData, ElementDataMut, ElementDataRef};
-use crate::media_queries::Device;
+use crate::device::Device;
 use crate::properties::{AnimationDeclarations, ComputedValues, PropertyDeclarationBlock};
 use crate::selector_map::PrecomputedHashMap;
 use crate::selector_parser::{AttrValue, Lang, PseudoElement, RestyleDamage, SelectorImpl};

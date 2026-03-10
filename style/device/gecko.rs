@@ -2,13 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-//! Gecko's media-query device and expression representation.
+//! Gecko-specific logic for [`Device`].
 
 use crate::color::AbsoluteColor;
 use crate::context::QuirksMode;
 use crate::custom_properties::CssEnvironment;
+use crate::device::Device;
 use crate::font_metrics::FontMetrics;
 use crate::gecko::values::{convert_absolute_color_to_nscolor, convert_nscolor_to_absolute_color};
+use crate::gecko::wrapper::GeckoElement;
 use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs;
 use crate::logical_geometry::WritingMode;
@@ -30,77 +32,18 @@ use euclid::{Scale, SideOffsets2D};
 use parking_lot::RwLock;
 use servo_arc::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
-use std::{cmp, fmt, mem};
+use std::{cmp, fmt};
 use style_traits::{CSSPixel, DevicePixel};
 
-/// The `Device` in Gecko wraps a pres context, has a default values computed,
-/// and contains all the viewport rule state.
-///
-/// This structure also contains atomics used for computing root font-relative
-/// units. These atomics use relaxed ordering, since when computing the style
-/// of the root element, there can't be any other style being computed at the
-/// same time (given we need the style of the parent to compute everything else).
-pub struct Device {
+pub(super) struct ExtraDeviceData {
     /// NB: The document owns the styleset, who owns the stylist, and thus the
     /// `Device`, so having a raw document pointer here is fine.
     document: *const structs::Document,
-    default_values: Arc<ComputedValues>,
-    /// Current computed style of the root element, used for calculations of
-    /// root font-relative units.
-    root_style: RwLock<Arc<ComputedValues>>,
-    /// Font size of the root element, used for rem units in other elements.
-    root_font_size: AtomicU32,
-    /// Line height of the root element, used for rlh units in other elements.
-    root_line_height: AtomicU32,
-    /// X-height of the root element, used for rex units in other elements.
-    root_font_metrics_ex: AtomicU32,
-    /// Cap-height of the root element, used for rcap units in other elements.
-    root_font_metrics_cap: AtomicU32,
-    /// Advance measure (ch) of the root element, used for rch units in other elements.
-    root_font_metrics_ch: AtomicU32,
-    /// Ideographic advance measure of the root element, used for ric units in other elements.
-    root_font_metrics_ic: AtomicU32,
     /// The body text color, stored as an `nscolor`, used for the "tables
     /// inherit from body" quirk.
     ///
     /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
     body_text_color: AtomicUsize,
-    /// Whether any styles computed in the document relied on the root font-size
-    /// by using rem units.
-    used_root_font_size: AtomicBool,
-    /// Whether any styles computed in the document relied on the root line-height
-    /// by using rlh units.
-    used_root_line_height: AtomicBool,
-    /// Whether any styles computed in the document relied on the root font metrics
-    /// by using rcap, rch, rex, or ric units. This is a lock instead of an atomic
-    /// in order to prevent concurrent writes to the root font metric values.
-    used_root_font_metrics: RwLock<bool>,
-    /// Whether any styles computed in the document relied on font metrics.
-    used_font_metrics: AtomicBool,
-    /// Whether any styles computed in the document relied on the viewport size
-    /// by using vw/vh/vmin/vmax units.
-    used_viewport_size: AtomicBool,
-    /// Whether any styles computed in the document relied on the viewport size
-    /// by using dvw/dvh/dvmin/dvmax units.
-    used_dynamic_viewport_size: AtomicBool,
-    /// The CssEnvironment object responsible of getting CSS environment
-    /// variables.
-    environment: CssEnvironment,
-}
-
-impl fmt::Debug for Device {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use nsstring::nsCString;
-
-        let mut doc_uri = nsCString::new();
-        unsafe {
-            bindings::Gecko_nsIURI_Debug((*self.document()).mDocumentURI.raw(), &mut doc_uri)
-        };
-
-        f.debug_struct("Device")
-            .field("document_url", &doc_uri)
-            .finish()
-    }
 }
 
 unsafe impl Sync for Device {}
@@ -115,7 +58,6 @@ impl Device {
         let default_values = ComputedValues::default_values(doc);
         let root_style = RwLock::new(Arc::clone(&default_values));
         Device {
-            document,
             default_values: default_values,
             root_style: root_style,
             root_font_size: AtomicU32::new(FONT_MEDIUM_PX.to_bits()),
@@ -124,10 +66,6 @@ impl Device {
             root_font_metrics_cap: AtomicU32::new(FONT_MEDIUM_CAP_PX.to_bits()),
             root_font_metrics_ch: AtomicU32::new(FONT_MEDIUM_CH_PX.to_bits()),
             root_font_metrics_ic: AtomicU32::new(FONT_MEDIUM_IC_PX.to_bits()),
-
-            // This gets updated when we see the <body>, so it doesn't really
-            // matter which color-scheme we look at here.
-            body_text_color: AtomicUsize::new(prefs.mLightColors.mDefault as usize),
             used_root_font_size: AtomicBool::new(false),
             used_root_line_height: AtomicBool::new(false),
             used_root_font_metrics: RwLock::new(false),
@@ -135,13 +73,13 @@ impl Device {
             used_viewport_size: AtomicBool::new(false),
             used_dynamic_viewport_size: AtomicBool::new(false),
             environment: CssEnvironment,
+            extra: ExtraDeviceData {
+                document,
+                // This gets updated when we see the <body>, so it doesn't really
+                // matter which color-scheme we look at here.
+                body_text_color: AtomicUsize::new(prefs.mLightColors.mDefault as usize),
+            },
         }
-    }
-
-    /// Get the relevant environment to resolve `env()` functions.
-    #[inline]
-    pub fn environment(&self) -> &CssEnvironment {
-        &self.environment
     }
 
     /// Returns the computed line-height for the font in a given computed values instance.
@@ -151,7 +89,7 @@ impl Device {
         &self,
         font: &crate::properties::style_structs::Font,
         writing_mode: WritingMode,
-        element: Option<super::wrapper::GeckoElement>,
+        element: Option<GeckoElement>,
     ) -> NonNegativeLength {
         let pres_context = self.pres_context();
         let line_height = font.clone_line_height();
@@ -180,108 +118,6 @@ impl Device {
         }
     }
 
-    /// Returns the default computed values as a reference, in order to match
-    /// Servo.
-    pub fn default_computed_values(&self) -> &ComputedValues {
-        &self.default_values
-    }
-
-    /// Returns the default computed values as an `Arc`.
-    pub fn default_computed_values_arc(&self) -> &Arc<ComputedValues> {
-        &self.default_values
-    }
-
-    /// Store a pointer to the root element's computed style, for use in
-    /// calculation of root font-relative metrics.
-    pub fn set_root_style(&self, style: &Arc<ComputedValues>) {
-        *self.root_style.write() = style.clone();
-    }
-
-    /// Get the font size of the root element (for rem)
-    pub fn root_font_size(&self) -> Length {
-        self.used_root_font_size.store(true, Ordering::Relaxed);
-        Length::new(f32::from_bits(self.root_font_size.load(Ordering::Relaxed)))
-    }
-
-    /// Set the font size of the root element (for rem), in zoom-independent CSS pixels.
-    pub fn set_root_font_size(&self, size: f32) {
-        self.root_font_size.store(size.to_bits(), Ordering::Relaxed)
-    }
-
-    /// Get the line height of the root element (for rlh)
-    pub fn root_line_height(&self) -> Length {
-        self.used_root_line_height.store(true, Ordering::Relaxed);
-        Length::new(f32::from_bits(
-            self.root_line_height.load(Ordering::Relaxed),
-        ))
-    }
-
-    /// Set the line height of the root element (for rlh), in zoom-independent CSS pixels.
-    pub fn set_root_line_height(&self, size: f32) {
-        self.root_line_height
-            .store(size.to_bits(), Ordering::Relaxed);
-    }
-
-    /// Get the x-height of the root element (for rex)
-    pub fn root_font_metrics_ex(&self) -> Length {
-        self.ensure_root_font_metrics_updated();
-        Length::new(f32::from_bits(
-            self.root_font_metrics_ex.load(Ordering::Relaxed),
-        ))
-    }
-
-    /// Set the x-height of the root element (for rex), in zoom-independent CSS pixels.
-    pub fn set_root_font_metrics_ex(&self, size: f32) -> bool {
-        let size = size.to_bits();
-        let previous = self.root_font_metrics_ex.swap(size, Ordering::Relaxed);
-        previous != size
-    }
-
-    /// Get the cap-height of the root element (for rcap)
-    pub fn root_font_metrics_cap(&self) -> Length {
-        self.ensure_root_font_metrics_updated();
-        Length::new(f32::from_bits(
-            self.root_font_metrics_cap.load(Ordering::Relaxed),
-        ))
-    }
-
-    /// Set the cap-height of the root element (for rcap), in zoom-independent CSS pixels.
-    pub fn set_root_font_metrics_cap(&self, size: f32) -> bool {
-        let size = size.to_bits();
-        let previous = self.root_font_metrics_cap.swap(size, Ordering::Relaxed);
-        previous != size
-    }
-
-    /// Get the advance measure of the root element (for rch)
-    pub fn root_font_metrics_ch(&self) -> Length {
-        self.ensure_root_font_metrics_updated();
-        Length::new(f32::from_bits(
-            self.root_font_metrics_ch.load(Ordering::Relaxed),
-        ))
-    }
-
-    /// Set the advance measure of the root element (for rch), in zoom-independent CSS pixels.
-    pub fn set_root_font_metrics_ch(&self, size: f32) -> bool {
-        let size = size.to_bits();
-        let previous = self.root_font_metrics_ch.swap(size, Ordering::Relaxed);
-        previous != size
-    }
-
-    /// Get the ideographic advance measure of the root element (for ric)
-    pub fn root_font_metrics_ic(&self) -> Length {
-        self.ensure_root_font_metrics_updated();
-        Length::new(f32::from_bits(
-            self.root_font_metrics_ic.load(Ordering::Relaxed),
-        ))
-    }
-
-    /// Set the ideographic advance measure of the root element (for ric), in zoom-independent CSS pixels.
-    pub fn set_root_font_metrics_ic(&self, size: f32) -> bool {
-        let size = size.to_bits();
-        let previous = self.root_font_metrics_ic.swap(size, Ordering::Relaxed);
-        previous != size
-    }
-
     /// The quirks mode of the document.
     pub fn quirks_mode(&self) -> QuirksMode {
         self.document().mCompatMode.into()
@@ -291,7 +127,7 @@ impl Device {
     ///
     /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
     pub fn set_body_text_color(&self, color: AbsoluteColor) {
-        self.body_text_color.store(
+        self.extra.body_text_color.store(
             convert_absolute_color_to_nscolor(&color) as usize,
             Ordering::Relaxed,
         )
@@ -361,64 +197,15 @@ impl Device {
         }
     }
 
-    fn ensure_root_font_metrics_updated(&self) {
-        let mut guard = self.used_root_font_metrics.write();
-        let previously_computed = mem::replace(&mut *guard, true);
-        if !previously_computed {
-            self.update_root_font_metrics();
-        }
-    }
-
-    /// Compute the root element's font metrics, and returns a bool indicating whether
-    /// the font metrics have changed since the previous restyle.
-    pub fn update_root_font_metrics(&self) -> bool {
-        let root_style = self.root_style.read();
-        let root_effective_zoom = (*root_style).effective_zoom;
-        let root_font_size = (*root_style).get_font().clone_font_size().computed_size();
-
-        let root_font_metrics = self.query_font_metrics(
-            (*root_style).writing_mode.is_upright(),
-            &(*root_style).get_font(),
-            root_font_size,
-            QueryFontMetricsFlags::USE_USER_FONT_SET
-                | QueryFontMetricsFlags::NEEDS_CH
-                | QueryFontMetricsFlags::NEEDS_IC,
-            /* track_usage = */ false,
-        );
-
-        let mut root_font_metrics_changed = false;
-        root_font_metrics_changed |= self.set_root_font_metrics_ex(
-            root_effective_zoom.unzoom(root_font_metrics.x_height_or_default(root_font_size).px()),
-        );
-        root_font_metrics_changed |= self.set_root_font_metrics_ch(
-            root_effective_zoom.unzoom(
-                root_font_metrics
-                    .zero_advance_measure_or_default(
-                        root_font_size,
-                        (*root_style).writing_mode.is_upright(),
-                    )
-                    .px(),
-            ),
-        );
-        root_font_metrics_changed |= self.set_root_font_metrics_cap(
-            root_effective_zoom.unzoom(root_font_metrics.cap_height_or_default().px()),
-        );
-        root_font_metrics_changed |= self.set_root_font_metrics_ic(
-            root_effective_zoom.unzoom(root_font_metrics.ic_width_or_default(root_font_size).px()),
-        );
-
-        root_font_metrics_changed
-    }
-
     /// Returns the body text color.
     pub fn body_text_color(&self) -> AbsoluteColor {
-        convert_nscolor_to_absolute_color(self.body_text_color.load(Ordering::Relaxed) as u32)
+        convert_nscolor_to_absolute_color(self.extra.body_text_color.load(Ordering::Relaxed) as u32)
     }
 
     /// Gets the document pointer.
     #[inline]
     pub fn document(&self) -> &structs::Document {
-        unsafe { &*self.document }
+        unsafe { &*self.extra.document }
     }
 
     /// Gets the pres context associated with this document.
@@ -455,21 +242,6 @@ impl Device {
         self.used_viewport_size.store(false, Ordering::Relaxed);
         self.used_dynamic_viewport_size
             .store(false, Ordering::Relaxed);
-    }
-
-    /// Returns whether we ever looked up the root font size of the device.
-    pub fn used_root_font_size(&self) -> bool {
-        self.used_root_font_size.load(Ordering::Relaxed)
-    }
-
-    /// Returns whether we ever looked up the root line-height of the device.
-    pub fn used_root_line_height(&self) -> bool {
-        self.used_root_line_height.load(Ordering::Relaxed)
-    }
-
-    /// Returns whether we ever looked up the root font metrics of the device.
-    pub fn used_root_font_metrics(&self) -> bool {
-        *self.used_root_font_metrics.read()
     }
 
     /// Recreates all the temporary state that the `Device` stores.
@@ -588,21 +360,6 @@ impl Device {
                 )
             },
         }
-    }
-
-    /// Returns whether we ever looked up the viewport size of the Device.
-    pub fn used_viewport_size(&self) -> bool {
-        self.used_viewport_size.load(Ordering::Relaxed)
-    }
-
-    /// Returns whether we ever looked up the dynamic viewport size of the Device.
-    pub fn used_dynamic_viewport_size(&self) -> bool {
-        self.used_dynamic_viewport_size.load(Ordering::Relaxed)
-    }
-
-    /// Returns whether font metrics have been queried.
-    pub fn used_font_metrics(&self) -> bool {
-        self.used_font_metrics.load(Ordering::Relaxed)
     }
 
     /// Returns whether visited styles are enabled.
@@ -740,5 +497,20 @@ impl Device {
     #[inline]
     pub fn chrome_rules_enabled_for_document(&self) -> bool {
         self.document().mChromeRulesEnabled()
+    }
+}
+
+impl fmt::Debug for Device {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use nsstring::nsCString;
+
+        let mut doc_uri = nsCString::new();
+        unsafe {
+            bindings::Gecko_nsIURI_Debug((*self.document()).mDocumentURI.raw(), &mut doc_uri)
+        };
+
+        f.debug_struct("Device")
+            .field("document_url", &doc_uri)
+            .finish()
     }
 }

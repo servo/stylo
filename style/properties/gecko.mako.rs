@@ -11,6 +11,7 @@ use crate::Atom;
 use crate::logical_geometry::PhysicalSide;
 use crate::computed_value_flags::*;
 use crate::custom_properties::ComputedCustomProperties;
+use crate::device::Device;
 use crate::gecko_bindings::bindings;
 % for style_struct in data.style_structs:
 use crate::gecko_bindings::bindings::Gecko_Construct_Default_${style_struct.gecko_ffi_name};
@@ -24,7 +25,6 @@ use crate::gecko_bindings::structs;
 use crate::gecko_bindings::structs::mozilla::PseudoStyleType;
 use crate::gecko::data::PerDocumentStyleData;
 use crate::logical_geometry::WritingMode;
-use crate::media_queries::Device;
 use crate::properties::longhands;
 use crate::rule_tree::StrongRuleNode;
 use crate::selector_parser::PseudoElement;

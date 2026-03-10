@@ -5,7 +5,7 @@
 <%namespace name="helpers" file="/helpers.mako.rs" />
 
 <%
-    from data import to_idl_name, SYSTEM_FONT_LONGHANDS, to_camel_case
+    from data import SYSTEM_FONT_LONGHANDS, to_camel_case
     from itertools import groupby
 %>
 

@@ -9,24 +9,24 @@
 use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
-use crate::properties::longhands::font_language_override;
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
-use crate::values::computed::font::{FamilyName, FontStretch};
 use crate::values::generics::font::FontStyle as GenericFontStyle;
-use crate::values::specified::font::{
-    AbsoluteFontWeight, FontFeatureSettings, FontStretch as SpecifiedFontStretch,
-    FontVariationSettings, MetricsOverride, SpecifiedFontStyle,
-};
-use crate::values::specified::url::SpecifiedUrl;
-use crate::values::specified::{Angle, NonNegativePercentage};
+use crate::values::specified::{url::SpecifiedUrl, Angle};
 use cssparser::{
-    match_ignore_ascii_case, AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserState,
-    QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourceLocation, UnicodeRange,
+    AtRuleParser, CowRcStr, DeclarationParser, Parser, ParserState, QualifiedRuleParser,
+    RuleBodyItemParser, RuleBodyParser, SourceLocation,
 };
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Write};
-use style_traits::{CssStringWriter, CssWriter, ParseError};
-use style_traits::{StyleParseErrorKind, ToCss};
+use style_traits::{CssStringWriter, CssWriter, ParseError, StyleParseErrorKind, ToCss};
+
+pub use crate::properties::font_face::{DescriptorId, Descriptors};
+pub use crate::values::computed::font::{FamilyName, FontStretch};
+pub use crate::values::specified::font::{
+    AbsoluteFontWeight, FontFeatureSettings, FontLanguageOverride,
+    FontStretch as SpecifiedFontStretch, FontVariationSettings, MetricsOverride,
+    SpecifiedFontStyle,
+};
 
 /// A source for a font-face rule.
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
@@ -198,6 +198,25 @@ impl ToCss for FontFaceSourceTechFlags {
         write_if_flag!("incremental" => INCREMENTAL);
 
         Ok(())
+    }
+}
+
+/// <https://drafts.csswg.org/css-fonts/#font-face-rule>
+#[derive(Clone, Debug, ToShmem, PartialEq)]
+pub struct FontFaceRule {
+    /// The descriptors of the @font-face rule.
+    pub descriptors: Descriptors,
+    /// The parser location of the rule.
+    pub source_location: SourceLocation,
+}
+
+impl FontFaceRule {
+    /// Returns an empty rule.
+    pub fn empty(source_location: SourceLocation) -> Self {
+        Self {
+            descriptors: Default::default(),
+            source_location,
+        }
     }
 }
 
@@ -469,13 +488,13 @@ impl FontStyle {
 pub fn parse_font_face_block(
     context: &ParserContext,
     input: &mut Parser,
-    location: SourceLocation,
-) -> FontFaceRuleData {
-    let mut rule = FontFaceRuleData::empty(location);
+    source_location: SourceLocation,
+) -> FontFaceRule {
+    let mut rule = FontFaceRule::empty(source_location);
     {
         let mut parser = FontFaceRuleParser {
             context,
-            rule: &mut rule,
+            rule: &mut rule.descriptors,
         };
         let mut iter = RuleBodyParser::new(input, &mut parser);
         while let Some(declaration) = iter.next() {
@@ -495,7 +514,7 @@ pub struct FontFace<'a>(&'a FontFaceRuleData);
 
 struct FontFaceRuleParser<'a, 'b: 'a> {
     context: &'a ParserContext<'b>,
-    rule: &'a mut FontFaceRuleData,
+    rule: &'a mut Descriptors,
 }
 
 /// Default methods reject all at rules.
@@ -519,6 +538,23 @@ impl<'a, 'b, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind<'i>>
     }
     fn parse_declarations(&self) -> bool {
         true
+    }
+}
+impl<'a, 'b, 'i> DeclarationParser<'i> for FontFaceRuleParser<'a, 'b> {
+    type Declaration = ();
+    type Error = StyleParseErrorKind<'i>;
+
+    fn parse_value<'t>(
+        &mut self,
+        name: CowRcStr<'i>,
+        input: &mut Parser<'i, 't>,
+        _declaration_start: &ParserState,
+    ) -> Result<(), ParseError<'i>> {
+        let Ok(desc) = DescriptorId::from_ident(name.as_ref()) else {
+            return Err(input.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name)));
+        };
+        self.rule.set(desc, self.context, input)?;
+        Ok(())
     }
 }
 
@@ -574,182 +610,11 @@ impl Parse for Source {
     }
 }
 
-macro_rules! is_descriptor_enabled {
-    ("font-variation-settings") => {
-        static_prefs::pref!("layout.css.font-variations.enabled")
-    };
-    ("size-adjust") => {
-        cfg!(feature = "gecko")
-    };
-    ($name:tt) => {
-        true
-    };
-}
-
-macro_rules! font_face_descriptors_common {
-    (
-        $( #[$doc: meta] $name: tt $ident: ident / $gecko_ident: ident: $ty: ty, )*
-    ) => {
-        /// Data inside a `@font-face` rule.
-        ///
-        /// <https://drafts.csswg.org/css-fonts/#font-face-rule>
-        #[derive(Clone, Debug, PartialEq, ToShmem)]
-        pub struct FontFaceRuleData {
-            $(
-                #[$doc]
-                pub $ident: Option<$ty>,
-            )*
-            /// Line and column of the @font-face rule source code.
-            pub source_location: SourceLocation,
-        }
-
-        impl FontFaceRuleData {
-            /// Create an empty font-face rule
-            pub fn empty(location: SourceLocation) -> Self {
-                FontFaceRuleData {
-                    $(
-                        $ident: None,
-                    )*
-                    source_location: location,
-                }
-            }
-
-            /// Serialization of declarations in the FontFaceRule
-            pub fn decl_to_css(&self, dest: &mut CssStringWriter) -> fmt::Result {
-                $(
-                    if let Some(ref value) = self.$ident {
-                        dest.write_str(concat!($name, ": "))?;
-                        value.to_css(&mut CssWriter::new(dest))?;
-                        dest.write_str("; ")?;
-                    }
-                )*
-                Ok(())
-            }
-        }
-
-       impl<'a, 'b, 'i> DeclarationParser<'i> for FontFaceRuleParser<'a, 'b> {
-           type Declaration = ();
-           type Error = StyleParseErrorKind<'i>;
-
-           fn parse_value<'t>(
-               &mut self,
-               name: CowRcStr<'i>,
-               input: &mut Parser<'i, 't>,
-               _declaration_start: &ParserState,
-            ) -> Result<(), ParseError<'i>> {
-                match_ignore_ascii_case! { &*name,
-                    $(
-                        $name if is_descriptor_enabled!($name) => {
-                            // DeclarationParser also calls parse_entirely
-                            // so we’d normally not need to,
-                            // but in this case we do because we set the value as a side effect
-                            // rather than returning it.
-                            let value = input.parse_entirely(|i| Parse::parse(self.context, i))?;
-                            self.rule.$ident = Some(value)
-                        },
-                    )*
-                    _ => return Err(input.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone()))),
-                }
-                Ok(())
-            }
-        }
-    }
-}
-
-impl ToCssWithGuard for FontFaceRuleData {
+impl ToCssWithGuard for FontFaceRule {
     // Serialization of FontFaceRule is not specced.
     fn to_css(&self, _guard: &SharedRwLockReadGuard, dest: &mut CssStringWriter) -> fmt::Result {
         dest.write_str("@font-face { ")?;
-        self.decl_to_css(dest)?;
+        self.descriptors.to_css(&mut CssWriter::new(dest))?;
         dest.write_char('}')
     }
-}
-
-macro_rules! font_face_descriptors {
-    (
-        mandatory descriptors = [
-            $( #[$m_doc: meta] $m_name: tt $m_ident: ident / $m_gecko_ident: ident: $m_ty: ty, )*
-        ]
-        optional descriptors = [
-            $( #[$o_doc: meta] $o_name: tt $o_ident: ident / $o_gecko_ident: ident: $o_ty: ty, )*
-        ]
-    ) => {
-        font_face_descriptors_common! {
-            $( #[$m_doc] $m_name $m_ident / $m_gecko_ident: $m_ty, )*
-            $( #[$o_doc] $o_name $o_ident / $o_gecko_ident: $o_ty, )*
-        }
-
-        impl FontFaceRuleData {
-            /// Per https://github.com/w3c/csswg-drafts/issues/1133 an @font-face rule
-            /// is valid as far as the CSS parser is concerned even if it doesn’t have
-            /// a font-family or src declaration.
-            ///
-            /// However both are required for the rule to represent an actual font face.
-            #[cfg(feature = "servo")]
-            pub fn font_face(&self) -> Option<FontFace<'_>> {
-                if $( self.$m_ident.is_some() )&&* {
-                    Some(FontFace(self))
-                } else {
-                    None
-                }
-            }
-        }
-
-        #[cfg(feature = "servo")]
-        impl<'a> FontFace<'a> {
-            $(
-                #[$m_doc]
-                pub fn $m_ident(&self) -> &$m_ty {
-                    self.0 .$m_ident.as_ref().unwrap()
-                }
-            )*
-        }
-    }
-}
-
-font_face_descriptors! {
-    mandatory descriptors = [
-        /// The name of this font face
-        "font-family" family / mFamily: FamilyName,
-
-        /// The alternative sources for this font face.
-        "src" sources / mSrc: SourceList,
-    ]
-    optional descriptors = [
-        /// The style of this font face.
-        "font-style" style / mStyle: FontStyle,
-
-        /// The weight of this font face.
-        "font-weight" weight / mWeight: FontWeightRange,
-
-        /// The stretch of this font face.
-        "font-stretch" stretch / mStretch: FontStretchRange,
-
-        /// The display of this font face.
-        "font-display" display / mDisplay: FontDisplay,
-
-        /// The ranges of code points outside of which this font face should not be used.
-        "unicode-range" unicode_range / mUnicodeRange: Vec<UnicodeRange>,
-
-        /// The feature settings of this font face.
-        "font-feature-settings" feature_settings / mFontFeatureSettings: FontFeatureSettings,
-
-        /// The variation settings of this font face.
-        "font-variation-settings" variation_settings / mFontVariationSettings: FontVariationSettings,
-
-        /// The language override of this font face.
-        "font-language-override" language_override / mFontLanguageOverride: font_language_override::SpecifiedValue,
-
-        /// The ascent override for this font face.
-        "ascent-override" ascent_override / mAscentOverride: MetricsOverride,
-
-        /// The descent override for this font face.
-        "descent-override" descent_override / mDescentOverride: MetricsOverride,
-
-        /// The line-gap override for this font face.
-        "line-gap-override" line_gap_override / mLineGapOverride: MetricsOverride,
-
-        /// The size adjustment for this font face.
-        "size-adjust" size_adjust / mSizeAdjust: NonNegativePercentage,
-    ]
 }

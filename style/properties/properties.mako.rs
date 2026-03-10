@@ -2905,3 +2905,137 @@ pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &Compute
 }
 % endfor
 % endif
+
+/// Descriptor types for @-rules like @font-face and @counter-style.
+<%def name="generate_descriptors(descriptors)">
+use super::*;
+#[allow(unused_imports)]
+use crate::values::specified;
+
+/// Descriptor identifier.
+#[derive(Clone, Copy, Debug, Eq, Hash, FromPrimitive, Parse, PartialEq)]
+#[repr(u8)]
+pub enum DescriptorId {
+    % for descriptor in descriptors:
+    /// The "${descriptor.name}" descriptor.
+    ${descriptor.camel_case},
+    % endfor
+}
+
+impl DescriptorId {
+    /// The total number of descriptors.
+    pub const COUNT: usize = ${len(descriptors)};
+
+    /// The CSS name of this descriptor.
+    pub fn name(&self) -> &'static str {
+        const NAMES: [&'static str; DescriptorId::COUNT] = [
+        % for descriptor in descriptors:
+            "${descriptor.name}",
+        % endfor
+        ];
+        NAMES[*self as usize]
+    }
+}
+
+/// All descriptor values.
+#[derive(Clone, Debug, Default, ToShmem, PartialEq)]
+pub struct Descriptors {
+    % for descriptor in descriptors:
+    /// The "${descriptor.name}" descriptor value.
+    pub ${descriptor.ident}: Option<${descriptor.type}>,
+    % endfor
+}
+
+impl Descriptors {
+    /// Gets a descriptor in CSS syntax.
+    pub fn get(&self, id: DescriptorId, dest: &mut CssStringWriter) -> fmt::Result {
+        let mut dest = CssWriter::new(dest);
+        match id {
+        % for descriptor in descriptors:
+            DescriptorId::${descriptor.camel_case} => self.${descriptor.ident}.to_css(&mut dest),
+        % endfor
+        }
+    }
+
+    /// Parses a given descriptor. Returns whether the descriptor changed.
+    pub fn set<'i, 't>(&mut self, id: DescriptorId, context: &ParserContext, input: &mut Parser<'i, 't>) -> Result<bool, ParseError<'i>> {
+        use crate::parser::Parse;
+        // DeclarationParser also calls parse_entirely so we’d normally not need to, but in this
+        // case we do because we set the value as a side effect rather than returning it.
+        match id {
+        % for descriptor in descriptors:
+            DescriptorId::${descriptor.camel_case} => {
+                let value = Some(input.parse_entirely(|i| Parse::parse(context, i))?);
+                let change = self.${descriptor.ident} != value;
+                self.${descriptor.ident} = value;
+                Ok(change)
+            },
+        % endfor
+        }
+    }
+
+    /// Removes a descriptor. Returns true if it used to be set.
+    pub fn remove(&mut self, id: DescriptorId) -> bool {
+        match id {
+        % for descriptor in descriptors:
+            DescriptorId::${descriptor.camel_case} => self.${descriptor.ident}.take().is_some(),
+        % endfor
+        }
+    }
+
+    /// Returns the count of set descriptors.
+    pub fn len(&self) -> usize {
+        let mut count = 0;
+        % for descriptor in descriptors:
+        if self.${descriptor.ident}.is_some() {
+            count += 1;
+        }
+        % endfor
+        count
+    }
+
+    /// Returns the descriptor at position `i`.
+    pub fn at(&self, i: usize) -> Option<DescriptorId> {
+        let mut cur = 0;
+        % for descriptor in descriptors:
+        if self.${descriptor.ident}.is_some() {
+            if cur == i {
+                return Some(DescriptorId::${descriptor.camel_case});
+            }
+            cur += 1;
+        }
+        % endfor
+        let _ = cur; // Silences warning on the last descriptor
+        None
+    }
+}
+
+impl ToCss for Descriptors {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        use std::fmt::Write;
+        % for descriptor in descriptors:
+        if let Some(ref value) = self.${descriptor.ident} {
+            dest.write_str("${descriptor.name}: ")?;
+            value.to_css(dest)?;
+            dest.write_str("; ")?;
+        }
+        % endfor
+        Ok(())
+    }
+}
+</%def>
+
+/// Generated code for @font-face descriptors.
+pub mod font_face {
+    use crate::font_face::*;
+${generate_descriptors(data.font_face_descriptors)}
+}
+
+/// Generated code for @counter-style descriptors.
+pub mod counter_style {
+    use crate::counter_style::*;
+${generate_descriptors(data.counter_style_descriptors)}
+}

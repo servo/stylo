@@ -149,8 +149,8 @@ def to_camel_case_lower(ident):
 
 
 # https://drafts.csswg.org/cssom/#css-property-to-idl-attribute
-def to_idl_name(ident):
-    return re.sub("-([a-z])", lambda m: m.group(1).upper(), ident)
+def to_idl_name(name):
+    return re.sub("-([a-z])", lambda m: m.group(1).upper(), name)
 
 
 def parse_aliases(value):
@@ -805,6 +805,15 @@ class StyleStruct(object):
         self.document_dependent = self.gecko_name in ["Font", "Visibility", "Text"]
 
 
+class Descriptor(object):
+    def __init__(self, name, type, gecko_pref=None):
+        self.name = name
+        self.type = type
+        self.gecko_pref = gecko_pref
+        self.ident = to_rust_ident(name)
+        self.camel_case = to_camel_case(name)
+
+
 class PropertiesData(object):
     def __init__(self, engine):
         self.engine = engine
@@ -938,6 +947,9 @@ class PropertiesData(object):
             self.declare_shorthand(name, **args)
         self.declare_all_shorthand()
 
+        self.font_face_descriptors = self._load_descriptors("font_face_descriptors.toml")
+        self.counter_style_descriptors = self._load_descriptors("counter_style_descriptors.toml")
+
 
     def declare_all_shorthand(self):
         # We don't define the 'all' shorthand using the regular helpers:shorthand
@@ -984,6 +996,11 @@ class PropertiesData(object):
             spec="https://drafts.csswg.org/css-cascade-3/#all-shorthand"
         )
 
+
+    def _load_descriptors(self, filename):
+        path = os.path.join(os.path.dirname(__file__), filename)
+        data = toml.loads(open(path).read())
+        return [Descriptor(name, **args) for name, args in data.items()]
 
     def style_struct_by_name_lower(self, name):
         for s in self.style_structs:

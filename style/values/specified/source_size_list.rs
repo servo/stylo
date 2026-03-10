@@ -4,7 +4,7 @@
 
 //! https://html.spec.whatwg.org/multipage/#source-size-list
 
-use crate::media_queries::Device;
+use crate::device::Device;
 use crate::parser::{Parse, ParserContext};
 use crate::queries::{FeatureType, QueryCondition};
 use crate::stylesheets::CustomMediaEvaluator;

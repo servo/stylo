@@ -12,6 +12,7 @@ use crate::context::{CascadeInputs, QuirksMode};
 use crate::custom_properties::ComputedCustomProperties;
 use crate::custom_properties::{parse_name, SpecifiedValue};
 use crate::derives::*;
+use crate::device::Device;
 use crate::dom::TElement;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{ServoStyleSetSizes, StyleRuleInclusion};
@@ -23,7 +24,6 @@ use crate::invalidation::media_queries::{
     EffectiveMediaQueryResults, MediaListKey, ToMediaListKey,
 };
 use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet};
-use crate::media_queries::Device;
 #[cfg(feature = "gecko")]
 use crate::properties::StyleBuilder;
 use crate::properties::{

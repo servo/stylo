@@ -7,7 +7,7 @@
 //! We implement the prefixed `@-moz-document`.
 
 use crate::derives::*;
-use crate::media_queries::Device;
+use crate::device::Device;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};

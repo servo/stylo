@@ -8,7 +8,7 @@ use crate::context::{ElementCascadeInputs, SharedStyleContext, StyleContext};
 use crate::data::{ElementData, ElementStyles, RestyleKind};
 use crate::dom::{NodeInfo, OpaqueNode, TElement, TNode};
 use crate::invalidation::element::restyle_hints::RestyleHint;
-use crate::matching::{ChildRestyleRequirement, MatchMethods};
+use crate::matching::MatchMethods;
 use crate::selector_parser::PseudoElement;
 use crate::sharing::StyleSharingTarget;
 use crate::style_resolver::{PseudoElementResolution, StyleResolverForElement};
@@ -399,8 +399,6 @@ pub fn recalc_style_at<E, D, F>(
     D: DomTraversal<E>,
     F: FnMut(E::ConcreteNode),
 {
-    use std::cmp;
-
     let flags = context.shared.traversal_flags;
     let is_initial_style = !data.has_styles();
 
@@ -422,21 +420,18 @@ pub fn recalc_style_at<E, D, F>(
         data
     );
 
-    let mut child_restyle_requirement = ChildRestyleRequirement::CanSkipCascade;
+    let mut child_restyle_hint = RestyleHint::empty();
 
     // Compute style for this element if necessary.
     if let Some(restyle_kind) = restyle_kind {
-        child_restyle_requirement =
+        child_restyle_hint =
             compute_style(traversal_data, context, element, data, restyle_kind);
 
         if !element.matches_user_and_content_rules() {
             // We must always cascade native anonymous subtrees, since they
             // may have pseudo-elements underneath that would inherit from the
             // closest non-NAC ancestor instead of us.
-            child_restyle_requirement = cmp::max(
-                child_restyle_requirement,
-                ChildRestyleRequirement::MustCascadeChildren,
-            );
+            child_restyle_hint |= RestyleHint::RECASCADE_SELF;
         }
 
         // If we're restyling this element to display:none, throw away all style
@@ -474,27 +469,13 @@ pub fn recalc_style_at<E, D, F>(
         "propagated_hint={:?}, restyle_requirement={:?}, \
          is_display_none={:?}, implementing_pseudo={:?}",
         propagated_hint,
-        child_restyle_requirement,
+        child_restyle_hint,
         data.styles.is_display_none(),
         element.implemented_pseudo_element()
     );
 
     // Integrate the child cascade requirement into the propagated hint.
-    match child_restyle_requirement {
-        ChildRestyleRequirement::CanSkipCascade => {},
-        ChildRestyleRequirement::MustCascadeDescendants => {
-            propagated_hint |= RestyleHint::RECASCADE_SELF | RestyleHint::RECASCADE_DESCENDANTS;
-        },
-        ChildRestyleRequirement::MustCascadeChildrenIfInheritResetStyle => {
-            propagated_hint |= RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE;
-        },
-        ChildRestyleRequirement::MustCascadeChildren => {
-            propagated_hint |= RestyleHint::RECASCADE_SELF;
-        },
-        ChildRestyleRequirement::MustMatchDescendants => {
-            propagated_hint |= RestyleHint::restyle_subtree();
-        },
-    }
+    propagated_hint |= child_restyle_hint;
 
     let has_dirty_descendants_for_this_restyle = if flags.for_animation_only() {
         element.has_animation_only_dirty_descendants()
@@ -558,7 +539,7 @@ fn compute_style<E>(
     element: E,
     data: &mut ElementData,
     kind: RestyleKind,
-) -> ChildRestyleRequirement
+) -> RestyleHint
 where
     E: TElement,
 {

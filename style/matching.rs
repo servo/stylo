@@ -54,31 +54,6 @@ pub enum StyleChange {
     },
 }
 
-/// Whether or not newly computed values for an element need to be cascaded to
-/// children (or children might need to be re-matched, e.g., for container
-/// queries).
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum ChildRestyleRequirement {
-    /// Old and new computed values were the same, or we otherwise know that
-    /// we won't bother recomputing style for children, so we can skip cascading
-    /// the new values into child elements.
-    CanSkipCascade = 0,
-    /// The same as `MustCascadeChildren`, but we only need to actually
-    /// recascade if the child inherits any explicit reset style.
-    MustCascadeChildrenIfInheritResetStyle = 1,
-    /// Old and new computed values were different, so we must cascade the
-    /// new values to children.
-    MustCascadeChildren = 2,
-    /// The same as `MustCascadeChildren`, but for the entire subtree.  This is
-    /// used to handle root font-size updates needing to recascade the whole
-    /// document.
-    MustCascadeDescendants = 3,
-    /// We need to re-match the whole subttree. This is used to handle container
-    /// query relative unit changes for example. Container query size changes
-    /// also trigger re-match, but after layout.
-    MustMatchDescendants = 4,
-}
-
 /// Determines which styles are being cascaded currently.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum CascadeVisitedMode {
@@ -799,7 +774,7 @@ trait PrivateMatchMethods: TElement {
         old_values: &ComputedValues,
         new_values: &ComputedValues,
         pseudo: Option<&PseudoElement>,
-    ) -> ChildRestyleRequirement {
+    ) -> RestyleHint {
         debug!("accumulate_damage_for: {:?}", self);
         debug_assert!(!shared_context
             .traversal_flags
@@ -818,7 +793,7 @@ trait PrivateMatchMethods: TElement {
                 " > flags changed: {:?} != {:?}",
                 old_values.flags, new_values.flags
             );
-            return ChildRestyleRequirement::MustCascadeChildren;
+            return RestyleHint::RECASCADE_SELF;
         }
 
         if old_values.effective_zoom != new_values.effective_zoom {
@@ -827,11 +802,11 @@ trait PrivateMatchMethods: TElement {
                 " > zoom changed: {:?} != {:?}",
                 old_values.effective_zoom, new_values.effective_zoom
             );
-            return ChildRestyleRequirement::MustCascadeChildren;
+            return RestyleHint::RECASCADE_SELF;
         }
 
         match difference.change {
-            StyleChange::Unchanged => return ChildRestyleRequirement::CanSkipCascade,
+            StyleChange::Unchanged => return RestyleHint::empty(),
             StyleChange::Changed {
                 reset_only,
                 _custom_properties_changed,
@@ -839,7 +814,7 @@ trait PrivateMatchMethods: TElement {
                 // If inherited properties changed, the best we can do is
                 // cascade the children.
                 if !reset_only {
-                    return ChildRestyleRequirement::MustCascadeChildren;
+                    return RestyleHint::RECASCADE_SELF;
                 }
             },
         }
@@ -851,26 +826,26 @@ trait PrivateMatchMethods: TElement {
             // If we used to be a display: none element, and no longer are, our
             // children need to be restyled because they're unstyled.
             if old_display == Display::None {
-                return ChildRestyleRequirement::MustCascadeChildren;
+                return RestyleHint::RECASCADE_SELF;
             }
             // Blockification of children may depend on our display value,
             // so we need to actually do the recascade. We could potentially
             // do better, but it doesn't seem worth it.
             if old_display.is_item_container() != new_display.is_item_container() {
-                return ChildRestyleRequirement::MustCascadeChildren;
+                return RestyleHint::RECASCADE_SELF;
             }
             // We may also need to blockify and un-blockify descendants if our
             // display goes from / to display: contents, since the "layout
             // parent style" changes.
             if old_display.is_contents() || new_display.is_contents() {
-                return ChildRestyleRequirement::MustCascadeChildren;
+                return RestyleHint::RECASCADE_SELF;
             }
             // Line break suppression may also be affected if the display
             // type changes from ruby to non-ruby.
             #[cfg(feature = "gecko")]
             {
                 if old_display.is_ruby_type() != new_display.is_ruby_type() {
-                    return ChildRestyleRequirement::MustCascadeChildren;
+                    return RestyleHint::RECASCADE_SELF;
                 }
             }
         }
@@ -892,12 +867,12 @@ trait PrivateMatchMethods: TElement {
             let is_legacy_justify_items = new_justify_items.computed.contains(AlignFlags::LEGACY);
 
             if is_legacy_justify_items != was_legacy_justify_items {
-                return ChildRestyleRequirement::MustCascadeChildren;
+                return RestyleHint::RECASCADE_SELF;
             }
 
             if was_legacy_justify_items && old_justify_items.computed != new_justify_items.computed
             {
-                return ChildRestyleRequirement::MustCascadeChildren;
+                return RestyleHint::RECASCADE_SELF;
             }
         }
 
@@ -906,13 +881,13 @@ trait PrivateMatchMethods: TElement {
             // We may need to set or propagate the CAN_BE_FRAGMENTED bit
             // on our children.
             if old_values.is_multicol() != new_values.is_multicol() {
-                return ChildRestyleRequirement::MustCascadeChildren;
+                return RestyleHint::RECASCADE_SELF;
             }
         }
 
         // We could prove that, if our children don't inherit reset
         // properties, we can stop the cascade.
-        ChildRestyleRequirement::MustCascadeChildrenIfInheritResetStyle
+        RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE
     }
 }
 
@@ -959,9 +934,7 @@ pub trait MatchMethods: TElement {
         data: &mut ElementData,
         mut new_styles: ResolvedElementStyles,
         important_rules_changed: bool,
-    ) -> ChildRestyleRequirement {
-        use std::cmp;
-
+    ) -> RestyleHint {
         self.process_animations(
             context,
             &mut data.styles,
@@ -974,7 +947,7 @@ pub trait MatchMethods: TElement {
 
         let new_primary_style = data.styles.primary.as_ref().unwrap();
 
-        let mut restyle_requirement = ChildRestyleRequirement::CanSkipCascade;
+        let mut child_restyle_hint = RestyleHint::empty();
         let is_root = new_primary_style
             .flags
             .contains(ComputedValueFlags::IS_ROOT_ELEMENT_STYLE);
@@ -1014,7 +987,7 @@ pub trait MatchMethods: TElement {
                     let size = new_font_size.computed_size();
                     device.set_root_font_size(new_primary_style.effective_zoom.unzoom(size.px()));
                     if device.used_root_font_size() {
-                        restyle_requirement = ChildRestyleRequirement::MustCascadeDescendants;
+                        child_restyle_hint |= RestyleHint::recascade_subtree();
                     }
                 }
 
@@ -1026,7 +999,7 @@ pub trait MatchMethods: TElement {
                             .unzoom(new_line_height.px()),
                     );
                     if device.used_root_line_height() {
-                        restyle_requirement = ChildRestyleRequirement::MustCascadeDescendants;
+                        child_restyle_hint |= RestyleHint::recascade_subtree();
                     }
                 }
 
@@ -1034,7 +1007,7 @@ pub trait MatchMethods: TElement {
                 // font metrics can be an expensive call, they are only updated if these
                 // units are used in the document.
                 if device.used_root_font_metrics() && device.update_root_font_metrics() {
-                    restyle_requirement = ChildRestyleRequirement::MustCascadeDescendants;
+                    child_restyle_hint |= RestyleHint::recascade_subtree();
                 }
             }
 
@@ -1048,7 +1021,7 @@ pub trait MatchMethods: TElement {
                 // etc changes (for ex/ch/ic units to work correctly)? We
                 // should probably do the optimization mentioned above if
                 // so.
-                restyle_requirement = ChildRestyleRequirement::MustMatchDescendants;
+                child_restyle_hint |= RestyleHint::restyle_subtree();
             }
         }
 
@@ -1072,13 +1045,13 @@ pub trait MatchMethods: TElement {
             .traversal_flags
             .contains(TraversalFlags::FinalAnimationTraversal)
         {
-            return ChildRestyleRequirement::MustCascadeChildren;
+            return RestyleHint::RECASCADE_SELF;
         }
 
         // Also, don't do anything if there was no style.
         let old_primary_style = match old_styles.primary {
             Some(s) => s,
-            None => return ChildRestyleRequirement::MustCascadeChildren,
+            None => return RestyleHint::RECASCADE_SELF,
         };
 
         let old_container_type = old_primary_style.clone_container_type();
@@ -1087,30 +1060,27 @@ pub trait MatchMethods: TElement {
         {
             // Stopped being a size container. Re-evaluate container queries and units on all our descendants.
             // Changes into and between different size containment is handled in `UpdateContainerQueryStyles`.
-            restyle_requirement = ChildRestyleRequirement::MustMatchDescendants;
+            child_restyle_hint |= RestyleHint::restyle_subtree();
         } else if old_container_type.is_size_container_type()
             && !old_primary_style.is_display_contents()
             && new_primary_style.is_display_contents()
         {
             // Also re-evaluate when a container gets 'display: contents', since size queries will now evaluate to unknown.
             // Other displays like 'inline' will keep generating a box, so they are handled in `UpdateContainerQueryStyles`.
-            restyle_requirement = ChildRestyleRequirement::MustMatchDescendants;
+            child_restyle_hint |= RestyleHint::restyle_subtree();
         }
 
-        restyle_requirement = cmp::max(
-            restyle_requirement,
-            self.accumulate_damage_for(
-                context.shared,
-                &mut data.damage,
-                &old_primary_style,
-                new_primary_style,
-                None,
-            ),
+        child_restyle_hint |= self.accumulate_damage_for(
+            context.shared,
+            &mut data.damage,
+            &old_primary_style,
+            new_primary_style,
+            None,
         );
 
         if data.styles.pseudos.is_empty() && old_styles.pseudos.is_empty() {
             // This is the common case; no need to examine pseudos here.
-            return restyle_requirement;
+            return child_restyle_hint;
         }
 
         let pseudo_styles = old_styles
@@ -1143,13 +1113,13 @@ pub trait MatchMethods: TElement {
                         old.as_ref().map_or(false, |s| pseudo.should_exist(s));
                     if new_pseudo_should_exist != old_pseudo_should_exist {
                         data.damage |= RestyleDamage::reconstruct();
-                        return restyle_requirement;
+                        return child_restyle_hint;
                     }
                 },
             }
         }
 
-        restyle_requirement
+        child_restyle_hint
     }
 
     /// Updates the rule nodes without re-running selector matching, using just

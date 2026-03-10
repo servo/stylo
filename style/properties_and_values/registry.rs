@@ -4,44 +4,12 @@
 
 //! Registered custom properties.
 
-use super::rule::{Inherits, InitialValue, PropertyRuleName};
-use super::syntax::Descriptor;
+use super::rule::{Descriptors, PropertyRuleName};
 use crate::derives::*;
 use crate::selector_map::PrecomputedHashMap;
 use crate::stylesheets::UrlExtraData;
 use crate::Atom;
 use cssparser::SourceLocation;
-
-/// The metadata of a custom property registration that we need to do the cascade properly.
-#[derive(Debug, Clone, MallocSizeOf)]
-pub struct PropertyRegistrationData {
-    /// The syntax of the property.
-    pub syntax: Descriptor,
-    /// Whether the property inherits.
-    pub inherits: Inherits,
-    /// The initial value. Only missing for universal syntax.
-    #[ignore_malloc_size_of = "Arc"]
-    pub initial_value: Option<InitialValue>,
-}
-
-static UNREGISTERED: PropertyRegistrationData = PropertyRegistrationData {
-    syntax: Descriptor::universal(),
-    inherits: Inherits::True,
-    initial_value: None,
-};
-
-impl PropertyRegistrationData {
-    /// The data for an unregistered property.
-    pub fn unregistered() -> &'static Self {
-        &UNREGISTERED
-    }
-
-    /// Returns whether this property inherits.
-    #[inline]
-    pub fn inherits(&self) -> bool {
-        self.inherits == Inherits::True
-    }
-}
 
 /// A computed, already-validated property registration.
 /// <https://drafts.css-houdini.org/css-properties-values-api-1/#custom-property-registration>
@@ -50,21 +18,13 @@ pub struct PropertyRegistration {
     /// The custom property name.
     pub name: PropertyRuleName,
     /// The actual information about the property.
-    pub data: PropertyRegistrationData,
+    pub descriptors: Descriptors,
     /// The url data that is used to parse and compute the registration's initial value. Note that
     /// it's not the url data that should be used to parse other values. Other values should use
     /// the data of the style sheet where they came from.
     pub url_data: UrlExtraData,
     /// The source location of this registration, if it comes from a CSS rule.
     pub source_location: SourceLocation,
-}
-
-impl PropertyRegistration {
-    /// Returns whether this property inherits.
-    #[inline]
-    pub fn inherits(&self) -> bool {
-        self.data.inherits == Inherits::True
-    }
 }
 
 /// The script registry of custom properties.

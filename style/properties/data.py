@@ -806,10 +806,11 @@ class StyleStruct(object):
 
 
 class Descriptor(object):
-    def __init__(self, name, type, gecko_pref=None):
+    def __init__(self, name, type, gecko_pref=None, ignore_malloc_size_of=None):
         self.name = name
         self.type = type
         self.gecko_pref = gecko_pref
+        self.ignore_malloc_size_of = ignore_malloc_size_of
         self.ident = to_rust_ident(name)
         self.camel_case = to_camel_case(name)
 
@@ -949,6 +950,7 @@ class PropertiesData(object):
 
         self.font_face_descriptors = self._load_descriptors("font_face_descriptors.toml")
         self.counter_style_descriptors = self._load_descriptors("counter_style_descriptors.toml")
+        self.property_descriptors = self._load_descriptors("property_descriptors.toml")
 
 
     def declare_all_shorthand(self):

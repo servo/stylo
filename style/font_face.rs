@@ -30,7 +30,7 @@ pub use crate::values::specified::font::{
 
 /// A source for a font-face rule.
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-#[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToShmem)]
 pub enum Source {
     /// A `url()` source.
     Url(UrlSource),
@@ -40,7 +40,7 @@ pub enum Source {
 }
 
 /// A list of sources for the font-face src descriptor.
-#[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToShmem)]
 #[css(comma)]
 pub struct SourceList(#[css(iterable)] pub Vec<Source>);
 
@@ -72,7 +72,7 @@ impl Parse for SourceList {
 
 /// Keywords for the font-face src descriptor's format() function.
 /// ('None' and 'Unknown' are for internal use in gfx, not exposed to CSS.)
-#[derive(Clone, Copy, Debug, Eq, Parse, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, Copy, Debug, Eq, MallocSizeOf, Parse, PartialEq, ToCss, ToShmem)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -92,7 +92,7 @@ pub enum FontFaceSourceFormatKeyword {
 
 /// Flags for the @font-face tech() function, indicating font technologies
 /// required by the resource.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, ToShmem)]
+#[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToShmem)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct FontFaceSourceTechFlags(u16);
@@ -239,7 +239,7 @@ pub enum FontFaceSourceListComponent {
     TechFlags(FontFaceSourceTechFlags),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToShmem)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -253,7 +253,7 @@ pub enum FontFaceSourceFormat {
 ///
 /// <https://drafts.csswg.org/css-fonts/#src-desc>
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
-#[derive(Clone, Debug, Eq, PartialEq, ToShmem)]
+#[derive(Clone, Debug, Eq, MallocSizeOf, PartialEq, ToShmem)]
 pub struct UrlSource {
     /// The specified url.
     pub url: SpecifiedUrl,
@@ -333,7 +333,7 @@ macro_rules! impl_range {
 /// The font-weight descriptor:
 ///
 /// https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-weight
-#[derive(Clone, Debug, PartialEq, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 pub struct FontWeightRange(pub AbsoluteFontWeight, pub AbsoluteFontWeight);
 impl_range!(FontWeightRange, AbsoluteFontWeight);
 
@@ -365,7 +365,7 @@ impl FontWeightRange {
 /// The font-stretch descriptor:
 ///
 /// https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-stretch
-#[derive(Clone, Debug, PartialEq, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 pub struct FontStretchRange(pub SpecifiedFontStretch, pub SpecifiedFontStretch);
 impl_range!(FontStretchRange, SpecifiedFontStretch);
 
@@ -394,7 +394,7 @@ impl FontStretchRange {
 /// The font-style descriptor:
 ///
 /// https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-style
-#[derive(Clone, Debug, PartialEq, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 #[allow(missing_docs)]
 pub enum FontStyle {
     Italic,

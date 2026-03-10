@@ -5,7 +5,7 @@
 //! Parsing for registered custom properties.
 
 use super::{
-    registry::PropertyRegistrationData,
+    rule::Descriptors as PropertyDescriptors,
     syntax::{
         data_type::DataType, Component as SyntaxComponent, ComponentName, Descriptor, Multiplier,
     },
@@ -15,7 +15,6 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties;
 use crate::properties::{CSSWideKeyword, CustomDeclarationValue};
-use crate::properties_and_values::rule::Inherits;
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
 use crate::values::{
     animated::{self, Animate, Procedure},
@@ -302,16 +301,19 @@ impl SpecifiedValue {
     /// property registration.
     pub fn compute<'i, 't>(
         input: &mut CSSParser<'i, 't>,
-        registration: &PropertyRegistrationData,
+        registration: &PropertyDescriptors,
         namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         url_data: &UrlExtraData,
         context: &computed::Context,
         allow_computationally_dependent: AllowComputationallyDependent,
     ) -> Result<ComputedValue, ()> {
-        debug_assert!(!registration.syntax.is_universal(), "Shouldn't be needed");
+        debug_assert!(!registration.is_universal(), "Shouldn't be needed");
+        let Some(ref syntax) = registration.syntax else {
+            return Err(());
+        };
         let Ok(value) = Self::parse(
             input,
-            &registration.syntax,
+            syntax,
             url_data,
             namespaces,
             allow_computationally_dependent,
@@ -644,7 +646,7 @@ impl CustomAnimatedValue {
                     .stylist
                     .unwrap()
                     .get_custom_property_registration(&declaration.name);
-                if registration.syntax.is_universal() {
+                if registration.is_universal() {
                     // FIXME: Do we need to perform substitution here somehow?
                     ComputedValue {
                         v: ValueInner::Universal(Arc::clone(value)),
@@ -679,14 +681,17 @@ impl CustomAnimatedValue {
                         .builder
                         .inherited_custom_properties()
                         .get(registration, &declaration.name),
-                    CSSWideKeyword::Unset => match registration.inherits {
-                        Inherits::False => stylist
-                            .get_custom_property_initial_values()
-                            .get(registration, &declaration.name),
-                        Inherits::True => context
-                            .builder
-                            .inherited_custom_properties()
-                            .get(registration, &declaration.name),
+                    CSSWideKeyword::Unset => {
+                        if registration.inherits() {
+                            context
+                                .builder
+                                .inherited_custom_properties()
+                                .get(registration, &declaration.name)
+                        } else {
+                            stylist
+                                .get_custom_property_initial_values()
+                                .get(registration, &declaration.name)
+                        }
                     },
                     // FIXME(emilio, bug 1533327): I think revert (and
                     // revert-layer) handling is not fine here, but what to

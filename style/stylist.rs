@@ -31,9 +31,9 @@ use crate::properties::{
     PropertyDeclarationBlock,
 };
 use crate::properties_and_values::registry::{
-    PropertyRegistration, PropertyRegistrationData, ScriptRegistry as CustomPropertyScriptRegistry,
+    PropertyRegistration, ScriptRegistry as CustomPropertyScriptRegistry,
 };
-use crate::properties_and_values::rule::{Inherits, PropertyRegistrationError, PropertyRuleName};
+use crate::properties_and_values::rule::{Inherits, PropertyRegistrationError, PropertyRuleName, Descriptors as PropertyDescriptors};
 use crate::properties_and_values::syntax::Descriptor;
 use crate::rule_cache::{RuleCache, RuleCacheConditions};
 use crate::rule_collector::RuleCollector;
@@ -887,16 +887,16 @@ impl Stylist {
 
     /// Returns the custom property registration for this property's name.
     /// https://drafts.css-houdini.org/css-properties-values-api-1/#determining-registration
-    pub fn get_custom_property_registration(&self, name: &Atom) -> &PropertyRegistrationData {
+    pub fn get_custom_property_registration(&self, name: &Atom) -> &PropertyDescriptors {
         if let Some(registration) = self.custom_property_script_registry().get(name) {
-            return &registration.data;
+            return &registration.descriptors;
         }
         for (data, _) in self.iter_origins() {
             if let Some(registration) = data.custom_property_registrations.get(name) {
-                return &registration.data;
+                return &registration.descriptors;
             }
         }
-        PropertyRegistrationData::unregistered()
+        PropertyDescriptors::unregistered()
     }
 
     /// Returns custom properties with their registered initial values.
@@ -927,7 +927,7 @@ impl Stylist {
                 let Ok(value) = v.compute_initial_value(&context) else {
                     continue;
                 };
-                let map = if v.inherits() {
+                let map = if v.descriptors.inherits() {
                     &mut initial_values.inherited
                 } else {
                     &mut initial_values.non_inherited
@@ -941,7 +941,7 @@ impl Stylist {
                         let Ok(value) = last_value.compute_initial_value(&context) else {
                             continue;
                         };
-                        let map = if last_value.inherits() {
+                        let map = if last_value.descriptors.inherits() {
                             &mut initial_values.inherited
                         } else {
                             &mut initial_values.non_inherited
@@ -2097,13 +2097,13 @@ impl Stylist {
 
         let property_registration = PropertyRegistration {
             name: PropertyRuleName(name),
-            data: PropertyRegistrationData {
-                syntax,
-                inherits: if inherits {
+            descriptors: PropertyDescriptors {
+                syntax: Some(syntax),
+                inherits: Some(if inherits {
                     Inherits::True
                 } else {
                     Inherits::False
-                },
+                }),
                 initial_value,
             },
             url_data: url_data.clone(),

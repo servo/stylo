@@ -14,7 +14,7 @@ use crate::custom_properties;
 use crate::derives::*;
 use crate::dom::AttributeTracker;
 use crate::properties::CSSWideKeyword;
-use crate::properties_and_values::registry::PropertyRegistrationData;
+use crate::properties_and_values::rule::Descriptors as PropertyDescriptors;
 use crate::properties_and_values::value::{
     AllowComputationallyDependent, ComputedValue as ComputedRegisteredValue,
     SpecifiedValue as SpecifiedRegisteredValue,
@@ -398,7 +398,7 @@ impl StyleFeaturePlain {
     // and compare against `current_value`.
     fn substitute_and_compare(
         value: &Arc<custom_properties::SpecifiedValue>,
-        registration: &PropertyRegistrationData,
+        registration: &PropertyDescriptors,
         stylist: &Stylist,
         ctx: &computed::Context,
         current_value: Option<&ComputedRegisteredValue>,
@@ -414,7 +414,7 @@ impl StyleFeaturePlain {
             Ok(sub) => sub,
             Err(_) => return current_value.is_none(),
         };
-        if registration.syntax.is_universal() {
+        if registration.is_universal() {
             return match current_value {
                 Some(v) => v.as_universal().is_some_and(|v| v.css == substituted),
                 None => substituted.is_empty(),

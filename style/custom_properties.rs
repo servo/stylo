@@ -15,8 +15,8 @@ use crate::properties::{
     PropertyDeclaration,
 };
 use crate::properties_and_values::{
-    registry::PropertyRegistrationData,
-    syntax::{data_type::DependentDataTypes, Descriptor},
+    rule::Descriptors as PropertyDescriptors,
+    syntax::{data_type::DependentDataTypes, Descriptor as SyntaxDescriptor},
     value::{
         AllowComputationallyDependent, ComputedValue as ComputedRegisteredValue,
         SpecifiedValue as SpecifiedRegisteredValue,
@@ -255,10 +255,10 @@ trivial_to_computed_value!(VariableValue);
 /// Given a potentially registered variable value turn it into a computed custom property value.
 pub fn compute_variable_value(
     value: &Arc<VariableValue>,
-    registration: &PropertyRegistrationData,
+    registration: &PropertyDescriptors,
     computed_context: &computed::Context,
 ) -> Option<ComputedRegisteredValue> {
-    if registration.syntax.is_universal() {
+    if registration.is_universal() {
         return Some(ComputedRegisteredValue::universal(Arc::clone(value)));
     }
     compute_value(&value.css, &value.url_data, registration, computed_context).ok()
@@ -313,7 +313,7 @@ impl ComputedCustomProperties {
     /// map, depending on whether the inherit flag is set or unset.
     pub(crate) fn insert(
         &mut self,
-        registration: &PropertyRegistrationData,
+        registration: &PropertyDescriptors,
         name: &Name,
         value: ComputedRegisteredValue,
     ) {
@@ -322,7 +322,7 @@ impl ComputedCustomProperties {
 
     /// Remove a custom property from the corresponding inherited/non_inherited
     /// map, depending on whether the inherit flag is set or unset.
-    pub(crate) fn remove(&mut self, registration: &PropertyRegistrationData, name: &Name) {
+    pub(crate) fn remove(&mut self, registration: &PropertyDescriptors, name: &Name) {
         self.map_mut(registration).remove(name);
     }
 
@@ -332,7 +332,7 @@ impl ComputedCustomProperties {
         self.non_inherited.shrink_to_fit();
     }
 
-    fn map_mut(&mut self, registration: &PropertyRegistrationData) -> &mut CustomPropertiesMap {
+    fn map_mut(&mut self, registration: &PropertyDescriptors) -> &mut CustomPropertiesMap {
         if registration.inherits() {
             &mut self.inherited
         } else {
@@ -343,7 +343,7 @@ impl ComputedCustomProperties {
     /// Returns the relevant custom property value given a registration.
     pub fn get(
         &self,
-        registration: &PropertyRegistrationData,
+        registration: &PropertyDescriptors,
         name: &Name,
     ) -> Option<&ComputedRegisteredValue> {
         if registration.inherits() {
@@ -479,7 +479,7 @@ enum SubstitutionFunctionKind {
 enum AttributeType {
     None,
     RawString,
-    Type(Descriptor),
+    Type(SyntaxDescriptor),
     Unit(AttrUnit),
 }
 
@@ -1012,7 +1012,9 @@ fn parse_attr_type<'i, 't>(input: &mut Parser<'i, 't>) -> AttributeType {
         .try_parse(|input| {
             Ok(match input.next()? {
                 Token::Function(ref name) if name.eq_ignore_ascii_case("type") => {
-                    AttributeType::Type(input.parse_nested_block(Descriptor::from_css_parser)?)
+                    AttributeType::Type(
+                        input.parse_nested_block(SyntaxDescriptor::from_css_parser)?,
+                    )
                 },
                 Token::Ident(ref ident) => {
                     if ident.eq_ignore_ascii_case("raw-string") {
@@ -1044,15 +1046,16 @@ pub struct CustomPropertiesBuilder<'a, 'b: 'a> {
 }
 
 fn find_non_custom_references(
-    registration: &PropertyRegistrationData,
+    registration: &PropertyDescriptors,
     value: &VariableValue,
     may_have_color_scheme: bool,
     is_root_element: bool,
     include_universal: bool,
 ) -> Option<NonCustomReferences> {
-    let dependent_types = registration.syntax.dependent_types();
+    let syntax = registration.syntax.as_ref()?;
+    let dependent_types = syntax.dependent_types();
     let may_reference_length = dependent_types.intersects(DependentDataTypes::LENGTH)
-        || (include_universal && registration.syntax.is_universal());
+        || (include_universal && syntax.is_universal());
     if may_reference_length {
         let value_dependencies = value.references.non_custom_references(is_root_element);
         if !value_dependencies.is_empty() {
@@ -1279,6 +1282,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                     .get_custom_property_registration(&reference.name);
                 if !registration
                     .syntax
+                    .as_ref()?
                     .dependent_types()
                     .intersects(DependentDataTypes::LENGTH)
                 {
@@ -1351,7 +1355,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                 if let Some(existing_value) = existing_value.as_universal() {
                     return existing_value != value;
                 }
-                if !registration.syntax.is_universal() {
+                if !registration.is_universal() {
                     compute_value(
                         &value.css,
                         &value.url_data,
@@ -1641,7 +1645,7 @@ fn substitute_all(
                 // Nothing to resolve.
                 if !has_dependency {
                     debug_assert!(!value.references.any_env, "Should've been handled earlier");
-                    if !registration.syntax.is_universal() {
+                    if !registration.is_universal() {
                         // We might still need to compute the value if this is not an universal
                         // registration if we thought this had a dependency before but turned out
                         // not to be (due to has_color_scheme, for example). Note that if this was
@@ -1649,6 +1653,8 @@ fn substitute_all(
                         debug_assert!(
                             registration
                                 .syntax
+                                .as_ref()
+                                .unwrap()
                                 .dependent_types()
                                 .intersects(DependentDataTypes::COLOR),
                             "How did an unresolved value get here otherwise?",
@@ -1675,7 +1681,7 @@ fn substitute_all(
                         entry.insert(context.count);
                     },
                 }
-                context.contains_computed_custom_property |= !registration.syntax.is_universal();
+                context.contains_computed_custom_property |= !registration.is_universal();
 
                 // Hold a strong reference to the value so that we don't
                 // need to keep reference to context.map.
@@ -1929,7 +1935,7 @@ fn handle_invalid_at_computed_value_time(
 ) {
     let stylist = computed_context.style().stylist.unwrap();
     let registration = stylist.get_custom_property_registration(&name);
-    if !registration.syntax.is_universal() {
+    if !registration.is_universal() {
         // For the root element, inherited maps are empty. We should just
         // use the initial value if any, rather than removing the name.
         if registration.inherits() && !computed_context.is_root_element() {
@@ -1963,7 +1969,7 @@ fn substitute_references_if_needed_and_apply(
     attribute_tracker: &mut AttributeTracker,
 ) {
     let registration = stylist.get_custom_property_registration(&name);
-    if !value.has_references() && registration.syntax.is_universal() {
+    if !value.has_references() && registration.is_universal() {
         // Trivial path: no references and no need to compute the value, just apply it directly.
         let computed_value = ComputedRegisteredValue::universal(Arc::clone(value));
         custom_properties.insert(registration, name, computed_value);
@@ -2065,10 +2071,10 @@ impl<'a> Substitution<'a> {
     fn into_value(
         self,
         url_data: &UrlExtraData,
-        registration: &PropertyRegistrationData,
+        registration: &PropertyDescriptors,
         computed_context: &computed::Context,
     ) -> Result<ComputedRegisteredValue, ()> {
-        if registration.syntax.is_universal() {
+        if registration.is_universal() {
             return Ok(ComputedRegisteredValue::universal(Arc::new(
                 VariableValue {
                     css: self.css.into_owned(),
@@ -2098,10 +2104,10 @@ impl<'a> Substitution<'a> {
 fn compute_value(
     css: &str,
     url_data: &UrlExtraData,
-    registration: &PropertyRegistrationData,
+    registration: &PropertyDescriptors,
     computed_context: &computed::Context,
 ) -> Result<ComputedRegisteredValue, ()> {
-    debug_assert!(!registration.syntax.is_universal());
+    debug_assert!(!registration.is_universal());
 
     let mut input = ParserInput::new(&css);
     let mut input = Parser::new(&mut input);
@@ -2119,7 +2125,7 @@ fn compute_value(
 /// Removes the named registered custom property and inserts its uncomputed initial value.
 fn remove_and_insert_initial_value(
     name: &Name,
-    registration: &PropertyRegistrationData,
+    registration: &PropertyDescriptors,
     custom_properties: &mut ComputedCustomProperties,
 ) {
     custom_properties.remove(registration, name);

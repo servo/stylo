@@ -244,8 +244,8 @@ impl PseudoElement {
         match *self {
             PseudoElement::After
             | PseudoElement::Before
-            | PseudoElement::Selection
-            | PseudoElement::FirstLetter => PseudoElementCascadeType::Eager,
+            | PseudoElement::FirstLetter
+            | PseudoElement::Selection => PseudoElementCascadeType::Eager,
             PseudoElement::Backdrop
             | PseudoElement::ColorSwatch
             | PseudoElement::DetailsSummary

@@ -53,6 +53,7 @@ pub enum PseudoElement {
     // property_restriction implementation to do property filtering for them.
     // Also, make sure the UA sheet has the !important rules some of the
     // APPLIES_TO_PLACEHOLDER properties expect!
+    FirstLetter,
 
     // Non-eager pseudos.
     Backdrop,
@@ -92,6 +93,7 @@ impl ToCss for PseudoElement {
             After => "::after",
             Before => "::before",
             Selection => "::selection",
+            FirstLetter => "::first-letter",
             Backdrop => "::backdrop",
             DetailsSummary => "::-servo-details-summary",
             DetailsContent => "::details-content",
@@ -115,7 +117,7 @@ impl ::selectors::parser::PseudoElement for PseudoElement {
 }
 
 /// The number of eager pseudo-elements. Keep this in sync with cascade_type.
-pub const EAGER_PSEUDO_COUNT: usize = 3;
+pub const EAGER_PSEUDO_COUNT: usize = 4;
 
 impl PseudoElement {
     /// Gets the canonical index of this eagerly-cascaded pseudo-element.
@@ -184,7 +186,7 @@ impl PseudoElement {
     /// Whether the current pseudo element is :first-letter
     #[inline]
     pub fn is_first_letter(&self) -> bool {
-        false
+        *self == PseudoElement::FirstLetter
     }
 
     /// Whether the current pseudo element is :first-line
@@ -240,9 +242,10 @@ impl PseudoElement {
     #[inline]
     pub fn cascade_type(&self) -> PseudoElementCascadeType {
         match *self {
-            PseudoElement::After | PseudoElement::Before | PseudoElement::Selection => {
-                PseudoElementCascadeType::Eager
-            },
+            PseudoElement::After
+            | PseudoElement::Before
+            | PseudoElement::FirstLetter
+            | PseudoElement::Selection => PseudoElementCascadeType::Eager,
             PseudoElement::Backdrop
             | PseudoElement::ColorSwatch
             | PseudoElement::DetailsSummary
@@ -275,6 +278,7 @@ impl PseudoElement {
     #[inline]
     pub fn property_restriction(&self) -> Option<PropertyFlags> {
         Some(match self {
+            PseudoElement::FirstLetter => PropertyFlags::APPLIES_TO_FIRST_LETTER,
             PseudoElement::Marker if static_prefs::pref!("layout.css.marker.restricted") => {
                 PropertyFlags::APPLIES_TO_MARKER
             },
@@ -661,6 +665,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "after" => After,
             "backdrop" => Backdrop,
             "selection" => Selection,
+            "first-letter" => FirstLetter,
             "marker" => Marker,
             "-servo-details-summary" => {
                 if !self.in_user_agent_stylesheet() {

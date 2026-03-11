@@ -5,7 +5,7 @@
 //! An iterator over a list of rules.
 
 use crate::context::QuirksMode;
-use crate::media_queries::Device;
+use crate::device::Device;
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::stylesheets::{
     CssRule, CssRuleRef, CustomMediaEvaluator, CustomMediaMap, DocumentRule, ImportRule, MediaRule,

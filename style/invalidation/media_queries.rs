@@ -6,7 +6,7 @@
 
 use crate::context::QuirksMode;
 use crate::derives::*;
-use crate::media_queries::Device;
+use crate::device::Device;
 use crate::shared_lock::SharedRwLockReadGuard;
 use crate::stylesheets::{CustomMediaMap, DocumentRule, ImportRule, MediaRule};
 use crate::stylesheets::{NestedRuleIterationCondition, StylesheetContents, SupportsRule};

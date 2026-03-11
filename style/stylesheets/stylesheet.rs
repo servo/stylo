@@ -4,8 +4,9 @@
 
 use crate::context::QuirksMode;
 use crate::derives::*;
+use crate::device::Device;
 use crate::error_reporting::{ContextualParseError, ParseErrorReporter};
-use crate::media_queries::{Device, MediaList};
+use crate::media_queries::MediaList;
 use crate::parser::ParserContext;
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard};

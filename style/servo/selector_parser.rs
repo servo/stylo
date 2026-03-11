@@ -31,6 +31,7 @@ use std::fmt;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 use style_traits::{ParseError, StyleParseErrorKind};
+use crate::selector_parser::PseudoElement::{Backdrop, ColorSwatch, DetailsContent, DetailsSummary, Marker, Placeholder};
 
 /// A pseudo-element, both public and private.
 ///
@@ -91,14 +92,14 @@ impl ToCss for PseudoElement {
         use self::PseudoElement::*;
         dest.write_str(match *self {
             After => "::after",
-            Before => "::before",
-            Selection => "::selection",
             Backdrop => "::backdrop",
-            DetailsSummary => "::-servo-details-summary",
-            DetailsContent => "::details-content",
-            Marker => "::marker",
+            Before => "::before",
             ColorSwatch => "::color-swatch",
+            DetailsContent => "::details-content",
+            DetailsSummary => "::-servo-details-summary",
+            Marker => "::marker",
             Placeholder => "::placeholder",
+            Selection => "::selection",
             ServoPickerIcon => "::-servo-picker-icon",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
@@ -660,11 +661,14 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     ) -> Result<PseudoElement, ParseError<'i>> {
         use self::PseudoElement::*;
         let pseudo_element = match_ignore_ascii_case! { &name,
-            "before" => Before,
             "after" => After,
+            "before" => Before,
             "backdrop" => Backdrop,
-            "selection" => Selection,
+            "color-swatch" => ColorSwatch,
+            "details-content" => DetailsContent,
             "marker" => Marker,
+            "placeholder" => Placeholder,
+            "selection" => Selection,
             "-servo-details-summary" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
@@ -677,9 +681,6 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 ServoPickerIcon
             },
-            "details-content" => DetailsContent,
-            "color-swatch" => ColorSwatch,
-            "placeholder" => Placeholder,
             "-servo-text-control-inner-container" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))

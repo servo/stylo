@@ -31,7 +31,6 @@ use std::fmt;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 use style_traits::{ParseError, StyleParseErrorKind};
-use crate::selector_parser::PseudoElement::{Backdrop, ColorSwatch, DetailsContent, DetailsSummary, Marker, Placeholder};
 
 /// A pseudo-element, both public and private.
 ///

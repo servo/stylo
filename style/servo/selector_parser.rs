@@ -278,11 +278,11 @@ impl PseudoElement {
     #[inline]
     pub fn property_restriction(&self) -> Option<PropertyFlags> {
         Some(match self {
+            PseudoElement::FirstLetter => PropertyFlags::APPLIES_TO_FIRST_LETTER,
             PseudoElement::Marker if static_prefs::pref!("layout.css.marker.restricted") => {
                 PropertyFlags::APPLIES_TO_MARKER
             },
             PseudoElement::Placeholder => PropertyFlags::APPLIES_TO_PLACEHOLDER,
-            PseudoElement::FirstLetter => PropertyFlags::APPLIES_TO_FIRST_LETTER,
             _ => return None,
         })
     }

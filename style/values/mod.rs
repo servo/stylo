@@ -18,8 +18,10 @@ use precomputed_hash::PrecomputedHash;
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Debug, Write};
 use style_traits::{
-    CssString, CssWriter, NumericValue, ParseError, StyleParseErrorKind, ToCss, UnitValue,
+    CssString, CssWriter, MathSum, NumericValue, ParseError, StyleParseErrorKind, ToCss,
+    TypedValue, UnitValue,
 };
+use thin_vec::ThinVec;
 use to_shmem::impl_trivial_to_shmem;
 
 #[cfg(feature = "gecko")]
@@ -103,12 +105,21 @@ where
     serialize_specified_dimension(v, "", was_calc, dest)
 }
 
-/// Reify a value into number numeric value.
-pub fn reify_number(v: f32) -> NumericValue {
-    NumericValue::Unit(UnitValue {
+/// Reify a number with calc.
+pub fn reify_number(v: f32, was_calc: bool) -> Option<TypedValue> {
+    let numeric_value = NumericValue::Unit(UnitValue {
         value: v,
         unit: CssString::from("number"),
-    })
+    });
+
+    // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-math-expression
+    if was_calc {
+        Some(TypedValue::Numeric(NumericValue::Sum(MathSum {
+            values: ThinVec::from([numeric_value]),
+        })))
+    } else {
+        Some(TypedValue::Numeric(numeric_value))
+    }
 }
 
 /// Serialize a specified dimension with unit, calc, and NaN/infinity handling (if enabled)
@@ -459,12 +470,21 @@ where
     dest.write_char('%')
 }
 
-/// Reify a value into percentage numeric value.
-pub fn reify_percentage(value: CSSFloat) -> NumericValue {
-    NumericValue::Unit(UnitValue {
+/// Reify a percentage with calc.
+pub fn reify_percentage(value: CSSFloat, was_calc: bool) -> Option<TypedValue> {
+    let numeric_value = NumericValue::Unit(UnitValue {
         value: value * 100.,
         unit: CssString::from("percent"),
-    })
+    });
+
+    // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-math-expression
+    if was_calc {
+        Some(TypedValue::Numeric(NumericValue::Sum(MathSum {
+            values: ThinVec::from([numeric_value]),
+        })))
+    } else {
+        Some(TypedValue::Numeric(numeric_value))
+    }
 }
 
 /// Convenience void type to disable some properties and values through types.

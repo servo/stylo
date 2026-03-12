@@ -113,7 +113,7 @@ impl ToCss for Percentage {
 
 impl ToTyped for Percentage {
     fn to_typed(&self) -> Option<TypedValue> {
-        Some(TypedValue::Numeric(reify_percentage(self.0)))
+        reify_percentage(self.0, /* was_calc = */ false)
     }
 }
 

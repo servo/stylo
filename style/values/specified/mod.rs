@@ -26,10 +26,8 @@ use std::fmt::{self, Write};
 use std::ops::Add;
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{
-    CssWriter, MathSum, NumericValue, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
-    ToTyped, TypedValue,
+    CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
 };
-use thin_vec::ThinVec;
 
 pub use self::align::{ContentDistribution, ItemPlacement, JustifyItems, SelfAlignment};
 pub use self::angle::{AllowUnitlessZeroAngle, Angle};
@@ -383,16 +381,7 @@ impl ToCss for Number {
 
 impl ToTyped for Number {
     fn to_typed(&self) -> Option<TypedValue> {
-        let numeric_value = reify_number(self.value);
-
-        // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-math-expression
-        if self.calc_clamping_mode.is_some() {
-            Some(TypedValue::Numeric(NumericValue::Sum(MathSum {
-                values: ThinVec::from([numeric_value]),
-            })))
-        } else {
-            Some(TypedValue::Numeric(numeric_value))
-        }
+        reify_number(self.value, self.calc_clamping_mode.is_some())
     }
 }
 

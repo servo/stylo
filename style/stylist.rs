@@ -33,11 +33,13 @@ use crate::properties::{
 use crate::properties_and_values::registry::{
     PropertyRegistration, ScriptRegistry as CustomPropertyScriptRegistry,
 };
-use crate::properties_and_values::rule::{Inherits, PropertyRegistrationError, PropertyRuleName, Descriptors as PropertyDescriptors};
+use crate::properties_and_values::rule::{
+    Descriptors as PropertyDescriptors, Inherits, PropertyRegistrationError, PropertyRuleName,
+};
 use crate::properties_and_values::syntax::Descriptor;
 use crate::rule_cache::{RuleCache, RuleCacheConditions};
 use crate::rule_collector::RuleCollector;
-use crate::rule_tree::{CascadeLevel, RuleTree, StrongRuleNode, StyleSource};
+use crate::rule_tree::{CascadeLevel, CascadeOrigin, RuleTree, StrongRuleNode, StyleSource};
 use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet, SelectorMap, SelectorMapEntry};
 use crate::selector_parser::{NonTSPseudoClass, PerPseudoElementMap, PseudoElement, SelectorImpl};
 use crate::shared_lock::{Locked, SharedRwLockReadGuard, StylesheetGuards};
@@ -1411,7 +1413,7 @@ impl Stylist {
             let mut important_rules_changed = false;
             if let Some(fallback_block) = fallback_block {
                 let new_rules = self.rule_tree.update_rule_at_level(
-                    CascadeLevel::PositionFallback,
+                    CascadeLevel::new(CascadeOrigin::PositionFallback),
                     LayerOrder::root(),
                     Some(fallback_block.borrow_arc()),
                     rules,
@@ -2109,7 +2111,8 @@ impl Stylist {
             url_data: url_data.clone(),
             source_location: SourceLocation { line: 0, column: 0 },
         };
-        self.custom_property_script_registry_mut().register(property_registration);
+        self.custom_property_script_registry_mut()
+            .register(property_registration);
         self.rebuild_initial_values_for_custom_properties();
 
         SuccessfullyRegistered
@@ -2234,8 +2237,8 @@ impl PageRuleMap {
         pseudos: PagePseudoClassFlags,
     ) {
         let level = match origin {
-            Origin::UserAgent => CascadeLevel::UANormal,
-            Origin::User => CascadeLevel::UserNormal,
+            Origin::UserAgent => CascadeLevel::new(CascadeOrigin::UA),
+            Origin::User => CascadeLevel::new(CascadeOrigin::User),
             Origin::Author => CascadeLevel::same_tree_author_normal(),
         };
         let cascade_data = cascade_data.borrow_for_origin(origin);
@@ -3791,7 +3794,7 @@ impl CascadeData {
                         .push(ApplicableDeclarationBlock::new(
                             StyleSource::from_declarations(declarations.clone()),
                             self.rules_source_order,
-                            CascadeLevel::UANormal,
+                            CascadeLevel::new(CascadeOrigin::UA),
                             selector.specificity(),
                             LayerOrder::root(),
                             ScopeProximity::infinity(),

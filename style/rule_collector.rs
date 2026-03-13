@@ -7,7 +7,7 @@
 use crate::applicable_declarations::{ApplicableDeclarationBlock, ApplicableDeclarationList};
 use crate::dom::{TElement, TNode, TShadowRoot};
 use crate::properties::{AnimationDeclarations, PropertyDeclarationBlock};
-use crate::rule_tree::{CascadeLevel, ShadowCascadeOrder};
+use crate::rule_tree::{CascadeLevel, CascadeOrigin, ShadowCascadeOrder};
 use crate::selector_map::SelectorMap;
 use crate::selector_parser::PseudoElement;
 use crate::shared_lock::Locked;
@@ -143,8 +143,8 @@ where
 
     fn collect_stylist_rules(&mut self, origin: Origin) {
         let cascade_level = match origin {
-            Origin::UserAgent => CascadeLevel::UANormal,
-            Origin::User => CascadeLevel::UserNormal,
+            Origin::UserAgent => CascadeLevel::new(CascadeOrigin::UA),
+            Origin::User => CascadeLevel::new(CascadeOrigin::User),
             Origin::Author => CascadeLevel::same_tree_author_normal(),
         };
 
@@ -179,7 +179,7 @@ where
             .synthesize_view_transition_dynamic_rules(self.rules);
         if cfg!(debug_assertions) && self.rules.len() != len_before_vt_rules {
             for declaration in &self.rules[len_before_vt_rules..] {
-                assert_eq!(declaration.level(), CascadeLevel::UANormal);
+                assert_eq!(declaration.level(), CascadeLevel::new(CascadeOrigin::UA));
             }
         }
     }
@@ -209,7 +209,10 @@ where
             );
         if cfg!(debug_assertions) && self.rules.len() != length_before_preshints {
             for declaration in &self.rules[length_before_preshints..] {
-                assert_eq!(declaration.level(), CascadeLevel::PresHints);
+                assert_eq!(
+                    declaration.level(),
+                    CascadeLevel::new(CascadeOrigin::PresHints)
+                );
             }
         }
     }
@@ -287,9 +290,7 @@ where
             };
 
             self.in_shadow_tree(shadow.host(), |collector| {
-                let cascade_level = CascadeLevel::AuthorNormal {
-                    shadow_cascade_order,
-                };
+                let cascade_level = CascadeLevel::author_normal(shadow_cascade_order);
                 collector.collect_rules_in_map(slotted_rules, cascade_level, data);
             });
         }
@@ -357,9 +358,7 @@ where
 
         let rule_hash_target = self.rule_hash_target;
         self.in_shadow_tree(rule_hash_target, |collector| {
-            let cascade_level = CascadeLevel::AuthorNormal {
-                shadow_cascade_order,
-            };
+            let cascade_level = CascadeLevel::author_normal(shadow_cascade_order);
             debug_assert!(!collector.context.featureless(), "How?");
             collector.context.featureless = true;
             collector.collect_rules_in_map(host_rules, cascade_level, style_data);
@@ -409,9 +408,7 @@ where
             if let Some(cascade_data) = cascade_data {
                 if let Some(part_rules) = cascade_data.part_rules(&self.pseudo_elements) {
                     let containing_host = outer_shadow.map(|s| s.host());
-                    let cascade_level = CascadeLevel::AuthorNormal {
-                        shadow_cascade_order,
-                    };
+                    let cascade_level = CascadeLevel::author_normal(shadow_cascade_order);
                     self.in_tree(containing_host, |collector| {
                         for p in &parts {
                             if let Some(part_rules) = part_rules.get(&p.0) {
@@ -458,7 +455,7 @@ where
             self.rules
                 .push(ApplicableDeclarationBlock::from_declarations(
                     so.clone_arc(),
-                    CascadeLevel::SMILOverride,
+                    CascadeLevel::new(CascadeOrigin::SMILOverride),
                     LayerOrder::root(),
                 ));
         }
@@ -470,7 +467,7 @@ where
             self.rules
                 .push(ApplicableDeclarationBlock::from_declarations(
                     anim,
-                    CascadeLevel::Animations,
+                    CascadeLevel::new(CascadeOrigin::Animations),
                     LayerOrder::root(),
                 ));
         }
@@ -481,7 +478,7 @@ where
             self.rules
                 .push(ApplicableDeclarationBlock::from_declarations(
                     anim,
-                    CascadeLevel::Transitions,
+                    CascadeLevel::new(CascadeOrigin::Transitions),
                     LayerOrder::root(),
                 ));
         }

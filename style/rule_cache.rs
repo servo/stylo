@@ -138,12 +138,12 @@ impl RuleCache {
         guards: &StylesheetGuards,
         mut rule_node: Option<&'r StrongRuleNode>,
     ) -> Option<&'r StrongRuleNode> {
-        use crate::rule_tree::CascadeLevel;
+        use crate::rule_tree::CascadeOrigin;
         while let Some(node) = rule_node {
             let priority = node.cascade_priority();
             let cascade_level = priority.cascade_level();
             let should_try_to_skip = cascade_level.is_animation()
-                || matches!(cascade_level, CascadeLevel::PresHints)
+                || cascade_level.origin() == CascadeOrigin::PresHints
                 || priority.layer_order().is_style_attribute_layer();
             if !should_try_to_skip {
                 break;

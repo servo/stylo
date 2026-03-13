@@ -15,17 +15,17 @@ use crate::dom::{AttributeTracker, TElement};
 use crate::font_metrics::FontMetricsOrientation;
 use crate::logical_geometry::WritingMode;
 use crate::properties::{
-    property_counts, CSSWideKeyword, ComputedValues, DeclarationImportanceIterator, Importance,
-    LonghandId, LonghandIdSet, PrioritaryPropertyId, PropertyDeclaration, PropertyDeclarationId,
-    PropertyFlags, ShorthandsWithPropertyReferencesCache, StyleBuilder, CASCADE_PROPERTY,
+    property_counts, CSSWideKeyword, ComputedValues, DeclarationImportanceIterator, LonghandId,
+    LonghandIdSet, PrioritaryPropertyId, PropertyDeclaration, PropertyDeclarationId, PropertyFlags,
+    ShorthandsWithPropertyReferencesCache, StyleBuilder, CASCADE_PROPERTY,
 };
 use crate::rule_cache::{RuleCache, RuleCacheConditions};
-use crate::rule_tree::{CascadeLevel, StrongRuleNode};
+use crate::rule_tree::{CascadeLevel, CascadeOrigin, StrongRuleNode};
 use crate::selector_parser::PseudoElement;
 use crate::shared_lock::StylesheetGuards;
 use crate::style_adjuster::StyleAdjuster;
 use crate::stylesheets::container_rule::ContainerSizeQuery;
-use crate::stylesheets::{layer_rule::LayerOrder, Origin};
+use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::Stylist;
 #[cfg(feature = "gecko")]
 use crate::values::specified::length::FontBaseSize;
@@ -106,8 +106,6 @@ struct DeclarationIterator<'a> {
     current_rule_node: Option<&'a StrongRuleNode>,
     // Per rule state.
     declarations: DeclarationImportanceIterator<'a>,
-    origin: Origin,
-    importance: Importance,
     priority: CascadePriority,
 }
 
@@ -122,9 +120,10 @@ impl<'a> DeclarationIterator<'a> {
         let mut iter = Self {
             guards,
             current_rule_node: Some(rule_node),
-            origin: Origin::UserAgent,
-            importance: Importance::Normal,
-            priority: CascadePriority::new(CascadeLevel::UANormal, LayerOrder::root()),
+            priority: CascadePriority::new(
+                CascadeLevel::new(CascadeOrigin::UA),
+                LayerOrder::root(),
+            ),
             declarations: DeclarationImportanceIterator::default(),
             restriction,
         };
@@ -134,13 +133,7 @@ impl<'a> DeclarationIterator<'a> {
 
     fn update_for_node(&mut self, node: &'a StrongRuleNode) {
         self.priority = node.cascade_priority();
-        let level = self.priority.cascade_level();
-        self.origin = level.origin();
-        self.importance = level.importance();
-        let guard = match self.origin {
-            Origin::Author => self.guards.author,
-            Origin::User | Origin::UserAgent => self.guards.ua_or_user,
-        };
+        let guard = self.priority.cascade_level().origin().guard(&self.guards);
         self.declarations = match node.style_source() {
             Some(source) => source.read(guard).declaration_importance_iter(),
             None => DeclarationImportanceIterator::default(),
@@ -155,7 +148,7 @@ impl<'a> Iterator for DeclarationIterator<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some((decl, importance)) = self.declarations.next_back() {
-                if self.importance != importance {
+                if self.priority.cascade_level().is_important() != importance.important() {
                     continue;
                 }
 
@@ -165,7 +158,9 @@ impl<'a> Iterator for DeclarationIterator<'a> {
                     // longhands are only allowed if they have our
                     // restriction flag set.
                     if let PropertyDeclarationId::Longhand(id) = decl.id() {
-                        if !id.flags().contains(restriction) && self.origin != Origin::UserAgent {
+                        if !id.flags().contains(restriction)
+                            && self.priority.cascade_level().origin() != CascadeOrigin::UA
+                        {
                             continue;
                         }
                     }
@@ -438,7 +433,7 @@ type DeclarationsToApplyUnlessOverriden = SmallVec<[PropertyDeclaration; 2]>;
 fn tweak_when_ignoring_colors(
     context: &computed::Context,
     longhand_id: LonghandId,
-    origin: Origin,
+    origin: CascadeOrigin,
     declaration: &mut Cow<PropertyDeclaration>,
     declarations_to_apply_unless_overridden: &mut DeclarationsToApplyUnlessOverriden,
 ) {
@@ -449,7 +444,7 @@ fn tweak_when_ignoring_colors(
         return;
     }
 
-    let is_ua_or_user_rule = matches!(origin, Origin::User | Origin::UserAgent);
+    let is_ua_or_user_rule = matches!(origin, CascadeOrigin::User | CascadeOrigin::UA);
     if is_ua_or_user_rule {
         return;
     }
@@ -1007,7 +1002,7 @@ impl<'b> Cascade<'b> {
         };
 
         self.seen.insert(longhand_id);
-        if origin == Origin::Author {
+        if origin.is_author_origin() {
             self.author_specified.insert(longhand_id);
         }
 

@@ -61,6 +61,7 @@ use crate::properties::{
     PropertyDeclarationBlock, PropertyDeclarationId, PropertyDeclarationIdSet,
 };
 use crate::rule_tree::CascadeLevel as ServoCascadeLevel;
+use crate::rule_tree::CascadeOrigin as ServoCascadeOrigin;
 use crate::selector_parser::{AttrValue, Lang};
 use crate::shared_lock::{Locked, SharedRwLock};
 use crate::string_cache::{Atom, Namespace, WeakAtom, WeakNamespace};
@@ -1637,7 +1638,7 @@ impl<'le> TElement for GeckoElement<'le> {
         if let Some(decl) = declarations {
             rules.push(ApplicableDeclarationBlock::from_declarations(
                 unsafe { Arc::from_raw_addrefed(decl) },
-                ServoCascadeLevel::UANormal,
+                ServoCascadeLevel::new(ServoCascadeOrigin::UA),
                 LayerOrder::root(),
             ));
         }
@@ -1665,7 +1666,7 @@ impl<'le> TElement for GeckoElement<'le> {
             let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
             ApplicableDeclarationBlock::from_declarations(
                 arc,
-                ServoCascadeLevel::PresHints,
+                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                 LayerOrder::root(),
             )
         });
@@ -1678,7 +1679,7 @@ impl<'le> TElement for GeckoElement<'le> {
             let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
             ApplicableDeclarationBlock::from_declarations(
                 arc,
-                ServoCascadeLevel::PresHints,
+                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                 LayerOrder::root(),
             )
         });
@@ -1692,7 +1693,7 @@ impl<'le> TElement for GeckoElement<'le> {
                 let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
                 ApplicableDeclarationBlock::from_declarations(
                     arc,
-                    ServoCascadeLevel::PresHints,
+                    ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                     LayerOrder::root(),
                 )
             });
@@ -1716,7 +1717,7 @@ impl<'le> TElement for GeckoElement<'le> {
         if let Some(decl) = declarations {
             hints.push(ApplicableDeclarationBlock::from_declarations(
                 unsafe { Arc::from_raw_addrefed(decl) },
-                ServoCascadeLevel::PresHints,
+                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                 LayerOrder::root(),
             ));
         }
@@ -1724,7 +1725,7 @@ impl<'le> TElement for GeckoElement<'le> {
         if let Some(decl) = declarations {
             hints.push(ApplicableDeclarationBlock::from_declarations(
                 unsafe { Arc::from_raw_addrefed(decl) },
-                ServoCascadeLevel::PresHints,
+                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                 LayerOrder::root(),
             ));
         }
@@ -1750,7 +1751,7 @@ impl<'le> TElement for GeckoElement<'le> {
             if let Some(decl) = declarations {
                 hints.push(ApplicableDeclarationBlock::from_declarations(
                     unsafe { Arc::from_raw_addrefed(decl) },
-                    ServoCascadeLevel::PresHints,
+                    ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                     LayerOrder::root(),
                 ));
             }
@@ -1764,7 +1765,7 @@ impl<'le> TElement for GeckoElement<'le> {
                 if let Some(decl) = declarations {
                     hints.push(ApplicableDeclarationBlock::from_declarations(
                         unsafe { Arc::from_raw_addrefed(decl) },
-                        ServoCascadeLevel::PresHints,
+                        ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                         LayerOrder::root(),
                     ));
                 }
@@ -1786,7 +1787,7 @@ impl<'le> TElement for GeckoElement<'le> {
             let arc = Arc::new(global_style_data.shared_lock.wrap(pdb));
             hints.push(ApplicableDeclarationBlock::from_declarations(
                 arc,
-                ServoCascadeLevel::PresHints,
+                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                 LayerOrder::root(),
             ))
         }

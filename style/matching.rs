@@ -20,7 +20,7 @@ use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::ComputedValues;
 use crate::properties::PropertyDeclarationBlock;
-use crate::rule_tree::{CascadeLevel, StrongRuleNode};
+use crate::rule_tree::{CascadeLevel, CascadeOrigin, StrongRuleNode};
 use crate::selector_parser::{PseudoElement, RestyleDamage};
 use crate::shared_lock::Locked;
 use crate::style_resolver::StyleResolverForElement;
@@ -152,7 +152,7 @@ trait PrivateMatchMethods: TElement {
             if replacements.contains(RestyleHint::RESTYLE_SMIL) {
                 Self::replace_single_rule_node(
                     context.shared,
-                    CascadeLevel::SMILOverride,
+                    CascadeLevel::new(CascadeOrigin::SMILOverride),
                     LayerOrder::root(),
                     self.smil_override(),
                     primary_rules,
@@ -162,7 +162,7 @@ trait PrivateMatchMethods: TElement {
             if replacements.contains(RestyleHint::RESTYLE_CSS_TRANSITIONS) {
                 Self::replace_single_rule_node(
                     context.shared,
-                    CascadeLevel::Transitions,
+                    CascadeLevel::new(CascadeOrigin::Transitions),
                     LayerOrder::root(),
                     self.transition_rule(&context.shared)
                         .as_ref()
@@ -174,7 +174,7 @@ trait PrivateMatchMethods: TElement {
             if replacements.contains(RestyleHint::RESTYLE_CSS_ANIMATIONS) {
                 Self::replace_single_rule_node(
                     context.shared,
-                    CascadeLevel::Animations,
+                    CascadeLevel::new(CascadeOrigin::Animations),
                     LayerOrder::root(),
                     self.animation_rule(&context.shared)
                         .as_ref()
@@ -549,14 +549,14 @@ trait PrivateMatchMethods: TElement {
             );
             Self::replace_single_rule_node(
                 &context.shared,
-                CascadeLevel::Transitions,
+                CascadeLevel::new(CascadeOrigin::Transitions),
                 LayerOrder::root(),
                 declarations.transitions.as_ref().map(|a| a.borrow_arc()),
                 &mut rule_node,
             );
             Self::replace_single_rule_node(
                 &context.shared,
-                CascadeLevel::Animations,
+                CascadeLevel::new(CascadeOrigin::Animations),
                 LayerOrder::root(),
                 declarations.animations.as_ref().map(|a| a.borrow_arc()),
                 &mut rule_node,
@@ -636,14 +636,14 @@ trait PrivateMatchMethods: TElement {
         let mut rule_node = style.rules().clone();
         Self::replace_single_rule_node(
             &context.shared,
-            CascadeLevel::Transitions,
+            CascadeLevel::new(CascadeOrigin::Transitions),
             LayerOrder::root(),
             declarations.transitions.as_ref().map(|a| a.borrow_arc()),
             &mut rule_node,
         );
         Self::replace_single_rule_node(
             &context.shared,
-            CascadeLevel::Animations,
+            CascadeLevel::new(CascadeOrigin::Animations),
             LayerOrder::root(),
             declarations.animations.as_ref().map(|a| a.borrow_arc()),
             &mut rule_node,

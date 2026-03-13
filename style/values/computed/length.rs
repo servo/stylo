@@ -29,6 +29,7 @@ use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use style_traits::{
     CSSPixel, CssString, CssWriter, NumericValue, ToCss, ToTyped, TypedValue, UnitValue,
 };
+use thin_vec::ThinVec;
 
 pub use super::image::Image;
 pub use super::length_percentage::{LengthPercentage, NonNegativeLengthPercentage};
@@ -340,11 +341,12 @@ impl ToCss for CSSPixelLength {
 }
 
 impl ToTyped for CSSPixelLength {
-    fn to_typed(&self) -> Option<TypedValue> {
-        Some(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
             value: self.0 as f32,
             unit: CssString::from("px"),
-        })))
+        })));
+        Ok(())
     }
 }
 

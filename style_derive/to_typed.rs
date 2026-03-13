@@ -24,20 +24,20 @@ use synstructure::{BindingInfo, Structure};
 ///     `match` implementation where unit variants are reified as
 ///     `TypedValue::Keyword`, and fielded variants may be reified by calling
 ///     `.to_typed()` on their inner values when the `derive_fields` attribute
-///     is enabled. Otherwise, those variants return `None`.
+///     is enabled. Otherwise, those variants return `Err(())`.
 ///
 /// * Structs
 ///   * Structs are handled similarly to data-carrying variants in mixed enums.
 ///     When `derive_fields` is enabled and the type is not marked as a
 ///     bitflags type, `.to_typed()` may be generated for their inner value;
-///     otherwise, they return `None`.
+///     otherwise, they return `Err(())`.
 ///
 /// Unit variants are mapped to keywords using their Rust identifier converted
 /// via `to_css_identifier`. Attributes like `#[css(keyword = "...")]` will
 /// override the behavior and use the provided keyword instead.
 ///
 /// For other kinds of types (e.g. unions), no `to_typed` method is generated;
-/// the default implementation applies, which always returns `None`.
+/// the default implementation applies, which always returns `Err(())`.
 ///
 /// This allows keywords to be reified automatically into `CSSKeywordValue`
 /// objects, while leaving more complex value types to be implemented
@@ -68,23 +68,24 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
                 // generating a full match. This avoids code bloat while
                 // producing the same runtime behavior.
                 quote! {
-                    fn to_typed(&self) -> Option<style_traits::TypedValue> {
+                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<style_traits::TypedValue>) -> Result<(), ()> {
                       let s = style_traits::ToCss::to_css_cssstring(self);
-                      Some(style_traits::TypedValue::Keyword(style_traits::KeywordValue(s)))
+                      dest.push(style_traits::TypedValue::Keyword(style_traits::KeywordValue(s)));
+                      Ok(())
                     }
                 }
             } else {
                 // Mixed enums: generate a `match` where unit variants map to
-                // `TypedValue::Keyword` and all other variants return `None`.
-                // This is more verbose in code size, but allows selective
-                // handling of individual variants.
+                // `TypedValue::Keyword` and all other variants return
+                // `Err(())`. This is more verbose in code size, but allows
+                // selective handling of individual variants.
                 let s = Structure::new(&input);
                 let match_body = s.each_variant(|variant| {
                     derive_variant_arm(variant, input_attrs.derive_fields, &mut where_clause)
                 });
 
                 quote! {
-                    fn to_typed(&self) -> Option<style_traits::TypedValue> {
+                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<style_traits::TypedValue>) -> Result<(), ()> {
                         match *self {
                             #match_body
                         }
@@ -102,7 +103,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
                 });
 
                 quote! {
-                    fn to_typed(&self) -> Option<style_traits::TypedValue> {
+                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<style_traits::TypedValue>) -> Result<(), ()> {
                         match *self {
                             #match_body
                         }
@@ -114,7 +115,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
         },
 
         // Otherwise, don’t emit any `to_typed` method body. The default
-        // implementation (returning `None`) will apply.
+        // implementation (returning `Err(())`) will apply.
         _ => quote! {},
     };
 
@@ -140,9 +141,9 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
 ///   identifier converted with `cg::to_css_identifier` or a custom keyword if
 ///   provided through `#[css(keyword = "...")]`.
 /// * Variants marked with `#[css(skip)]` or `#[typed_value(skip)]` or
-///   `#[typed(todo)]` return `None`.
+///   `#[typed(todo)]` return `Err(())`.
 /// * Variants with fields delegate to `derive_variant_fields_expr()` when
-///   `derive_fields` is enabled; otherwise they return `None`.
+///   `derive_fields` is enabled; otherwise they return `Err(())`.
 ///
 /// Note: `#[css(keyword = "...")]` overrides are now recognized in this
 /// `derive_variant_arm` path, but the support is not yet exercised because we
@@ -167,16 +168,16 @@ fn derive_variant_arm(
     let variant_attrs = cg::parse_variant_attrs_from_ast::<TypedValueVariantAttrs>(&ast);
 
     // If the variant is explicitly marked #[css(skip)], don’t generate
-    // anything for it, always return None.
+    // anything for it, always return Err(()).
     if css_variant_attrs.skip {
-        return quote!(None);
+        return quote! {Err(())};
     }
 
     // If the variant is explicitly marked #[typed_value(skip)] or
     // #[typed_value(todo)], don’t generate anything for it, always return
-    // None.
+    // Err(()).
     if variant_attrs.skip || variant_attrs.todo {
-        return quote!(None);
+        return quote! {Err(())};
     }
 
     // If the variant has no bindings (i.e. no data fields), treat it as a unit
@@ -191,18 +192,19 @@ fn derive_variant_arm(
 
         // Emit code to wrap this keyword into a TypedValue.
         quote! {
-            Some(style_traits::TypedValue::Keyword(
+            dest.push(style_traits::TypedValue::Keyword(
                 style_traits::KeywordValue(style_traits::CssString::from(#keyword))
-            ))
+            ));
+            Ok(())
         }
     } else if derive_fields {
         derive_variant_fields_expr(bindings, where_clause)
     } else {
         // This variant has one or more fields, but field reification is
         // disabled. Without `derive_fields`, this variant simply returns
-        // `None`.
+        // `Err(())`.
         quote! {
-            None
+            Err(())
         }
     }
 }
@@ -217,7 +219,7 @@ fn derive_variant_arm(
 /// bound (e.g. `T: ToTyped`) to the `where` clause.
 ///
 /// Variants with multiple usable fields or iterable fields are not yet
-/// supported and simply return `None`.
+/// supported and simply return `Err(())`.
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
@@ -235,10 +237,10 @@ fn derive_variant_fields_expr(
         })
         .peekable();
 
-    // If no usable fields remain, generate code that just returns None.
+    // If no usable fields remain, generate code that just returns Err(()).
     let (first, css_field_attrs) = match iter.next() {
         Some(pair) => pair,
-        None => return quote! { None },
+        None => return quote! { Err(()) },
     };
 
     // Handle the simple case of exactly one non-iterable field. Add a trait
@@ -248,13 +250,13 @@ fn derive_variant_fields_expr(
         let ty = &first.ast().ty;
         cg::add_predicate(where_clause, parse_quote!(#ty: style_traits::ToTyped));
 
-        return quote! { style_traits::ToTyped::to_typed(#first) };
+        return quote! { style_traits::ToTyped::to_typed(#first, dest) };
     }
 
     // Complex cases (multiple fields, iterable fields, etc.) are not yet
     // supported for automatic reification.
     quote! {
-        None
+        Err(())
     }
 }
 
@@ -265,7 +267,7 @@ pub struct TypedValueInputAttrs {
     ///
     /// When set, the derive will attempt to call `.to_typed()` on inner
     /// values (for example, struct fields or data-carrying enum variants)
-    /// instead of always returning `None`.
+    /// instead of always returning `Err(())`.
     ///
     /// This is intentionally opt-in: blindly enabling recursion would require
     /// many types to implement `ToTyped` even when they don’t need to. Once
@@ -283,7 +285,7 @@ pub struct TypedValueVariantAttrs {
     pub derive_fields: bool,
 
     /// If present, this variant is excluded from generated reification code.
-    /// `to_typed()` will always return `None` for it.
+    /// `to_typed()` will always return `Err(())` for it.
     pub skip: bool,
 
     /// Marks this variant as a placeholder for a future implementation.

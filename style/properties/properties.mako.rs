@@ -273,13 +273,13 @@ impl PropertyDeclaration {
     }
 
     /// Like the method on ToTyped.
-    pub fn to_typed(&self) -> Option<TypedValue> {
+    pub fn to_typed_value(&self) -> Option<TypedValue> {
         use self::PropertyDeclaration::*;
 
         match *self {
             % for ty, vs in groupby(data.declaration_variants, key=lambda x: x["type"]):
             ${" | ".join("{}(ref value)".format(v["name"]) for v in vs)} => {
-                value.to_typed()
+                value.to_typed_value()
             }
             % endfor
         }
@@ -1759,7 +1759,7 @@ impl ComputedValues {
                     % endfor
                     _ => unsafe { debug_unreachable!() },
                 };
-                value.to_typed()
+                value.to_typed_value()
             }
             % endfor
         }

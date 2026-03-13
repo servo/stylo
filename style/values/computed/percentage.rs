@@ -11,6 +11,7 @@ use crate::values::{reify_percentage, serialize_normalized_percentage, CSSFloat}
 use crate::Zero;
 use std::fmt;
 use style_traits::{CssWriter, ToCss, ToTyped, TypedValue};
+use thin_vec::ThinVec;
 
 /// A computed percentage.
 #[derive(
@@ -112,8 +113,8 @@ impl ToCss for Percentage {
 }
 
 impl ToTyped for Percentage {
-    fn to_typed(&self) -> Option<TypedValue> {
-        reify_percentage(self.0, /* was_calc = */ false)
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        reify_percentage(self.0, /* was_calc = */ false, dest)
     }
 }
 

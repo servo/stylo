@@ -17,6 +17,7 @@ use crate::values::{CSSFloat, CSSInteger};
 use crate::Zero;
 use std::fmt::{self, Write};
 use style_traits::{CssString, CssWriter, KeywordValue, ToCss, ToTyped, TypedValue};
+use thin_vec::ThinVec;
 
 pub use crate::values::specified::text::{
     HyphenateCharacter, LineBreak, MozControlCharacterVisibility, OverflowWrap, RubyPosition,
@@ -103,11 +104,12 @@ impl ToTyped for LetterSpacing {
     // coverage (letter-spacing.html). We may file a spec issue once more data
     // is collected to update the Property-specific Rules section to align with
     // observed test expectations.
-    fn to_typed(&self) -> Option<TypedValue> {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         if !self.0.has_percentage() && self.0.is_zero() {
-            return Some(TypedValue::Keyword(KeywordValue(CssString::from("normal"))));
+            dest.push(TypedValue::Keyword(KeywordValue(CssString::from("normal"))));
+            return Ok(());
         }
-        self.0.to_typed()
+        self.0.to_typed(dest)
     }
 }
 

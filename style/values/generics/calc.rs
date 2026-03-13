@@ -448,6 +448,7 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped {
 }
 
 /// The level of any argument being serialized in `to_css_impl`.
+#[derive(Clone)]
 enum ArgumentLevel {
     /// The root of a calculation tree.
     CalculationRoot,
@@ -1949,34 +1950,44 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         Ok(())
     }
 
-    fn to_typed_impl(&self, level: ArgumentLevel) -> Option<TypedValue> {
+    fn to_typed_impl(
+        &self,
+        dest: &mut ThinVec<TypedValue>,
+        level: ArgumentLevel,
+    ) -> Result<(), ()> {
         // XXX Only supporting Sum and Leaf for now
         match *self {
             Self::Sum(ref children) => {
                 let mut values = ThinVec::new();
                 for child in &**children {
-                    if let Some(TypedValue::Numeric(inner)) =
-                        child.to_typed_impl(ArgumentLevel::Nested)
-                    {
+                    let nested = CalcNodeWithLevel {
+                        node: child,
+                        level: ArgumentLevel::Nested,
+                    };
+                    if let Some(TypedValue::Numeric(inner)) = nested.to_typed_value() {
                         values.push(inner);
                     }
                 }
-                Some(TypedValue::Numeric(NumericValue::Sum(MathSum { values })))
+                dest.push(TypedValue::Numeric(NumericValue::Sum(MathSum { values })));
+                Ok(())
             },
-            Self::Leaf(ref l) => match l.to_typed() {
-                Some(TypedValue::Numeric(inner)) => match level {
-                    ArgumentLevel::CalculationRoot => {
-                        Some(TypedValue::Numeric(NumericValue::Sum(MathSum {
-                            values: ThinVec::from([inner]),
-                        })))
-                    },
-                    ArgumentLevel::ArgumentRoot | ArgumentLevel::Nested => {
-                        Some(TypedValue::Numeric(inner))
-                    },
+            Self::Leaf(ref l) => match l.to_typed_value() {
+                Some(TypedValue::Numeric(inner)) => {
+                    match level {
+                        ArgumentLevel::CalculationRoot => {
+                            dest.push(TypedValue::Numeric(NumericValue::Sum(MathSum {
+                                values: ThinVec::from([inner]),
+                            })));
+                        },
+                        ArgumentLevel::ArgumentRoot | ArgumentLevel::Nested => {
+                            dest.push(TypedValue::Numeric(inner));
+                        },
+                    }
+                    Ok(())
                 },
-                _ => None,
+                _ => Err(()),
             },
-            _ => None,
+            _ => Err(()),
         }
     }
 
@@ -2007,8 +2018,19 @@ impl<L: CalcNodeLeaf> ToCss for CalcNode<L> {
 }
 
 impl<L: CalcNodeLeaf> ToTyped for CalcNode<L> {
-    fn to_typed(&self) -> Option<TypedValue> {
-        self.to_typed_impl(ArgumentLevel::CalculationRoot)
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        self.to_typed_impl(dest, ArgumentLevel::CalculationRoot)
+    }
+}
+
+struct CalcNodeWithLevel<'a, L> {
+    node: &'a CalcNode<L>,
+    level: ArgumentLevel,
+}
+
+impl<'a, L: CalcNodeLeaf> ToTyped for CalcNodeWithLevel<'a, L> {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        self.node.to_typed_impl(dest, self.level.clone())
     }
 }
 

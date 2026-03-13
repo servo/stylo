@@ -28,6 +28,7 @@ use style_traits::values::specified::AllowedNumericType;
 use style_traits::{
     CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
 };
+use thin_vec::ThinVec;
 
 pub use self::align::{ContentDistribution, ItemPlacement, JustifyItems, SelfAlignment};
 pub use self::angle::{AllowUnitlessZeroAngle, Angle};
@@ -380,8 +381,8 @@ impl ToCss for Number {
 }
 
 impl ToTyped for Number {
-    fn to_typed(&self) -> Option<TypedValue> {
-        reify_number(self.value, self.calc_clamping_mode.is_some())
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        reify_number(self.value, self.calc_clamping_mode.is_some(), dest)
     }
 }
 

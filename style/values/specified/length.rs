@@ -35,6 +35,7 @@ use style_traits::{
     CssString, CssWriter, NumericValue, ParseError, ParsingMode, SpecifiedValueInfo,
     StyleParseErrorKind, ToCss, ToTyped, TypedValue, UnitValue,
 };
+use thin_vec::ThinVec;
 
 pub use super::image::Image;
 pub use super::image::{EndingShape as GradientEndingShape, Gradient};
@@ -1411,13 +1412,14 @@ impl ToCss for NoCalcLength {
 }
 
 impl ToTyped for NoCalcLength {
-    fn to_typed(&self) -> Option<TypedValue> {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         let value = self.unitless_value();
         let unit = CssString::from(self.unit());
-        Some(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+        dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
             value,
             unit,
-        })))
+        })));
+        Ok(())
     }
 }
 

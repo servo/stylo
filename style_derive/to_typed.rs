@@ -56,6 +56,12 @@ use synstructure::{BindingInfo, Structure};
 ///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword
 ///   string.
+///
+/// * `#[css(iterable)]` on a field indicates that the field is an iterable
+///   collection whose elements should be reified individually.
+///
+/// * `#[css(if_empty = "...")]` on an iterable field causes the provided
+///   keyword to be emitted when the iterable contains no elements.
 pub fn derive(mut input: DeriveInput) -> TokenStream {
     // The mutable `where_clause` is passed down to helper functions so they
     // can append trait bounds only when necessary. In particular, a bound of
@@ -227,13 +233,17 @@ fn derive_variant_arm(
 /// in a derived `ToTyped` implementation.
 ///
 /// This helper examines the variant’s fields and determines whether it can
-/// safely generate a `.to_typed()` call for a single inner value. If the
-/// variant has exactly one non-skipped, non-iterable field, it emits a call to
-/// that field’s `ToTyped` implementation and adds the corresponding trait
-/// bound (e.g. `T: ToTyped`) to the `where` clause.
+/// generate reification code for a single usable field.
 ///
-/// Variants with multiple usable fields or iterable fields are not yet
-/// supported and simply return `Err(())`.
+/// * If the variant has exactly one non-skipped, non-iterable field, it emits
+///   a call to that field’s `ToTyped` implementation and adds the
+///   corresponding trait bound (e.g. `T: ToTyped`) to the `where` clause.
+///
+/// * If the variant has exactly one iterable field, it generates code that
+///   iterates the field and reifies each element.
+///
+/// Variants with multiple usable fields are not supported and simply return
+/// `Err(())`.
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
@@ -257,21 +267,128 @@ fn derive_variant_fields_expr(
         None => return quote! { Err(()) },
     };
 
-    // Handle the simple case of exactly one non-iterable field. Add a trait
-    // bound `T: ToTyped` to ensure the field type implements the required
-    // conversion, and emit a call to its `.to_typed()` method.
-    if !css_field_attrs.iterable && iter.peek().is_none() {
+    // At this point we have at least one usable field in `first`.
+    // Automatic reification is only supported for a single usable field for
+    // now.
+    if iter.peek().is_some() {
+        return quote! { Err(()) };
+    }
+
+    // Handle the simple case of exactly one non-iterable field.
+    if !css_field_attrs.iterable {
+        // Add a trait bound `T: ToTyped` to ensure the field type implements
+        // the required conversion, and emit a call to its `.to_typed()`
+        // method.
         let ty = &first.ast().ty;
         cg::add_predicate(where_clause, parse_quote!(#ty: style_traits::ToTyped));
 
         return quote! { style_traits::ToTyped::to_typed(#first, dest) };
     }
 
-    // Complex cases (multiple fields, iterable fields, etc.) are not yet
-    // supported for automatic reification.
-    quote! {
-        Err(())
+    // Handle the case of exactly one iterable field.
+    derive_single_field_expr(first, css_field_attrs, where_clause)
+}
+
+/// Generate the expression used to reify a single iterable field in a derived
+/// `ToTyped` implementation.
+///
+/// This helper assumes the field is marked with `#[css(iterable)]`. It
+/// generates code that iterates over the field and calls `ToTyped::to_typed`
+/// for each element. If `#[css(if_empty = "...")]` is present, the generated
+/// code emits the specified keyword when the iterable is empty.
+///
+/// The appropriate `T: ToTyped` bounds for the iterable’s element type(s) are
+/// added to the `where` clause.
+fn derive_single_field_expr(
+    field: &BindingInfo,
+    css_field_attrs: CssFieldAttrs,
+    where_clause: &mut Option<WhereClause>,
+) -> TokenStream {
+    assert!(css_field_attrs.iterable);
+
+    // We add `ToTyped` bounds for the iterable's element type(s), rather than
+    // for the container type itself. This avoids ToTyped forcing unrelated
+    // container types to implement ToTyped.
+    //
+    // This is a bit more involved than other derives, but it matches how
+    // Typed OM reification is structured today. If this approach works well,
+    // the helper that extracts the field types (field_generic_arguments) can
+    // be moved into cg.rs alongside other derive helpers.
+    //
+    // See also the comment in the beginning of the main `derive` fn.
+    for item_ty in field_generic_arguments(field) {
+        cg::add_predicate(where_clause, parse_quote!(#item_ty: style_traits::ToTyped));
     }
+
+    if let Some(if_empty) = css_field_attrs.if_empty {
+        quote! {{
+            let mut iter = #field.iter().peekable();
+            if iter.peek().is_none() {
+                dest.push(style_traits::TypedValue::Keyword(
+                    style_traits::KeywordValue(style_traits::CssString::from(#if_empty)),
+                ));
+            } else {
+                for item in iter {
+                    style_traits::ToTyped::to_typed(&item, dest)?;
+                }
+            }
+            Ok(())
+        }}
+    } else {
+        quote! {{
+            for item in #field.iter() {
+                style_traits::ToTyped::to_typed(&item, dest)?;
+            }
+            Ok(())
+        }}
+    }
+}
+
+/// Extract generic type arguments from a field type.
+///
+/// This helper is used by the `derive_variant_fields_expr` when handling
+/// iterable fields. The function needs to add `T: ToTyped` bounds for the
+/// item type produced by iteration (since the generated code calls
+/// `.to_typed()` on each item).
+///
+/// For example:
+///   * `Vec<T>` / `OwnedSlice<T>` -> `T`
+///   * `SmallVec<[T; N]>` -> `T`
+///
+/// The function inspects the last path segment of the field’s type and
+/// returns any generic type arguments it finds, unwrapping array forms such
+/// as `[T; N]` used by containers like `SmallVec`.
+///
+/// This is intentionally minimal and currently supports the container shapes
+/// used in style structs.
+pub(crate) fn field_generic_arguments(field: &BindingInfo) -> Vec<syn::Type> {
+    use syn::{GenericArgument, PathArguments, Type};
+
+    let ty = &field.ast().ty;
+
+    let Type::Path(type_path) = ty else {
+        return vec![];
+    };
+    let Some(seg) = type_path.path.segments.last() else {
+        return vec![];
+    };
+    let PathArguments::AngleBracketed(args) = &seg.arguments else {
+        return vec![];
+    };
+
+    let mut result = Vec::new();
+    for arg in &args.args {
+        let GenericArgument::Type(arg_ty) = arg else {
+            continue;
+        };
+
+        // If it's something like SmallVec<[T; N]>, take T.
+        match arg_ty {
+            Type::Array(arr) => result.push((*arr.elem).clone()),
+            _ => result.push(arg_ty.clone()),
+        }
+    }
+    result
 }
 
 #[derive(Default, FromDeriveInput)]

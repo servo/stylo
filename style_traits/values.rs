@@ -730,6 +730,13 @@ pub enum TypedValue {
 ///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword that
 ///   would otherwise be derived from the Rust identifier.
+///
+/// * `#[css(iterable)]` on a field indicates that the field represents a list
+///   of values. Each item in the iterable is reified individually by calling
+///   `ToTyped::to_typed` on the element type.
+///
+/// * `#[css(if_empty = "...")]` on an iterable field specifies a keyword
+///   value that should be produced when the iterable is empty.
 pub trait ToTyped {
     /// Attempt to convert `self` into one or more [`TypedValue`] items.
     ///

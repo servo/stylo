@@ -42,6 +42,20 @@ use synstructure::{BindingInfo, Structure};
 /// This allows keywords to be reified automatically into `CSSKeywordValue`
 /// objects, while leaving more complex value types to be implemented
 /// incrementally as Typed OM support expands.
+///
+/// Summary of derive attributes recognized by this derive:
+///
+/// * `#[typed_value(derive_fields)]` on the type enables limited recursion
+///   for structs and data-carrying enum variants.
+///
+/// * `#[css(skip)]`, `#[typed_value(skip)]`, or `#[typed_value(todo)]` on a
+///   variant mark it as unsupported and cause the generated arm to return
+///   `Err(())`.
+///
+/// * `#[css(skip)]` on a field disables reification for that field.
+///
+/// * `#[css(keyword = "...")]` on a unit variant overrides the keyword
+///   string.
 pub fn derive(mut input: DeriveInput) -> TokenStream {
     // The mutable `where_clause` is passed down to helper functions so they
     // can append trait bounds only when necessary. In particular, a bound of

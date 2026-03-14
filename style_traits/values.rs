@@ -715,6 +715,21 @@ pub enum TypedValue {
 ///
 /// Over time, the derive may be extended to handle additional CSS value
 /// categories such as numeric, color, and transform types.
+///
+/// Summary of derive attributes recognized by `#[derive(ToTyped)]`:
+///
+/// * `#[typed_value(derive_fields)]` on the type enables limited recursion
+///   for structs and data-carrying enum variants.
+///
+/// * `#[css(skip)]`, `#[typed_value(skip)]`, or `#[typed_value(todo)]` on a
+///   variant cause that variant to be treated as unsupported (the derived
+///   implementation returns `Err(())`).
+///
+/// * `#[css(skip)]` on a field causes that field to be ignored during
+///   reification.
+///
+/// * `#[css(keyword = "...")]` on a unit variant overrides the keyword that
+///   would otherwise be derived from the Rust identifier.
 pub trait ToTyped {
     /// Attempt to convert `self` into one or more [`TypedValue`] items.
     ///

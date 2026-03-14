@@ -57,6 +57,12 @@ use synstructure::{BindingInfo, Structure};
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword
 ///   string.
 ///
+/// * `#[css(comma)]` on the variant indicates that iterable fields correspond
+///   to comma-separated CSS lists. When present, multiple items in the
+///   iterable may be reified as separate `TypedValue`s. If it is not present
+///   and the iterable contains more than one item, the derived implementation
+///   treats the value as unsupported and returns `Err(())`.
+///
 /// * `#[css(iterable)]` on a field indicates that the field is an iterable
 ///   collection whose elements should be reified individually.
 ///
@@ -218,7 +224,7 @@ fn derive_variant_arm(
             Ok(())
         }
     } else if derive_fields {
-        derive_variant_fields_expr(bindings, where_clause)
+        derive_variant_fields_expr(bindings, where_clause, css_variant_attrs.comma)
     } else {
         // This variant has one or more fields, but field reification is
         // disabled. Without `derive_fields`, this variant simply returns
@@ -247,6 +253,7 @@ fn derive_variant_arm(
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
+    comma: bool,
 ) -> TokenStream {
     // Filter out fields marked with #[css(skip)] so they are ignored during
     // reification.
@@ -286,7 +293,7 @@ fn derive_variant_fields_expr(
     }
 
     // Handle the case of exactly one iterable field.
-    derive_single_field_expr(first, css_field_attrs, where_clause)
+    derive_single_field_expr(first, css_field_attrs, where_clause, comma)
 }
 
 /// Generate the expression used to reify a single iterable field in a derived
@@ -297,12 +304,17 @@ fn derive_variant_fields_expr(
 /// for each element. If `#[css(if_empty = "...")]` is present, the generated
 /// code emits the specified keyword when the iterable is empty.
 ///
+/// If `#[css(comma)]` is present on the enclosing variant, multiple items in
+/// the iterable may be reified as separate `TypedValue`s. Otherwise, the
+/// iterable is only supported when it contains at most one item.
+///
 /// The appropriate `T: ToTyped` bounds for the iterable’s element type(s) are
 /// added to the `where` clause.
 fn derive_single_field_expr(
     field: &BindingInfo,
     css_field_attrs: CssFieldAttrs,
     where_clause: &mut Option<WhereClause>,
+    comma: bool,
 ) -> TokenStream {
     assert!(css_field_attrs.iterable);
 
@@ -320,8 +332,8 @@ fn derive_single_field_expr(
         cg::add_predicate(where_clause, parse_quote!(#item_ty: style_traits::ToTyped));
     }
 
-    if let Some(if_empty) = css_field_attrs.if_empty {
-        quote! {{
+    let expr = if let Some(if_empty) = css_field_attrs.if_empty {
+        quote! {
             let mut iter = #field.iter().peekable();
             if iter.peek().is_none() {
                 dest.push(style_traits::TypedValue::Keyword(
@@ -333,15 +345,22 @@ fn derive_single_field_expr(
                 }
             }
             Ok(())
-        }}
+        }
     } else {
-        quote! {{
+        quote! {
             for item in #field.iter() {
                 style_traits::ToTyped::to_typed(&item, dest)?;
             }
             Ok(())
-        }}
-    }
+        }
+    };
+
+    quote! {{
+        if !#comma && #field.len() > 1 {
+            return Err(());
+        }
+        #expr
+    }}
 }
 
 /// Extract generic type arguments from a field type.

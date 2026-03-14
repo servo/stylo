@@ -731,6 +731,12 @@ pub enum TypedValue {
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword that
 ///   would otherwise be derived from the Rust identifier.
 ///
+/// * `#[css(comma)]` on the variant indicates that iterable fields correspond
+///   to comma-separated CSS lists. When this attribute is present, multiple
+///   items in the iterable may be reified as separate `TypedValue`s. If it is
+///   not present and the iterable contains more than one item, the derived
+///   implementation returns `Err(())`.
+///
 /// * `#[css(iterable)]` on a field indicates that the field represents a list
 ///   of values. Each item in the iterable is reified individually by calling
 ///   `ToTyped::to_typed` on the element type.

@@ -335,24 +335,6 @@ struct Parser<'a> {
     output: &'a mut Vec<Component>,
 }
 
-/// <https://drafts.csswg.org/css-syntax-3/#letter>
-fn is_letter(byte: u8) -> bool {
-    match byte {
-        b'A'..=b'Z' | b'a'..=b'z' => true,
-        _ => false,
-    }
-}
-
-/// <https://drafts.csswg.org/css-syntax-3/#non-ascii-code-point>
-fn is_non_ascii(byte: u8) -> bool {
-    byte >= 0x80
-}
-
-/// <https://drafts.csswg.org/css-syntax-3/#name-start-code-point>
-fn is_name_start(byte: u8) -> bool {
-    is_letter(byte) || is_non_ascii(byte) || byte == b'_'
-}
-
 impl<'a> Parser<'a> {
     fn new(input: &'a str, output: &'a mut Vec<Component>) -> Self {
         Self {
@@ -425,10 +407,6 @@ impl<'a> Parser<'a> {
         if b == b'<' {
             self.position += 1;
             return Ok(ComponentName::DataType(self.parse_data_type_name()?));
-        }
-
-        if b != b'\\' && !is_name_start(b) {
-            return Err(ParseError::InvalidNameStart);
         }
 
         let input = &self.input[self.position..];

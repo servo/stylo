@@ -1478,6 +1478,7 @@ impl ContainerType {
     ToShmem,
     ToTyped,
 )]
+#[typed_value(derive_fields)]
 pub struct ContainerName(#[css(iterable, if_empty = "none")] pub crate::OwnedSlice<CustomIdent>);
 
 impl ContainerName {

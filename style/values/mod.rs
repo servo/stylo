@@ -18,8 +18,8 @@ use precomputed_hash::PrecomputedHash;
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Debug, Write};
 use style_traits::{
-    CssString, CssWriter, MathSum, NumericValue, ParseError, StyleParseErrorKind, ToCss,
-    TypedValue, UnitValue,
+    CssString, CssWriter, KeywordValue, MathSum, NumericValue, ParseError, StyleParseErrorKind,
+    ToCss, ToTyped, TypedValue, UnitValue,
 };
 use thin_vec::ThinVec;
 use to_shmem::impl_trivial_to_shmem;
@@ -636,6 +636,15 @@ impl ToCss for CustomIdent {
         W: Write,
     {
         serialize_atom_identifier(&self.0, dest)
+    }
+}
+
+impl ToTyped for CustomIdent {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        // This shouldn't escape identifiers. See bug 2023533.
+        let s = ToCss::to_css_cssstring(self);
+        dest.push(TypedValue::Keyword(KeywordValue(s)));
+        Ok(())
     }
 }
 

@@ -10,9 +10,10 @@ use crate::properties::{ComputedValues, StyleBuilder};
 use crate::rule_tree::StrongRuleNode;
 use crate::selector_parser::PseudoElement;
 use crate::shared_lock::StylesheetGuards;
-use crate::values::computed::{NonNegativeLength, Zoom};
+use crate::values::computed::{Context, NonNegativeLength, Zoom};
 use crate::values::specified::color::ColorSchemeFlags;
 use rustc_hash::FxHashMap;
+use selectors::context::IncludeStartingStyle;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 
@@ -163,14 +164,11 @@ impl RuleCache {
     ///
     /// This needs to receive a `StyleBuilder` with the `early` properties
     /// already applied.
-    pub fn find(
-        &self,
-        guards: &StylesheetGuards,
-        builder_with_early_props: &StyleBuilder,
-    ) -> Option<&ComputedValues> {
+    pub fn find(&self, guards: &StylesheetGuards, context: &Context) -> Option<&ComputedValues> {
         // A pseudo-element with property restrictions can result in different
         // computed values if it's also used for a non-pseudo.
-        if builder_with_early_props
+        if context
+            .builder
             .pseudo
             .and_then(|p| p.property_restriction())
             .is_some()
@@ -178,12 +176,17 @@ impl RuleCache {
             return None;
         }
 
-        let rules = builder_with_early_props.rules.as_ref();
+        // @starting-style has the same issue.
+        if context.include_starting_style == IncludeStartingStyle::Yes {
+            return None;
+        }
+
+        let rules = context.builder.rules.as_ref();
         let rules = Self::get_rule_node_for_cache(guards, rules)?;
         let cached_values = self.map.get(rules)?;
 
         for &(ref conditions, ref values) in cached_values.iter() {
-            if conditions.matches(builder_with_early_props) {
+            if conditions.matches(&context.builder) {
                 debug!("Using cached reset style with conditions {:?}", conditions);
                 return Some(&**values);
             }

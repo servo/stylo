@@ -983,6 +983,7 @@ impl PropertyDeclarationBlock {
             stylist.quirks_mode(),
             &mut rule_cache_conditions,
             ContainerSizeQuery::none(),
+            Default::default(),
         );
 
         if let Some(cv) = computed_values {

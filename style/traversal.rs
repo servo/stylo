@@ -348,11 +348,7 @@ where
             rule_inclusion,
             PseudoElementResolution::IfApplicable,
         )
-        .resolve_primary_style(
-            style.as_deref(),
-            layout_parent_style.as_deref(),
-            selectors::matching::IncludeStartingStyle::No,
-        );
+        .resolve_primary_style(style.as_deref(), layout_parent_style.as_deref());
 
         let is_display_contents = primary_style.style().is_display_contents();
 
@@ -424,8 +420,7 @@ pub fn recalc_style_at<E, D, F>(
 
     // Compute style for this element if necessary.
     if let Some(restyle_kind) = restyle_kind {
-        child_restyle_hint =
-            compute_style(traversal_data, context, element, data, restyle_kind);
+        child_restyle_hint = compute_style(traversal_data, context, element, data, restyle_kind);
 
         if !element.matches_user_and_content_rules() {
             // We must always cascade native anonymous subtrees, since they
@@ -621,8 +616,7 @@ where
                 PseudoElementResolution::IfApplicable,
             );
 
-            resolver
-                .cascade_styles_with_default_parents(cascade_inputs, data.may_have_starting_style())
+            resolver.cascade_styles_with_default_parents(cascade_inputs)
         },
         CascadeOnly => {
             // Skipping full matching, load cascade inputs from previous values.
@@ -636,10 +630,7 @@ where
                     PseudoElementResolution::IfApplicable,
                 );
 
-                resolver.cascade_styles_with_default_parents(
-                    cascade_inputs,
-                    data.may_have_starting_style(),
-                )
+                resolver.cascade_styles_with_default_parents(cascade_inputs)
             };
 
             // Insert into the cache, but only if this style isn't reused from a

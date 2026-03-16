@@ -34,6 +34,7 @@ use crate::values::specified::font::QueryFontMetricsFlags;
 use crate::values::specified::length::FontBaseSize;
 use crate::{ArcSlice, Atom, One};
 use euclid::{default, Point2D, Rect, Size2D};
+use selectors::context::IncludeStartingStyle;
 use servo_arc::Arc;
 use std::cell::RefCell;
 use std::cmp;
@@ -218,6 +219,9 @@ pub struct Context<'a> {
     /// The cascade level in the shadow tree hierarchy.
     pub scope: CascadeLevel,
 
+    /// Whether to include @starting-style rules during the cascade.
+    pub include_starting_style: IncludeStartingStyle,
+
     /// Container size query for this context.
     container_size_query: RefCell<ContainerSizeQuery<'a>>,
 }
@@ -248,6 +252,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(&mut conditions),
             scope: CascadeLevel::same_tree_author_normal(),
+            include_starting_style: Default::default(),
             container_size_query: RefCell::new(ContainerSizeQuery::none()),
         };
         f(&context)
@@ -285,6 +290,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(&mut conditions),
             scope: CascadeLevel::same_tree_author_normal(),
+            include_starting_style: Default::default(),
             container_size_query: RefCell::new(container_size_query),
         };
 
@@ -297,6 +303,7 @@ impl<'a> Context<'a> {
         quirks_mode: QuirksMode,
         rule_cache_conditions: &'a mut RuleCacheConditions,
         container_size_query: ContainerSizeQuery<'a>,
+        include_starting_style: IncludeStartingStyle,
     ) -> Self {
         Self {
             builder,
@@ -309,6 +316,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
             scope: CascadeLevel::same_tree_author_normal(),
+            include_starting_style,
             container_size_query: RefCell::new(container_size_query),
         }
     }
@@ -332,6 +340,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
             scope: CascadeLevel::same_tree_author_normal(),
+            include_starting_style: IncludeStartingStyle::No,
             container_size_query: RefCell::new(container_size_query),
         }
     }
@@ -355,6 +364,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
             scope: CascadeLevel::same_tree_author_normal(),
+            include_starting_style: Default::default(),
             container_size_query: RefCell::new(ContainerSizeQuery::none()),
         }
     }

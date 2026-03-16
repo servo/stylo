@@ -334,12 +334,6 @@ impl SelectorMap<Rule> {
     ) where
         E: TElement,
     {
-        use selectors::matching::IncludeStartingStyle;
-
-        let include_starting_style = matches!(
-            matching_context.include_starting_style,
-            IncludeStartingStyle::Yes
-        );
         for rule in rules {
             let scope_proximity = if rule.scope_condition_id == ScopeConditionId::none() {
                 if !matches_selector(
@@ -371,18 +365,6 @@ impl SelectorMap<Rule> {
                     continue;
                 }
             }
-
-            if rule.is_starting_style {
-                // Set this flag if there are any rules inside @starting-style. This flag is for
-                // optimization to avoid any redundant resolution of starting style if the author
-                // doesn't specify for this element.
-                matching_context.has_starting_style = true;
-
-                if !include_starting_style {
-                    continue;
-                }
-            }
-
             matching_rules.push(rule.to_applicable_declaration_block(
                 cascade_level,
                 cascade_data,

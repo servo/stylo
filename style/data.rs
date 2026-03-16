@@ -47,9 +47,6 @@ bitflags! {
         /// The former gives us stronger transitive guarantees that allows us to
         /// apply the style sharing cache to cousins.
         const PRIMARY_STYLE_REUSED_VIA_RULE_NODE = 1 << 2;
-
-        /// Whether this element may have matched rules inside @starting-style.
-        const MAY_HAVE_STARTING_STYLE = 1 << 3;
     }
 }
 
@@ -433,14 +430,10 @@ impl ElementData {
         let reused_via_rule_node = self
             .flags
             .contains(ElementDataFlags::PRIMARY_STYLE_REUSED_VIA_RULE_NODE);
-        let may_have_starting_style = self
-            .flags
-            .contains(ElementDataFlags::MAY_HAVE_STARTING_STYLE);
 
         PrimaryStyle {
             style: ResolvedStyle(self.styles.primary().clone()),
             reused_via_rule_node,
-            may_have_starting_style,
         }
     }
 
@@ -450,11 +443,6 @@ impl ElementData {
             ElementDataFlags::PRIMARY_STYLE_REUSED_VIA_RULE_NODE,
             new_styles.primary.reused_via_rule_node,
         );
-        self.flags.set(
-            ElementDataFlags::MAY_HAVE_STARTING_STYLE,
-            new_styles.primary.may_have_starting_style,
-        );
-
         mem::replace(&mut self.styles, new_styles.into())
     }
 
@@ -632,13 +620,5 @@ impl ElementData {
         // We may measure more fields in the future if DMD says it's worth it.
 
         n
-    }
-
-    /// Returns true if this element data may need to compute the starting style for CSS
-    /// transitions.
-    #[inline]
-    pub fn may_have_starting_style(&self) -> bool {
-        self.flags
-            .contains(ElementDataFlags::MAY_HAVE_STARTING_STYLE)
     }
 }

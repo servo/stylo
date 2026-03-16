@@ -247,6 +247,7 @@ impl IntermediateComputedKeyframe {
             rules: new_node,
             visited_rules: base_style.visited_rules().cloned(),
             flags: base_style.flags.for_cascade_inputs(),
+            include_starting_style: Default::default(),
         };
         resolver
             .cascade_style_and_visited_with_default_parents(inputs)

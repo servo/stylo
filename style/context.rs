@@ -31,7 +31,7 @@ use euclid::default::Size2D;
 use euclid::Scale;
 #[cfg(feature = "servo")]
 use rustc_hash::FxHashMap;
-use selectors::context::SelectorCaches;
+use selectors::context::{IncludeStartingStyle, SelectorCaches};
 #[cfg(feature = "gecko")]
 use servo_arc::Arc;
 use std::fmt;
@@ -194,6 +194,9 @@ pub struct CascadeInputs {
 
     /// The set of flags from container queries that we need for invalidation.
     pub flags: ComputedValueFlags,
+
+    /// Whether we should include @starting-style rules.
+    pub include_starting_style: IncludeStartingStyle,
 }
 
 impl CascadeInputs {
@@ -203,6 +206,7 @@ impl CascadeInputs {
             rules: style.rules.clone(),
             visited_rules: style.visited_style().and_then(|v| v.rules.clone()),
             flags: style.flags.for_cascade_inputs(),
+            include_starting_style: IncludeStartingStyle::No,
         }
     }
 }

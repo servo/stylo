@@ -91,7 +91,9 @@ pub type AnimationRangeStart = generics::GenericAnimationRangeStart<LengthPercen
 impl AnimationRangeStart {
     /// The `normal` value.
     pub fn normal() -> Self {
-        Self(generics::GenericAnimationRangeValue::normal(LengthPercentage::zero_percent()))
+        Self(generics::GenericAnimationRangeValue::normal(
+            LengthPercentage::zero_percent(),
+        ))
     }
 }
 
@@ -100,6 +102,8 @@ pub type AnimationRangeEnd = generics::GenericAnimationRangeEnd<LengthPercentage
 impl AnimationRangeEnd {
     /// The `normal` value.
     pub fn normal() -> Self {
-        Self(generics::GenericAnimationRangeValue::normal(LengthPercentage::hundred_percent()))
+        Self(generics::GenericAnimationRangeValue::normal(
+            LengthPercentage::hundred_percent(),
+        ))
     }
 }

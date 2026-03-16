@@ -19,7 +19,7 @@ use std::sync::atomic::{self, AtomicPtr, AtomicUsize, Ordering};
 
 use super::map::{Entry, Map};
 use super::unsafe_box::UnsafeBox;
-use super::{CascadeLevel, CascadeOrigin, StyleSource};
+use super::{CascadeLevel, CascadeOrigin, RuleCascadeFlags, StyleSource};
 
 /// The rule tree, the structure servo uses to preserve the results of selector
 /// matching.
@@ -337,6 +337,7 @@ impl RuleNode {
             cascade_priority: CascadePriority::new(
                 CascadeLevel::new(CascadeOrigin::UA),
                 LayerOrder::root(),
+                RuleCascadeFlags::empty(),
             ),
             refcount: AtomicUsize::new(1),
             approximate_free_count: AtomicUsize::new(0),

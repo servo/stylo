@@ -40,7 +40,7 @@ use crate::values::generics::length::AnchorResolutionResult;
 use crate::values::generics::position::GenericAnchorSide;
 use crate::values::generics::{calc, ClampToNonNegative, NonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
-use crate::values::specified::length::{FontBaseSize, EqualsPercentage, LineHeightBase};
+use crate::values::specified::length::{EqualsPercentage, FontBaseSize, LineHeightBase};
 use crate::values::{specified, CSSFloat};
 use crate::{Zero, ZeroNoPercent};
 use app_units::Au;

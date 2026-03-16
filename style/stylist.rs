@@ -39,7 +39,9 @@ use crate::properties_and_values::rule::{
 use crate::properties_and_values::syntax::Descriptor;
 use crate::rule_cache::{RuleCache, RuleCacheConditions};
 use crate::rule_collector::RuleCollector;
-use crate::rule_tree::{CascadeLevel, CascadeOrigin, RuleTree, StrongRuleNode, StyleSource};
+use crate::rule_tree::{
+    CascadeLevel, CascadeOrigin, RuleCascadeFlags, RuleTree, StrongRuleNode, StyleSource,
+};
 use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet, SelectorMap, SelectorMapEntry};
 use crate::selector_parser::{NonTSPseudoClass, PerPseudoElementMap, PseudoElement, SelectorImpl};
 use crate::shared_lock::{Locked, SharedRwLockReadGuard, StylesheetGuards};
@@ -79,7 +81,7 @@ use selectors::matching::{
     matches_selector, selector_may_match, MatchingContext, MatchingMode, NeedsSelectorFlags,
     SelectorCaches,
 };
-use selectors::matching::{MatchingForInvalidation, VisitedHandlingMode};
+use selectors::matching::{IncludeStartingStyle, MatchingForInvalidation, VisitedHandlingMode};
 use selectors::parser::{
     AncestorHashes, Combinator, Component, MatchesFeaturelessHost, Selector, SelectorIter,
     SelectorList,
@@ -773,7 +775,7 @@ struct ContainingRuleState {
     layer_name: LayerName,
     layer_id: LayerId,
     container_condition_id: ContainerConditionId,
-    in_starting_style: bool,
+    cascade_flags: RuleCascadeFlags,
     containing_scope_rule_state: ContainingScopeRuleState,
     ancestor_selector_lists: SmallVec<[SelectorList<SelectorImpl>; 2]>,
     nested_declarations_context: NestedDeclarationsContext,
@@ -785,7 +787,7 @@ impl Default for ContainingRuleState {
             layer_name: LayerName::new_empty(),
             layer_id: LayerId::root(),
             container_condition_id: ContainerConditionId::none(),
-            in_starting_style: false,
+            cascade_flags: RuleCascadeFlags::empty(),
             ancestor_selector_lists: Default::default(),
             containing_scope_rule_state: Default::default(),
             nested_declarations_context: NestedDeclarationsContext::Style,
@@ -798,7 +800,7 @@ struct SavedContainingRuleState {
     layer_name_len: usize,
     layer_id: LayerId,
     container_condition_id: ContainerConditionId,
-    in_starting_style: bool,
+    cascade_flags: RuleCascadeFlags,
     saved_containing_scope_rule_state: SavedContainingScopeRuleState,
     nested_declarations_context: NestedDeclarationsContext,
 }
@@ -810,7 +812,7 @@ impl ContainingRuleState {
             layer_name_len: self.layer_name.0.len(),
             layer_id: self.layer_id,
             container_condition_id: self.container_condition_id,
-            in_starting_style: self.in_starting_style,
+            cascade_flags: self.cascade_flags,
             saved_containing_scope_rule_state: self.containing_scope_rule_state.save(),
             nested_declarations_context: self.nested_declarations_context,
         }
@@ -828,7 +830,7 @@ impl ContainingRuleState {
         self.layer_name.0.truncate(saved.layer_name_len);
         self.layer_id = saved.layer_id;
         self.container_condition_id = saved.container_condition_id;
-        self.in_starting_style = saved.in_starting_style;
+        self.cascade_flags = saved.cascade_flags;
         self.nested_declarations_context = saved.nested_declarations_context;
 
         self.containing_scope_rule_state
@@ -837,6 +839,10 @@ impl ContainingRuleState {
 
     fn scope_is_effective(&self) -> bool {
         self.containing_scope_rule_state.id != ScopeConditionId::none()
+    }
+
+    fn cascade_flags(&self) -> RuleCascadeFlags {
+        self.cascade_flags
     }
 }
 
@@ -1225,6 +1231,7 @@ impl Stylist {
                 rules: Some(rules),
                 visited_rules: None,
                 flags: Default::default(),
+                include_starting_style: Default::default(),
             },
             pseudo,
             guards,
@@ -1513,6 +1520,7 @@ impl Stylist {
             try_tactic,
             visited_rules,
             inputs.flags,
+            inputs.include_starting_style,
             rule_cache,
             rule_cache_conditions,
             element,
@@ -1587,7 +1595,6 @@ impl Stylist {
                 None,
                 &mut selector_caches,
                 VisitedHandlingMode::RelevantLinkVisited,
-                selectors::matching::IncludeStartingStyle::No,
                 self.quirks_mode,
                 needs_selector_flags,
                 MatchingForInvalidation::No,
@@ -1620,6 +1627,7 @@ impl Stylist {
             rules: Some(rules),
             visited_rules,
             flags: matching_context.extra_data.cascade_input_flags,
+            include_starting_style: Default::default(),
         })
     }
 
@@ -1964,6 +1972,7 @@ impl Stylist {
                     CascadePriority::new(
                         CascadeLevel::same_tree_author_normal(),
                         LayerOrder::root(),
+                        RuleCascadeFlags::empty(),
                     ),
                 )
             }),
@@ -1975,6 +1984,7 @@ impl Stylist {
                 visited_rules: None,
             },
             Default::default(),
+            IncludeStartingStyle::No,
             /* rule_cache = */ None,
             &mut Default::default(),
             /* element = */ None,
@@ -2288,6 +2298,7 @@ impl PageRuleMap {
                 specificity,
                 cascade_data.layer_order_for(data.layer),
                 ScopeProximity::infinity(), // Page rule can't have nested rules anyway.
+                RuleCascadeFlags::empty(),
             ));
         }
     }
@@ -3798,6 +3809,7 @@ impl CascadeData {
                             selector.specificity(),
                             LayerOrder::root(),
                             ScopeProximity::infinity(),
+                            RuleCascadeFlags::empty(),
                         ));
                     continue;
                 }
@@ -3827,7 +3839,7 @@ impl CascadeData {
                 self.rules_source_order,
                 containing_rule_state.layer_id,
                 containing_rule_state.container_condition_id,
-                containing_rule_state.in_starting_style,
+                containing_rule_state.cascade_flags(),
                 containing_rule_state.containing_scope_rule_state.id,
             );
 
@@ -4257,7 +4269,9 @@ impl CascadeData {
                     containing_rule_state.container_condition_id = id;
                 },
                 CssRule::StartingStyle(..) => {
-                    containing_rule_state.in_starting_style = true;
+                    containing_rule_state
+                        .cascade_flags
+                        .insert(RuleCascadeFlags::STARTING_STYLE);
                 },
                 CssRule::Scope(ref rule) => {
                     containing_rule_state.nested_declarations_context =
@@ -4808,8 +4822,8 @@ pub struct Rule {
     /// The current @container rule id.
     pub container_condition_id: ContainerConditionId,
 
-    /// True if this rule is inside @starting-style.
-    pub is_starting_style: bool,
+    /// Flags for special cascade behaviors.
+    pub cascade_flags: RuleCascadeFlags,
 
     /// The current @scope rule id.
     pub scope_condition_id: ScopeConditionId,
@@ -4846,6 +4860,7 @@ impl Rule {
             self.specificity(),
             cascade_data.layer_order_for(self.layer_id),
             scope_proximity,
+            self.cascade_flags,
         )
     }
 
@@ -4857,7 +4872,7 @@ impl Rule {
         source_order: u32,
         layer_id: LayerId,
         container_condition_id: ContainerConditionId,
-        is_starting_style: bool,
+        cascade_flags: RuleCascadeFlags,
         scope_condition_id: ScopeConditionId,
     ) -> Self {
         Self {
@@ -4867,7 +4882,7 @@ impl Rule {
             source_order,
             layer_id,
             container_condition_id,
-            is_starting_style,
+            cascade_flags,
             scope_condition_id,
         }
     }

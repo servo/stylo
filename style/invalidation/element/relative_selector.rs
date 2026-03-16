@@ -30,9 +30,9 @@ use crate::stylist::{CascadeData, Stylist};
 use dom::ElementState;
 use rustc_hash::FxHashMap;
 use selectors::matching::{
-    early_reject_by_local_name, matches_selector, ElementSelectorFlags,
-    IncludeStartingStyle, MatchingContext, MatchingForInvalidation, MatchingMode,
-    NeedsSelectorFlags, QuirksMode, SelectorCaches, VisitedHandlingMode,
+    early_reject_by_local_name, matches_selector, ElementSelectorFlags, MatchingContext,
+    MatchingForInvalidation, MatchingMode, NeedsSelectorFlags, QuirksMode, SelectorCaches,
+    VisitedHandlingMode,
 };
 use selectors::parser::SelectorKey;
 use selectors::OpaqueElement;
@@ -386,7 +386,7 @@ fn invalidation_can_collapse(
         // differing in selector offset.
         let a_nexts = a_deps.as_ref().slice();
         let b_nexts = b_deps.as_ref().slice();
-        if a_nexts.is_empty()|| b_nexts.is_empty() {
+        if a_nexts.is_empty() || b_nexts.is_empty() {
             // Can happen when we get out to empty @scope() rules.
             // If they're both empty, we can just do nothing for both.
             return a_nexts.is_empty() == b_nexts.is_empty();
@@ -993,7 +993,6 @@ where
             None,
             &mut selector_caches,
             VisitedHandlingMode::AllLinksVisitedAndUnvisited,
-            IncludeStartingStyle::No,
             self.quirks_mode,
             NeedsSelectorFlags::No,
             MatchingForInvalidation::Yes,
@@ -1251,7 +1250,6 @@ where
             None,
             selector_caches,
             VisitedHandlingMode::AllLinksVisitedAndUnvisited,
-            IncludeStartingStyle::No,
             quirks_mode,
             NeedsSelectorFlags::No,
             MatchingForInvalidation::Yes,

@@ -54,7 +54,7 @@ pub trait PseudoElement: Sized + ToCss {
 
     /// Whether this pseudo-element is element-backed.
     /// https://drafts.csswg.org/css-pseudo-4/#element-like
-    fn parses_as_element_backed(&self) -> bool {
+    fn is_element_backed(&self) -> bool {
         false
     }
 
@@ -1977,7 +1977,7 @@ impl RelativeSelectorCombinatorCount {
                     result.adjacent_or_next_siblings += 1;
                 },
                 Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment => {
-                    continue;
+                    continue
                 },
             };
         }
@@ -2027,7 +2027,7 @@ impl CombinatorComposition {
                     result.insert(Self::SIBLINGS);
                 },
                 Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment => {
-                    continue;
+                    continue
                 },
             };
             if result.is_all() {
@@ -3374,7 +3374,7 @@ where
                 builder.push_simple_selector(Component::Slotted(selector));
             },
             SimpleSelectorParseResult::PseudoElement(p) => {
-                if p.parses_as_element_backed() {
+                if p.is_element_backed() {
                     state.insert(SelectorParsingState::AFTER_PART_LIKE);
                 } else {
                     state.insert(SelectorParsingState::AFTER_NON_ELEMENT_BACKED_PSEUDO);
@@ -3804,7 +3804,7 @@ pub mod tests {
             matches!(self, Self::Before | Self::After)
         }
 
-        fn parses_as_element_backed(&self) -> bool {
+        fn is_element_backed(&self) -> bool {
             matches!(self, Self::DetailsContent)
         }
     }

@@ -23,6 +23,9 @@ use crate::values::computed::position::{
 };
 use crate::values::specified::align::AlignFlags;
 
+#[cfg(feature = "gecko")]
+use selectors::parser::PseudoElement;
+
 /// A struct that implements all the adjustment methods.
 ///
 /// NOTE(emilio): If new adjustments are introduced that depend on reset

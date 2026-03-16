@@ -6,14 +6,12 @@
 
 import os
 import sys
-
 import toml
 
 THIS_DIR = os.path.dirname(__file__)
 sys.path.insert(0, os.path.join(os.path.dirname(THIS_DIR), "properties"))
 
 import data
-
 
 class Pseudo(object):
     def __init__(self, name, argument, enabled_in, pref):
@@ -57,10 +55,6 @@ class Pseudo(object):
                 flags.append("IS_FLEX_OR_GRID_ITEM")
             if self.is_element_backed:
                 flags.append("IS_ELEMENT_BACKED")
-            if self.is_tree_abiding:
-                flags.append("IS_TREE_ABIDING")
-            if self.parses_as_element_backed:
-                flags.append("PARSES_AS_ELEMENT_BACKED")
             if self.supports_user_action_state:
                 flags.append("SUPPORTS_USER_ACTION_STATE")
         if isinstance(self, AnonBox):
@@ -74,59 +68,29 @@ class Pseudo(object):
 
 
 class AnonBox(Pseudo):
-    def __init__(self, name, wrapper=False, inherits=True):
-        super().__init__(name, argument=None, enabled_in="ua", pref=None)
+    def __init__(self, name, wrapper = False, inherits = True):
+        super().__init__(name, argument = None, enabled_in = "ua", pref = None)
         self.wrapper = wrapper
         self.inherits = inherits
 
 
 class PseudoElement(Pseudo):
-    def __init__(
-        self,
-        name,
-        enabled_in="content",
-        is_css2=False,
-        is_eager=False,
-        is_js_created_nac=False,
-        is_flex_or_grid_item=False,
-        is_element_backed=False,
-        is_tree_abiding=False,
-        parses_as_element_backed=None,
-        supports_user_action_state=False,
-        pref=None,
-        argument=None,
-    ):
+    def __init__(self, name, enabled_in = "content", is_css2 = False, is_eager = False, is_js_created_nac = False, is_flex_or_grid_item = False, is_element_backed = False, supports_user_action_state = False, pref = None, argument = None):
         super().__init__(name, argument=argument, enabled_in=enabled_in, pref=pref)
         self.is_css2 = is_css2
         self.is_eager = is_eager
         self.is_js_created_nac = is_js_created_nac
         self.is_flex_or_grid_item = is_flex_or_grid_item
         self.is_element_backed = is_element_backed
-        self.is_tree_abiding = is_element_backed or is_tree_abiding
-        self.parses_as_element_backed = (
-            parses_as_element_backed
-            if parses_as_element_backed is not None
-            else is_element_backed
-        )
         self.supports_user_action_state = supports_user_action_state
 
-
-class PseudoElementData:
+class PseudoElementData():
     def __init__(self):
         this_dir = os.path.dirname(__file__)
         pseudo_elements_toml = os.path.join(this_dir, "pseudo_elements.toml")
         anon_boxes_toml = os.path.join(this_dir, "anon_boxes.toml")
-        self.anon_boxes = sorted(
-            (
-                AnonBox(name, **val)
-                for name, val in toml.loads(open(anon_boxes_toml).read()).items()
-            ),
-            key=lambda n: n.inherits,
-        )
-        self.pseudo_elements = [
-            PseudoElement(name, **val)
-            for name, val in toml.loads(open(pseudo_elements_toml).read()).items()
-        ]
+        self.anon_boxes = sorted((AnonBox(name, **val) for name, val in toml.loads(open(anon_boxes_toml).read()).items()), key=lambda n: n.inherits)
+        self.pseudo_elements = [PseudoElement(name, **val) for name, val in toml.loads(open(pseudo_elements_toml).read()).items()]
         self.path_dependencies = [pseudo_elements_toml, anon_boxes_toml]
 
     def all_pseudos(self):

@@ -180,7 +180,6 @@ pub enum Color {
     /// The contrast-color function.
     ContrastColor(Box<Color>),
     /// Quirksmode-only rule for inheriting color from the body
-    #[cfg(feature = "gecko")]
     InheritFromBodyQuirk,
 }
 
@@ -427,7 +426,6 @@ pub enum SystemColor {
 impl SystemColor {
     #[inline]
     fn compute(&self, cx: &Context) -> ComputedColor {
-        use crate::gecko::values::convert_nscolor_to_absolute_color;
         use crate::gecko_bindings::bindings;
 
         let color = cx.device().system_nscolor(*self, cx.builder.color_scheme);
@@ -439,7 +437,7 @@ impl SystemColor {
         if color == bindings::NS_SAME_AS_FOREGROUND_COLOR {
             return ComputedColor::currentcolor();
         }
-        ComputedColor::Absolute(convert_nscolor_to_absolute_color(color))
+        ComputedColor::Absolute(AbsoluteColor::from_nscolor(color))
     }
 }
 
@@ -676,7 +674,6 @@ impl ToCss for Color {
                 dest.write_char(')')
             },
             Color::System(system) => system.to_css(dest),
-            #[cfg(feature = "gecko")]
             Color::InheritFromBodyQuirk => dest.write_str("-moz-inherit-from-body-quirk"),
         }
     }
@@ -686,7 +683,6 @@ impl Color {
     /// Returns whether this color is allowed in forced-colors mode.
     pub fn honored_in_forced_colors_mode(&self, allow_transparent: bool) -> bool {
         match *self {
-            #[cfg(feature = "gecko")]
             Self::InheritFromBodyQuirk => false,
             Self::CurrentColor => true,
             Self::System(..) => true,
@@ -920,7 +916,6 @@ impl Color {
                 ComputedColor::ContrastColor(Box::new(c.to_computed_color(context)?))
             },
             Color::System(system) => system.compute(context?),
-            #[cfg(feature = "gecko")]
             Color::InheritFromBodyQuirk => {
                 ComputedColor::Absolute(context?.device().body_text_color())
             },

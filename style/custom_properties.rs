@@ -22,7 +22,6 @@ use crate::properties_and_values::{
         SpecifiedValue as SpecifiedRegisteredValue,
     },
 };
-use crate::rule_tree::RuleCascadeFlags;
 use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet};
 use crate::stylesheets::UrlExtraData;
 use crate::stylist::Stylist;
@@ -36,7 +35,6 @@ use cssparser::{
     CowRcStr, Delimiter, Parser, ParserInput, SourcePosition, Token, TokenSerializationType,
 };
 use rustc_hash::FxHashMap;
-use selectors::context::IncludeStartingStyle;
 use selectors::parser::SelectorParseErrorKind;
 use servo_arc::Arc;
 use smallvec::SmallVec;
@@ -1136,9 +1134,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
             }
         }
 
-        if priority.flags().contains(RuleCascadeFlags::STARTING_STYLE)
-            && self.computed_context.include_starting_style == IncludeStartingStyle::No
-        {
+        if !(priority.flags() - self.computed_context.included_cascade_flags).is_empty() {
             return;
         }
 

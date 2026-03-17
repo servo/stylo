@@ -18,7 +18,7 @@ use crate::properties::ComputedValues;
 #[cfg(feature = "servo")]
 use crate::properties::PropertyId;
 use crate::rule_cache::RuleCache;
-use crate::rule_tree::StrongRuleNode;
+use crate::rule_tree::{RuleCascadeFlags, StrongRuleNode};
 use crate::selector_parser::{SnapshotMap, EAGER_PSEUDO_COUNT};
 use crate::shared_lock::StylesheetGuards;
 use crate::sharing::StyleSharingCache;
@@ -31,7 +31,7 @@ use euclid::default::Size2D;
 use euclid::Scale;
 #[cfg(feature = "servo")]
 use rustc_hash::FxHashMap;
-use selectors::context::{IncludeStartingStyle, SelectorCaches};
+use selectors::context::SelectorCaches;
 #[cfg(feature = "gecko")]
 use servo_arc::Arc;
 use std::fmt;
@@ -195,8 +195,8 @@ pub struct CascadeInputs {
     /// The set of flags from container queries that we need for invalidation.
     pub flags: ComputedValueFlags,
 
-    /// Whether we should include @starting-style rules.
-    pub include_starting_style: IncludeStartingStyle,
+    /// The set of RuleCascadeFlags to include in the cascade.
+    pub included_cascade_flags: RuleCascadeFlags,
 }
 
 impl CascadeInputs {
@@ -206,7 +206,7 @@ impl CascadeInputs {
             rules: style.rules.clone(),
             visited_rules: style.visited_style().and_then(|v| v.rules.clone()),
             flags: style.flags.for_cascade_inputs(),
-            include_starting_style: IncludeStartingStyle::No,
+            included_cascade_flags: RuleCascadeFlags::empty(),
         }
     }
 }

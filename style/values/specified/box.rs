@@ -32,11 +32,6 @@ fn grid_enabled() -> bool {
 }
 
 #[inline]
-fn appearance_base_enabled(_context: &ParserContext) -> bool {
-    static_prefs::pref!("layout.css.appearance-base.enabled")
-}
-
-#[inline]
 fn appearance_base_select_enabled(_context: &ParserContext) -> bool {
     static_prefs::pref!("dom.select.customizable_select.enabled")
 }
@@ -1692,11 +1687,8 @@ pub enum Appearance {
     Textfield,
     /// The dropdown button(s) that open up a dropdown list.
     MenulistButton,
-    /// https://drafts.csswg.org/css-forms/#appearance
-    #[parse(condition = "appearance_base_enabled")]
-    Base,
-    /// Only relevant to the <select> element and ::picker(select) pseudo-element, allowing them to
-    /// be styled.
+    /// Only relevant to the <select> element and ::picker(select) pseudo-element,
+    /// allowing them to be styled.
     #[parse(condition = "appearance_base_select_enabled")]
     BaseSelect,
     /// Menu Popup background.

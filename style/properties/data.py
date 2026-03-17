@@ -59,10 +59,6 @@ PRIORITARY_PROPERTIES = set(
         "zoom",
         # Line height lengths depend on this.
         "line-height",
-        # appearance and -moz-default-appearance control whether
-        # @appearance-base rules apply.
-        "-moz-default-appearance",
-        "appearance",
     ]
 )
 

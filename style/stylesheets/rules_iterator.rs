@@ -136,7 +136,6 @@ where
             CssRule::LayerBlock(ref layer_rule) => Some(layer_rule.rules.read_with(guard).0.iter()),
             CssRule::Scope(ref rule) => Some(rule.rules.read_with(guard).0.iter()),
             CssRule::StartingStyle(ref rule) => Some(rule.rules.read_with(guard).0.iter()),
-            CssRule::AppearanceBase(ref rule) => Some(rule.rules.read_with(guard).0.iter()),
         }
     }
 }

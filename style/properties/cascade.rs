@@ -32,6 +32,7 @@ use crate::values::specified::length::FontBaseSize;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
 use crate::values::{computed, specified};
 use rustc_hash::FxHashMap;
+use selectors::context::IncludeStartingStyle;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::borrow::Cow;
@@ -74,7 +75,7 @@ pub fn cascade<E>(
     try_tactic: &PositionTryFallbacksTryTactic,
     visited_rules: Option<&StrongRuleNode>,
     cascade_input_flags: ComputedValueFlags,
-    included_cascade_flags: RuleCascadeFlags,
+    include_starting_style: IncludeStartingStyle,
     rule_cache: Option<&RuleCache>,
     rule_cache_conditions: &mut RuleCacheConditions,
     element: Option<E>,
@@ -93,7 +94,7 @@ where
         try_tactic,
         CascadeMode::Unvisited { visited_rules },
         cascade_input_flags,
-        included_cascade_flags,
+        include_starting_style,
         rule_cache,
         rule_cache_conditions,
         element,
@@ -190,7 +191,7 @@ fn cascade_rules<E>(
     try_tactic: &PositionTryFallbacksTryTactic,
     cascade_mode: CascadeMode,
     cascade_input_flags: ComputedValueFlags,
-    included_cascade_flags: RuleCascadeFlags,
+    include_starting_style: IncludeStartingStyle,
     rule_cache: Option<&RuleCache>,
     rule_cache_conditions: &mut RuleCacheConditions,
     element: Option<E>,
@@ -210,7 +211,7 @@ where
         try_tactic,
         cascade_mode,
         cascade_input_flags,
-        included_cascade_flags,
+        include_starting_style,
         rule_cache,
         rule_cache_conditions,
         element,
@@ -269,7 +270,7 @@ pub fn apply_declarations<'a, E, I>(
     try_tactic: &'a PositionTryFallbacksTryTactic,
     cascade_mode: CascadeMode,
     cascade_input_flags: ComputedValueFlags,
-    included_cascade_flags: RuleCascadeFlags,
+    include_starting_style: IncludeStartingStyle,
     rule_cache: Option<&'a RuleCache>,
     rule_cache_conditions: &'a mut RuleCacheConditions,
     element: Option<E>,
@@ -301,7 +302,7 @@ where
         stylist.quirks_mode(),
         rule_cache_conditions,
         container_size_query,
-        included_cascade_flags,
+        include_starting_style,
     );
 
     context.style().add_flags(cascade_input_flags);
@@ -434,21 +435,6 @@ where
 ///
 /// This is a bit of a clunky way of achieving this.
 type DeclarationsToApplyUnlessOverriden = SmallVec<[PropertyDeclaration; 2]>;
-
-fn is_base_appearance(context: &computed::Context) -> bool {
-    use computed::Appearance;
-    let box_style = context.builder.get_box();
-    match box_style.clone_appearance() {
-        Appearance::BaseSelect => {
-            matches!(
-                box_style.clone__moz_default_appearance(),
-                Appearance::Listbox | Appearance::Menulist
-            )
-        },
-        Appearance::Base => box_style.clone__moz_default_appearance() != Appearance::None,
-        _ => false,
-    }
-}
 
 fn tweak_when_ignoring_colors(
     context: &computed::Context,
@@ -775,6 +761,10 @@ impl<'b> Cascade<'b> {
                 return true; // Common case, we're done.
             }
             debug_assert!(
+                self.reverted_set.contains(longhand_id),
+                "How else can we fail to apply a prioritary property?"
+            );
+            debug_assert!(
                 decl.next_index == 0 || decl.next_index > index,
                 "should make progress! {} -> {}",
                 index,
@@ -811,16 +801,6 @@ impl<'b> Cascade<'b> {
 
         if !decls.has_prioritary_properties {
             return;
-        }
-
-        apply!(MozDefaultAppearance);
-        if apply!(Appearance) && is_base_appearance(&context) {
-            context
-                .style()
-                .add_flags(ComputedValueFlags::IS_IN_APPEARANCE_BASE_SUBTREE);
-            context
-                .included_cascade_flags
-                .insert(RuleCascadeFlags::APPEARANCE_BASE);
         }
 
         let has_writing_mode = apply!(WritingMode) | apply!(Direction);
@@ -979,7 +959,9 @@ impl<'b> Cascade<'b> {
             return;
         }
 
-        if !(priority.flags() - context.included_cascade_flags).is_empty() {
+        if priority.flags().contains(RuleCascadeFlags::STARTING_STYLE)
+            && context.include_starting_style == IncludeStartingStyle::No
+        {
             return;
         }
 
@@ -1104,7 +1086,7 @@ impl<'b> Cascade<'b> {
             // Cascade input flags don't matter for the visited style, they are
             // in the main (unvisited) style.
             Default::default(),
-            context.included_cascade_flags,
+            context.include_starting_style,
             // The rule cache doesn't care about caching :visited
             // styles, we cache the unvisited style instead. We still do
             // need to set the caching dependencies properly if present
@@ -1211,7 +1193,6 @@ impl<'b> Cascade<'b> {
         let bits_to_copy = ComputedValueFlags::HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND
             | ComputedValueFlags::DEPENDS_ON_SELF_FONT_METRICS
             | ComputedValueFlags::DEPENDS_ON_INHERITED_FONT_METRICS
-            | ComputedValueFlags::IS_IN_APPEARANCE_BASE_SUBTREE
             | ComputedValueFlags::USES_CONTAINER_UNITS
             | ComputedValueFlags::USES_VIEWPORT_UNITS;
         context.builder.add_flags(style.flags & bits_to_copy);

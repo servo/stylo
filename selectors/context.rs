@@ -70,6 +70,20 @@ impl VisitedHandlingMode {
     }
 }
 
+/// The mode to use whether we should matching rules inside @starting-style.
+/// https://drafts.csswg.org/css-transitions-2/#starting-style
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Default)]
+pub enum IncludeStartingStyle {
+    /// All without rules inside @starting-style. This is for the most common case because the
+    /// primary/pseudo styles doesn't use rules inside @starting-style.
+    #[default]
+    No,
+    /// Get the starting style. The starting style for an element as the after-change style with
+    /// @starting-style rules applied in addition. In other words, this matches all rules,
+    /// including rules inside @starting-style.
+    Yes,
+}
+
 /// Whether we need to set selector invalidation flags on elements for this
 /// match request.
 #[derive(Clone, Copy, Debug, PartialEq)]

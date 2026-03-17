@@ -711,7 +711,7 @@ impl Parse for ViewTimelineInset {
     ToTyped,
 )]
 #[repr(C, u8)]
-pub enum ViewTransitionName {
+pub enum ViewTransitionNameKeyword {
     /// None keyword.
     None,
     /// match-element keyword.
@@ -721,14 +721,14 @@ pub enum ViewTransitionName {
     Ident(Atom),
 }
 
-impl ViewTransitionName {
+impl ViewTransitionNameKeyword {
     /// Returns the `none` value.
     pub fn none() -> Self {
         Self::None
     }
 }
 
-impl Parse for ViewTransitionName {
+impl Parse for ViewTransitionNameKeyword {
     fn parse<'i, 't>(
         _: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -749,7 +749,7 @@ impl Parse for ViewTransitionName {
     }
 }
 
-impl ToCss for ViewTransitionName {
+impl ToCss for ViewTransitionNameKeyword {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: Write,
@@ -760,6 +760,16 @@ impl ToCss for ViewTransitionName {
             Self::MatchElement => dest.write_str("match-element"),
             Self::Ident(ref ident) => serialize_atom_identifier(ident, dest),
         }
+    }
+}
+
+/// https://drafts.csswg.org/css-view-transitions-1/#view-transition-name-prop
+pub type ViewTransitionName = TreeScoped<ViewTransitionNameKeyword>;
+
+impl ViewTransitionName {
+    /// Return the `none` value.
+    pub fn none() -> Self {
+        Self::with_default_level(ViewTransitionNameKeyword::none())
     }
 }
 

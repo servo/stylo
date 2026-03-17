@@ -12,13 +12,12 @@ use crate::dom::TElement;
 use crate::matching::MatchMethods;
 use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::{ComputedValues, FirstLineReparenting};
-use crate::rule_tree::{RuleTree, StrongRuleNode};
+use crate::rule_tree::{RuleCascadeFlags, RuleTree, StrongRuleNode};
 use crate::selector_parser::{PseudoElement, SelectorImpl};
 use crate::stylist::RuleInclusion;
 use log::Level::Trace;
 use selectors::matching::{
-    IncludeStartingStyle, MatchingContext, MatchingForInvalidation, MatchingMode,
-    NeedsSelectorFlags, VisitedHandlingMode,
+    MatchingContext, MatchingForInvalidation, MatchingMode, NeedsSelectorFlags, VisitedHandlingMode,
 };
 use selectors::parser::PseudoElement as PseudoElementTrait;
 use servo_arc::Arc;
@@ -216,7 +215,7 @@ where
                 rules: Some(primary_results.rule_node),
                 visited_rules,
                 flags: primary_results.flags,
-                include_starting_style: Default::default(),
+                included_cascade_flags: RuleCascadeFlags::empty(),
             },
             parent_style,
             layout_parent_style,
@@ -234,7 +233,7 @@ where
         let may_reuse = self.element.matches_user_and_content_rules()
             && parent_style.is_some()
             && inputs.rules.is_some()
-            && inputs.include_starting_style == IncludeStartingStyle::No;
+            && inputs.included_cascade_flags.is_empty();
 
         if may_reuse {
             let cached = self.context.thread_local.sharing_cache.lookup_by_rules(
@@ -462,7 +461,7 @@ where
                 rules: Some(rule_node),
                 visited_rules,
                 flags,
-                include_starting_style: Default::default(),
+                included_cascade_flags: RuleCascadeFlags::empty(),
             },
             Some(originating_element_style.style()),
             layout_parent_style,
@@ -602,7 +601,7 @@ where
             rules: Some(primary_style.rules().clone()),
             visited_rules: primary_style.visited_rules().cloned(),
             flags: primary_style.flags.for_cascade_inputs(),
-            include_starting_style: IncludeStartingStyle::Yes,
+            included_cascade_flags: RuleCascadeFlags::STARTING_STYLE,
         };
         Some(self.cascade_style_and_visited_with_default_parents(inputs))
     }
@@ -625,7 +624,7 @@ where
             rules: Some(without_transition_rules),
             visited_rules: primary_style.visited_rules().cloned(),
             flags: primary_style.flags.for_cascade_inputs(),
-            include_starting_style: Default::default(),
+            included_cascade_flags: RuleCascadeFlags::empty(),
         };
 
         let style = self.cascade_style_and_visited_with_default_parents(inputs);

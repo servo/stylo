@@ -21,6 +21,7 @@ use crate::values::generics::{NonNegative, ZeroToOne};
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericBoxShadow<Color, SizeLength, BlurShapeLength, ShapeLength> {
@@ -50,6 +51,7 @@ pub use self::GenericBoxShadow as BoxShadow;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[animation(no_bound(U))]
 #[repr(C, u8)]
@@ -108,6 +110,7 @@ pub use self::GenericFilter as Filter;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C)]
 pub struct GenericSimpleShadow<Color, SizeLength, ShapeLength> {

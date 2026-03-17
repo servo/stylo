@@ -14,7 +14,9 @@ use crate::Zero;
 use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
+use style_traits::{
+    CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, ToTyped,
+};
 
 /// A time value according to CSS-VALUES § 6.2.
 #[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, ToShmem)]
@@ -180,5 +182,7 @@ impl ToCss for Time {
         )
     }
 }
+
+impl ToTyped for Time {}
 
 impl SpecifiedValueInfo for Time {}

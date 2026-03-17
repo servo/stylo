@@ -13,7 +13,7 @@ use crate::values::specified::length::{
 use cssparser::{match_ignore_ascii_case, Parser};
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError, ToCss};
+use style_traits::{CssWriter, ParseError, ToCss, ToTyped};
 
 /// A specified value for the `background-size` property.
 pub type BackgroundSize = GenericBackgroundSize<NonNegativeLengthPercentage>;
@@ -111,6 +111,8 @@ impl ToCss for BackgroundRepeat {
         }
     }
 }
+
+impl ToTyped for BackgroundRepeat {}
 
 impl Parse for BackgroundRepeat {
     fn parse<'i, 't>(

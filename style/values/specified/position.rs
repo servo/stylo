@@ -51,7 +51,7 @@ pub type HorizontalPosition = PositionComponent<HorizontalPositionKeyword>;
 pub type VerticalPosition = PositionComponent<VerticalPositionKeyword>;
 
 /// The specified value of a component of a CSS `<position>`.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 pub enum PositionComponent<S> {
     /// `center`
     Center,

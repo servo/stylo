@@ -16,6 +16,7 @@ use cssparser::{match_ignore_ascii_case, Parser};
 use std::fmt::{self, Write};
 use style_traits::{
     CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
+    ToTyped,
 };
 
 /// A given transition property, that is either `All`, a longhand or shorthand
@@ -49,6 +50,8 @@ impl ToCss for TransitionProperty {
         }
     }
 }
+
+impl ToTyped for TransitionProperty {}
 
 impl Parse for TransitionProperty {
     fn parse<'i, 't>(
@@ -129,6 +132,7 @@ impl TransitionProperty {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum TransitionBehavior {
@@ -446,6 +450,7 @@ impl Default for Scroller {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum ScrollAxis {
@@ -625,6 +630,8 @@ impl ToCss for TimelineIdent {
         self.0.to_css(dest)
     }
 }
+
+impl ToTyped for TimelineName {}
 
 /// A specified value for the `animation-timeline` property.
 pub type AnimationTimeline = generics::GenericAnimationTimeline<LengthPercentage>;

@@ -17,6 +17,7 @@ use crate::parser::ParserContext;
     SpecifiedValueInfo,
     ToCss,
     ToShmem,
+    ToTyped,
     Serialize,
     Deserialize,
 )]

@@ -12,7 +12,7 @@ use crate::values::specified::animation::{
 use crate::values::specified::length::EqualsPercentage;
 use crate::Zero;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssWriter, ToCss, ToTyped};
 
 /// The `animation-duration` property.
 ///
@@ -73,6 +73,8 @@ impl<T: ToCss + Zero> ToCss for AnimationDuration<T> {
     }
 }
 
+impl<T: ToTyped + Zero> ToTyped for AnimationDuration<T> {}
+
 /// The view() notation.
 /// https://drafts.csswg.org/scroll-animations-1/#view-notation
 #[derive(
@@ -113,6 +115,7 @@ pub use self::GenericViewFunction as ViewFunction;
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericAnimationTimeline<LengthPercent> {
@@ -194,6 +197,11 @@ where
     }
 }
 
+impl<LengthPercent> ToTyped for ViewTimelineInset<LengthPercent> where
+    LengthPercent: PartialEq + ToTyped
+{
+}
+
 impl<LengthPercent> Default for ViewTimelineInset<LengthPercent> {
     fn default() -> Self {
         Self {
@@ -266,6 +274,7 @@ impl<LengthPercent> AnimationRangeValue<LengthPercent> {
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(transparent)]
 pub struct GenericAnimationRangeStart<LengthPercent>(pub GenericAnimationRangeValue<LengthPercent>);
@@ -317,6 +326,7 @@ impl<LengthPercent: ToCss + EqualsPercentage> ToCss for AnimationRangeStart<Leng
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(transparent)]
 pub struct GenericAnimationRangeEnd<LengthPercent>(pub GenericAnimationRangeValue<LengthPercent>);

@@ -23,6 +23,7 @@ use crate::values::generics::length::{GenericLengthPercentageOrAuto, LengthPerce
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericBackgroundSize<LengthPercent> {

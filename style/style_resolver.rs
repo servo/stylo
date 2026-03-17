@@ -277,7 +277,7 @@ where
         if !self
             .element
             .implemented_pseudo_element()
-            .is_some_and(|p| !PseudoElementTrait::is_element_backed(&p))
+            .is_some_and(|p| !p.is_element_backed())
         {
             let layout_parent_style_for_pseudo =
                 layout_parent_style_for_pseudo(&primary_style, layout_parent_style);

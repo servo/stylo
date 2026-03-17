@@ -27,11 +27,14 @@
 is_css2 = true
 is_eager = true
 is_flex_or_grid_item = true
+is_tree_abiding = true
 [before]
 is_css2 = true
 is_eager = true
 is_flex_or_grid_item = true
+is_tree_abiding = true
 [marker]
+is_tree_abiding = true
 [backdrop]
 [cue]
 is_js_created_nac = true
@@ -95,10 +98,13 @@ is_element_backed = true
 enabled_in = "chrome"
 is_element_backed = true
 # The menulist button of a <select>
-# TODO: Maybe unify with the base-appearance ::picker-icon pseudo?
-[-moz-select-picker-icon]
+[picker-icon]
 enabled_in = "chrome"
+pref = "dom.select.customizable_select.enabled"
 is_element_backed = true
+# We represent ::picker-icon with a real element, but per spec it should parse
+# as a regular generated content pseudo-element.
+parses_as_element_backed = false
 [-moz-progress-bar]
 supports_user_action_state = true
 [-moz-range-track]
@@ -112,6 +118,7 @@ supports_user_action_state = true
 [placeholder]
 supports_user_action_state = true
 is_element_backed = true
+parses_as_element_backed = false
 [-moz-color-swatch]
 supports_user_action_state = true
 # The root of the text value anonymous content inside an <input> or <textarea>.
@@ -129,6 +136,7 @@ is_element_backed = true
 # The button in an <input type=file>
 [file-selector-button]
 supports_user_action_state = true
+is_tree_abiding = true
 # The cropped label in a file input.
 [-moz-file-content]
 enabled_in = "chrome"

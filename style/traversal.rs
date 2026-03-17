@@ -52,27 +52,6 @@ impl<E: TElement> PreTraverseToken<E> {
     }
 }
 
-/// A global variable holding the state of
-/// `is_servo_nonincremental_layout()`.
-/// See [#22854](https://github.com/servo/servo/issues/22854).
-#[cfg(feature = "servo")]
-pub static IS_SERVO_NONINCREMENTAL_LAYOUT: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
-
-#[cfg(feature = "servo")]
-#[inline]
-fn is_servo_nonincremental_layout() -> bool {
-    use std::sync::atomic::Ordering;
-
-    IS_SERVO_NONINCREMENTAL_LAYOUT.load(Ordering::Relaxed)
-}
-
-#[cfg(not(feature = "servo"))]
-#[inline]
-fn is_servo_nonincremental_layout() -> bool {
-    false
-}
-
 /// A DOM Traversal trait, that is used to generically implement styling for
 /// Gecko and Servo.
 pub trait DomTraversal<E: TElement>: Sync {
@@ -218,11 +197,6 @@ pub trait DomTraversal<E: TElement>: Sync {
             "element_needs_traversal({:?}, {:?}, {:?})",
             el, traversal_flags, data
         );
-
-        // Non-incremental layout visits every node.
-        if is_servo_nonincremental_layout() {
-            return true;
-        }
 
         // Unwrap the data.
         let data = match data {
@@ -513,8 +487,7 @@ pub fn recalc_style_at<E, D, F>(
     // We only do this if we're not a display: none root, since in that case
     // it's useless to style children.
     let mut traverse_children = has_dirty_descendants_for_this_restyle
-        || !propagated_hint.is_empty()
-        || is_servo_nonincremental_layout();
+        || !propagated_hint.is_empty();
 
     traverse_children = traverse_children && !data.styles.is_display_none();
 
@@ -759,9 +732,7 @@ fn note_children<E, D, F>(
         let child = match child_node.as_element() {
             Some(el) => el,
             None => {
-                if is_servo_nonincremental_layout()
-                    || D::text_node_needs_traversal(child_node, data)
-                {
+                if D::text_node_needs_traversal(child_node, data) {
                     note_child(child_node);
                 }
                 continue;

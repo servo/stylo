@@ -4,7 +4,6 @@
 
 //! Style sheets and their CSS rules.
 
-mod appearance_base_rule;
 pub mod container_rule;
 mod counter_style_rule;
 mod document_rule;
@@ -52,7 +51,6 @@ use std::mem::{self, ManuallyDrop};
 use style_traits::{CssStringWriter, ParsingMode};
 use to_shmem::{SharedMemoryBuilder, ToShmem};
 
-pub use self::appearance_base_rule::AppearanceBaseRule;
 pub use self::container_rule::ContainerRule;
 pub use self::counter_style_rule::CounterStyleRule;
 pub use self::document_rule::DocumentRule;
@@ -352,7 +350,6 @@ pub enum CssRule {
     LayerStatement(Arc<LayerStatementRule>),
     Scope(Arc<ScopeRule>),
     StartingStyle(Arc<StartingStyleRule>),
-    AppearanceBase(Arc<AppearanceBaseRule>),
     PositionTry(Arc<Locked<PositionTryRule>>),
     NestedDeclarations(Arc<Locked<NestedDeclarationsRule>>),
 }
@@ -404,9 +401,6 @@ impl CssRule {
                 arc.unconditional_shallow_size_of(ops) + arc.size_of(guard, ops)
             },
             CssRule::StartingStyle(ref arc) => {
-                arc.unconditional_shallow_size_of(ops) + arc.size_of(guard, ops)
-            },
-            CssRule::AppearanceBase(ref arc) => {
                 arc.unconditional_shallow_size_of(ops) + arc.size_of(guard, ops)
             },
             // TODO(emilio): Add memory reporting for these rules.
@@ -475,7 +469,6 @@ pub enum CssRuleRef<'a> {
     LayerStatement(&'a LayerStatementRule),
     Scope(&'a ScopeRule),
     StartingStyle(&'a StartingStyleRule),
-    AppearanceBase(&'a AppearanceBaseRule),
     PositionTry(&'a LockedPositionTryRule),
     NestedDeclarations(&'a LockedNestedDeclarationsRule),
 }
@@ -503,7 +496,6 @@ impl<'a> From<&'a CssRule> for CssRuleRef<'a> {
             CssRule::LayerStatement(r) => CssRuleRef::LayerStatement(r.as_ref()),
             CssRule::Scope(r) => CssRuleRef::Scope(r.as_ref()),
             CssRule::StartingStyle(r) => CssRuleRef::StartingStyle(r.as_ref()),
-            CssRule::AppearanceBase(r) => CssRuleRef::AppearanceBase(r.as_ref()),
             CssRule::PositionTry(r) => CssRuleRef::PositionTry(r.as_ref()),
             CssRule::NestedDeclarations(r) => CssRuleRef::NestedDeclarations(r.as_ref()),
         }
@@ -552,8 +544,6 @@ pub enum CssRuleType {
     // https://drafts.csswg.org/css-nesting-1/#nested-declarations-rule
     NestedDeclarations = 24,
     CustomMedia = 25,
-    // Internal rule for UA stylesheet appearance-dependent styles.
-    AppearanceBase = 26,
 }
 
 impl CssRuleType {
@@ -648,7 +638,6 @@ impl CssRule {
             CssRule::Container(_) => CssRuleType::Container,
             CssRule::Scope(_) => CssRuleType::Scope,
             CssRule::StartingStyle(_) => CssRuleType::StartingStyle,
-            CssRule::AppearanceBase(_) => CssRuleType::AppearanceBase,
             CssRule::PositionTry(_) => CssRuleType::PositionTry,
             CssRule::NestedDeclarations(_) => CssRuleType::NestedDeclarations,
         }
@@ -799,9 +788,6 @@ impl DeepCloneWithLock for CssRule {
             CssRule::StartingStyle(ref arc) => {
                 CssRule::StartingStyle(Arc::new(arc.deep_clone_with_lock(lock, guard)))
             },
-            CssRule::AppearanceBase(ref arc) => {
-                CssRule::AppearanceBase(Arc::new(arc.deep_clone_with_lock(lock, guard)))
-            },
             CssRule::PositionTry(ref arc) => {
                 let rule = arc.read_with(guard);
                 CssRule::PositionTry(Arc::new(lock.wrap(rule.deep_clone_with_lock(lock, guard))))
@@ -838,7 +824,6 @@ impl ToCssWithGuard for CssRule {
             CssRule::Container(ref rule) => rule.to_css(guard, dest),
             CssRule::Scope(ref rule) => rule.to_css(guard, dest),
             CssRule::StartingStyle(ref rule) => rule.to_css(guard, dest),
-            CssRule::AppearanceBase(ref rule) => rule.to_css(guard, dest),
             CssRule::PositionTry(ref lock) => lock.read_with(guard).to_css(guard, dest),
             CssRule::NestedDeclarations(ref lock) => lock.read_with(guard).to_css(guard, dest),
         }

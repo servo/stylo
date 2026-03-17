@@ -24,7 +24,7 @@ use crate::font_metrics::{FontMetrics, FontMetricsOrientation};
 use crate::properties;
 use crate::properties::{ComputedValues, StyleBuilder};
 use crate::rule_cache::RuleCacheConditions;
-use crate::rule_tree::{CascadeLevel, RuleCascadeFlags};
+use crate::rule_tree::CascadeLevel;
 use crate::stylesheets::container_rule::{
     ContainerInfo, ContainerSizeQuery, ContainerSizeQueryResult,
 };
@@ -34,6 +34,7 @@ use crate::values::specified::font::QueryFontMetricsFlags;
 use crate::values::specified::length::FontBaseSize;
 use crate::{ArcSlice, Atom, One};
 use euclid::{default, Point2D, Rect, Size2D};
+use selectors::context::IncludeStartingStyle;
 use servo_arc::Arc;
 use std::cell::RefCell;
 use std::cmp;
@@ -218,11 +219,8 @@ pub struct Context<'a> {
     /// The cascade level in the shadow tree hierarchy.
     pub scope: CascadeLevel,
 
-    /// The set of RuleCascadeFlags whose rules should be included during the
-    /// cascade. STARTING_STYLE is set from the caller for re-cascade.
-    /// APPEARANCE_BASE is added dynamically after the appearance property is
-    /// resolved to a non-None value.
-    pub included_cascade_flags: RuleCascadeFlags,
+    /// Whether to include @starting-style rules during the cascade.
+    pub include_starting_style: IncludeStartingStyle,
 
     /// Container size query for this context.
     container_size_query: RefCell<ContainerSizeQuery<'a>>,
@@ -254,7 +252,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(&mut conditions),
             scope: CascadeLevel::same_tree_author_normal(),
-            included_cascade_flags: RuleCascadeFlags::empty(),
+            include_starting_style: Default::default(),
             container_size_query: RefCell::new(ContainerSizeQuery::none()),
         };
         f(&context)
@@ -292,7 +290,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(&mut conditions),
             scope: CascadeLevel::same_tree_author_normal(),
-            included_cascade_flags: RuleCascadeFlags::empty(),
+            include_starting_style: Default::default(),
             container_size_query: RefCell::new(container_size_query),
         };
 
@@ -305,14 +303,8 @@ impl<'a> Context<'a> {
         quirks_mode: QuirksMode,
         rule_cache_conditions: &'a mut RuleCacheConditions,
         container_size_query: ContainerSizeQuery<'a>,
-        mut included_cascade_flags: RuleCascadeFlags,
+        include_starting_style: IncludeStartingStyle,
     ) -> Self {
-        if builder
-            .flags()
-            .intersects(ComputedValueFlags::IS_IN_APPEARANCE_BASE_SUBTREE)
-        {
-            included_cascade_flags.insert(RuleCascadeFlags::APPEARANCE_BASE);
-        }
         Self {
             builder,
             cached_system_font: None,
@@ -324,7 +316,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
             scope: CascadeLevel::same_tree_author_normal(),
-            included_cascade_flags,
+            include_starting_style,
             container_size_query: RefCell::new(container_size_query),
         }
     }
@@ -348,7 +340,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
             scope: CascadeLevel::same_tree_author_normal(),
-            included_cascade_flags: RuleCascadeFlags::empty(),
+            include_starting_style: IncludeStartingStyle::No,
             container_size_query: RefCell::new(container_size_query),
         }
     }
@@ -372,7 +364,7 @@ impl<'a> Context<'a> {
             for_non_inherited_property: false,
             rule_cache_conditions: RefCell::new(rule_cache_conditions),
             scope: CascadeLevel::same_tree_author_normal(),
-            included_cascade_flags: RuleCascadeFlags::empty(),
+            include_starting_style: Default::default(),
             container_size_query: RefCell::new(ContainerSizeQuery::none()),
         }
     }

@@ -27,12 +27,10 @@ pub use self::source::StyleSource;
 bitflags! {
     /// Flags that are part of the cascade priority, and that we use to track
     /// information about where the rule came from.
-    #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
+    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
     pub struct RuleCascadeFlags: u8 {
         /// Whether the rule is inside a @starting-style block.
         const STARTING_STYLE = 1 << 0;
-        /// Whether the rule is inside an @appearance-base block.
-        const APPEARANCE_BASE = 1 << 1;
     }
 }
 
@@ -307,15 +305,6 @@ impl RuleTree {
             node.cascade_priority()
                 .flags()
                 .intersects(RuleCascadeFlags::STARTING_STYLE)
-        })
-    }
-
-    /// Returns whether this rule node has any @appearance-base rule.
-    pub fn has_appearance_base(path: &StrongRuleNode) -> bool {
-        path.self_and_ancestors().any(|node| {
-            node.cascade_priority()
-                .flags()
-                .intersects(RuleCascadeFlags::APPEARANCE_BASE)
         })
     }
 

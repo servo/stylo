@@ -8,7 +8,7 @@ use crate::derives::*;
 use crate::values::CSSFloat;
 use crate::Zero;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssWriter, ToCss, ToTyped};
 
 /// A computed `<time>` value.
 #[derive(Animate, Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue)]
@@ -40,6 +40,8 @@ impl ToCss for Time {
         dest.write_char('s')
     }
 }
+
+impl ToTyped for Time {}
 
 impl Zero for Time {
     fn zero() -> Self {

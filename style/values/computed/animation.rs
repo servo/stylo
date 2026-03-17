@@ -10,7 +10,7 @@ use crate::values::generics::animation as generics;
 use crate::values::specified::animation as specified;
 use crate::values::CSSFloat;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssWriter, ToCss, ToTyped};
 
 pub use crate::values::specified::animation::{
     AnimationComposition, AnimationDirection, AnimationFillMode, AnimationName, AnimationPlayState,
@@ -79,6 +79,8 @@ impl ToCss for AnimationIterationCount {
         }
     }
 }
+
+impl ToTyped for AnimationIterationCount {}
 
 /// A computed value for the `animation-timeline` property.
 pub type AnimationTimeline = generics::GenericAnimationTimeline<LengthPercentage>;

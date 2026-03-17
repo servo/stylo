@@ -81,7 +81,7 @@ use selectors::matching::{
     matches_selector, selector_may_match, MatchingContext, MatchingMode, NeedsSelectorFlags,
     SelectorCaches,
 };
-use selectors::matching::{IncludeStartingStyle, MatchingForInvalidation, VisitedHandlingMode};
+use selectors::matching::{MatchingForInvalidation, VisitedHandlingMode};
 use selectors::parser::{
     AncestorHashes, Combinator, Component, MatchesFeaturelessHost, Selector, SelectorIter,
     SelectorList,
@@ -1231,7 +1231,7 @@ impl Stylist {
                 rules: Some(rules),
                 visited_rules: None,
                 flags: Default::default(),
-                include_starting_style: Default::default(),
+                included_cascade_flags: RuleCascadeFlags::empty(),
             },
             pseudo,
             guards,
@@ -1520,7 +1520,7 @@ impl Stylist {
             try_tactic,
             visited_rules,
             inputs.flags,
-            inputs.include_starting_style,
+            inputs.included_cascade_flags,
             rule_cache,
             rule_cache_conditions,
             element,
@@ -1627,7 +1627,7 @@ impl Stylist {
             rules: Some(rules),
             visited_rules,
             flags: matching_context.extra_data.cascade_input_flags,
-            include_starting_style: Default::default(),
+            included_cascade_flags: RuleCascadeFlags::empty(),
         })
     }
 
@@ -1984,7 +1984,7 @@ impl Stylist {
                 visited_rules: None,
             },
             Default::default(),
-            IncludeStartingStyle::No,
+            RuleCascadeFlags::empty(),
             /* rule_cache = */ None,
             &mut Default::default(),
             /* element = */ None,
@@ -4273,6 +4273,11 @@ impl CascadeData {
                         .cascade_flags
                         .insert(RuleCascadeFlags::STARTING_STYLE);
                 },
+                CssRule::AppearanceBase(..) => {
+                    containing_rule_state
+                        .cascade_flags
+                        .insert(RuleCascadeFlags::APPEARANCE_BASE);
+                },
                 CssRule::Scope(ref rule) => {
                     containing_rule_state.nested_declarations_context =
                         NestedDeclarationsContext::Scope;
@@ -4516,6 +4521,7 @@ impl CascadeData {
                 | CssRule::FontFeatureValues(..)
                 | CssRule::Scope(..)
                 | CssRule::StartingStyle(..)
+                | CssRule::AppearanceBase(..)
                 | CssRule::CustomMedia(..)
                 | CssRule::PositionTry(..) => {
                     // Not affected by device changes. @custom-media is handled by the potential

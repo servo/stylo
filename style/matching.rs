@@ -552,7 +552,7 @@ trait PrivateMatchMethods: TElement {
                     rules: Some(rule_node),
                     visited_rules: primary_style.visited_rules().cloned(),
                     flags: primary_style.flags.for_cascade_inputs(),
-                    include_starting_style: Default::default(),
+                    included_cascade_flags: RuleCascadeFlags::empty(),
                 };
 
                 new_resolved_styles.primary.style = StyleResolverForElement::new(
@@ -642,7 +642,7 @@ trait PrivateMatchMethods: TElement {
             rules: Some(rule_node),
             visited_rules: style.visited_rules().cloned(),
             flags: style.flags.for_cascade_inputs(),
-            include_starting_style: Default::default(),
+            included_cascade_flags: RuleCascadeFlags::empty(),
         };
 
         let new_style = StyleResolverForElement::new(

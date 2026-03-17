@@ -13,7 +13,6 @@ use crate::shared_lock::StylesheetGuards;
 use crate::values::computed::{Context, NonNegativeLength, Zoom};
 use crate::values::specified::color::ColorSchemeFlags;
 use rustc_hash::FxHashMap;
-use selectors::context::IncludeStartingStyle;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 
@@ -176,8 +175,7 @@ impl RuleCache {
             return None;
         }
 
-        // @starting-style has the same issue.
-        if context.include_starting_style == IncludeStartingStyle::Yes {
+        if !context.included_cascade_flags.is_empty() {
             return None;
         }
 

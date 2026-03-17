@@ -144,6 +144,9 @@ bitflags! {
 
         /// Whether this style depends on container style query.
         const DEPENDS_ON_CONTAINER_STYLE_QUERY = 1 << 29;
+
+        /// Whether this style is in an appearance: base subtree
+        const IS_IN_APPEARANCE_BASE_SUBTREE = 1 << 30;
     }
 }
 
@@ -165,6 +168,7 @@ impl ComputedValueFlags {
             | Self::IS_IN_OPACITY_ZERO_SUBTREE
             | Self::SELF_OR_ANCESTOR_HAS_CONTAIN_STYLE
             | Self::SELF_OR_ANCESTOR_HAS_SIZE_CONTAINER_TYPE
+            | Self::IS_IN_APPEARANCE_BASE_SUBTREE
     }
 
     /// Flags that may be propagated to descendants.

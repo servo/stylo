@@ -27,10 +27,12 @@ pub use self::source::StyleSource;
 bitflags! {
     /// Flags that are part of the cascade priority, and that we use to track
     /// information about where the rule came from.
-    #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+    #[derive(Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
     pub struct RuleCascadeFlags: u8 {
         /// Whether the rule is inside a @starting-style block.
         const STARTING_STYLE = 1 << 0;
+        /// Whether the rule is inside an @appearance-base block.
+        const APPEARANCE_BASE = 1 << 1;
     }
 }
 

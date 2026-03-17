@@ -23,6 +23,7 @@ use crate::properties::{
     StyleBuilder,
 };
 use crate::rule_cache::RuleCacheConditions;
+use crate::rule_tree::RuleCascadeFlags;
 use crate::selector_map::PrecomputedHashSet;
 use crate::selector_parser::SelectorImpl;
 use crate::shared_lock::Locked;
@@ -983,7 +984,7 @@ impl PropertyDeclarationBlock {
             stylist.quirks_mode(),
             &mut rule_cache_conditions,
             ContainerSizeQuery::none(),
-            Default::default(),
+            RuleCascadeFlags::empty(),
         );
 
         if let Some(cv) = computed_values {

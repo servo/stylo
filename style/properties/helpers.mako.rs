@@ -335,6 +335,7 @@ pub mod ${property.ident} {
         % if property.vector.separator == "Comma":
         #[css(comma)]
         % endif
+        #[typed_value(derive_fields)]
         pub struct ComputedList(
             % if not allow_empty:
             #[css(iterable)]

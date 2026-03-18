@@ -22,7 +22,7 @@ version = "0.14.0"
 [workspace.dependencies]
 # in-repo dependencies (separately versioned)
 servo_arc       = { version = "0.4.3",  path = "./servo_arc" }
-selectors       = { version = "0.36.0", path = "./selectors" }
+selectors       = { version = "0.36.1", path = "./selectors" }
 to_shmem        = { version = "0.3.0",  path = "./to_shmem", features = ["servo"] }
 to_shmem_derive = { version = "0.1.0",  path = "./to_shmem_derive" }
 

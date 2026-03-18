@@ -75,10 +75,6 @@ argument = "PtNameAndClassSelector"
 # containing block concept.
 [-moz-snapshot-containing-block]
 enabled_in = "ua"
-[picker]
-pref = "dom.select.customizable_select.enabled"
-argument = "AtomIdent"
-is_element_backed = true
 
 # HTML5 Forms pseudo elements
 [-moz-number-spin-box]

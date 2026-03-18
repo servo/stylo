@@ -229,7 +229,13 @@ impl NonTSPseudoClass {
         }
         if matches!(
             *self,
-            Self::Playing | Self::Paused | Self::Seeking | Self::Buffering | Self::Stalled | Self::Muted | Self::VolumeLocked
+            Self::Playing
+                | Self::Paused
+                | Self::Seeking
+                | Self::Buffering
+                | Self::Stalled
+                | Self::Muted
+                | Self::VolumeLocked
         ) {
             return static_prefs::pref!("dom.media.pseudo-classes.enabled");
         }
@@ -427,8 +433,16 @@ pub fn parse_functional_pseudo_element_with_name<'i, 't>(
     }
 
     Ok(match_ignore_ascii_case! { &name,
-        "highlight" => {
-            PseudoElement::Highlight(AtomIdent::from(parser.expect_ident()?.as_ref()))
+        "highlight" => PseudoElement::Highlight(AtomIdent::from(parser.expect_ident()?.as_ref())),
+        "picker" if static_prefs::pref!("dom.select.customizable_select.enabled") => {
+            let picker_element = parser.expect_ident()?.as_ref();
+            if !picker_element.eq_ignore_ascii_case("select") {
+                return Err(parser.new_custom_error(
+                    SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
+                ));
+            }
+            // Don't use the actual ident, because it is not always all lowercase.
+            PseudoElement::Picker(AtomIdent(atom!("select")))
         },
         "view-transition-group" => {
             PseudoElement::ViewTransitionGroup(PtNameAndClassSelector::parse(parser, target)?)
@@ -442,9 +456,11 @@ pub fn parse_functional_pseudo_element_with_name<'i, 't>(
         "view-transition-new" => {
             PseudoElement::ViewTransitionNew(PtNameAndClassSelector::parse(parser, target)?)
         },
-        _ => return Err(parser.new_custom_error(
-            SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name)
-        ))
+        _ => {
+            return Err(parser.new_custom_error(
+                SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
+            ));
+        },
     })
 }
 

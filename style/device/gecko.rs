@@ -9,7 +9,6 @@ use crate::context::QuirksMode;
 use crate::custom_properties::CssEnvironment;
 use crate::device::Device;
 use crate::font_metrics::FontMetrics;
-use crate::gecko::values::{convert_absolute_color_to_nscolor, convert_nscolor_to_absolute_color};
 use crate::gecko::wrapper::GeckoElement;
 use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs;
@@ -31,7 +30,7 @@ use euclid::default::Size2D;
 use euclid::{Scale, SideOffsets2D};
 use parking_lot::RwLock;
 use servo_arc::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::{cmp, fmt};
 use style_traits::{CSSPixel, DevicePixel};
 
@@ -39,11 +38,6 @@ pub(super) struct ExtraDeviceData {
     /// NB: The document owns the styleset, who owns the stylist, and thus the
     /// `Device`, so having a raw document pointer here is fine.
     document: *const structs::Document,
-    /// The body text color, stored as an `nscolor`, used for the "tables
-    /// inherit from body" quirk.
-    ///
-    /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
-    body_text_color: AtomicUsize,
 }
 
 unsafe impl Sync for Device {}
@@ -73,12 +67,10 @@ impl Device {
             used_viewport_size: AtomicBool::new(false),
             used_dynamic_viewport_size: AtomicBool::new(false),
             environment: CssEnvironment,
-            extra: ExtraDeviceData {
-                document,
-                // This gets updated when we see the <body>, so it doesn't really
-                // matter which color-scheme we look at here.
-                body_text_color: AtomicUsize::new(prefs.mLightColors.mDefault as usize),
-            },
+            // This gets updated when we see the <body>, so it doesn't really
+            // matter which color-scheme we look at here.
+            body_text_color: AtomicU32::new(prefs.mLightColors.mDefault),
+            extra: ExtraDeviceData { document },
         }
     }
 
@@ -121,16 +113,6 @@ impl Device {
     /// The quirks mode of the document.
     pub fn quirks_mode(&self) -> QuirksMode {
         self.document().mCompatMode.into()
-    }
-
-    /// Sets the body text color for the "inherit color from body" quirk.
-    ///
-    /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
-    pub fn set_body_text_color(&self, color: AbsoluteColor) {
-        self.extra.body_text_color.store(
-            convert_absolute_color_to_nscolor(&color) as usize,
-            Ordering::Relaxed,
-        )
     }
 
     /// Gets the base size given a generic font family and a language.
@@ -195,11 +177,6 @@ impl Device {
                 None
             },
         }
-    }
-
-    /// Returns the body text color.
-    pub fn body_text_color(&self) -> AbsoluteColor {
-        convert_nscolor_to_absolute_color(self.extra.body_text_color.load(Ordering::Relaxed) as u32)
     }
 
     /// Gets the document pointer.
@@ -431,7 +408,7 @@ impl Device {
     /// This is only for forced-colors/high-contrast, so looking at light colors
     /// is ok.
     pub fn default_background_color(&self) -> AbsoluteColor {
-        convert_nscolor_to_absolute_color(
+        AbsoluteColor::from_nscolor(
             self.system_nscolor(SystemColor::Canvas, ColorScheme::normal().bits),
         )
     }
@@ -440,7 +417,7 @@ impl Device {
     ///
     /// See above for looking at light colors only.
     pub fn default_color(&self) -> AbsoluteColor {
-        convert_nscolor_to_absolute_color(
+        AbsoluteColor::from_nscolor(
             self.system_nscolor(SystemColor::Canvastext, ColorScheme::normal().bits),
         )
     }

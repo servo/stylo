@@ -97,6 +97,7 @@ impl Device {
             used_dynamic_viewport_size: AtomicBool::new(false),
             environment: CssEnvironment,
             default_values,
+            body_text_color: AtomicU32::new(AbsoluteColor::BLACK.to_nscolor()),
             extra: ExtraDeviceData {
                 media_type,
                 viewport_size,
@@ -129,13 +130,6 @@ impl Device {
     /// Get the quirks mode of the current device.
     pub fn quirks_mode(&self) -> QuirksMode {
         self.extra.quirks_mode
-    }
-
-    /// Sets the body text color for the "inherit color from body" quirk.
-    ///
-    /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
-    pub fn set_body_text_color(&self, _color: AbsoluteColor) {
-        // Servo doesn't implement this quirk (yet)
     }
 
     /// Gets the base size given a generic font family.

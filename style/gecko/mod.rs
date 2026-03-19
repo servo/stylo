@@ -11,7 +11,6 @@ pub mod arc_types;
 pub mod conversions;
 pub mod data;
 pub mod media_features;
-pub mod media_queries;
 pub mod pseudo_element;
 pub mod restyle_damage;
 pub mod selector_parser;

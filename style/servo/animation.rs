@@ -152,6 +152,10 @@ impl IntermediateComputedKeyframe {
         context: &SharedStyleContext,
         base_style: &ComputedValues,
     ) -> Vec<Self> {
+        if animation.steps.is_empty() {
+            return vec![];
+        }
+
         let mut intermediate_steps: Vec<Self> = Vec::with_capacity(animation.steps.len());
         let mut current_step = IntermediateComputedKeyframe::new(0.);
         for step in animation.steps.iter() {
@@ -582,7 +586,10 @@ impl Animation {
     /// Fill in an `AnimationValueMap` with values calculated from this animation at
     /// the given time value.
     fn get_property_declaration_at_time(&self, now: f64, map: &mut AnimationValueMap) {
-        debug_assert!(!self.computed_steps.is_empty());
+        if self.computed_steps.is_empty() {
+            // Nothing to do.
+            return;
+        }
 
         let total_progress = match self.state {
             AnimationState::Running | AnimationState::Pending | AnimationState::Finished => {
@@ -1496,20 +1503,11 @@ pub fn maybe_start_animations<E>(
             continue;
         }
 
-        let keyframe_animation = match context.stylist.lookup_keyframes(name, element) {
-            Some(animation) => animation,
-            None => continue,
+        let Some(keyframe_animation) = context.stylist.lookup_keyframes(name, element) else {
+            continue;
         };
 
         debug!("maybe_start_animations: animation {} found", name);
-
-        // If this animation doesn't have any keyframe, we can just continue
-        // without submitting it to the compositor, since both the first and
-        // the second keyframes would be synthetised from the computed
-        // values.
-        if keyframe_animation.steps.is_empty() {
-            continue;
-        }
 
         // NB: This delay may be negative, meaning that the animation may be created
         // in a state where we have advanced one or more iterations or even that the

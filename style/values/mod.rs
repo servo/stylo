@@ -816,3 +816,11 @@ impl ToCss for KeyframesName {
         return serialize(self.0.as_ref(), dest);
     }
 }
+
+impl ToTyped for KeyframesName {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        let s = ToCss::to_css_cssstring(self);
+        dest.push(TypedValue::Keyword(KeywordValue(s)));
+        Ok(())
+    }
+}

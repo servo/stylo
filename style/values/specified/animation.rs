@@ -217,6 +217,7 @@ impl AnimationIterationCount {
 )]
 #[value_info(other_values = "none")]
 #[repr(C)]
+#[typed_value(derive_fields)]
 pub struct AnimationName(pub KeyframesName);
 
 impl AnimationName {

@@ -6,6 +6,7 @@ use crate::cg;
 use crate::to_css::{CssFieldAttrs, CssInputAttrs, CssVariantAttrs};
 use proc_macro2::TokenStream;
 use quote::quote;
+use quote::ToTokens;
 use syn::{Data, DataEnum, DeriveInput, Fields, WhereClause};
 use synstructure::{BindingInfo, Structure};
 
@@ -29,7 +30,7 @@ use synstructure::{BindingInfo, Structure};
 /// * Structs
 ///   * Structs are handled similarly to data-carrying variants in mixed enums.
 ///     When `derive_fields` is enabled and the type is not marked as a
-///     bitflags type, `.to_typed()` may be generated for their inner value;
+///     bitflags type, `.to_typed()` may be generated for their inner values;
 ///     otherwise, they return `Err(())`.
 ///
 /// Unit variants are mapped to keywords using their Rust identifier converted
@@ -57,11 +58,11 @@ use synstructure::{BindingInfo, Structure};
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword
 ///   string.
 ///
-/// * `#[css(comma)]` on the variant indicates that iterable fields correspond
-///   to comma-separated CSS lists. When present, multiple items in the
-///   iterable may be reified as separate `TypedValue`s. If it is not present
-///   and the iterable contains more than one item, the derived implementation
-///   treats the value as unsupported and returns `Err(())`.
+/// * `#[css(comma)]` on the variant indicates that fields may reify to
+///   multiple separate values. When present, multiple `TypedValue`s may be
+///   produced across the supported fields. If it is not present and the
+///   derived implementation would produce more than one item, it treats the
+///   value as unsupported and returns `Err(())`.
 ///
 /// * `#[css(iterable)]` on a field indicates that the field is an iterable
 ///   collection whose elements should be reified individually.
@@ -167,7 +168,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
 ///   identifier converted with `cg::to_css_identifier` or a custom keyword if
 ///   provided through `#[css(keyword = "...")]`.
 /// * Variants marked with `#[css(skip)]` or `#[typed_value(skip)]` or
-///   `#[typed(todo)]` return `Err(())`.
+///   `#[typed_value(todo)]` return `Err(())`.
 /// * Variants with fields delegate to `derive_variant_fields_expr()` when
 ///   `derive_fields` is enabled; otherwise they return `Err(())`.
 ///
@@ -238,18 +239,18 @@ fn derive_variant_arm(
 /// Generate the match arm expression for fields of a struct or enum variant
 /// in a derived `ToTyped` implementation.
 ///
-/// This helper examines the variant’s fields and determines whether it can
-/// generate reification code for a single usable field.
+/// This helper examines the variant’s fields and generates reification code
+/// for the usable non-skipped fields.
 ///
-/// * If the variant has exactly one non-skipped, non-iterable field, it emits
-///   a call to that field’s `ToTyped` implementation and adds the
-///   corresponding trait bound (e.g. `T: ToTyped`) to the `where` clause.
+/// * If the variant has exactly one non-iterable field, it emits a direct
+///   call to that field’s `ToTyped` implementation and adds the corresponding
+///   trait bound (e.g. `T: ToTyped`) to the `where` clause.
 ///
-/// * If the variant has exactly one iterable field, it generates code that
-///   iterates the field and reifies each element.
+/// * Otherwise, it appends the reified output of the supported fields to the
+///   destination and then validates the combined result against the enclosing
+///   variant’s `#[css(comma)]` setting.
 ///
-/// Variants with multiple usable fields are not supported and simply return
-/// `Err(())`.
+/// Fields marked with `#[css(skip)]` are ignored.
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
@@ -275,14 +276,9 @@ fn derive_variant_fields_expr(
     };
 
     // At this point we have at least one usable field in `first`.
-    // Automatic reification is only supported for a single usable field for
-    // now.
-    if iter.peek().is_some() {
-        return quote! { Err(()) };
-    }
 
     // Handle the simple case of exactly one non-iterable field.
-    if !css_field_attrs.iterable {
+    if !css_field_attrs.iterable && iter.peek().is_none() {
         // Add a trait bound `T: ToTyped` to ensure the field type implements
         // the required conversion, and emit a call to its `.to_typed()`
         // method.
@@ -292,75 +288,91 @@ fn derive_variant_fields_expr(
         return quote! { style_traits::ToTyped::to_typed(#first, dest) };
     }
 
-    // Handle the case of exactly one iterable field.
-    derive_single_field_expr(first, css_field_attrs, where_clause, comma)
+    // Handle the general case by appending reified output from the supported
+    // fields directly to the destination.
+    let mut expr = derive_single_field_expr(first, css_field_attrs, where_clause);
+    for (binding, css_field_attrs) in iter {
+        derive_single_field_expr(binding, css_field_attrs, where_clause).to_tokens(&mut expr)
+    }
+
+    quote! {{
+        let old_len = dest.len();
+        #expr
+        if !#comma && dest.len() - old_len > 1 {
+            dest.truncate(old_len);
+            return Err(());
+        }
+        Ok(())
+    }}
 }
 
-/// Generate the expression used to reify a single iterable field in a derived
+/// Generate the expression used to reify a single field in a derived
 /// `ToTyped` implementation.
 ///
-/// This helper assumes the field is marked with `#[css(iterable)]`. It
-/// generates code that iterates over the field and calls `ToTyped::to_typed`
-/// for each element. If `#[css(if_empty = "...")]` is present, the generated
-/// code emits the specified keyword when the iterable is empty.
+/// For fields marked with `#[css(iterable)]`, this helper generates code that
+/// iterates over the field and calls `ToTyped::to_typed` for each element. If
+/// `#[css(if_empty = "...")]` is present, the generated code emits the
+/// specified keyword when the iterable is empty.
 ///
-/// If `#[css(comma)]` is present on the enclosing variant, multiple items in
-/// the iterable may be reified as separate `TypedValue`s. Otherwise, the
-/// iterable is only supported when it contains at most one item.
+/// For non-iterable fields, it generates a direct `ToTyped::to_typed` call
+/// for the field value.
 ///
-/// The appropriate `T: ToTyped` bounds for the iterable’s element type(s) are
-/// added to the `where` clause.
+/// The appropriate `T: ToTyped` bounds for the field type or iterable element
+/// type(s) are added to the `where` clause.
 fn derive_single_field_expr(
     field: &BindingInfo,
     css_field_attrs: CssFieldAttrs,
     where_clause: &mut Option<WhereClause>,
-    comma: bool,
 ) -> TokenStream {
-    assert!(css_field_attrs.iterable);
+    let expr = if css_field_attrs.iterable {
+        // We add `ToTyped` bounds for the iterable's element type(s), rather
+        // than for the container type itself. This avoids ToTyped forcing
+        // unrelated container types to implement ToTyped.
+        //
+        // This is a bit more involved than other derives, but it matches how
+        // Typed OM reification is structured today. If this approach works
+        // well, the helper that extracts the field types
+        // (field_generic_arguments) can be moved into cg.rs alongside other
+        // derive helpers.
+        //
+        // See also the comment in the beginning of the main `derive` fn.
+        for item_ty in field_generic_arguments(field) {
+            cg::add_predicate(where_clause, parse_quote!(#item_ty: style_traits::ToTyped));
+        }
 
-    // We add `ToTyped` bounds for the iterable's element type(s), rather than
-    // for the container type itself. This avoids ToTyped forcing unrelated
-    // container types to implement ToTyped.
-    //
-    // This is a bit more involved than other derives, but it matches how
-    // Typed OM reification is structured today. If this approach works well,
-    // the helper that extracts the field types (field_generic_arguments) can
-    // be moved into cg.rs alongside other derive helpers.
-    //
-    // See also the comment in the beginning of the main `derive` fn.
-    for item_ty in field_generic_arguments(field) {
-        cg::add_predicate(where_clause, parse_quote!(#item_ty: style_traits::ToTyped));
-    }
-
-    let expr = if let Some(if_empty) = css_field_attrs.if_empty {
-        quote! {
-            let mut iter = #field.iter().peekable();
-            if iter.peek().is_none() {
-                dest.push(style_traits::TypedValue::Keyword(
-                    style_traits::KeywordValue(style_traits::CssString::from(#if_empty)),
-                ));
-            } else {
-                for item in iter {
+        if let Some(if_empty) = css_field_attrs.if_empty {
+            quote! {
+                let mut iter = #field.iter().peekable();
+                if iter.peek().is_none() {
+                    dest.push(style_traits::TypedValue::Keyword(
+                        style_traits::KeywordValue(style_traits::CssString::from(#if_empty)),
+                    ));
+                } else {
+                    for item in iter {
+                        style_traits::ToTyped::to_typed(&item, dest)?;
+                    }
+                }
+            }
+        } else {
+            quote! {
+                for item in #field.iter() {
                     style_traits::ToTyped::to_typed(&item, dest)?;
                 }
             }
-            Ok(())
         }
     } else {
+        // Add a trait bound `T: ToTyped` to ensure the field type implements
+        // the required conversion, and emit a call to its `.to_typed()`
+        // method.
+        let ty = &field.ast().ty;
+        cg::add_predicate(where_clause, parse_quote!(#ty: style_traits::ToTyped));
+
         quote! {
-            for item in #field.iter() {
-                style_traits::ToTyped::to_typed(&item, dest)?;
-            }
-            Ok(())
+           style_traits::ToTyped::to_typed(#field, dest)?;
         }
     };
 
-    quote! {{
-        if !#comma && #field.len() > 1 {
-            return Err(());
-        }
-        #expr
-    }}
+    expr
 }
 
 /// Extract generic type arguments from a field type.

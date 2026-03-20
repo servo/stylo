@@ -700,9 +700,9 @@ pub enum TypedValue {
 ///   serialization logic as [`ToCss`].
 ///
 /// * Structs and data-carrying variants: When the
-///   `#[typed_value(derive_fields)]` attribute is present, the derive attempts
-///   to call `.to_typed()` recursively on inner fields or variant payloads,
-///   producing a nested [`TypedValue`] representation when possible.
+///   `#[typed_value(derive_fields)]` attribute is present, the derive
+///   attempts to call `.to_typed()` recursively on supported fields or
+///   variant payloads, producing [`TypedValue`]s when possible.
 ///
 /// * Other cases: If no automatic mapping is defined or recursion is not
 ///   enabled, the derived implementation falls back to the default method
@@ -731,11 +731,11 @@ pub enum TypedValue {
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword that
 ///   would otherwise be derived from the Rust identifier.
 ///
-/// * `#[css(comma)]` on the variant indicates that iterable fields correspond
-///   to comma-separated CSS lists. When this attribute is present, multiple
-///   items in the iterable may be reified as separate `TypedValue`s. If it is
-///   not present and the iterable contains more than one item, the derived
-///   implementation returns `Err(())`.
+/// * `#[css(comma)]` on the variant indicates that supported fields may reify
+///   to multiple separate values. When this attribute is present, multiple
+///   [`TypedValue`] items may be produced. If it is not present and the
+///   derived implementation would produce more than one item, it returns
+///   `Err(())`.
 ///
 /// * `#[css(iterable)]` on a field indicates that the field represents a list
 ///   of values. Each item in the iterable is reified individually by calling

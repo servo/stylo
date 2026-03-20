@@ -79,15 +79,7 @@ impl ToCssWithGuard for ContainerRule {
         dest.write_str("@container ")?;
         {
             let mut writer = CssWriter::new(dest);
-            if !self.condition.name.is_none() {
-                self.condition.name.to_css(&mut writer)?;
-                if self.condition.condition.is_some() {
-                    writer.write_char(' ')?;
-                }
-            }
-            if let Some(ref condition) = self.condition.condition {
-                condition.to_css(&mut writer)?;
-            }
+            self.condition.to_css(&mut writer)?;
         }
         self.rules.read_with(guard).to_css_block(guard, dest)
     }

@@ -65,6 +65,8 @@ jobs:
     needs:
       - linux-debug
       - linux-release
+      - macos-debug
+      - windows-debug
     steps:
       - name: Success
         if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}

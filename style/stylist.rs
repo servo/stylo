@@ -4262,10 +4262,14 @@ impl CascadeData {
                 },
                 CssRule::Container(ref rule) => {
                     let id = ContainerConditionId(self.container_conditions.len() as u16);
-                    self.container_conditions.push(ContainerConditionReference {
-                        parent: containing_rule_state.container_condition_id,
-                        condition: Some(rule.condition.clone()),
+                    let iter = rule.conditions.0.iter();
+                    let iter = iter.cloned().map(|condition| {
+                        ContainerConditionReference {
+                            parent: containing_rule_state.container_condition_id,
+                            condition: Some(condition),
+                        }
                     });
+                    self.container_conditions.extend(iter);
                     containing_rule_state.container_condition_id = id;
                 },
                 CssRule::StartingStyle(..) => {

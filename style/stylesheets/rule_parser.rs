@@ -18,7 +18,7 @@ use crate::properties_and_values::rule::{parse_property_block, PropertyRuleName}
 use crate::selector_parser::{SelectorImpl, SelectorParser};
 use crate::shared_lock::{Locked, SharedRwLock};
 use crate::str::starts_with_ignore_ascii_case;
-use crate::stylesheets::container_rule::{ContainerCondition, ContainerRule};
+use crate::stylesheets::container_rule::{ContainerCondition, ContainerConditions, ContainerRule};
 use crate::stylesheets::document_rule::DocumentCondition;
 use crate::stylesheets::font_feature_values_rule::parse_family_name_list;
 use crate::stylesheets::import_rule::{ImportLayer, ImportRule, ImportSupportsCondition};
@@ -916,7 +916,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             AtRulePrelude::Container(condition) => {
                 let source_location = start.source_location();
                 CssRule::Container(Arc::new(ContainerRule {
-                    condition,
+                    conditions: ContainerConditions(smallvec::smallvec![condition]),
                     rules: self.parse_nested_rules(input, CssRuleType::Container),
                     source_location,
                 }))

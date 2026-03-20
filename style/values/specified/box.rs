@@ -668,7 +668,7 @@ pub enum DominantBaseline {
     /// writing modes when 'text-orientation' is 'mixed' or 'upright'.
     Auto,
     /// Use the text-under baseline.
-    #[parse(aliases = "text-before-edge")]
+    #[parse(aliases = "text-after-edge")]
     TextBottom,
     /// Use the alphabetic baseline.
     Alphabetic,
@@ -685,7 +685,7 @@ pub enum DominantBaseline {
     /// Use the hanging baseline.
     Hanging,
     /// Use the text-over baseline.
-    #[parse(aliases = "text-after-edge")]
+    #[parse(aliases = "text-before-edge")]
     TextTop,
 }
 

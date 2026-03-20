@@ -4035,7 +4035,7 @@ pub mod tests {
             name: CowRcStr<'i>,
             parser: &mut CssParser<'i, 't>,
         ) -> Result<PseudoElement, SelectorParseError<'i>> {
-            match_ignore_ascii_case! { &name,
+            match_ignore_ascii_case! {&name,
                 "highlight" => return Ok(PseudoElement::Highlight(parser.expect_ident()?.as_ref().to_owned())),
                 _ => {}
             }

@@ -7,7 +7,7 @@ use crate::to_css::{CssFieldAttrs, CssInputAttrs, CssVariantAttrs};
 use proc_macro2::TokenStream;
 use quote::quote;
 use quote::ToTokens;
-use syn::{Data, DataEnum, DeriveInput, Fields, WhereClause};
+use syn::{Data, DataEnum, DeriveInput, Fields, Path, WhereClause};
 use synstructure::{BindingInfo, Structure};
 
 /// Derive implementation of the `ToTyped` trait.
@@ -54,6 +54,10 @@ use synstructure::{BindingInfo, Structure};
 ///   `Err(())`.
 ///
 /// * `#[css(skip)]` on a field disables reification for that field.
+///
+/// * `#[typed_value(skip_if = "...")]` on a field conditionally disables
+///   reification for that field. If the provided function returns `true` for
+///   the field value, the field is ignored.
 ///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword
 ///   string.
@@ -240,7 +244,7 @@ fn derive_variant_arm(
 /// in a derived `ToTyped` implementation.
 ///
 /// This helper examines the variant’s fields and generates reification code
-/// for the usable non-skipped fields.
+/// for the usable fields.
 ///
 /// * If the variant has exactly one non-iterable field, it emits a direct
 ///   call to that field’s `ToTyped` implementation and adds the corresponding
@@ -250,7 +254,8 @@ fn derive_variant_arm(
 ///   destination and then validates the combined result against the enclosing
 ///   variant’s `#[css(comma)]` setting.
 ///
-/// Fields marked with `#[css(skip)]` are ignored.
+/// Fields marked with `#[css(skip)]`, or skipped by
+/// `#[typed_value(skip_if = "...")]`, are ignored.
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
@@ -262,16 +267,17 @@ fn derive_variant_fields_expr(
         .iter()
         .filter_map(|binding| {
             let css_field_attrs = cg::parse_field_attrs::<CssFieldAttrs>(&binding.ast());
+            let field_attrs = cg::parse_field_attrs::<TypedValueFieldAttrs>(&binding.ast());
             if css_field_attrs.skip {
                 return None;
             }
-            Some((binding, css_field_attrs))
+            Some((binding, css_field_attrs, field_attrs))
         })
         .peekable();
 
     // If no usable fields remain, generate code that just returns Err(()).
-    let (first, css_field_attrs) = match iter.next() {
-        Some(pair) => pair,
+    let (first, css_field_attrs, field_attrs) = match iter.next() {
+        Some(triple) => triple,
         None => return quote! { Err(()) },
     };
 
@@ -285,14 +291,25 @@ fn derive_variant_fields_expr(
         let ty = &first.ast().ty;
         cg::add_predicate(where_clause, parse_quote!(#ty: style_traits::ToTyped));
 
-        return quote! { style_traits::ToTyped::to_typed(#first, dest) };
+        let mut expr = quote! { style_traits::ToTyped::to_typed(#first, dest) };
+
+        if let Some(condition) = field_attrs.skip_if {
+            expr = quote! {
+                if !#condition(#first) {
+                    #expr
+                }
+            }
+        }
+
+        return expr;
     }
 
     // Handle the general case by appending reified output from the supported
     // fields directly to the destination.
-    let mut expr = derive_single_field_expr(first, css_field_attrs, where_clause);
-    for (binding, css_field_attrs) in iter {
-        derive_single_field_expr(binding, css_field_attrs, where_clause).to_tokens(&mut expr)
+    let mut expr = derive_single_field_expr(first, css_field_attrs, field_attrs, where_clause);
+    for (binding, css_field_attrs, field_attrs) in iter {
+        derive_single_field_expr(binding, css_field_attrs, field_attrs, where_clause)
+            .to_tokens(&mut expr)
     }
 
     quote! {{
@@ -317,14 +334,19 @@ fn derive_variant_fields_expr(
 /// For non-iterable fields, it generates a direct `ToTyped::to_typed` call
 /// for the field value.
 ///
+/// If `#[typed_value(skip_if = "...")]` is present and the provided function
+/// returns `true` for the field value, the field contributes no reified
+/// output.
+///
 /// The appropriate `T: ToTyped` bounds for the field type or iterable element
 /// type(s) are added to the `where` clause.
 fn derive_single_field_expr(
     field: &BindingInfo,
     css_field_attrs: CssFieldAttrs,
+    field_attrs: TypedValueFieldAttrs,
     where_clause: &mut Option<WhereClause>,
 ) -> TokenStream {
-    let expr = if css_field_attrs.iterable {
+    let mut expr = if css_field_attrs.iterable {
         // We add `ToTyped` bounds for the iterable's element type(s), rather
         // than for the container type itself. This avoids ToTyped forcing
         // unrelated container types to implement ToTyped.
@@ -371,6 +393,14 @@ fn derive_single_field_expr(
            style_traits::ToTyped::to_typed(#field, dest)?;
         }
     };
+
+    if let Some(condition) = field_attrs.skip_if {
+        expr = quote! {
+            if !#condition(#field) {
+                #expr
+            }
+        }
+    }
 
     expr
 }
@@ -454,4 +484,14 @@ pub struct TypedValueVariantAttrs {
     /// Behavior is the same as `skip`, but used to indicate that reification
     /// is intentionally left unimplemented for now.
     pub todo: bool,
+}
+
+#[derive(Default, FromField)]
+#[darling(attributes(typed_value), default)]
+pub struct TypedValueFieldAttrs {
+    /// Conditionally skips reification of this field.
+    ///
+    /// The provided function is called with the field value. If it returns
+    /// `true`, the field is ignored and produces no `TypedValue` items.
+    pub skip_if: Option<Path>,
 }

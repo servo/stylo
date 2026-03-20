@@ -728,6 +728,10 @@ pub enum TypedValue {
 /// * `#[css(skip)]` on a field causes that field to be ignored during
 ///   reification.
 ///
+/// * `#[typed_value(skip_if = "...")]` on a field conditionally disables
+///   reification for that field. If the provided function returns `true` for
+///   the field value, the field is ignored.
+///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword that
 ///   would otherwise be derived from the Rust identifier.
 ///

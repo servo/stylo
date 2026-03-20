@@ -6,7 +6,7 @@
 
 use crate::context::{ElementCascadeInputs, SharedStyleContext, StyleContext};
 use crate::data::{ElementData, ElementStyles, RestyleKind};
-use crate::dom::{NodeInfo, OpaqueNode, TElement, TNode};
+use crate::dom::{NodeInfo, OpaqueNode, TElement, TNode, TRestyleDamage};
 use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::matching::{ChildRestyleRequirement, MatchMethods};
 use crate::selector_parser::PseudoElement;
@@ -182,7 +182,7 @@ pub trait DomTraversal<E: TElement>: Sync {
     /// Returns true if traversal should visit a text node. The style system
     /// never processes text nodes, but Servo overrides this to visit them for
     /// flow construction when necessary.
-    fn text_node_needs_traversal(node: E::ConcreteNode, _parent_data: &ElementData) -> bool {
+    fn text_node_needs_traversal(node: E::ConcreteNode, _parent_data: &ElementData<E::RestyleDamage>) -> bool {
         debug_assert!(node.is_text_node());
         false
     }
@@ -191,7 +191,7 @@ pub trait DomTraversal<E: TElement>: Sync {
     fn element_needs_traversal(
         el: E,
         traversal_flags: TraversalFlags,
-        data: Option<&ElementData>,
+        data: Option<&ElementData<E::RestyleDamage>>,
     ) -> bool {
         debug!(
             "element_needs_traversal({:?}, {:?}, {:?})",
@@ -366,7 +366,7 @@ pub fn recalc_style_at<E, D, F>(
     traversal_data: &PerLevelTraversalData,
     context: &mut StyleContext<E>,
     element: E,
-    data: &mut ElementData,
+    data: &mut ElementData<E::RestyleDamage>,
     note_child: F,
 ) where
     E: TElement,
@@ -512,7 +512,7 @@ pub fn recalc_style_at<E, D, F>(
     clear_state_after_traversing(element, data, flags);
 }
 
-fn clear_state_after_traversing<E>(element: E, data: &mut ElementData, flags: TraversalFlags)
+fn clear_state_after_traversing<E>(element: E, data: &mut ElementData<E::RestyleDamage>, flags: TraversalFlags)
 where
     E: TElement,
 {
@@ -529,7 +529,7 @@ fn compute_style<E>(
     traversal_data: &PerLevelTraversalData,
     context: &mut StyleContext<E>,
     element: E,
-    data: &mut ElementData,
+    data: &mut ElementData<E::RestyleDamage>,
     kind: RestyleKind,
 ) -> ChildRestyleRequirement
 where
@@ -667,7 +667,7 @@ where
 }
 
 #[cfg(feature = "servo")]
-fn notify_paint_worklet<E>(context: &StyleContext<E>, data: &ElementData)
+fn notify_paint_worklet<E>(context: &StyleContext<E>, data: &ElementData<E::RestyleDamage>)
 where
     E: TElement,
 {
@@ -705,7 +705,7 @@ where
 }
 
 #[cfg(not(feature = "servo"))]
-fn notify_paint_worklet<E>(_context: &StyleContext<E>, _data: &ElementData)
+fn notify_paint_worklet<E>(_context: &StyleContext<E>, _data: &ElementData<E::RestyleDamage>)
 where
     E: TElement,
 {
@@ -715,7 +715,7 @@ where
 fn note_children<E, D, F>(
     context: &mut StyleContext<E>,
     element: E,
-    data: &ElementData,
+    data: &ElementData<E::RestyleDamage>,
     propagated_hint: RestyleHint,
     is_initial_style: bool,
     mut note_child: F,

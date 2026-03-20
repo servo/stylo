@@ -50,7 +50,7 @@ pub enum StyleChange {
         /// Whether only reset structs changed.
         reset_only: bool,
         /// Whether custom properties changed.
-        _custom_properties_changed: bool,
+        custom_properties_changed: bool,
     },
 }
 
@@ -796,8 +796,12 @@ trait PrivateMatchMethods: TElement {
             StyleChange::Unchanged => return RestyleHint::empty(),
             StyleChange::Changed {
                 reset_only,
-                _custom_properties_changed,
+                custom_properties_changed,
             } => {
+                if custom_properties_changed {
+                    return RestyleHint::RECASCADE_SELF
+                        | RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES;
+                }
                 // If inherited properties changed, the best we can do is
                 // cascade the children.
                 if !reset_only {

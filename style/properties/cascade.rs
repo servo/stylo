@@ -1213,7 +1213,8 @@ impl<'b> Cascade<'b> {
             | ComputedValueFlags::DEPENDS_ON_INHERITED_FONT_METRICS
             | ComputedValueFlags::IS_IN_APPEARANCE_BASE_SUBTREE
             | ComputedValueFlags::USES_CONTAINER_UNITS
-            | ComputedValueFlags::USES_VIEWPORT_UNITS;
+            | ComputedValueFlags::USES_VIEWPORT_UNITS
+            | ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY;
         context.builder.add_flags(style.flags & bits_to_copy);
 
         true

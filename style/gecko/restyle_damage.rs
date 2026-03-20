@@ -70,7 +70,7 @@ impl GeckoRestyleDamage {
         let change = if any_style_changed {
             StyleChange::Changed {
                 reset_only,
-                _custom_properties_changed: custom_properties_changed,
+                custom_properties_changed,
             }
         } else {
             StyleChange::Unchanged

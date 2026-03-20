@@ -67,10 +67,9 @@
 use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::StyleBloom;
 use crate::computed_value_flags::ComputedValueFlags;
-use crate::context::{SharedStyleContext, StyleContext};
+use crate::context::{CascadeInputs, SharedStyleContext, StyleContext};
 use crate::dom::{SendElement, TElement, TShadowRoot};
 use crate::properties::ComputedValues;
-use crate::rule_tree::StrongRuleNode;
 use crate::selector_map::RelevantAttributes;
 use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles};
 use crate::stylist::Stylist;
@@ -901,8 +900,7 @@ impl<E: TElement> StyleSharingCache<E> {
         &mut self,
         shared_context: &SharedStyleContext,
         inherited: &ComputedValues,
-        rules: &StrongRuleNode,
-        visited_rules: Option<&StrongRuleNode>,
+        inputs: &CascadeInputs,
         target: E,
     ) -> Option<PrimaryStyle> {
         if shared_context.options.disable_style_sharing_cache {
@@ -919,10 +917,27 @@ impl<E: TElement> StyleSharingCache<E> {
             }
             let data = candidate.element.borrow_data().unwrap();
             let style = data.styles.primary();
-            if style.rules.as_ref() != Some(&rules) {
+            if style.rules.as_ref() != Some(&inputs.rules.as_ref().unwrap()) {
                 return None;
             }
-            if style.visited_rules() != visited_rules {
+            if style.visited_rules() != inputs.visited_rules.as_ref() {
+                return None;
+            }
+            let target_depends_on_style_queries = inputs
+                .flags
+                .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
+            let candidate_depends_on_style_queries = style
+                .flags
+                .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
+
+            if target_depends_on_style_queries && !candidate_depends_on_style_queries {
+                // If we're considering sharing across two elements, one of
+                // which depends on style queries and one of which doesn't,
+                // right now we can't share it since the target will lose its
+                // dependency flag.
+                // TODO(bug 2024823): Consider using deep-cloned style with the
+                // extra flag instead of falling back to re-cascading.
+                // This would apply to links as well.
                 return None;
             }
             // NOTE(emilio): We only need to check name / namespace because we

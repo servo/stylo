@@ -239,8 +239,7 @@ where
             let cached = self.context.thread_local.sharing_cache.lookup_by_rules(
                 self.context.shared,
                 parent_style.unwrap(),
-                inputs.rules.as_ref().unwrap(),
-                inputs.visited_rules.as_ref(),
+                &inputs,
                 self.element,
             );
             if let Some(mut primary_style) = cached {

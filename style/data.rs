@@ -464,7 +464,11 @@ impl ElementData {
         }
 
         let needs_to_match_self = hint.intersects(RestyleHint::RESTYLE_SELF)
-            || (hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style());
+            || (hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style())
+            || (hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES)
+                && style
+                    .flags
+                    .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY));
         if needs_to_match_self {
             return Some(RestyleKind::MatchAndCascade);
         }

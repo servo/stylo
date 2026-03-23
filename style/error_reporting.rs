@@ -56,6 +56,8 @@ pub enum ContextualParseError<'a> {
     UnsupportedValue(&'a str, ParseError<'a>),
     /// A never-matching `:host` selector was found.
     NeverMatchingHostSelector(String),
+    /// A view-transition declaration was not recognized.
+    UnsupportedViewTransitionDescriptor(&'a str, ParseError<'a>),
 }
 
 impl<'a> fmt::Display for ContextualParseError<'a> {
@@ -226,6 +228,14 @@ impl<'a> fmt::Display for ContextualParseError<'a> {
             ContextualParseError::UnsupportedValue(_value, ref err) => parse_error_to_str(err, f),
             ContextualParseError::NeverMatchingHostSelector(ref selector) => {
                 write!(f, ":host selector is not featureless: {}", selector)
+            },
+            ContextualParseError::UnsupportedViewTransitionDescriptor(decl, ref err) => {
+                write!(
+                    f,
+                    "Unsupported @view-transition descriptor declaration: '{}', ",
+                    decl
+                )?;
+                parse_error_to_str(err, f)
             },
         }
     }

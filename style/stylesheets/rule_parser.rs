@@ -31,7 +31,7 @@ use crate::stylesheets::{
     CustomMediaCondition, CustomMediaRule, DocumentRule, FontFeatureValuesRule,
     FontPaletteValuesRule, KeyframesRule, MarginRule, MarginRuleType, MediaRule, NamespaceRule,
     NestedDeclarationsRule, PageRule, PageSelectors, PositionTryRule, RulesMutateError,
-    StartingStyleRule, StyleRule, StylesheetLoader, SupportsRule,
+    StartingStyleRule, StyleRule, StylesheetLoader, SupportsRule, ViewTransitionRule,
 };
 use crate::values::computed::font::FamilyName;
 use crate::values::{CssUrl, CustomIdent, DashedIdent, KeyframesName};
@@ -292,6 +292,8 @@ pub enum AtRulePrelude {
     PositionTry(DashedIdent),
     /// A @custom-media prelude.
     CustomMedia(DashedIdent, CustomMediaCondition),
+    /// A @view-transition prelude.
+    ViewTransition,
 }
 
 impl AtRulePrelude {
@@ -317,6 +319,7 @@ impl AtRulePrelude {
             Self::StartingStyle => "starting-style",
             Self::AppearanceBase => "appearance-base",
             Self::PositionTry(..) => "position-try",
+            Self::ViewTransition => "view-transition",
         }
     }
 }
@@ -544,7 +547,8 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
             | AtRulePrelude::Page(..)
             | AtRulePrelude::Property(..)
             | AtRulePrelude::Import(..)
-            | AtRulePrelude::PositionTry(..) => !self.in_style_or_page_rule(),
+            | AtRulePrelude::PositionTry(..)
+            | AtRulePrelude::ViewTransition => !self.in_style_or_page_rule(),
             AtRulePrelude::Margin(..) => self.in_page_rule(),
         }
     }
@@ -795,6 +799,9 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 });
                 AtRulePrelude::CustomMedia(name, condition)
             },
+            "view-transition" if static_prefs::pref!("dom.viewTransitions.cross-document.enabled") => {
+                AtRulePrelude::ViewTransition
+            },
             _ => {
                 if static_prefs::pref!("layout.css.margin-rules.enabled") {
                     if let Some(margin_rule_type) = MarginRuleType::match_name(&name) {
@@ -973,6 +980,13 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                     source_location,
                 })))
             },
+            AtRulePrelude::ViewTransition => self.nest_for_rule(CssRuleType::ViewTransition, |p| {
+                CssRule::ViewTransition(Arc::new(ViewTransitionRule::parse(
+                    &p.context,
+                    input,
+                    source_location,
+                )))
+            }),
         };
         self.rules.push(rule);
         Ok(())

@@ -591,7 +591,8 @@ impl Animation {
             return;
         }
 
-        let total_progress = match self.state {
+        // Raw progress ratio of the animation: can be negative (before start) or >1.0 (after end).
+        let progress = match self.state {
             AnimationState::Running | AnimationState::Pending | AnimationState::Finished => {
                 (now - self.started_at) / self.duration
             },
@@ -599,7 +600,7 @@ impl Animation {
             AnimationState::Canceled => return,
         };
 
-        if total_progress < 0.
+        if progress < 0.
             && self.fill_mode != AnimationFillMode::Backwards
             && self.fill_mode != AnimationFillMode::Both
         {
@@ -611,9 +612,6 @@ impl Animation {
         {
             return;
         }
-        let total_progress = total_progress
-            .min(self.current_iteration_end_progress())
-            .max(0.0);
 
         // If we only need to take into account one keyframe, then exit early
         // in order to avoid doing more work.
@@ -623,8 +621,27 @@ impl Animation {
             }
         };
 
+        // Handle negative progress (before animation start) with backwards/both fill mode
+        if progress < 0.0 {
+            let keyframe = match self.current_direction {
+                AnimationDirection::Normal => self.computed_steps.first().unwrap(),
+                AnimationDirection::Reverse => self.computed_steps.last().unwrap(),
+                _ => unreachable!(),
+            };
+            add_declarations_to_map(keyframe);
+            return;
+        }
+
+        // Progress clamped to the current iteration (0.0 to 1.0).
+        let total_progress = progress.min(self.current_iteration_end_progress()).max(0.0);
+
         if total_progress >= 1.0 {
-            add_declarations_to_map(self.computed_steps.last().unwrap());
+            let keyframe = match self.current_direction {
+                AnimationDirection::Normal => self.computed_steps.last().unwrap(),
+                AnimationDirection::Reverse => self.computed_steps.first().unwrap(),
+                _ => unreachable!(),
+            };
+            add_declarations_to_map(keyframe);
             return;
         }
 
@@ -662,26 +679,24 @@ impl Animation {
             _ => unreachable!(),
         }
 
-        debug!(
-            "Animation::get_property_declaration_at_time: keyframe from {:?} to {:?}",
-            prev_keyframe_index, next_keyframe_index
-        );
-
         let prev_keyframe = &self.computed_steps[prev_keyframe_index];
         let next_keyframe = match next_keyframe_index {
             Some(index) => &self.computed_steps[index],
             None => {
+                add_declarations_to_map(&prev_keyframe);
                 return;
             },
         };
-        if total_progress < 0.0 {
+
+        // Detect zero interval. Prevent division by zero from percentage_between_keyframes.
+        if Some(prev_keyframe_index) == next_keyframe_index {
             add_declarations_to_map(&prev_keyframe);
             return;
         }
 
-        // At progress 0, we need to handle step functions specially
+        // At progress 0 (start of normal direction), we need to handle step functions specially
         // for "jump-both, jump-start, start" step functions.
-        if total_progress == 0.0 {
+        if total_progress == 0.0 && self.current_direction == AnimationDirection::Normal {
             if let TimingFunction::Steps(_steps, pos) = &prev_keyframe.timing_function {
                 if *pos == StepPosition::JumpBoth
                     || *pos == StepPosition::JumpStart

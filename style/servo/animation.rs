@@ -27,7 +27,7 @@ use crate::stylesheets::keyframes_rule::{KeyframesAnimation, KeyframesStep, Keyf
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::values::animated::{Animate, Procedure};
 use crate::values::computed::TimingFunction;
-use crate::values::generics::easing::BeforeFlag;
+use crate::values::generics::easing::{BeforeFlag, StepPosition};
 use crate::values::specified::TransitionBehavior;
 use crate::Atom;
 use parking_lot::RwLock;
@@ -615,6 +615,19 @@ impl Animation {
             .min(self.current_iteration_end_progress())
             .max(0.0);
 
+        // If we only need to take into account one keyframe, then exit early
+        // in order to avoid doing more work.
+        let mut add_declarations_to_map = |keyframe: &ComputedKeyframe| {
+            for value in keyframe.values.iter() {
+                map.insert(value.id().to_owned(), value.clone());
+            }
+        };
+
+        if total_progress >= 1.0 {
+            add_declarations_to_map(self.computed_steps.last().unwrap());
+            return;
+        }
+
         // Get the indices of the previous (from) keyframe and the next (to) keyframe.
         let next_keyframe_index;
         let prev_keyframe_index;
@@ -624,7 +637,7 @@ impl Animation {
                 next_keyframe_index = self
                     .computed_steps
                     .iter()
-                    .position(|step| total_progress as f32 <= step.start_percentage);
+                    .position(|step| (total_progress as f32) < step.start_percentage);
                 prev_keyframe_index = next_keyframe_index
                     .and_then(|pos| if pos != 0 { Some(pos - 1) } else { None })
                     .unwrap_or(0);
@@ -657,23 +670,34 @@ impl Animation {
         let prev_keyframe = &self.computed_steps[prev_keyframe_index];
         let next_keyframe = match next_keyframe_index {
             Some(index) => &self.computed_steps[index],
-            None => return,
+            None => {
+                return;
+            },
         };
-
-        // If we only need to take into account one keyframe, then exit early
-        // in order to avoid doing more work.
-        let mut add_declarations_to_map = |keyframe: &ComputedKeyframe| {
-            for value in keyframe.values.iter() {
-                map.insert(value.id().to_owned(), value.clone());
-            }
-        };
-        if total_progress <= 0.0 {
+        if total_progress < 0.0 {
             add_declarations_to_map(&prev_keyframe);
             return;
         }
-        if total_progress >= 1.0 {
-            add_declarations_to_map(&next_keyframe);
-            return;
+
+        // At progress 0, we need to handle step functions specially
+        // for "jump-both, jump-start, start" step functions.
+        if total_progress == 0.0 {
+            if let TimingFunction::Steps(_steps, pos) = &prev_keyframe.timing_function {
+                if *pos == StepPosition::JumpBoth
+                    || *pos == StepPosition::JumpStart
+                    || *pos == StepPosition::Start
+                {
+                    // Continue to interpolation.
+                } else {
+                    // Others use start value
+                    add_declarations_to_map(&prev_keyframe);
+                    return;
+                }
+            } else {
+                // Not a step function, use start value
+                add_declarations_to_map(&prev_keyframe);
+                return;
+            }
         }
 
         let percentage_between_keyframes =

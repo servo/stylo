@@ -493,6 +493,7 @@ pub struct ComputedSubstitutionFunctions {
 impl ComputedSubstitutionFunctions {
     /// Creates a substitution function map from optional custom properties
     /// and DOM attributes.
+    #[inline(always)]
     pub fn new(
         custom_properties: Option<ComputedCustomProperties>,
         attributes: Option<OwnMap>,
@@ -503,6 +504,7 @@ impl ComputedSubstitutionFunctions {
         }
     }
 
+    #[inline(always)]
     fn insert_var(
         &mut self,
         registration: &PropertyDescriptors,
@@ -512,18 +514,22 @@ impl ComputedSubstitutionFunctions {
         self.custom_properties.insert(registration, name, value);
     }
 
+    #[inline(always)]
     fn insert_attr(&mut self, name: &Name, value: ComputedRegisteredValue) {
         self.attributes.insert(name.clone(), Some(value));
     }
 
+    #[inline(always)]
     fn remove_var(&mut self, registration: &PropertyDescriptors, name: &Name) {
         self.custom_properties.remove(registration, name);
     }
 
+    #[inline(always)]
     fn remove_attr(&mut self, name: &Name) {
         self.attributes.insert(name.clone(), None);
     }
 
+    #[inline(always)]
     fn get_var(
         &self,
         registration: &PropertyDescriptors,
@@ -532,6 +538,7 @@ impl ComputedSubstitutionFunctions {
         self.custom_properties.get(registration, name)
     }
 
+    #[inline(always)]
     fn get_attr(&self, name: &Name) -> Option<&ComputedRegisteredValue> {
         self.attributes.get(name).and_then(|p| p.as_ref())
     }

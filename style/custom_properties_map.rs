@@ -238,11 +238,13 @@ impl<'a> Equivalent<Key> for KeyRef<'a> {
 
 impl AllSubstitutionFunctions {
     /// Returns whether the map has zero properties and attributes in it.
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
     /// Returns a custom property or attribute value by name.
+    #[inline(always)]
     pub fn get(
         &self,
         name: &Name,
@@ -253,6 +255,7 @@ impl AllSubstitutionFunctions {
     }
 
     /// Inserts an element into the map.
+    #[inline(always)]
     pub fn insert(
         &mut self,
         name: &Name,
@@ -265,6 +268,7 @@ impl AllSubstitutionFunctions {
     }
 
     /// Returns iterator to go through all substitution functions in insertion order.
+    #[inline(always)]
     pub fn iter(
         &self,
     ) -> impl Iterator<Item = (&Name, SubstitutionFunctionKind, &ComputedRegisteredValue)> {

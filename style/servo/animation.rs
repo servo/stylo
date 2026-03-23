@@ -27,7 +27,7 @@ use crate::stylesheets::keyframes_rule::{KeyframesAnimation, KeyframesStep, Keyf
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::values::animated::{Animate, Procedure};
 use crate::values::computed::TimingFunction;
-use crate::values::generics::easing::BeforeFlag;
+use crate::values::generics::easing::{BeforeFlag, StepPosition};
 use crate::values::specified::TransitionBehavior;
 use crate::Atom;
 use parking_lot::RwLock;
@@ -756,7 +756,9 @@ impl Animation {
             return;
         }
 
-        let total_progress = match self.state {
+        // Raw progress ratio of the animation: can be negative (before start) or
+        // >1.0 (after end or during multiple iterations).
+        let progress = match self.state {
             AnimationState::Running | AnimationState::Pending | AnimationState::Finished => {
                 (now - self.started_at) / self.duration
             },
@@ -764,7 +766,7 @@ impl Animation {
             AnimationState::Canceled => return,
         };
 
-        if total_progress < 0.
+        if progress < 0.
             && self.fill_mode != AnimationFillMode::Backwards
             && self.fill_mode != AnimationFillMode::Both
         {
@@ -776,9 +778,41 @@ impl Animation {
         {
             return;
         }
-        let total_progress = total_progress
-            .min(self.current_iteration_end_progress())
-            .max(0.0);
+
+        // If we only need to take into account one keyframe, then exit early
+        // in order to avoid doing more work.
+        let mut add_declarations_to_map = |keyframe: &ComputedKeyframe| {
+            for value_or_reference in keyframe.values.iter() {
+                let AnimationValueOrReference::AnimationValue(value) = value_or_reference else {
+                    unreachable!("First or last keyframes define all properties");
+                };
+                map.insert(value.id().to_owned(), value.clone());
+            }
+        };
+
+        // Handle negative progress (before animation start) with backwards/both fill mode
+        if progress < 0.0 {
+            let keyframe = match self.current_direction {
+                AnimationDirection::Normal => self.computed_steps.first().unwrap(),
+                AnimationDirection::Reverse => self.computed_steps.last().unwrap(),
+                _ => unreachable!(),
+            };
+            add_declarations_to_map(keyframe);
+            return;
+        }
+
+        // Progress clamped to the current iteration (0.0 to 1.0).
+        let total_progress = progress.min(self.current_iteration_end_progress()).max(0.0);
+
+        if total_progress >= 1.0 {
+            let keyframe = match self.current_direction {
+                AnimationDirection::Normal => self.computed_steps.last().unwrap(),
+                AnimationDirection::Reverse => self.computed_steps.first().unwrap(),
+                _ => unreachable!(),
+            };
+            add_declarations_to_map(keyframe);
+            return;
+        }
 
         // Get the indices of the previous (from) keyframe and the next (to) keyframe.
         let next_keyframe_index;
@@ -789,7 +823,7 @@ impl Animation {
                 next_keyframe_index = self
                     .computed_steps
                     .iter()
-                    .position(|step| total_progress as f32 <= step.start_percentage);
+                    .position(|step| (total_progress as f32) < step.start_percentage);
                 prev_keyframe_index = next_keyframe_index
                     .and_then(|pos| if pos != 0 { Some(pos - 1) } else { None })
                     .unwrap_or(0);
@@ -819,39 +853,41 @@ impl Animation {
             prev_keyframe_index, next_keyframe_index
         );
 
+        let prev_keyframe = &self.computed_steps[prev_keyframe_index];
         let Some(next_keyframe_index) = next_keyframe_index else {
+            debug_assert!(false, "next_keyframe_index should always be Some");
             return;
         };
 
-        // If we only need to take into account one keyframe, then exit early
-        // in order to avoid doing more work.
-        let mut add_declarations_to_map = |keyframe_index: usize| {
-            for value_or_reference in &self.computed_steps[keyframe_index].values {
-                let AnimationValueOrReference::AnimationValue(value) = value_or_reference else {
-                    unreachable!("First or last keyframes define all properties");
-                };
+        // Prevent division by zero from percentage_between_keyframes.
+        // This can happen for reverse direction at total_progress == 0.0.
+        if prev_keyframe_index == next_keyframe_index {
+            add_declarations_to_map(&prev_keyframe);
+            return;
+        }
 
-                map.insert(value.id().to_owned(), value.clone());
+        // At progress 0 (start of normal direction), we need to handle step functions specially
+        // for "jump-both, jump-start, start" step functions.
+        if total_progress == 0.0 && self.current_direction == AnimationDirection::Normal {
+            if let TimingFunction::Steps(_steps, pos) = &prev_keyframe.timing_function {
+                if *pos == StepPosition::JumpBoth
+                    || *pos == StepPosition::JumpStart
+                    || *pos == StepPosition::Start
+                {
+                    // Continue to interpolation.
+                } else {
+                    // Others use start value
+                    add_declarations_to_map(&prev_keyframe);
+                    return;
+                }
+            } else {
+                // Not a step function, use start value
+                add_declarations_to_map(&prev_keyframe);
+                return;
             }
-        };
+        }
 
         let reversed = self.current_direction != AnimationDirection::Normal;
-        if total_progress <= 0.0 {
-            if reversed {
-                add_declarations_to_map(self.computed_steps.len() - 1);
-            } else {
-                add_declarations_to_map(0);
-            }
-            return;
-        }
-        if total_progress >= 1.0 {
-            if reversed {
-                add_declarations_to_map(0);
-            } else {
-                add_declarations_to_map(self.computed_steps.len() - 1);
-            }
-            return;
-        }
 
         // Interpolate a new value for each animating property
         for property_index in 0..self.number_of_animating_properties {

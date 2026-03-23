@@ -23,12 +23,14 @@ use crate::parser::ParserContext;
 )]
 #[value_info(ty = "TIMING_FUNCTION")]
 #[repr(u8, C)]
+#[typed_value(derive_fields)]
 pub enum TimingFunction<Integer, Number, LinearStops> {
     /// `linear | ease | ease-in | ease-out | ease-in-out`
     Keyword(TimingKeyword),
     /// `cubic-bezier(<number>, <number>, <number>, <number>)`
     #[allow(missing_docs)]
     #[css(comma, function)]
+    #[typed_value(skip)]
     CubicBezier {
         x1: Number,
         y1: Number,
@@ -38,12 +40,14 @@ pub enum TimingFunction<Integer, Number, LinearStops> {
     /// `step-start | step-end | steps(<integer>, [ <step-position> ]?)`
     /// `<step-position> = jump-start | jump-end | jump-none | jump-both | start | end`
     #[css(comma, function)]
+    #[typed_value(skip)]
     #[value_info(other_values = "step-start,step-end")]
     Steps(Integer, #[css(skip_if = "is_end")] StepPosition),
     /// linear([<linear-stop>]#)
     /// <linear-stop> = <output> && <linear-stop-length>?
     /// <linear-stop-length> = <percentage>{1, 2}
     #[css(function = "linear")]
+    #[typed_value(skip)]
     LinearFunction(LinearStops),
 }
 
@@ -61,6 +65,7 @@ pub enum TimingFunction<Integer, Number, LinearStops> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
     Serialize,
     Deserialize,
 )]

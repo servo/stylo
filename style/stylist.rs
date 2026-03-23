@@ -61,6 +61,7 @@ use crate::stylesheets::{
     CounterStyleRule, CssRule, CssRuleRef, EffectiveRulesIterator, FontFaceRule,
     FontFeatureValuesRule, FontPaletteValuesRule, Origin, OriginSet, PagePseudoClassFlags,
     PageRule, PerOrigin, PerOriginIter, PositionTryRule, StylesheetContents, StylesheetInDocument,
+    ViewTransitionRule,
 };
 use crate::stylesheets::{CustomMediaEvaluator, CustomMediaMap};
 #[cfg(feature = "gecko")]
@@ -1812,6 +1813,17 @@ impl Stylist {
         self.lookup_element_dependent_at_rule(element, |data| data.animations.get(name))
     }
 
+    /// Returns the last @view-transition rule
+    /// <https://drafts.csswg.org/css-view-transitions-2/#resolve-view-transition-rule>
+    #[inline]
+    pub fn last_view_transition_rule(&self) -> Option<&Arc<ViewTransitionRule>> {
+        // Iterate the effective rules sorted by origin and level
+        self.iter_extra_data_origins()
+            .flat_map(|(d, _)| d.view_transitions.iter())
+            .last()
+            .map(|(rule, _)| rule)
+    }
+
     /// Returns the registered `@position-try-rule` animation for the specified name.
     #[inline]
     #[cfg(feature = "gecko")]
@@ -2333,6 +2345,9 @@ pub struct ExtraStyleData {
 
     /// A map of effective page rules.
     pub pages: PageRuleMap,
+
+    /// A list of effective @view-transition rules.
+    pub view_transitions: LayerOrderedVec<Arc<ViewTransitionRule>>,
 }
 
 impl ExtraStyleData {
@@ -2397,12 +2412,17 @@ impl ExtraStyleData {
         Ok(())
     }
 
+    fn add_view_transition(&mut self, rule: &Arc<ViewTransitionRule>, layer: LayerId) {
+        self.view_transitions.push(rule.clone(), layer)
+    }
+
     fn sort_by_layer(&mut self, layers: &[CascadeLayer]) {
         self.font_faces.sort(layers);
         self.font_feature_values.sort(layers);
         self.font_palette_values.sort(layers);
         self.counter_styles.sort(layers);
         self.position_try_rules.sort(layers);
+        self.view_transitions.sort(layers);
     }
 
     fn clear(&mut self) {
@@ -4121,6 +4141,10 @@ impl CascadeData {
                     self.extra_data
                         .add_page(guard, rule, containing_rule_state.layer_id)?;
                     handled = false;
+                },
+                CssRule::ViewTransition(ref rule) => {
+                    self.extra_data
+                        .add_view_transition(rule, containing_rule_state.layer_id);
                 },
                 _ => {
                     handled = false;

@@ -486,6 +486,9 @@ impl generic::CalcNodeLeaf for Leaf {
             (&Length(ref one), &Length(ref other)) => {
                 return Ok(Leaf::Length(one.try_op(other, op)?));
             },
+            (&ColorComponent(..), &ColorComponent(..)) => {
+                return Err(());
+            },
             _ => {
                 match *other {
                     Number(..) | Percentage(..) | Angle(..) | Time(..) | Length(..)

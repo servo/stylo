@@ -67,6 +67,7 @@ impl DeepCloneWithLock for ViewTransitionRule {
 
 /// <https://drafts.csswg.org/css-view-transitions-2/#view-transition-navigation>
 #[derive(Clone, Copy, Debug, Default, MallocSizeOf, Parse, PartialEq, ToCss, ToShmem)]
+#[repr(u8)]
 pub enum NavigationType {
     /// No transition
     #[default]

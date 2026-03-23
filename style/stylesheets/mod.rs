@@ -87,7 +87,7 @@ pub use self::stylesheet::{AllowImportRules, SanitizationData, SanitizationKind}
 pub use self::stylesheet::{DocumentStyleSheet, Namespaces, Stylesheet};
 pub use self::stylesheet::{StylesheetContents, StylesheetInDocument};
 pub use self::supports_rule::SupportsRule;
-pub use self::view_transition_rule::ViewTransitionRule;
+pub use self::view_transition_rule::{NavigationType, ViewTransitionRule};
 
 /// The CORS mode used for a CSS load.
 #[repr(u8)]

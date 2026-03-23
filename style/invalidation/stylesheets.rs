@@ -681,6 +681,9 @@ impl StylesheetInvalidationSet {
                 // @position-try changes doesn't change style-time information (only layout
                 // information) and is handled by invalidate_position_try. So do nothing.
             },
+            ViewTransition(..) => {
+                // @view-transition doesn't affect element styles.
+            },
             CustomMedia(..) => {
                 // @custom-media might be referenced by other rules which we can't get a hand on in
                 // here, so we don't know which elements are affected.

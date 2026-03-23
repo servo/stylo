@@ -31,6 +31,7 @@ mod starting_style_rule;
 mod style_rule;
 mod stylesheet;
 pub mod supports_rule;
+pub mod view_transition_rule;
 
 use crate::derives::*;
 #[cfg(feature = "gecko")]
@@ -86,6 +87,7 @@ pub use self::stylesheet::{AllowImportRules, SanitizationData, SanitizationKind}
 pub use self::stylesheet::{DocumentStyleSheet, Namespaces, Stylesheet};
 pub use self::stylesheet::{StylesheetContents, StylesheetInDocument};
 pub use self::supports_rule::SupportsRule;
+pub use self::view_transition_rule::ViewTransitionRule;
 
 /// The CORS mode used for a CSS load.
 #[repr(u8)]
@@ -355,6 +357,7 @@ pub enum CssRule {
     AppearanceBase(Arc<AppearanceBaseRule>),
     PositionTry(Arc<Locked<PositionTryRule>>),
     NestedDeclarations(Arc<Locked<NestedDeclarationsRule>>),
+    ViewTransition(Arc<ViewTransitionRule>),
 }
 
 impl CssRule {
@@ -420,6 +423,11 @@ impl CssRule {
             CssRule::NestedDeclarations(ref lock) => {
                 lock.unconditional_shallow_size_of(ops) + lock.read_with(guard).size_of(guard, ops)
             },
+            CssRule::ViewTransition(ref rule) => {
+                use malloc_size_of::MallocSizeOf;
+
+                rule.unconditional_shallow_size_of(ops) + rule.size_of(ops)
+            },
         }
     }
 
@@ -478,6 +486,7 @@ pub enum CssRuleRef<'a> {
     AppearanceBase(&'a AppearanceBaseRule),
     PositionTry(&'a LockedPositionTryRule),
     NestedDeclarations(&'a LockedNestedDeclarationsRule),
+    ViewTransition(&'a ViewTransitionRule),
 }
 
 impl<'a> From<&'a CssRule> for CssRuleRef<'a> {
@@ -506,6 +515,7 @@ impl<'a> From<&'a CssRule> for CssRuleRef<'a> {
             CssRule::AppearanceBase(r) => CssRuleRef::AppearanceBase(r.as_ref()),
             CssRule::PositionTry(r) => CssRuleRef::PositionTry(r.as_ref()),
             CssRule::NestedDeclarations(r) => CssRuleRef::NestedDeclarations(r.as_ref()),
+            CssRule::ViewTransition(r) => CssRuleRef::ViewTransition(r.as_ref()),
         }
     }
 }
@@ -554,6 +564,8 @@ pub enum CssRuleType {
     CustomMedia = 25,
     // Internal rule for UA stylesheet appearance-dependent styles.
     AppearanceBase = 26,
+    // https://drafts.csswg.org/css-view-transitions-2/#view-transition-rule
+    ViewTransition = 27,
 }
 
 impl CssRuleType {
@@ -651,6 +663,7 @@ impl CssRule {
             CssRule::AppearanceBase(_) => CssRuleType::AppearanceBase,
             CssRule::PositionTry(_) => CssRuleType::PositionTry,
             CssRule::NestedDeclarations(_) => CssRuleType::NestedDeclarations,
+            CssRule::ViewTransition(_) => CssRuleType::ViewTransition,
         }
     }
 
@@ -810,6 +823,9 @@ impl DeepCloneWithLock for CssRule {
                 let decls = arc.read_with(guard);
                 CssRule::NestedDeclarations(Arc::new(lock.wrap(decls.clone())))
             },
+            CssRule::ViewTransition(ref arc) => {
+                CssRule::ViewTransition(Arc::new(arc.deep_clone_with_lock(lock, guard)))
+            },
         }
     }
 }
@@ -841,6 +857,7 @@ impl ToCssWithGuard for CssRule {
             CssRule::AppearanceBase(ref rule) => rule.to_css(guard, dest),
             CssRule::PositionTry(ref lock) => lock.read_with(guard).to_css(guard, dest),
             CssRule::NestedDeclarations(ref lock) => lock.read_with(guard).to_css(guard, dest),
+            CssRule::ViewTransition(ref rule) => rule.to_css(guard, dest),
         }
     }
 }

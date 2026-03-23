@@ -374,7 +374,8 @@ impl SanitizationKind {
             CssRule::Property(..) |
             CssRule::FontFeatureValues(..) |
             CssRule::FontPaletteValues(..) |
-            CssRule::CounterStyle(..) => !is_standard,
+            CssRule::CounterStyle(..) |
+            CssRule::ViewTransition(..) => !is_standard,
         }
     }
 }

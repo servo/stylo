@@ -17,7 +17,7 @@ use crate::stylesheets::{
     AppearanceBaseRule, ContainerRule, CssRules, CustomMediaRule, DocumentRule,
     FontFeatureValuesRule, FontPaletteValuesRule, LayerBlockRule, LayerStatementRule, MarginRule,
     MediaRule, NamespaceRule, PropertyRule, ScopeRule, StartingStyleRule, StylesheetContents,
-    SupportsRule,
+    SupportsRule, ViewTransitionRule,
 };
 pub use crate::stylesheets::{
     LockedCounterStyleRule, LockedFontFaceRule, LockedImportRule, LockedKeyframesRule,
@@ -199,4 +199,9 @@ impl_simple_arc_ffi!(
     LockedNestedDeclarationsRule,
     Servo_NestedDeclarationsRule_AddRef,
     Servo_NestedDeclarationsRule_Release
+);
+impl_simple_arc_ffi!(
+    ViewTransitionRule,
+    Servo_ViewTransitionRule_AddRef,
+    Servo_ViewTransitionRule_Release
 );

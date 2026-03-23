@@ -3101,3 +3101,9 @@ pub mod property {
     use crate::properties_and_values::rule::*;
 ${generate_descriptors(data.property_descriptors)}
 }
+
+/// Generated code for @view-transition descriptors.
+pub mod view_transition {
+    use crate::stylesheets::view_transition_rule::*;
+${generate_descriptors(data.view_transition_descriptors)}
+}

@@ -403,9 +403,13 @@ impl StyleFeaturePlain {
         ctx: &computed::Context,
         current_value: Option<&ComputedRegisteredValue>,
     ) -> bool {
+        let substitution_functions = custom_properties::ComputedSubstitutionFunctions::new(
+            Some(ctx.inherited_custom_properties().clone()),
+            None,
+        );
         let substituted = match custom_properties::substitute(
             &value,
-            ctx.inherited_custom_properties(),
+            &substitution_functions,
             stylist,
             ctx,
             // FIXME: do we need to pass a real AttributeTracker for the query?
@@ -855,9 +859,13 @@ impl QueryCondition {
         }
 
         // Substitute var() functions if possible.
+        let substitution_functions = custom_properties::ComputedSubstitutionFunctions::new(
+            Some(context.inherited_custom_properties().clone()),
+            None,
+        );
         let substituted = match custom_properties::substitute(
             &value,
-            context.inherited_custom_properties(),
+            &substitution_functions,
             stylist,
             context,
             // FIXME: do we need to pass a real AttributeTracker for the query?

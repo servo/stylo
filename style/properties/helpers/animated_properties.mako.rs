@@ -371,7 +371,7 @@ impl AnimationValue {
             PropertyDeclaration::WithVariables(ref declaration) => {
                 let mut cache = Default::default();
                 let substituted = {
-                    let custom_properties = &context.style().custom_properties();
+                    let substitution_functions = &context.style().substitution_functions();
 
                     debug_assert!(
                         context.builder.stylist.is_some(),
@@ -379,7 +379,7 @@ impl AnimationValue {
                     );
                     declaration.value.substitute_variables(
                         declaration.id,
-                        custom_properties,
+                        substitution_functions,
                         context.builder.stylist.unwrap(),
                         context,
                         &mut cache,

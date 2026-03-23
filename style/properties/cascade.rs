@@ -246,9 +246,9 @@ fn iter_declarations<'builder, 'decls: 'builder>(
         } else {
             let id = declaration.id().as_longhand().unwrap();
             declarations.note_declaration(declaration, priority, id);
-            if CustomPropertiesBuilder::might_have_non_custom_dependency(id, declaration) {
+            if CustomPropertiesBuilder::might_have_non_custom_or_attr_dependency(id, declaration) {
                 if let Some(ref mut builder) = custom_builder {
-                    builder.maybe_note_non_custom_dependency(id, declaration);
+                    builder.maybe_note_non_custom_dependency(id, declaration, attribute_tracker);
                 }
             }
         }
@@ -318,7 +318,8 @@ where
 
     let properties_to_apply = match cascade_mode {
         CascadeMode::Visited { unvisited_context } => {
-            context.builder.custom_properties = unvisited_context.builder.custom_properties.clone();
+            context.builder.substitution_functions =
+                unvisited_context.builder.substitution_functions.clone();
             context.builder.writing_mode = unvisited_context.builder.writing_mode;
             context.builder.color_scheme = unvisited_context.builder.color_scheme;
             // We never insert visited styles into the cache so we don't need to try looking it up.
@@ -735,7 +736,7 @@ impl<'b> Cascade<'b> {
         );
         declaration.value.substitute_variables(
             declaration.id,
-            context.builder.custom_properties(),
+            &context.builder.substitution_functions(),
             context.builder.stylist.unwrap(),
             context,
             shorthand_cache,

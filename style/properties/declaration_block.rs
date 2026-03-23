@@ -988,7 +988,8 @@ impl PropertyDeclarationBlock {
         );
 
         if let Some(cv) = computed_values {
-            context.builder.custom_properties = cv.custom_properties().clone();
+            context.builder.substitution_functions.custom_properties =
+                cv.custom_properties().clone();
         };
 
         match (declaration, computed_values) {
@@ -1003,7 +1004,7 @@ impl PropertyDeclarationBlock {
                 .value
                 .substitute_variables(
                     declaration.id,
-                    &context.builder.custom_properties,
+                    &context.builder.substitution_functions,
                     stylist,
                     &context,
                     &mut Default::default(),

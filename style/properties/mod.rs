@@ -22,7 +22,7 @@ pub mod generated {
 }
 
 use crate::applicable_declarations::RevertKind;
-use crate::custom_properties::{self, ComputedCustomProperties};
+use crate::custom_properties::{self, ComputedSubstitutionFunctions};
 use crate::derives::*;
 use crate::dom::AttributeTracker;
 #[cfg(feature = "gecko")]
@@ -1452,7 +1452,7 @@ impl UnparsedValue {
     fn substitute_variables<'cache>(
         &self,
         longhand_id: LonghandId,
-        custom_properties: &ComputedCustomProperties,
+        substitution_functions: &ComputedSubstitutionFunctions,
         stylist: &Stylist,
         computed_context: &computed::Context,
         shorthand_cache: &'cache mut ShorthandsWithPropertyReferencesCache,
@@ -1488,7 +1488,7 @@ impl UnparsedValue {
 
         let css = match custom_properties::substitute(
             &self.variable_value,
-            custom_properties,
+            substitution_functions,
             stylist,
             computed_context,
             attribute_tracker,

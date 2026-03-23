@@ -2278,8 +2278,8 @@ pub struct StyleBuilder<'a> {
     /// node.
     pub rules: Option<StrongRuleNode>,
 
-    /// The computed custom properties.
-    pub custom_properties: crate::custom_properties::ComputedCustomProperties,
+    /// The computed custom properties and attributes.
+    pub substitution_functions: crate::custom_properties::ComputedSubstitutionFunctions,
 
     /// The set of attributes used as values in `attr()`
     pub attribute_references: crate::dom::AttributeReferences,
@@ -2350,7 +2350,7 @@ impl<'a> StyleBuilder<'a> {
             rules,
             modified_reset: false,
             is_root_element,
-            custom_properties: crate::custom_properties::ComputedCustomProperties::default(),
+            substitution_functions: crate::custom_properties::ComputedSubstitutionFunctions::default(),
             attribute_references: crate::dom::AttributeReferences::default(),
             invalid_non_custom_properties: LonghandIdSet::default(),
             writing_mode: inherited_style.writing_mode,
@@ -2383,6 +2383,10 @@ impl<'a> StyleBuilder<'a> {
     ) -> Self {
         let reset_style = device.default_computed_values();
         let inherited_style = parent_style.unwrap_or(reset_style);
+        let map = crate::custom_properties::ComputedSubstitutionFunctions::new(
+            Some(style_to_derive_from.custom_properties().clone()),
+            None,
+        );
         Self {
             device,
             stylist,
@@ -2393,7 +2397,7 @@ impl<'a> StyleBuilder<'a> {
             is_root_element: false,
             rules: None,
             attribute_references: crate::dom::AttributeReferences::default(),
-            custom_properties: style_to_derive_from.custom_properties().clone(),
+            substitution_functions: map,
             invalid_non_custom_properties: LonghandIdSet::default(),
             writing_mode: style_to_derive_from.writing_mode,
             effective_zoom: style_to_derive_from.effective_zoom,
@@ -2518,7 +2522,7 @@ impl<'a> StyleBuilder<'a> {
             /* rules = */ None,
             /* is_root_element = */ false,
         );
-        ret.custom_properties = custom_properties;
+        ret.substitution_functions.custom_properties = custom_properties;
         ret.visited_style = visited_style;
         ret
     }
@@ -2640,7 +2644,7 @@ impl<'a> StyleBuilder<'a> {
     pub fn build(self) -> Arc<ComputedValues> {
         ComputedValues::new(
             self.pseudo,
-            self.custom_properties,
+            self.substitution_functions.custom_properties,
             self.attribute_references,
             self.writing_mode,
             self.effective_zoom,
@@ -2653,11 +2657,15 @@ impl<'a> StyleBuilder<'a> {
         )
     }
 
-    /// Get the custom properties map if necessary.
-    pub fn custom_properties(&self) -> &crate::custom_properties::ComputedCustomProperties {
-        &self.custom_properties
+    /// Get the substitution function maps if necessary.
+    pub fn substitution_functions(&self) -> &crate::custom_properties::ComputedSubstitutionFunctions {
+        &self.substitution_functions
     }
 
+    /// Get the custom properties map if necessary.
+    pub fn custom_properties(&self) -> &crate::custom_properties::ComputedCustomProperties {
+        &self.substitution_functions.custom_properties
+    }
 
     /// Get the inherited custom properties map.
     pub fn inherited_custom_properties(&self) -> &crate::custom_properties::ComputedCustomProperties {

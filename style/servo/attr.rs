@@ -15,7 +15,7 @@ use crate::str::str_join;
 use crate::str::{read_exponent, read_fraction, HTML_SPACE_CHARACTERS};
 use crate::str::{read_numbers, split_commas, split_html_space_chars};
 use crate::values::specified::color::Color;
-use crate::values::specified::Length;
+use crate::values::specified::LengthPercentage;
 use crate::values::AtomString;
 use crate::{Atom, LocalName, Namespace, Prefix};
 use app_units::Au;
@@ -45,7 +45,7 @@ pub enum AttrValue {
     Int(String, i32),
     Double(String, f64),
     Atom(Atom),
-    Length(String, Option<Length>),
+    LengthPercentage(String, Option<LengthPercentage>),
     Color(String, Option<AbsoluteColor>),
     Dimension(String, LengthOrPercentageOrAuto),
 
@@ -300,6 +300,18 @@ impl AttrValue {
         }
     }
 
+    /// Assumes the `AttrValue` is a `LengthPercentage` and returns its value
+    ///
+    /// ## Panics
+    ///
+    /// Panics if the `AttrValue` is not a `LengthPercentage`
+    pub fn as_length_percentage(&self) -> Option<&LengthPercentage> {
+        match *self {
+            AttrValue::LengthPercentage(_, ref length_percentage) => length_percentage.as_ref(),
+            _ => panic!("LengthPercentage not found"),
+        }
+    }
+
     /// Assumes the `AttrValue` is a `Color` and returns its value
     ///
     /// ## Panics
@@ -416,7 +428,7 @@ impl ::std::ops::Deref for AttrValue {
             | AttrValue::TokenList(ref value, _)
             | AttrValue::UInt(ref value, _)
             | AttrValue::Double(ref value, _)
-            | AttrValue::Length(ref value, _)
+            | AttrValue::LengthPercentage(ref value, _)
             | AttrValue::Color(ref value, _)
             | AttrValue::Int(ref value, _)
             | AttrValue::ResolvedUrl(ref value, _)

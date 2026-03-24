@@ -3711,10 +3711,7 @@ struct = "font"
 engine = "gecko"
 spec = "https://w3c.github.io/mathml-core/#the-math-shift"
 animation_type = "discrete"
-enabled_in = "ua"
 affects = "layout"
-gecko_pref = "mathml.math_shift.enabled"
-has_effect_on_gecko_scrollbars = false
 keyword = { values = ["normal", "compact"] }
 
 [-moz-osx-font-smoothing]

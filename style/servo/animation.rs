@@ -683,7 +683,7 @@ impl Animation {
         let next_keyframe = match next_keyframe_index {
             Some(index) => &self.computed_steps[index],
             None => {
-                add_declarations_to_map(&prev_keyframe);
+                debug_assert!(false, "next_keyframe_index should always be Some");
                 return;
             },
         };

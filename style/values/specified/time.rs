@@ -67,8 +67,9 @@ impl Time {
         }
     }
 
+    /// Return the unitless, raw value.
     #[inline]
-    fn unitless_value(&self) -> CSSFloat {
+    pub fn unitless_value(&self) -> CSSFloat {
         match self.unit {
             TimeUnit::Second => self.seconds,
             TimeUnit::Millisecond => self.seconds * 1000.,

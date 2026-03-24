@@ -591,7 +591,8 @@ impl Animation {
             return;
         }
 
-        // Raw progress ratio of the animation: can be negative (before start) or >1.0 (after end).
+        // Raw progress ratio of the animation: can be negative (before start) or
+        // >1.0 (after end or during multiple iterations).
         let progress = match self.state {
             AnimationState::Running | AnimationState::Pending | AnimationState::Finished => {
                 (now - self.started_at) / self.duration
@@ -688,7 +689,8 @@ impl Animation {
             },
         };
 
-        // Detect zero interval. Prevent division by zero from percentage_between_keyframes.
+        // Prevent division by zero from percentage_between_keyframes.
+        // This can happen for reverse direction at total_progress == 0.0.
         if Some(prev_keyframe_index) == next_keyframe_index {
             add_declarations_to_map(&prev_keyframe);
             return;

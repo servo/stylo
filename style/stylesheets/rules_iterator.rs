@@ -27,6 +27,7 @@ where
     custom_media: CMM,
     guard: &'a SharedRwLockReadGuard<'b>,
     stack: SmallVec<[slice::Iter<'a, CssRule>; 3]>,
+    last_rule_had_children: bool,
     _phantom: ::std::marker::PhantomData<C>,
 }
 
@@ -57,13 +58,17 @@ where
             custom_media,
             guard,
             stack,
+            last_rule_had_children: false,
             _phantom: ::std::marker::PhantomData,
         }
     }
 
     /// Skips all the remaining children of the last nested rule processed.
     pub fn skip_children(&mut self) {
-        self.stack.pop();
+        if self.last_rule_had_children {
+            self.stack.pop();
+            self.last_rule_had_children = false;
+        }
     }
 
     /// Returns the children of `rule`, and whether `rule` is effective.
@@ -74,7 +79,7 @@ where
         custom_media_map: &CustomMediaMap,
         guard: &'a SharedRwLockReadGuard<'_>,
         effective: &mut bool,
-    ) -> Option<slice::Iter<'a, CssRule>> {
+    ) -> &'a [CssRule] {
         *effective = true;
         match *rule {
             CssRule::Namespace(_)
@@ -89,55 +94,55 @@ where
             | CssRule::FontPaletteValues(_)
             | CssRule::NestedDeclarations(_)
             | CssRule::PositionTry(_)
-            | CssRule::ViewTransition(_) => None,
+            | CssRule::ViewTransition(_) => &[],
             CssRule::Page(ref page_rule) => {
                 let page_rule = page_rule.read_with(guard);
                 let rules = page_rule.rules.read_with(guard);
-                Some(rules.0.iter())
+                rules.0.as_slice()
             },
             CssRule::Style(ref style_rule) => {
                 let style_rule = style_rule.read_with(guard);
-                style_rule
-                    .rules
-                    .as_ref()
-                    .map(|r| r.read_with(guard).0.iter())
+                match style_rule.rules.as_ref() {
+                    Some(r) => r.read_with(guard).0.as_slice(),
+                    None => &[],
+                }
             },
             CssRule::Import(ref import_rule) => {
                 let import_rule = import_rule.read_with(guard);
                 if !C::process_import(guard, device, quirks_mode, custom_media_map, import_rule) {
                     *effective = false;
-                    return None;
+                    return &[];
                 }
-                Some(import_rule.stylesheet.rules(guard).iter())
+                import_rule.stylesheet.rules(guard)
             },
             CssRule::Document(ref doc_rule) => {
                 if !C::process_document(guard, device, quirks_mode, doc_rule) {
                     *effective = false;
-                    return None;
+                    return &[];
                 }
-                Some(doc_rule.rules.read_with(guard).0.iter())
+                doc_rule.rules.read_with(guard).0.as_slice()
             },
             CssRule::Container(ref container_rule) => {
-                Some(container_rule.rules.read_with(guard).0.iter())
+                container_rule.rules.read_with(guard).0.as_slice()
             },
             CssRule::Media(ref media_rule) => {
                 if !C::process_media(guard, device, quirks_mode, custom_media_map, media_rule) {
                     *effective = false;
-                    return None;
+                    return &[];
                 }
-                Some(media_rule.rules.read_with(guard).0.iter())
+                media_rule.rules.read_with(guard).0.as_slice()
             },
             CssRule::Supports(ref supports_rule) => {
                 if !C::process_supports(guard, device, quirks_mode, supports_rule) {
                     *effective = false;
-                    return None;
+                    return &[];
                 }
-                Some(supports_rule.rules.read_with(guard).0.iter())
+                supports_rule.rules.read_with(guard).0.as_slice()
             },
-            CssRule::LayerBlock(ref layer_rule) => Some(layer_rule.rules.read_with(guard).0.iter()),
-            CssRule::Scope(ref rule) => Some(rule.rules.read_with(guard).0.iter()),
-            CssRule::StartingStyle(ref rule) => Some(rule.rules.read_with(guard).0.iter()),
-            CssRule::AppearanceBase(ref rule) => Some(rule.rules.read_with(guard).0.iter()),
+            CssRule::LayerBlock(ref layer_rule) => layer_rule.rules.read_with(guard).0.as_slice(),
+            CssRule::Scope(ref rule) => rule.rules.read_with(guard).0.as_slice(),
+            CssRule::StartingStyle(ref rule) => rule.rules.read_with(guard).0.as_slice(),
+            CssRule::AppearanceBase(ref rule) => rule.rules.read_with(guard).0.as_slice(),
         }
     }
 }
@@ -151,6 +156,7 @@ where
     type Item = &'a CssRule;
 
     fn next(&mut self) -> Option<Self::Item> {
+        self.last_rule_had_children = false;
         while !self.stack.is_empty() {
             let rule = {
                 let nested_iter = self.stack.last_mut().unwrap();
@@ -172,16 +178,16 @@ where
                 self.guard,
                 &mut effective,
             );
-            if !effective {
-                continue;
+            if !children.is_empty() {
+                debug_assert!(effective);
+                debug_assert_eq!(
+                    rule.children(self.guard).len(),
+                    children.len(),
+                    "Should agree with CssRule::children if effective"
+                );
+                self.last_rule_had_children = true;
+                self.stack.push(children.iter());
             }
-
-            if let Some(children) = children {
-                // NOTE: It's important that `children` gets pushed even if
-                // empty, so that `skip_children()` works as expected.
-                self.stack.push(children);
-            }
-
             return Some(rule);
         }
 
@@ -383,7 +389,7 @@ where
             quirks_mode,
             custom_media_map,
             guard,
-            children.unwrap_or([].iter()),
+            children.iter(),
         )
     }
 }

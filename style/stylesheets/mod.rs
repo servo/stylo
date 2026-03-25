@@ -439,6 +439,53 @@ impl CssRule {
             _ => false,
         }
     }
+
+    /// Returns the children rules of this rule, if any.
+    pub fn children<'a>(&'a self, guard: &'a SharedRwLockReadGuard) -> &'a [CssRule] {
+        match *self {
+            CssRule::Namespace(_)
+            | CssRule::FontFace(_)
+            | CssRule::CounterStyle(_)
+            | CssRule::CustomMedia(_)
+            | CssRule::Keyframes(_)
+            | CssRule::Margin(_)
+            | CssRule::Property(_)
+            | CssRule::LayerStatement(_)
+            | CssRule::FontFeatureValues(_)
+            | CssRule::FontPaletteValues(_)
+            | CssRule::NestedDeclarations(_)
+            | CssRule::PositionTry(_)
+            | CssRule::ViewTransition(_) => &[],
+            CssRule::Page(ref page_rule) => {
+                let page_rule = page_rule.read_with(guard);
+                let rules = page_rule.rules.read_with(guard);
+                rules.0.as_slice()
+            },
+            CssRule::Style(ref style_rule) => {
+                let style_rule = style_rule.read_with(guard);
+                match style_rule.rules.as_ref() {
+                    Some(r) => r.read_with(guard).0.as_slice(),
+                    None => &[],
+                }
+            },
+            CssRule::Import(ref import_rule) => {
+                let import_rule = import_rule.read_with(guard);
+                import_rule.stylesheet.rules(guard)
+            },
+            CssRule::Document(ref doc_rule) => doc_rule.rules.read_with(guard).0.as_slice(),
+            CssRule::Container(ref container_rule) => {
+                container_rule.rules.read_with(guard).0.as_slice()
+            },
+            CssRule::Media(ref media_rule) => media_rule.rules.read_with(guard).0.as_slice(),
+            CssRule::Supports(ref supports_rule) => {
+                supports_rule.rules.read_with(guard).0.as_slice()
+            },
+            CssRule::LayerBlock(ref layer_rule) => layer_rule.rules.read_with(guard).0.as_slice(),
+            CssRule::Scope(ref rule) => rule.rules.read_with(guard).0.as_slice(),
+            CssRule::StartingStyle(ref rule) => rule.rules.read_with(guard).0.as_slice(),
+            CssRule::AppearanceBase(ref rule) => rule.rules.read_with(guard).0.as_slice(),
+        }
+    }
 }
 
 // These aliases are required on Gecko side to avoid generating bindings for `Locked`.

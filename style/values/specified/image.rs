@@ -424,6 +424,10 @@ impl ImageSetItem {
         cors_mode: CorsMode,
         flags: ParseImageFlags,
     ) -> Result<Self, ParseError<'i>> {
+        use style_traits::StyleParseErrorKind;
+        if context.parsing_mode.disallows_urls() {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
         let image = match input.try_parse(|i| i.expect_url_or_string()) {
             Ok(url) => Image::Url(SpecifiedUrl::parse_from_string(
                 url.as_ref().into(),

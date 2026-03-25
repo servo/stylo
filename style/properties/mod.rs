@@ -22,7 +22,7 @@ pub mod generated {
 }
 
 use crate::applicable_declarations::RevertKind;
-use crate::custom_properties::{self, ComputedSubstitutionFunctions};
+use crate::custom_properties::{self, ComputedSubstitutionFunctions, SubstitutionResult};
 use crate::derives::*;
 use crate::dom::AttributeTracker;
 #[cfg(feature = "gecko")]
@@ -1486,7 +1486,10 @@ impl UnparsedValue {
             }
         }
 
-        let css = match custom_properties::substitute(
+        let SubstitutionResult {
+            css,
+            attribute_tainted,
+        } = match custom_properties::substitute(
             &self.variable_value,
             substitution_functions,
             stylist,
@@ -1507,11 +1510,15 @@ impl UnparsedValue {
         // whether you want to do this!
         //
         // FIXME(emilio): ParsingMode is slightly fishy...
+        let mut parsing_mode = ParsingMode::DEFAULT;
+        if attribute_tainted {
+            parsing_mode.insert(ParsingMode::DISALLOW_URLS);
+        }
         let context = ParserContext::new(
             Origin::Author,
             &self.variable_value.url_data,
             None,
-            ParsingMode::DEFAULT,
+            parsing_mode,
             computed_context.quirks_mode,
             /* namespaces = */ Default::default(),
             None,

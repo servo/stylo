@@ -623,13 +623,16 @@ impl VariableValue {
         url_data: &UrlExtraData,
         first_token_type: TokenSerializationType,
         last_token_type: TokenSerializationType,
+        attribute_tainted: bool,
     ) -> Self {
+        let mut references = References::default();
+        references.any_attr = attribute_tainted;
         Self {
             css,
             url_data: url_data.clone(),
             first_token_type,
             last_token_type,
-            references: Default::default(),
+            references,
         }
     }
 
@@ -715,6 +718,11 @@ impl VariableValue {
             last_token_type,
             references,
         })
+    }
+
+    /// Returns whether this value is tainted by an `attr()` reference.
+    pub fn is_tainted_by_attr(&self) -> bool {
+        self.references.any_attr
     }
 
     /// Create VariableValue from an int.
@@ -2316,13 +2324,13 @@ fn substitute_references_if_needed_and_apply(
             substitution_functions.insert_var(registration, name, value);
         },
         SubstitutionFunctionKind::Attr => {
-            let value = ComputedRegisteredValue::universal(Arc::new(VariableValue {
-                css: substitution.css.into_owned(),
-                first_token_type: substitution.first_token_type,
-                last_token_type: substitution.last_token_type,
-                url_data: url_data.clone(),
-                references: Default::default(),
-            }));
+            let value = ComputedRegisteredValue::universal(Arc::new(VariableValue::new(
+                substitution.css.into_owned(),
+                url_data,
+                substitution.first_token_type,
+                substitution.last_token_type,
+                substitution.attribute_tainted,
+            )));
             substitution_functions.insert_attr(name, value);
         },
         SubstitutionFunctionKind::Env => unreachable!("Kind cannot be env."),
@@ -2334,6 +2342,7 @@ struct Substitution<'a> {
     css: Cow<'a, str>,
     first_token_type: TokenSerializationType,
     last_token_type: TokenSerializationType,
+    attribute_tainted: bool,
 }
 
 impl<'a> Substitution<'a> {
@@ -2342,6 +2351,7 @@ impl<'a> Substitution<'a> {
             css: v.css.into(),
             first_token_type: v.first_token_type,
             last_token_type: v.last_token_type,
+            attribute_tainted: v.references.any_attr,
         }
     }
 
@@ -2352,28 +2362,48 @@ impl<'a> Substitution<'a> {
         computed_context: &computed::Context,
     ) -> Result<ComputedRegisteredValue, ()> {
         if registration.is_universal() {
-            return Ok(ComputedRegisteredValue::universal(Arc::new(
-                VariableValue {
-                    css: self.css.into_owned(),
-                    first_token_type: self.first_token_type,
-                    last_token_type: self.last_token_type,
-                    url_data: url_data.clone(),
-                    references: Default::default(),
-                },
-            )));
+            let value = VariableValue::new(
+                self.css.into_owned(),
+                url_data,
+                self.first_token_type,
+                self.last_token_type,
+                self.attribute_tainted,
+            );
+            return Ok(ComputedRegisteredValue::universal(Arc::new(value)));
         }
-        compute_value(&self.css, url_data, registration, computed_context)
+        let mut v = compute_value(&self.css, url_data, registration, computed_context)?;
+        v.attribute_tainted |= self.attribute_tainted;
+        Ok(v)
     }
 
     fn new(
         css: Cow<'a, str>,
         first_token_type: TokenSerializationType,
         last_token_type: TokenSerializationType,
+        attribute_tainted: bool,
     ) -> Self {
         Self {
             css,
             first_token_type,
             last_token_type,
+            attribute_tainted,
+        }
+    }
+}
+
+/// Result of var(), env(), and attr() substitution.
+pub struct SubstitutionResult<'a> {
+    /// The resolved CSS string after substitution.
+    pub css: Cow<'a, str>,
+    /// Flag indicating whether the value was attr()-tainted.
+    pub attribute_tainted: bool,
+}
+
+impl<'a> From<Substitution<'a>> for SubstitutionResult<'a> {
+    fn from(s: Substitution<'a>) -> Self {
+        Self {
+            css: s.css,
+            attribute_tainted: s.attribute_tainted,
         }
     }
 }
@@ -2439,6 +2469,7 @@ fn do_substitute_chunk<'a>(
             Cow::Borrowed(result),
             first_token_type,
             last_token_type,
+            Default::default(),
         ));
     }
 
@@ -2475,6 +2506,7 @@ fn do_substitute_chunk<'a>(
             substitution.first_token_type,
             substitution.last_token_type,
         )?;
+        substituted.references.any_attr |= substitution.attribute_tainted;
         next_token_type = reference.next_token_type;
         cur_pos = reference.end;
     }
@@ -2501,11 +2533,12 @@ fn substitute_one_reference<'a>(
     references: &mut std::iter::Peekable<std::slice::Iter<SubstitutionFunctionReference>>,
     attribute_tracker: &mut AttributeTracker,
 ) -> Result<Substitution<'a>, ()> {
-    let simple_subst = |s: &str| {
+    let simple_attr_subst = |s: &str| {
         Some(Substitution::new(
             Cow::Owned(quoted_css_string(s)),
             TokenSerializationType::Nothing,
             TokenSerializationType::Nothing,
+            /* attribute_tainted */ true,
         ))
     };
     let substitution: Option<_> = match reference.substitution_kind {
@@ -2541,7 +2574,7 @@ fn substitute_one_reference<'a>(
                         if reference.fallback.is_none()
                             && reference.attribute_data.kind == AttributeType::None
                         {
-                            simple_subst("")
+                            simple_attr_subst("")
                         } else {
                             None
                         }
@@ -2571,8 +2604,13 @@ fn substitute_one_reference<'a>(
                                     AttrUnit::Percentage => TokenSerializationType::Percentage,
                                     _ => TokenSerializationType::Dimension,
                                 };
-                                let value =
-                                    ComputedValue::new(css, url_data, serialization, serialization);
+                                let value = ComputedValue::new(
+                                    css,
+                                    url_data,
+                                    serialization,
+                                    serialization,
+                                    /* attribute_tainted */ true,
+                                );
                                 Some(Substitution::from_value(value))
                             },
                             AttributeType::Type(syntax) => {
@@ -2584,9 +2622,13 @@ fn substitute_one_reference<'a>(
                                     AllowComputationallyDependent::Yes,
                                 )
                                 .ok()?;
-                                Some(Substitution::from_value(value.to_variable_value()))
+                                let mut value = value.to_variable_value();
+                                value.references.any_attr = true;
+                                Some(Substitution::from_value(value))
                             },
-                            AttributeType::RawString | AttributeType::None => simple_subst(&attr),
+                            AttributeType::RawString | AttributeType::None => {
+                                simple_attr_subst(&attr)
+                            },
                         }
                     },
                 )
@@ -2652,7 +2694,7 @@ pub fn substitute<'a>(
     stylist: &Stylist,
     computed_context: &computed::Context,
     attribute_tracker: &mut AttributeTracker,
-) -> Result<Cow<'a, str>, ()> {
+) -> Result<SubstitutionResult<'a>, ()> {
     debug_assert!(variable_value.has_references());
     let v = substitute_internal(
         variable_value,
@@ -2661,5 +2703,5 @@ pub fn substitute<'a>(
         computed_context,
         attribute_tracker,
     )?;
-    Ok(v.css)
+    Ok(v.into())
 }

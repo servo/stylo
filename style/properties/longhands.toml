@@ -3609,11 +3609,11 @@ keyword = { values = ["padding-box", "border-box", "content-box"], gecko_enum_pr
 
 [background-blend-mode]
 struct = "background"
-engine = "gecko"
 vector = {}
 animation_type = "discrete"
 spec = "https://drafts.fxtf.org/compositing/#background-blend-mode"
 affects = "paint"
+servo_restyle_damage = "repaint"
 
 [background-blend-mode.keyword]
 values = [

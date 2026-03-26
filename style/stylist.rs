@@ -4164,7 +4164,7 @@ impl CascadeData {
                         guard,
                         &mut effective,
                     );
-                    debug_assert!(children.is_empty());
+                    debug_assert!(children.is_none());
                     debug_assert!(effective);
                 }
                 continue;
@@ -4287,9 +4287,11 @@ impl CascadeData {
                 CssRule::Container(ref rule) => {
                     let id = ContainerConditionId(self.container_conditions.len() as u16);
                     let iter = rule.conditions.0.iter();
-                    let iter = iter.cloned().map(|condition| ContainerConditionReference {
-                        parent: containing_rule_state.container_condition_id,
-                        condition: Some(condition),
+                    let iter = iter.cloned().map(|condition| {
+                        ContainerConditionReference {
+                            parent: containing_rule_state.container_condition_id,
+                            condition: Some(condition),
+                        }
                     });
                     self.container_conditions.extend(iter);
                     containing_rule_state.container_condition_id = id;
@@ -4386,9 +4388,9 @@ impl CascadeData {
                 _ => {},
             }
 
-            if !children.is_empty() {
+            if let Some(children) = children {
                 self.add_rule_list(
-                    children.iter(),
+                    children,
                     device,
                     quirks_mode,
                     stylesheet,

@@ -159,8 +159,6 @@ supports_user_action_state = true
 enabled_in = "chrome"
 pref = "layout.css.details-content.enabled"
 is_element_backed = true
-[-webkit-scrollbar]
-pref = "layout.css.fake-webkit-scrollbar.enabled"
 
 # Tree pseudo-elements
 [-moz-tree-column]

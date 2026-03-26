@@ -109,6 +109,10 @@ impl CssUrl {
         input: &mut Parser<'i, 't>,
         cors_mode: CorsMode,
     ) -> Result<Self, ParseError<'i>> {
+        use style_traits::StyleParseErrorKind;
+        if context.parsing_mode.disallows_urls() {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
         let url = input.expect_url()?;
         Ok(Self::parse_from_string(
             url.as_ref().to_owned(),

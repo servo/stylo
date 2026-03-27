@@ -29,16 +29,9 @@ use euclid::default::Size2D;
 use malloc_size_of::{MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
 use selectors::kleene_value::KleeneValue;
 use servo_arc::Arc;
-use smallvec::SmallVec;
 use std::fmt::{self, Write};
 use style_traits::{CssStringWriter, CssWriter, ParseError, StyleParseErrorKind, ToCss};
-
-/// Contains all container conditions for a container rule.
-///
-/// https://drafts.csswg.org/css-conditional-5/#container-rule
-#[derive(Clone, Debug, ToCss, ToShmem)]
-#[css(comma)]
-pub struct ContainerConditions(#[css(iterable)] pub SmallVec<[Arc<ContainerCondition>; 1]>);
+use style_traits::arc_slice::ArcSlice;
 
 /// A container rule.
 #[derive(Debug, ToShmem)]
@@ -52,26 +45,6 @@ pub struct ContainerRule {
 }
 
 impl ContainerRule {
-    /// Returns the query condition, if any.
-    ///
-    /// This currently only returns the query condition for the first condition.
-    /// The spec is currently incomplete on how this should be handled.
-    /// https://github.com/w3c/csswg-drafts/issues/10845
-    pub fn query_condition(&self) -> Option<&QueryCondition> {
-        debug_assert_eq!(self.conditions.0.len(), 1);
-        self.conditions.0[0].condition.as_ref()
-    }
-
-    /// Returns the query name filter.
-    ///
-    /// This currently only returns the container name for the first condition.
-    /// The spec is currently incomplete on how this should be handled.
-    /// https://github.com/w3c/csswg-drafts/issues/10845
-    pub fn container_name(&self) -> &ContainerName {
-        debug_assert_eq!(self.conditions.0.len(), 1);
-        &self.conditions.0[0].name
-    }
-
     /// Measure heap usage.
     #[cfg(feature = "gecko")]
     pub fn size_of(&self, guard: &SharedRwLockReadGuard, ops: &mut MallocSizeOfOps) -> usize {
@@ -102,6 +75,13 @@ impl ToCssWithGuard for ContainerRule {
         self.rules.read_with(guard).to_css_block(guard, dest)
     }
 }
+
+/// Contains all container conditions for a container rule.
+///
+/// https://drafts.csswg.org/css-conditional-5/#container-rule
+#[derive(Clone, Debug, ToCss, ToShmem)]
+#[css(comma)]
+pub struct ContainerConditions(#[css(iterable)] pub ArcSlice<ContainerCondition>);
 
 /// A container condition and filter, combined.
 #[derive(Debug, ToShmem, ToCss)]
@@ -173,6 +153,16 @@ where
 }
 
 impl ContainerCondition {
+    /// Get the name of this condition.
+    #[inline]
+    pub fn name(&self) -> &ContainerName{
+        &self.name
+    }
+    /// Get the query condition of this condition
+    #[inline]
+    pub fn query_condition(&self) -> Option<&QueryCondition>{
+        self.condition.as_ref()
+    }
     /// Parse a container condition.
     pub fn parse<'a>(
         context: &ParserContext,

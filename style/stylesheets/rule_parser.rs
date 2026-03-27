@@ -44,6 +44,7 @@ use cssparser::{
 use selectors::parser::{ParseRelative, SelectorList};
 use servo_arc::Arc;
 use style_traits::{ParseError, StyleParseErrorKind};
+use style_traits::arc_slice::ArcSlice;
 
 /// The information we need particularly to do CSSOM insertRule stuff.
 pub struct InsertRuleContext<'a> {
@@ -258,7 +259,7 @@ pub enum AtRulePrelude {
     /// A @media rule prelude, with its media queries.
     Media(Arc<Locked<MediaList>>),
     /// A @container rule prelude.
-    Container(Arc<ContainerCondition>),
+    Container(ArcSlice<ContainerCondition>),
     /// An @supports rule, with its conditional
     Supports(SupportsCondition),
     /// A @keyframes rule, with its animation name and vendor prefix if exists.
@@ -719,8 +720,9 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 AtRulePrelude::FontFace
             },
             "container" if cfg!(feature = "gecko") => {
-                let condition = Arc::new(ContainerCondition::parse(&self.context, input)?);
-                AtRulePrelude::Container(condition)
+                let condition = ContainerCondition::parse(&self.context, input)?;
+                let conditions = ArcSlice::from_iter(core::iter::once(condition));
+                AtRulePrelude::Container(conditions)
             },
             "layer" => {
                 let names = input.try_parse(|input| {
@@ -920,10 +922,10 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                     source_location,
                 }))
             },
-            AtRulePrelude::Container(condition) => {
+            AtRulePrelude::Container(conditions) => {
                 let source_location = start.source_location();
                 CssRule::Container(Arc::new(ContainerRule {
-                    conditions: ContainerConditions(smallvec::smallvec![condition]),
+                    conditions: ContainerConditions(conditions),
                     rules: self.parse_nested_rules(input, CssRuleType::Container),
                     source_location,
                 }))

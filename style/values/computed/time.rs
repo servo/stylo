@@ -8,7 +8,8 @@ use crate::derives::*;
 use crate::values::CSSFloat;
 use crate::Zero;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss, ToTyped};
+use style_traits::{CssString, CssWriter, NumericValue, ToCss, ToTyped, TypedValue, UnitValue};
+use thin_vec::ThinVec;
 
 /// A computed `<time>` value.
 #[derive(Animate, Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue)]
@@ -41,7 +42,15 @@ impl ToCss for Time {
     }
 }
 
-impl ToTyped for Time {}
+impl ToTyped for Time {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            value: self.seconds(),
+            unit: CssString::from("s"),
+        })));
+        Ok(())
+    }
+}
 
 impl Zero for Time {
     fn zero() -> Self {

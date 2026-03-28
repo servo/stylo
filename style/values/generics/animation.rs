@@ -12,7 +12,8 @@ use crate::values::specified::animation::{
 use crate::values::specified::length::EqualsPercentage;
 use crate::Zero;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss, ToTyped};
+use style_traits::{CssString, CssWriter, KeywordValue, ToCss, ToTyped, TypedValue};
+use thin_vec::ThinVec;
 
 /// The `animation-duration` property.
 ///
@@ -73,7 +74,22 @@ impl<T: ToCss + Zero> ToCss for AnimationDuration<T> {
     }
 }
 
-impl<T: ToTyped + Zero> ToTyped for AnimationDuration<T> {}
+// TODO: Switch to ToTyped derive once the pref goes away.
+impl<T: ToTyped + Zero> ToTyped for AnimationDuration<T> {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        match *self {
+            Self::Auto => {
+                if static_prefs::pref!("layout.css.scroll-driven-animations.enabled") {
+                    dest.push(TypedValue::Keyword(KeywordValue(CssString::from("auto"))));
+                    Ok(())
+                } else {
+                    Self::Time(T::zero()).to_typed(dest)
+                }
+            },
+            Self::Time(ref t) => t.to_typed(dest),
+        }
+    }
+}
 
 /// The view() notation.
 /// https://drafts.csswg.org/scroll-animations-1/#view-notation

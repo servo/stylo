@@ -474,7 +474,7 @@ impl StyleFeaturePlain {
                                 registration,
                                 ctx,
                             );
-                            v == current_value.cloned()
+                            v.as_ref() == current_value
                         } else {
                             current_value.is_none()
                         }
@@ -486,8 +486,8 @@ impl StyleFeaturePlain {
                             .expect("queries should provide container info")
                             .inherited_style()
                         {
-                            current_value
-                                == inherited.custom_properties().get(registration, &self.name)
+                            inherited.custom_properties().get(registration, &self.name)
+                                == current_value
                         } else {
                             false
                         }

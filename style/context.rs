@@ -10,7 +10,7 @@ use crate::bloom::StyleBloom;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::data::{EagerPseudoStyles, ElementData};
 use crate::derives::*;
-use crate::dom::{SendElement, TElement};
+use crate::dom::{SendElement, TElement, TRestyleDamage};
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs;
 use crate::parallel::{STACK_SAFETY_MARGIN_KB, STYLE_THREAD_STACK_SIZE_KB};
@@ -264,7 +264,7 @@ pub struct ElementCascadeInputs {
 impl ElementCascadeInputs {
     /// Construct inputs from previous cascade results, if any.
     #[inline]
-    pub fn new_from_element_data(data: &ElementData) -> Self {
+    pub fn new_from_element_data<D: TRestyleDamage>(data: &ElementData<D>) -> Self {
         debug_assert!(data.has_styles());
         ElementCascadeInputs {
             primary: CascadeInputs::new_from_style(data.styles.primary()),

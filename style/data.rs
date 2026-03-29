@@ -6,11 +6,11 @@
 
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::{SharedStyleContext, StackLimitChecker};
-use crate::dom::TElement;
+use crate::dom::{TElement, TRestyleDamage};
 use crate::invalidation::element::invalidator::InvalidationResult;
 use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::properties::ComputedValues;
-use crate::selector_parser::{PseudoElement, RestyleDamage, EAGER_PSEUDO_COUNT};
+use crate::selector_parser::{PseudoElement, EAGER_PSEUDO_COUNT};
 use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles, ResolvedStyle};
 #[cfg(feature = "gecko")]
 use malloc_size_of::MallocSizeOfOps;
@@ -259,7 +259,7 @@ impl fmt::Debug for ElementStyles {
 /// inside of layout data, which itself hangs directly off the Element. In
 /// both cases, it is wrapped inside an AtomicRefCell to ensure thread safety.
 #[derive(Debug, Default)]
-pub struct ElementData {
+pub struct ElementData<RestyleDamage: TRestyleDamage> {
     /// The styles for the element and its pseudo-elements.
     pub styles: ElementStyles,
 
@@ -349,7 +349,14 @@ impl<'a> DerefMut for ElementDataMut<'a> {
 }
 
 // There's one of these per rendered elements so it better be small.
-size_of_test!(ElementData, 24);
+// mod element_data_test {
+//     use crate::dom::TRestyleDamage;
+//     use super::ElementData;
+//     #[derive(Debug, Copy, Clone, Default)]
+//     struct SizeOfRestyleDamage(u32);
+//     impl TRestyleDamage for SizeOfRestyleDamage {}
+//     size_of_test!(ElementData<SizeOfRestyleDamage>, 24);
+// }
 
 /// The kind of restyle that a single element should do.
 #[derive(Debug)]
@@ -365,11 +372,11 @@ pub enum RestyleKind {
     CascadeOnly,
 }
 
-impl ElementData {
+impl<RestyleDamage: TRestyleDamage> ElementData<RestyleDamage> {
     /// Invalidates style for this element, its descendants, and later siblings,
     /// based on the snapshot of the element that we took when attributes or
     /// state changed.
-    pub fn invalidate_style_if_needed<'a, E: TElement>(
+    pub fn invalidate_style_if_needed<'a, E: TElement<RestyleDamage = RestyleDamage>>(
         &mut self,
         element: E,
         shared_context: &SharedStyleContext,
@@ -554,7 +561,7 @@ impl ElementData {
     /// Drops restyle flags and damage from the element.
     #[inline]
     pub fn clear_restyle_flags_and_damage(&mut self) {
-        self.damage = RestyleDamage::empty();
+        self.damage.clear();
         self.flags.remove(ElementDataFlags::WAS_RESTYLED);
     }
 

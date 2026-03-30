@@ -67,6 +67,9 @@ pub enum PseudoElement {
     ColorSwatch,
     FileSelectorButton,
     Placeholder,
+    SliderFill,
+    SliderThumb,
+    SliderTrack,
 
     // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
     ServoTextControlInnerContainer,
@@ -102,6 +105,9 @@ impl ToCss for PseudoElement {
             ColorSwatch => "::color-swatch",
             FileSelectorButton => "::file-selector-button",
             Placeholder => "::placeholder",
+            SliderFill => "::slider-fill",
+            SliderTrack => "::slider-track",
+            SliderThumb => "::slider-thumb",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoAnonymousBox => "::-servo-anonymous-box",
@@ -255,6 +261,9 @@ impl PseudoElement {
             | PseudoElement::Marker
             | PseudoElement::Placeholder
             | PseudoElement::DetailsContent
+            | PseudoElement::SliderFill
+            | PseudoElement::SliderThumb
+            | PseudoElement::SliderTrack
             | PseudoElement::ServoTextControlInnerContainer
             | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
             PseudoElement::ServoAnonymousBox
@@ -692,6 +701,9 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
                 }
                 ServoTextControlInnerEditor
             },
+            "slider-fill" => SliderFill,
+            "slider-thumb" => SliderThumb,
+            "slider-track" => SliderTrack,
             "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))

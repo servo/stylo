@@ -214,6 +214,24 @@ impl ComputedValuesInner {
         }
     }
 
+    // Share ComputedValues but with different flags.
+    pub fn clone_with_flags(&self, flags: ComputedValueFlags, pseudo: Option<&PseudoElement>) -> Arc<ComputedValues> {
+        Self {
+            custom_properties: self.custom_properties.clone(),
+            attribute_references: self.attribute_references.clone(),
+            writing_mode: self.writing_mode.clone(),
+            rules: self.rules.clone(),
+            visited_style: self.visited_style.clone(),
+            flags,
+            effective_zoom: self.effective_zoom.clone(),
+            % for style_struct in data.style_structs:
+            ${style_struct.gecko_name}: Arc::into_raw(
+                unsafe {Arc::from_raw_addrefed(self.${style_struct.name_lower}_ptr())}
+            ) as *const _,
+            % endfor
+        }.to_outer(pseudo)
+    }
+
     fn to_outer(self, pseudo: Option<&PseudoElement>) -> Arc<ComputedValues> {
         let pseudo_ty = match pseudo {
             Some(p) => p.pseudo_type(),

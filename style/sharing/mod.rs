@@ -923,23 +923,6 @@ impl<E: TElement> StyleSharingCache<E> {
             if style.visited_rules() != inputs.visited_rules.as_ref() {
                 return None;
             }
-            let target_depends_on_style_queries = inputs
-                .flags
-                .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
-            let candidate_depends_on_style_queries = style
-                .flags
-                .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
-
-            if target_depends_on_style_queries && !candidate_depends_on_style_queries {
-                // If we're considering sharing across two elements, one of
-                // which depends on style queries and one of which doesn't,
-                // right now we can't share it since the target will lose its
-                // dependency flag.
-                // TODO(bug 2024823): Consider using deep-cloned style with the
-                // extra flag instead of falling back to re-cascading.
-                // This would apply to links as well.
-                return None;
-            }
             // NOTE(emilio): We only need to check name / namespace because we
             // do name-dependent style adjustments, like the display: contents
             // to display: none adjustment.
@@ -967,6 +950,35 @@ impl<E: TElement> StyleSharingCache<E> {
             // entirely, so that visitedness doesn't affect timing.
             if target.is_link() || candidate.element.is_link() {
                 return None;
+            }
+
+            let target_depends_on_style_queries = inputs
+                .flags
+                .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
+            let candidate_depends_on_style_queries = style
+                .flags
+                .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
+
+            if target_depends_on_style_queries != candidate_depends_on_style_queries {
+                // If we're considering sharing across two elements, target
+                // depends on style queries and candidate doesn't, right
+                // now we can share it, but by cloning the candidate style
+                // if we adjust the flags.
+                // If we're considering sharing across two elements, target
+                // does not depend on style queries and candidate does, we
+                // can share them with the same flags, but that would
+                // overinvalidate if we already know we don't need to keep
+                // `DEPENDS_ON_CONTAINER_STYLE_QUERY`.
+                let mut new_flags = inputs.flags | style.flags;
+                new_flags.set(
+                    ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY,
+                    target_depends_on_style_queries,
+                );
+
+                return Some(PrimaryStyle {
+                    style: data.clone_style_with_flags(new_flags),
+                    reused_via_rule_node: true,
+                });
             }
 
             Some(data.share_primary_style())

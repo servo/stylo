@@ -437,6 +437,20 @@ impl ElementData {
         }
     }
 
+    /// Return a copy of the element's primary style as a resolved style with the
+    /// given flags.
+    pub fn clone_style_with_flags(&self, flags: ComputedValueFlags) -> ResolvedStyle {
+        let primary_style = self.styles.primary();
+        // We are only using this pseudo to find the correct pseudo type so it
+        // does not matter it technically belongs to a different style.
+        let pseudo = primary_style.pseudo();
+        ResolvedStyle(
+            primary_style
+                .deref()
+                .clone_with_flags(flags, pseudo.as_ref()),
+        )
+    }
+
     /// Sets a new set of styles, returning the old ones.
     pub fn set_styles(&mut self, new_styles: ResolvedElementStyles) -> ElementStyles {
         self.flags.set(

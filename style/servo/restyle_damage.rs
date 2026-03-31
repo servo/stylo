@@ -64,13 +64,7 @@ impl ServoRestyleDamage {
         } else {
             compute_damage(old, new)
         };
-
-        if damage.is_empty() {
-            return StyleDifference {
-                damage,
-                change: StyleChange::Unchanged,
-            };
-        }
+        let custom_properties_changed = !old.custom_properties_equal(new);
 
         if damage.contains(ServoRestyleDamage::RELAYOUT) {
             damage |= E::compute_layout_damage(old, new);
@@ -79,7 +73,14 @@ impl ServoRestyleDamage {
         // FIXME(emilio): Differentiate between reset and inherited
         // properties here, and set `reset_only` appropriately so the
         // optimization to skip the cascade in those cases applies.
-        let change = StyleChange::Changed { reset_only: false };
+        let change = if damage.is_empty() && !custom_properties_changed {
+            StyleChange::Unchanged
+        } else {
+            StyleChange::Changed {
+                reset_only: false,
+                _custom_properties_changed: custom_properties_changed,
+            }
+        };
 
         StyleDifference { damage, change }
     }

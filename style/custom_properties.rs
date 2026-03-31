@@ -2582,10 +2582,11 @@ fn substitute_one_reference<'a>(
                     },
                     |attr| {
                         let attr = if let AttributeType::Type(_) = &reference.attribute_data.kind {
-                            substitution_functions
-                                .get_attr(&reference.name)
-                                .map(|v| v.to_variable_value())?
-                                .css
+                            if let Some(value) = substitution_functions.get_attr(&reference.name) {
+                                value.to_variable_value().css
+                            } else {
+                                attr
+                            }
                         } else {
                             attr
                         };

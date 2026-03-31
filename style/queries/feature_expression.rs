@@ -12,6 +12,7 @@ use crate::custom_properties::{
     self, ComputedSubstitutionFunctions, VariableValue as CustomVariableValue,
 };
 use crate::derives::*;
+use crate::dom::AttributeTracker;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::CSSWideKeyword;
 use crate::properties_and_values::value::{ComputedValueComponent as Component, ValueInner};
@@ -921,15 +922,31 @@ impl QueryStyleRange {
     }
 
     /// Returns whether this style-range query evaluates to true for the given context.
-    pub fn evaluate(&self, context: &computed::Context) -> KleeneValue {
+    pub fn evaluate(
+        &self,
+        context: &computed::Context,
+        attribute_tracker: &mut AttributeTracker,
+    ) -> KleeneValue {
         match self {
             QueryStyleRange::StyleRange2 {
                 ref value1,
                 ref op1,
                 ref value2,
             } => Self::compare_values(
-                Self::resolve_value(value1, context, &mut PrecomputedHashSet::default()).as_ref(),
-                Self::resolve_value(value2, context, &mut PrecomputedHashSet::default()).as_ref(),
+                Self::resolve_value(
+                    value1,
+                    context,
+                    attribute_tracker,
+                    &mut PrecomputedHashSet::default(),
+                )
+                .as_ref(),
+                Self::resolve_value(
+                    value2,
+                    context,
+                    attribute_tracker,
+                    &mut PrecomputedHashSet::default(),
+                )
+                .as_ref(),
             )
             .is_some_and(|c| op1.evaluate(c))
             .into(),
@@ -941,8 +958,18 @@ impl QueryStyleRange {
                 ref op2,
                 ref value3,
             } => {
-                let v1 = Self::resolve_value(value1, context, &mut PrecomputedHashSet::default());
-                let v2 = Self::resolve_value(value2, context, &mut PrecomputedHashSet::default());
+                let v1 = Self::resolve_value(
+                    value1,
+                    context,
+                    attribute_tracker,
+                    &mut PrecomputedHashSet::default(),
+                );
+                let v2 = Self::resolve_value(
+                    value2,
+                    context,
+                    attribute_tracker,
+                    &mut PrecomputedHashSet::default(),
+                );
                 Self::compare_values(v1.as_ref(), v2.as_ref())
                     .is_some_and(|c1| {
                         op1.evaluate(c1)
@@ -951,6 +978,7 @@ impl QueryStyleRange {
                                 Self::resolve_value(
                                     value3,
                                     context,
+                                    attribute_tracker,
                                     &mut PrecomputedHashSet::default(),
                                 )
                                 .as_ref(),
@@ -966,6 +994,7 @@ impl QueryStyleRange {
     fn resolve_value(
         value: &QueryExpressionValue,
         context: &computed::Context,
+        attribute_tracker: &mut AttributeTracker,
         visited_set: &mut PrecomputedHashSet<DashedIdent>,
     ) -> Option<Component> {
         match value {
@@ -988,7 +1017,13 @@ impl QueryStyleRange {
                         // and we risk infinite recursion, so instead return None
                         // (i.e. the value cannot be resolved).
                         if visited_set.insert(ident.clone()) {
-                            Self::resolve_universal(&v.css, &v.url_data, context, visited_set)
+                            Self::resolve_universal(
+                                &v.css,
+                                &v.url_data,
+                                context,
+                                attribute_tracker,
+                                visited_set,
+                            )
                         } else {
                             None
                         }
@@ -1013,10 +1048,16 @@ impl QueryStyleRange {
                     &sub_funcs,
                     stylist,
                     context,
-                    &mut crate::dom::AttributeTracker::new_dummy(),
+                    attribute_tracker,
                 )
                 .ok()?;
-                Self::resolve_universal(&substituted.css, &value.url_data, context, visited_set)
+                Self::resolve_universal(
+                    &substituted.css,
+                    &value.url_data,
+                    context,
+                    attribute_tracker,
+                    visited_set,
+                )
             },
             QueryExpressionValue::Length(v) => {
                 Some(Component::Length(v.to_computed_value(context)))
@@ -1050,6 +1091,7 @@ impl QueryStyleRange {
         css_text: &str,
         url_data: &UrlExtraData,
         context: &computed::Context,
+        attribute_tracker: &mut AttributeTracker,
         visited_set: &mut PrecomputedHashSet<DashedIdent>,
     ) -> Option<Component> {
         let parser_context = ParserContext::new(
@@ -1065,7 +1107,9 @@ impl QueryStyleRange {
         let mut input = ParserInput::new(css_text);
         QueryExpressionValue::parse_for_style_range(&parser_context, &mut Parser::new(&mut input))
             .ok()
-            .and_then(|parsed| Self::resolve_value(&parsed, context, visited_set))
+            .and_then(|parsed| {
+                Self::resolve_value(&parsed, context, attribute_tracker, visited_set)
+            })
     }
 
     fn compare_values(value1: Option<&Component>, value2: Option<&Component>) -> Option<Ordering> {

@@ -11,6 +11,7 @@
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
+use crate::values::generics::position::IsTreeScoped;
 use crate::Atom;
 pub use cssparser::{serialize_identifier, serialize_name, CowRcStr, Parser};
 pub use cssparser::{SourceLocation, Token};
@@ -707,6 +708,12 @@ impl DashedIdent {
     }
 }
 
+impl IsTreeScoped for DashedIdent {
+    fn is_tree_scoped(&self) -> bool {
+        !self.is_empty()
+    }
+}
+
 impl Parse for DashedIdent {
     fn parse<'i, 't>(
         _: &ParserContext,
@@ -784,9 +791,7 @@ impl Parse for KeyframesName {
         Ok(match *input.next()? {
             Token::Ident(ref s) => Self(CustomIdent::from_ident(location, s, &["none"])?.0),
             // Note that empty <string> should be rejected.
-            Token::QuotedString(ref s) if !s.as_ref().is_empty() => {
-                Self(Atom::from(s.as_ref()))
-            },
+            Token::QuotedString(ref s) if !s.as_ref().is_empty() => Self(Atom::from(s.as_ref())),
             ref t => return Err(location.new_unexpected_token_error(t.clone())),
         })
     }

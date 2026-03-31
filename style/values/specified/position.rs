@@ -15,22 +15,22 @@ use crate::str::HTML_SPACE_CHARACTERS;
 use crate::values::computed::LengthPercentage as ComputedLengthPercentage;
 use crate::values::computed::{Context, Percentage, ToComputedValue};
 use crate::values::generics::length::GenericAnchorSizeFunction;
-use crate::values::generics::position::Position as GenericPosition;
 use crate::values::generics::position::PositionComponent as GenericPositionComponent;
 use crate::values::generics::position::PositionOrAuto as GenericPositionOrAuto;
 use crate::values::generics::position::ZIndex as GenericZIndex;
 use crate::values::generics::position::{AspectRatio as GenericAspectRatio, GenericAnchorSide};
 use crate::values::generics::position::{GenericAnchorFunction, GenericInset, TreeScoped};
+use crate::values::generics::position::{IsTreeScoped, Position as GenericPosition};
 use crate::values::specified;
 use crate::values::specified::align::AlignFlags;
 use crate::values::specified::{AllowQuirks, Integer, LengthPercentage, NonNegativeNumber};
 use crate::values::{AtomIdent, DashedIdent};
 use crate::{Atom, Zero};
-use cssparser::{Parser, match_ignore_ascii_case};
+use cssparser::{match_ignore_ascii_case, Parser};
 use num_traits::FromPrimitive;
 use selectors::parser::SelectorParseErrorKind;
 use servo_arc::Arc;
-use smallvec::{SmallVec, smallvec};
+use smallvec::{smallvec, SmallVec};
 use std::collections::hash_map::Entry;
 use std::fmt::{self, Write};
 use style_traits::arc_slice::ArcSlice;
@@ -399,6 +399,12 @@ impl Parse for AnchorNameIdent {
     }
 }
 
+impl IsTreeScoped for AnchorNameIdent {
+    fn is_tree_scoped(&self) -> bool {
+        !self.0.is_empty()
+    }
+}
+
 /// https://drafts.csswg.org/css-anchor-position-1/#propdef-anchor-name
 pub type AnchorName = TreeScoped<AnchorNameIdent>;
 
@@ -477,6 +483,12 @@ impl Parse for ScopedNameList {
     }
 }
 
+impl IsTreeScoped for ScopedNameList {
+    fn is_tree_scoped(&self) -> bool {
+        !self.is_none()
+    }
+}
+
 /// A scoped name type, such as:
 /// * https://drafts.csswg.org/css-anchor-position-1/#propdef-scope
 pub type ScopedName = TreeScoped<ScopedNameList>;
@@ -521,6 +533,15 @@ impl PositionAnchorKeyword {
     /// Return the `none` value.
     pub fn none() -> Self {
         Self::None
+    }
+}
+
+impl IsTreeScoped for PositionAnchorKeyword {
+    fn is_tree_scoped(&self) -> bool {
+        match *self {
+            Self::None | Self::Auto => false,
+            Self::Ident(_) => true,
+        }
     }
 }
 

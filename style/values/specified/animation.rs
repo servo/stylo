@@ -8,7 +8,7 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::{NonCustomPropertyId, PropertyId, ShorthandId};
 use crate::values::generics::animation as generics;
-use crate::values::generics::position::TreeScoped;
+use crate::values::generics::position::{IsTreeScoped, TreeScoped};
 use crate::values::specified::{LengthPercentage, NonNegativeNumber, Time};
 use crate::values::{AtomIdent, CustomIdent, DashedIdent, KeyframesName};
 use crate::Atom;
@@ -607,6 +607,12 @@ impl TimelineIdent {
     }
 }
 
+impl IsTreeScoped for TimelineIdent {
+    fn is_tree_scoped(&self) -> bool {
+        !self.is_none()
+    }
+}
+
 impl Parse for TimelineIdent {
     fn parse<'i, 't>(
         context: &ParserContext,
@@ -724,6 +730,12 @@ impl ViewTransitionNameKeyword {
     }
 }
 
+impl IsTreeScoped for ViewTransitionNameKeyword {
+    fn is_tree_scoped(&self) -> bool {
+        self.0 .0 != atom!("none")
+    }
+}
+
 impl Parse for ViewTransitionNameKeyword {
     fn parse<'i, 't>(
         _: &ParserContext,
@@ -782,6 +794,12 @@ pub struct ViewTransitionClassList(
     #[ignore_malloc_size_of = "Arc"]
     crate::ArcSlice<CustomIdent>,
 );
+
+impl IsTreeScoped for ViewTransitionClassList {
+    fn is_tree_scoped(&self) -> bool {
+        !self.is_none()
+    }
+}
 
 impl ViewTransitionClassList {
     /// Returns the default value, `none`. We use the default slice (i.e. empty) to represent it.

@@ -78,6 +78,9 @@ macro_rules! default_value {
     ("layout.css.relative-color-syntax.enabled") => {
         true
     };
+    ("layout.css.revert-rule.enabled") => {
+        true
+    };
     ("layout.css.scroll-driven-animations.enabled") => {
         false
     };

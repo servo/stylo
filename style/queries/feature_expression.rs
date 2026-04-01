@@ -8,6 +8,7 @@
 use super::feature::{Evaluator, QueryFeatureDescription};
 use super::feature::{FeatureFlags, KeywordDiscriminant};
 use crate::context::QuirksMode;
+use crate::custom_properties::VariableValue as CustomVariableValue;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::CSSWideKeyword;
@@ -679,8 +680,12 @@ pub enum QueryExpressionValue {
     /// A custom property name.
     Custom(DashedIdent),
     /// A simple var(...) reference without a default (equivalent to a bare Custom ident,
-    /// but will serialize with the `var()` wrapper)
+    /// but will serialize with the `var()` wrapper).
     Var(DashedIdent),
+    /// An arbitrary substitution function (var(), attr(), env()), stored as a string
+    /// for later evaluation. We store this as a custom-property value to make it easy
+    /// to resolve later.
+    Function(Box<CustomVariableValue>),
 }
 
 impl QueryExpressionValue {
@@ -709,6 +714,7 @@ impl QueryExpressionValue {
                 v.to_css(dest)?;
                 dest.write_char(')')
             },
+            QueryExpressionValue::Function(ref f) => f.to_css(dest),
             QueryExpressionValue::Enumerated(value) => match for_expr
                 .expect("caller should have passed for_expr")
                 .feature()
@@ -793,17 +799,38 @@ impl QueryExpressionValue {
         if let Ok(keyword) = input.try_parse(|i| CSSWideKeyword::parse(i)) {
             return Ok(Self::Keyword(keyword));
         }
+        input.skip_whitespace();
+        let start = input.position();
         if let Ok(Token::Function(ref name)) = input.next() {
-            // Here, we only handle simple `var(--foo)` references when used as individual
-            // query expression values. More complex usages such as `var(...)` with default,
-            // or `var(...)` used within `calc(...)` expressions, will be substituted and
-            // resolved at query evaluation time.
+            // Helper to parse the function arg and store the complete expression (function
+            // name and parenthesized argument) into a CustomVariableValue.
+            let parse_func =
+                |input: &mut Parser<'i, 't>| -> Result<CustomVariableValue, ParseError<'i>> {
+                    input.parse_nested_block(|i| i.expect_no_error_token().map_err(Into::into))?;
+                    let mut input = ParserInput::new(input.slice_from(start));
+                    CustomVariableValue::parse(
+                        &mut Parser::new(&mut input),
+                        Some(&context.namespaces.prefixes),
+                        context.url_data,
+                    )
+                };
+
             if name.eq_ignore_ascii_case("var") {
+                // For simple `var(--foo)` references used as individual query-expression values,
+                // we can store as the Var() variant and just look up the custom property at
+                // evaluation time.
                 if let Ok(ident) =
                     input.try_parse(|i| i.parse_nested_block(|i| DashedIdent::parse(context, i)))
                 {
                     return Ok(Self::Var(ident));
                 }
+                // Otherwise, we store the entire function to be resolved later via
+                // custom_properties::substitute(), which will also handle fallbacks
+                // if necessary.
+                return Ok(Self::Function(Box::new(parse_func(input)?)));
+            }
+            if static_prefs::pref!("layout.css.attr.enabled") && name.eq_ignore_ascii_case("attr") {
+                return Ok(Self::Function(Box::new(parse_func(input)?)));
             }
         }
         Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))

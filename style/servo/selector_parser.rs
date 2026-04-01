@@ -57,7 +57,6 @@ pub enum PseudoElement {
 
     // Non-eager pseudos.
     Backdrop,
-    DetailsSummary,
     DetailsContent,
     Marker,
 

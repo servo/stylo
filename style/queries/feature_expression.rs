@@ -8,7 +8,9 @@
 use super::feature::{Evaluator, QueryFeatureDescription};
 use super::feature::{FeatureFlags, KeywordDiscriminant};
 use crate::context::QuirksMode;
-use crate::custom_properties::VariableValue as CustomVariableValue;
+use crate::custom_properties::{
+    self, ComputedSubstitutionFunctions, VariableValue as CustomVariableValue,
+};
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::CSSWideKeyword;
@@ -1015,6 +1017,25 @@ impl QueryStyleRange {
                         None
                     },
                 }
+            },
+            QueryExpressionValue::Function(value) => {
+                let sub_funcs = ComputedSubstitutionFunctions::new(
+                    Some(context.inherited_custom_properties().clone()),
+                    None,
+                );
+                let stylist = context
+                    .builder
+                    .stylist
+                    .expect("container queries should have a stylist around");
+                let substituted = custom_properties::substitute(
+                    &value,
+                    &sub_funcs,
+                    stylist,
+                    context,
+                    &mut crate::dom::AttributeTracker::new_dummy(),
+                )
+                .ok()?;
+                Self::resolve_universal(&substituted.css, &value.url_data, context, visited_set)
             },
             QueryExpressionValue::Length(v) => {
                 Some(Component::Length(v.to_computed_value(context)))

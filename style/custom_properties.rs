@@ -2392,6 +2392,7 @@ impl<'a> Substitution<'a> {
 }
 
 /// Result of var(), env(), and attr() substitution.
+#[derive(Debug)]
 pub struct SubstitutionResult<'a> {
     /// The resolved CSS string after substitution.
     pub css: Cow<'a, str>,

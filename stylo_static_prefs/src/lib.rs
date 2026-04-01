@@ -12,6 +12,9 @@ macro_rules! default_value {
     ("dom.select.customizable_select.enabled") => {
         false
     };
+    ("dom.viewTransitions.cross-document.enabled") => {
+        false
+    };
     ("layout.columns.enabled") => {
         false
     };

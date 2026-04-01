@@ -681,9 +681,6 @@ pub enum QueryExpressionValue {
     Time(Time),
     /// A custom property name.
     Custom(DashedIdent),
-    /// A simple var(...) reference without a default (equivalent to a bare Custom ident,
-    /// but will serialize with the `var()` wrapper).
-    Var(DashedIdent),
     /// An arbitrary substitution function (var(), attr(), env()), stored as a string
     /// for later evaluation. We store this as a custom-property value to make it easy
     /// to resolve later.
@@ -711,11 +708,6 @@ impl QueryExpressionValue {
             QueryExpressionValue::Angle(v) => v.to_css(dest),
             QueryExpressionValue::Time(v) => v.to_css(dest),
             QueryExpressionValue::Custom(ref v) => v.to_css(dest),
-            QueryExpressionValue::Var(ref v) => {
-                dest.write_str("var(")?;
-                v.to_css(dest)?;
-                dest.write_char(')')
-            },
             QueryExpressionValue::Function(ref f) => f.to_css(dest),
             QueryExpressionValue::Enumerated(value) => match for_expr
                 .expect("caller should have passed for_expr")
@@ -817,21 +809,10 @@ impl QueryExpressionValue {
                     )
                 };
 
-            if name.eq_ignore_ascii_case("var") {
-                // For simple `var(--foo)` references used as individual query-expression values,
-                // we can store as the Var() variant and just look up the custom property at
-                // evaluation time.
-                if let Ok(ident) =
-                    input.try_parse(|i| i.parse_nested_block(|i| DashedIdent::parse(context, i)))
-                {
-                    return Ok(Self::Var(ident));
-                }
-                // Otherwise, we store the entire function to be resolved later via
-                // custom_properties::substitute(), which will also handle fallbacks
-                // if necessary.
-                return Ok(Self::Function(Box::new(parse_func(input)?)));
-            }
-            if static_prefs::pref!("layout.css.attr.enabled") && name.eq_ignore_ascii_case("attr") {
+            if name.eq_ignore_ascii_case("var")
+                || (static_prefs::pref!("layout.css.attr.enabled")
+                    && name.eq_ignore_ascii_case("attr"))
+            {
                 return Ok(Self::Function(Box::new(parse_func(input)?)));
             }
         }
@@ -988,7 +969,7 @@ impl QueryStyleRange {
         visited_set: &mut PrecomputedHashSet<DashedIdent>,
     ) -> Option<Component> {
         match value {
-            QueryExpressionValue::Custom(ident) | QueryExpressionValue::Var(ident) => {
+            QueryExpressionValue::Custom(ident) => {
                 // `ident` is the dashed ident, but we need the name
                 // without "--" for custom-property lookup.
                 let name = ident.undashed();

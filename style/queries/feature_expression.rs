@@ -14,7 +14,7 @@ use crate::custom_properties::{
 use crate::derives::*;
 use crate::dom::AttributeTracker;
 use crate::parser::{Parse, ParserContext};
-use crate::properties::CSSWideKeyword;
+use crate::properties::{self, CSSWideKeyword};
 use crate::properties_and_values::value::{ComputedValueComponent as Component, ValueInner};
 use crate::selector_map::PrecomputedHashSet;
 use crate::str::{starts_with_ignore_ascii_case, string_as_ascii_lowercase};
@@ -810,9 +810,9 @@ impl QueryExpressionValue {
                     )
                 };
 
-            if name.eq_ignore_ascii_case("var")
-                || (static_prefs::pref!("layout.css.attr.enabled")
-                    && name.eq_ignore_ascii_case("attr"))
+            if properties::enabled_arbitrary_substitution_functions()
+                .iter()
+                .any(|n| n.eq_ignore_ascii_case(name))
             {
                 return Ok(Self::Function(Box::new(parse_func(input)?)));
             }

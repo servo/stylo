@@ -5,7 +5,6 @@
 //! https://html.spec.whatwg.org/multipage/#source-size-list
 
 use crate::device::Device;
-use crate::dom::AttributeTracker;
 use crate::parser::{Parse, ParserContext};
 use crate::queries::{FeatureType, QueryCondition};
 use crate::stylesheets::CustomMediaEvaluator;
@@ -60,11 +59,7 @@ impl SourceSizeList {
             let matching_source_size = self.source_sizes.iter().find(|source_size| {
                 source_size
                     .condition
-                    .matches(
-                        context,
-                        &mut CustomMediaEvaluator::none(),
-                        &mut AttributeTracker::new_dummy(),
-                    )
+                    .matches(context, &mut CustomMediaEvaluator::none())
                     .to_bool(/* unknown = */ false)
             });
 

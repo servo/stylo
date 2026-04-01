@@ -734,15 +734,6 @@ impl ShorthandId {
     }
 }
 
-/// Return the names of arbitrary substitution functions that are enabled.
-pub fn enabled_arbitrary_substitution_functions() -> &'static [&'static str] {
-    if static_prefs::pref!("layout.css.attr.enabled") {
-        &["var", "env", "attr"]
-    } else {
-        &["var", "env"]
-    }
-}
-
 fn parse_non_custom_property_declaration_value_into<'i>(
     declarations: &mut SourcePropertyDeclaration,
     context: &ParserContext,
@@ -774,7 +765,13 @@ fn parse_non_custom_property_declaration_value_into<'i>(
     };
 
     input.reset(&start);
-    input.look_for_arbitrary_substitution_functions(enabled_arbitrary_substitution_functions());
+    input.look_for_arbitrary_substitution_functions(
+        if static_prefs::pref!("layout.css.attr.enabled") {
+            &["var", "env", "attr"]
+        } else {
+            &["var", "env"]
+        },
+    );
 
     let err = match parse_entirely_into(declarations, input) {
         Ok(()) => {

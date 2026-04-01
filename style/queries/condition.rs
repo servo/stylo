@@ -245,26 +245,18 @@ impl StyleQuery {
         }
     }
 
-    fn matches(
-        &self,
-        ctx: &computed::Context,
-        attribute_tracker: &mut AttributeTracker,
-    ) -> KleeneValue {
+    fn matches(&self, ctx: &computed::Context) -> KleeneValue {
         ctx.builder
             .add_flags(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
         match *self {
-            StyleQuery::Feature(ref f) => f.matches(ctx, attribute_tracker),
-            StyleQuery::Not(ref c) => !c.matches(ctx, attribute_tracker),
-            StyleQuery::InParens(ref c) => c.matches(ctx, attribute_tracker),
+            StyleQuery::Feature(ref f) => f.matches(ctx),
+            StyleQuery::Not(ref c) => !c.matches(ctx),
+            StyleQuery::InParens(ref c) => c.matches(ctx),
             StyleQuery::Operation(ref conditions, op) => {
                 debug_assert!(!conditions.is_empty(), "We never create an empty op");
                 match op {
-                    Operator::And => KleeneValue::any_false(conditions.iter(), |c| {
-                        c.matches(ctx, attribute_tracker)
-                    }),
-                    Operator::Or => {
-                        KleeneValue::any(conditions.iter(), |c| c.matches(ctx, attribute_tracker))
-                    },
+                    Operator::And => KleeneValue::any_false(conditions.iter(), |c| c.matches(ctx)),
+                    Operator::Or => KleeneValue::any(conditions.iter(), |c| c.matches(ctx)),
                 }
             },
             StyleQuery::GeneralEnclosed(_) => KleeneValue::Unknown,
@@ -333,14 +325,10 @@ impl StyleFeature {
         Ok(Self::Plain(StyleFeaturePlain::parse(context, input)?))
     }
 
-    fn matches(
-        &self,
-        ctx: &computed::Context,
-        attribute_tracker: &mut AttributeTracker,
-    ) -> KleeneValue {
+    fn matches(&self, ctx: &computed::Context) -> KleeneValue {
         match self {
-            Self::Plain(plain) => plain.matches(ctx, attribute_tracker),
-            Self::Range(range) => range.evaluate(ctx, attribute_tracker),
+            Self::Plain(plain) => plain.matches(ctx),
+            Self::Range(range) => range.evaluate(ctx),
         }
     }
 }
@@ -413,7 +401,6 @@ impl StyleFeaturePlain {
         registration: &PropertyDescriptors,
         stylist: &Stylist,
         ctx: &computed::Context,
-        attribute_tracker: &mut AttributeTracker,
         current_value: Option<&ComputedRegisteredValue>,
     ) -> bool {
         let substitution_functions = custom_properties::ComputedSubstitutionFunctions::new(
@@ -426,7 +413,8 @@ impl StyleFeaturePlain {
             &substitution_functions,
             stylist,
             ctx,
-            attribute_tracker,
+            // FIXME: do we need to pass a real AttributeTracker for the query?
+            &mut AttributeTracker::new_dummy(),
         ) {
             Ok(sub) => sub,
             Err(_) => return current_value.is_none(),
@@ -451,11 +439,7 @@ impl StyleFeaturePlain {
         computed.as_ref() == current_value
     }
 
-    fn matches(
-        &self,
-        ctx: &computed::Context,
-        attribute_tracker: &mut AttributeTracker,
-    ) -> KleeneValue {
+    fn matches(&self, ctx: &computed::Context) -> KleeneValue {
         // FIXME(emilio): Confirm this is the right style to query.
         let stylist = ctx
             .builder
@@ -473,14 +457,7 @@ impl StyleFeaturePlain {
                 } else if v.has_references() {
                     // If there are --var() references in the query value,
                     // try to substitute them before comparing to current.
-                    Self::substitute_and_compare(
-                        v,
-                        registration,
-                        stylist,
-                        ctx,
-                        attribute_tracker,
-                        current_value,
-                    )
+                    Self::substitute_and_compare(v, registration, stylist, ctx, current_value)
                 } else {
                     custom_properties::compute_variable_value(&v, registration, ctx).as_ref()
                         == current_value
@@ -822,27 +799,26 @@ impl QueryCondition {
         &self,
         context: &computed::Context,
         custom: &mut CustomMediaEvaluator,
-        attribute_tracker: &mut AttributeTracker,
     ) -> KleeneValue {
         match *self {
             Self::Custom(ref f) => custom.matches(f, context),
             Self::Feature(ref f) => f.matches(context),
             Self::GeneralEnclosed(ref str, ref url_data) => {
-                self.matches_general(&str, url_data, context, custom, attribute_tracker)
+                self.matches_general(&str, url_data, context, custom)
             },
-            Self::InParens(ref c) => c.matches(context, custom, attribute_tracker),
-            Self::Not(ref c) => !c.matches(context, custom, attribute_tracker),
-            Self::Style(ref c) => c.matches(context, attribute_tracker),
+            Self::InParens(ref c) => c.matches(context, custom),
+            Self::Not(ref c) => !c.matches(context, custom),
+            Self::Style(ref c) => c.matches(context),
             Self::MozPref(ref c) => c.matches(context),
             Self::Operation(ref conditions, op) => {
                 debug_assert!(!conditions.is_empty(), "We never create an empty op");
                 match op {
-                    Operator::And => KleeneValue::any_false(conditions.iter(), |c| {
-                        c.matches(context, custom, attribute_tracker)
-                    }),
-                    Operator::Or => KleeneValue::any(conditions.iter(), |c| {
-                        c.matches(context, custom, attribute_tracker)
-                    }),
+                    Operator::And => {
+                        KleeneValue::any_false(conditions.iter(), |c| c.matches(context, custom))
+                    },
+                    Operator::Or => {
+                        KleeneValue::any(conditions.iter(), |c| c.matches(context, custom))
+                    },
                 }
             },
         }
@@ -856,7 +832,6 @@ impl QueryCondition {
         url_data: &UrlExtraData,
         context: &computed::Context,
         custom: &mut CustomMediaEvaluator,
-        attribute_tracker: &mut AttributeTracker,
     ) -> KleeneValue {
         // This only applies (currently, at least) to container queries.
         if !context.in_container_query {
@@ -897,7 +872,8 @@ impl QueryCondition {
             &substitution_functions,
             stylist,
             context,
-            attribute_tracker,
+            // FIXME: do we need to pass a real AttributeTracker for the query?
+            &mut AttributeTracker::new_dummy(),
         ) {
             Ok(sub) => sub,
             Err(_) => return KleeneValue::Unknown,
@@ -928,7 +904,7 @@ impl QueryCondition {
                 // If the result is still GeneralEnclosed, the query is unknown.
                 KleeneValue::Unknown
             },
-            Ok(query) => query.matches(context, custom, attribute_tracker),
+            Ok(query) => query.matches(context, custom),
             Err(_) => KleeneValue::Unknown,
         };
 

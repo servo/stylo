@@ -2392,7 +2392,6 @@ impl<'a> Substitution<'a> {
 }
 
 /// Result of var(), env(), and attr() substitution.
-#[derive(Debug)]
 pub struct SubstitutionResult<'a> {
     /// The resolved CSS string after substitution.
     pub css: Cow<'a, str>,
@@ -2582,11 +2581,10 @@ fn substitute_one_reference<'a>(
                     },
                     |attr| {
                         let attr = if let AttributeType::Type(_) = &reference.attribute_data.kind {
-                            if let Some(value) = substitution_functions.get_attr(&reference.name) {
-                                value.to_variable_value().css
-                            } else {
-                                attr
-                            }
+                            substitution_functions
+                                .get_attr(&reference.name)
+                                .map(|v| v.to_variable_value())?
+                                .css
                         } else {
                             attr
                         };

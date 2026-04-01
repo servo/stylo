@@ -46,7 +46,7 @@ use std::iter::Zip;
 use std::slice::Iter;
 use style_traits::{
     CssString, CssStringWriter, CssWriter, ParseError, ParsingMode, StyleParseErrorKind, ToCss,
-    TypedValue,
+    TypedValueList,
 };
 use thin_vec::ThinVec;
 
@@ -596,10 +596,10 @@ impl PropertyDeclarationBlock {
     /// Find the value of the given property in this block and reify it.
     /// Returns `Err(())` if the property is not present in this declaration
     /// block.
-    pub fn property_value_to_typed_value(
+    pub fn property_value_to_typed_value_list(
         &self,
         property: &PropertyId,
-    ) -> Result<Option<TypedValue>, ()> {
+    ) -> Result<Option<TypedValueList>, ()> {
         match property.as_shorthand() {
             Ok(shorthand) => {
                 if shorthand
@@ -612,7 +612,7 @@ impl PropertyDeclarationBlock {
                 }
             },
             Err(longhand_or_custom) => match self.get(longhand_or_custom) {
-                Some((value, _importance)) => Ok(value.to_typed_value()),
+                Some((value, _importance)) => Ok(value.to_typed_value_list()),
                 None => Err(()),
             },
         }

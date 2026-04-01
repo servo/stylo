@@ -641,7 +641,7 @@ pub struct MathSum {
 ///
 /// This corresponds to `CSSNumericValue` and its subclasses in the Typed OM
 /// specification. It represents numbers that can appear in CSS values,
-/// including both simple unit quantities and composite expressions..
+/// including both simple unit quantities and composite expressions.
 ///
 /// Unlike the parser-level representation, `NumericValue` is property-agnostic
 /// and suitable for conversion to or from the `CSSNumericValue` family of DOM
@@ -682,15 +682,27 @@ pub enum TypedValue {
     Numeric(NumericValue),
 }
 
+/// A list of property-agnostic values used by the Typed OM.
+///
+/// `TypedValueList` is the internal counterpart of CSS value lists exposed by
+/// Typed OM. It stores one or more [`TypedValue`] items in source order and
+/// is used when a value reifies to multiple property-agnostic components.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct TypedValueList {
+    /// The list of reified values.
+    pub values: ThinVec<TypedValue>,
+}
+
 /// Reifies a value into its Typed OM representation.
 ///
 /// This trait is the Typed OM analogue of [`ToCss`]. Instead of serializing
 /// values into CSS syntax, it converts them into [`TypedValue`]s that can be
 /// exposed to the DOM as `CSSStyleValue` subclasses.
 ///
-/// Most consumers should use [`ToTyped::to_typed_value`]. At the moment,
-/// consumers only use the first reified value. The ability to expose multiple
-/// values is infrastructure-only for now.
+/// Most consumers should use [`ToTyped::to_typed_value`] or
+/// [`ToTyped::to_typed_value_list`], depending on whether they need a single
+/// reified value or the full list of reified values.
 ///
 /// This trait is derivable with `#[derive(ToTyped)]`. The derived
 /// implementation currently supports:
@@ -706,7 +718,7 @@ pub enum TypedValue {
 ///
 /// * Other cases: If no automatic mapping is defined or recursion is not
 ///   enabled, the derived implementation falls back to the default method
-///   (which returns `Err(())`, and thus `to_typed_value()` returns `None`)
+///   (which returns `Err(())`, and thus `to_typed_value()` returns `None`).
 ///
 /// The `derive_fields` attribute is intentionally opt-in for now to avoid
 /// forcing types that do not participate in reification to implement
@@ -752,7 +764,8 @@ pub trait ToTyped {
     ///
     /// Implementations append any resulting values to `dest`. This is the
     /// low-level entry point used by the Typed OM reification infrastructure.
-    /// Most callers should prefer [`ToTyped::to_typed_value`].
+    /// Most callers should prefer [`ToTyped::to_typed_value`] or
+    /// [`ToTyped::to_typed_value_list`].
     ///
     /// Returning `Err(())` indicates that the value cannot be represented as
     /// a property-agnostic Typed OM value.
@@ -762,14 +775,26 @@ pub trait ToTyped {
 
     /// Attempt to convert `self` into a [`TypedValue`].
     ///
-    /// Returns `Some(TypedValue)` if the value can be reified into a
-    /// property-agnostic CSSStyleValue subclass. Returns `None` if the value
-    /// is unrepresentable, in which case consumers produce a property-tied
-    /// CSSStyleValue instead.
+    /// Returns the first reified value as `Some(TypedValue)` if the value can
+    /// be reified into a property-agnostic CSSStyleValue subclass. Returns
+    /// `None` if the value is unrepresentable, in which case consumers
+    /// produce a property-tied CSSStyleValue instead.
     fn to_typed_value(&self) -> Option<TypedValue> {
         let mut dest = ThinVec::new();
         self.to_typed(&mut dest).ok()?;
         dest.into_iter().next()
+    }
+
+    /// Attempt to convert `self` into a [`TypedValueList`].
+    ///
+    /// Returns `Some(TypedValueList)` if the value can be reified into one or
+    /// more property-agnostic Typed OM values. Returns `None` if the value is
+    /// unrepresentable, in which case consumers produce a property-tied
+    /// `CSSStyleValue` instead.
+    fn to_typed_value_list(&self) -> Option<TypedValueList> {
+        let mut dest = ThinVec::new();
+        self.to_typed(&mut dest).ok()?;
+        Some(TypedValueList { values: dest })
     }
 }
 

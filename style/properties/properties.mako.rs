@@ -24,7 +24,7 @@ use crate::device::Device;
 use crate::parser::ParserContext;
 use crate::selector_parser::PseudoElement;
 use crate::stylist::Stylist;
-use style_traits::{CssStringWriter, CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, TypedValue, ToTyped};
+use style_traits::{CssStringWriter, CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, TypedValueList, ToTyped};
 use crate::derives::*;
 use crate::stylesheets::{CssRuleType, CssRuleTypes, Origin};
 use crate::logical_geometry::{LogicalAxis, LogicalCorner, LogicalSide};
@@ -273,13 +273,13 @@ impl PropertyDeclaration {
     }
 
     /// Like the method on ToTyped.
-    pub fn to_typed_value(&self) -> Option<TypedValue> {
+    pub fn to_typed_value_list(&self) -> Option<TypedValueList> {
         use self::PropertyDeclaration::*;
 
         match *self {
             % for ty, vs in groupby(data.declaration_variants, key=lambda x: x["type"]):
             ${" | ".join("{}(ref value)".format(v["name"]) for v in vs)} => {
-                value.to_typed_value()
+                value.to_typed_value_list()
             }
             % endfor
         }
@@ -1740,12 +1740,12 @@ impl ComputedValues {
         }
     }
 
-    /// Returns the computed value of the given longhand as a strongly-typed
-    /// `TypedValue`, if supported.
-    pub fn computed_typed_value(
+    /// Returns the computed value of the given longhand as a
+    /// [`TypedValueList`], if supported.
+    pub fn property_value_to_typed_value_list(
         &self,
         property_id: LonghandId,
-    ) -> Option<TypedValue> {
+    ) -> Option<TypedValueList> {
         let property_id = property_id.to_physical(self.writing_mode);
         match property_id {
             % for specified_type, props in groupby(data.longhands, key=lambda x: x.specified_type()):
@@ -1759,7 +1759,7 @@ impl ComputedValues {
                     % endfor
                     _ => unsafe { debug_unreachable!() },
                 };
-                value.to_typed_value()
+                value.to_typed_value_list()
             }
             % endfor
         }

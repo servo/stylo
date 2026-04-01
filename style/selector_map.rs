@@ -666,6 +666,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
     }
 }
 
+#[derive(PartialEq)]
 enum Bucket<'a> {
     Universal,
     Namespace(&'a Namespace),
@@ -768,6 +769,12 @@ fn specific_bucket_for<'a>(
             } else {
                 for selector in list.slice() {
                     let bucket = find_bucket(selector.iter(), disjoint_buckets);
+                    if disjoint_buckets.last() == Some(&bucket) {
+                        // It's pretty common to have selectors like:
+                        //   input:is([type=foo], [type=bar], ...)
+                        // Try to prevent trivial duplicate entries for the same bucket.
+                        continue;
+                    }
                     disjoint_buckets.push(bucket);
                 }
                 Bucket::Universal

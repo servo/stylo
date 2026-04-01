@@ -78,7 +78,7 @@ impl ServoRestyleDamage {
         } else {
             StyleChange::Changed {
                 reset_only: false,
-                _custom_properties_changed: custom_properties_changed,
+                custom_properties_changed,
             }
         };
 

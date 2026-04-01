@@ -10,6 +10,7 @@ use super::{MediaQuery, Qualifier};
 use crate::context::QuirksMode;
 use crate::derives::*;
 use crate::device::Device;
+use crate::dom::AttributeTracker;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::ParserContext;
 use crate::stylesheets::CustomMediaEvaluator;
@@ -100,9 +101,9 @@ impl MediaList {
         }
         KleeneValue::any(self.media_queries.iter(), |mq| {
             let mut query_match = if mq.media_type.matches(context.device().media_type()) {
-                mq.condition
-                    .as_ref()
-                    .map_or(KleeneValue::True, |c| c.matches(context, custom))
+                mq.condition.as_ref().map_or(KleeneValue::True, |c| {
+                    c.matches(context, custom, &mut AttributeTracker::new_dummy())
+                })
             } else {
                 KleeneValue::False
             };

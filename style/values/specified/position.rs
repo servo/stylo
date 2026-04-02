@@ -452,7 +452,7 @@ impl ScopedNameList {
     pub fn all() -> Self {
         static ALL: std::sync::LazyLock<ScopedNameList> = std::sync::LazyLock::new(|| {
             ScopedNameList(crate::ArcSlice::from_iter_leaked(std::iter::once(
-                AtomIdent(atom!("all")),
+                AtomIdent::new(atom!("all")),
             )))
         });
         ALL.clone()
@@ -475,9 +475,9 @@ impl Parse for ScopedNameList {
         // Authors using more than a handful of anchored elements is likely
         // uncommon, so we only pre-allocate for 8 on the stack here.
         let mut idents = SmallVec::<[AtomIdent; 8]>::new();
-        idents.push(AtomIdent(DashedIdent::from_ident(location, first)?.0));
+        idents.push(AtomIdent::new(DashedIdent::from_ident(location, first)?.0));
         while input.try_parse(|input| input.expect_comma()).is_ok() {
-            idents.push(AtomIdent(DashedIdent::parse(context, input)?.0));
+            idents.push(AtomIdent::new(DashedIdent::parse(context, input)?.0));
         }
         Ok(Self(ArcSlice::from_iter(idents.drain(..))))
     }

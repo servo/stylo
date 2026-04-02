@@ -359,7 +359,7 @@ where
         let values = self.context.shared.stylist.cascade_style_and_visited(
             Some(self.element),
             pseudo,
-            inputs,
+            &inputs,
             &self.context.shared.guards,
             parent_style,
             layout_parent_style,
@@ -373,6 +373,7 @@ where
             &self.context.shared.guards,
             &values,
             pseudo,
+            &inputs,
             &conditions,
         );
 

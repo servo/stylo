@@ -5,6 +5,7 @@
 //! A cache from rule node to computed values, in order to cache reset
 //! properties.
 
+use crate::context::CascadeInputs;
 use crate::logical_geometry::WritingMode;
 use crate::properties::{ComputedValues, StyleBuilder};
 use crate::rule_tree::StrongRuleNode;
@@ -200,6 +201,7 @@ impl RuleCache {
         guards: &StylesheetGuards,
         style: &Arc<ComputedValues>,
         pseudo: Option<&PseudoElement>,
+        inputs: &CascadeInputs,
         conditions: &RuleCacheConditions,
     ) -> bool {
         if !conditions.cacheable() {
@@ -209,6 +211,11 @@ impl RuleCache {
         // A pseudo-element with property restrictions can result in different
         // computed values if it's also used for a non-pseudo.
         if pseudo.and_then(|p| p.property_restriction()).is_some() {
+            return false;
+        }
+
+        // Don't insert @starting-style styles in the cache, for the same reason.
+        if !inputs.included_cascade_flags.is_empty() {
             return false;
         }
 

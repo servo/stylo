@@ -1364,7 +1364,7 @@ impl Stylist {
         self.cascade_style_and_visited(
             element,
             Some(pseudo),
-            inputs,
+            &inputs,
             guards,
             parent_style,
             parent_style,
@@ -1445,7 +1445,7 @@ impl Stylist {
                 Some(self.cascade_style_and_visited(
                     Some(element),
                     pseudo.as_ref(),
-                    inputs,
+                    &inputs,
                     guards,
                     parent_style,
                     layout_parent_style,
@@ -1474,7 +1474,7 @@ impl Stylist {
         &self,
         element: Option<E>,
         pseudo: Option<&PseudoElement>,
-        inputs: CascadeInputs,
+        inputs: &CascadeInputs,
         guards: &StylesheetGuards,
         parent_style: Option<&ComputedValues>,
         layout_parent_style: Option<&ComputedValues>,

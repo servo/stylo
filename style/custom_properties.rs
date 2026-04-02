@@ -2582,10 +2582,20 @@ fn substitute_one_reference<'a>(
                     },
                     |attr| {
                         let attr = if let AttributeType::Type(_) = &reference.attribute_data.kind {
-                            substitution_functions
-                                .get_attr(&reference.name)
-                                .map(|v| v.to_variable_value())?
-                                .css
+                            // If we're evaluating a container query, we haven't run the cascade
+                            // and populated substitution_functions.attributes, so we can't do the
+                            // get_attr() lookup here.
+                            // TODO: This means chained attr() references will not work reliably in
+                            // container style queries:
+                            // https://bugzilla.mozilla.org/show_bug.cgi?id=2028861
+                            if computed_context.in_container_query {
+                                attr
+                            } else {
+                                substitution_functions
+                                    .get_attr(&reference.name)
+                                    .map(|v| v.to_variable_value())?
+                                    .css
+                            }
                         } else {
                             attr
                         };

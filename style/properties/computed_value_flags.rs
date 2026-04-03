@@ -72,11 +72,6 @@ bitflags! {
         /// primary font of our parent.
         const DEPENDS_ON_INHERITED_FONT_METRICS = 1 << 10;
 
-        /// Whether the style or any of the ancestors has a multicol style.
-        ///
-        /// Only used in Servo.
-        const CAN_BE_FRAGMENTED = 1 << 11;
-
         /// Whether this style is the style of the document element.
         const IS_ROOT_ELEMENT_STYLE = 1 << 12;
 
@@ -165,7 +160,6 @@ impl ComputedValueFlags {
     #[inline]
     fn inherited_flags() -> Self {
         Self::IS_RELEVANT_LINK_VISITED
-            | Self::CAN_BE_FRAGMENTED
             | Self::IS_IN_FIRST_LINE_SUBTREE
             | Self::HAS_TEXT_DECORATION_LINES
             | Self::IS_IN_OPACITY_ZERO_SUBTREE

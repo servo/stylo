@@ -2028,12 +2028,6 @@ impl ComputedValuesInner {
         }
     }
 
-    /// Whether the current style or any of its ancestors is multicolumn.
-    #[inline]
-    pub fn can_be_fragmented(&self) -> bool {
-        self.flags.contains(ComputedValueFlags::CAN_BE_FRAGMENTED)
-    }
-
     /// Whether the current style is multicolumn.
     #[inline]
     pub fn is_multicol(&self) -> bool {

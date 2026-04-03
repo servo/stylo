@@ -867,15 +867,6 @@ trait PrivateMatchMethods: TElement {
             }
         }
 
-        #[cfg(feature = "servo")]
-        {
-            // We may need to set or propagate the CAN_BE_FRAGMENTED bit
-            // on our children.
-            if old_values.is_multicol() != new_values.is_multicol() {
-                return RestyleHint::RECASCADE_SELF;
-            }
-        }
-
         // We could prove that, if our children don't inherit reset
         // properties, we can stop the cascade.
         RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE

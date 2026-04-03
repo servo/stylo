@@ -57,7 +57,6 @@ pub enum PseudoElement {
 
     // Non-eager pseudos.
     Backdrop,
-    DetailsSummary,
     DetailsContent,
     Marker,
 
@@ -99,7 +98,6 @@ impl ToCss for PseudoElement {
             Selection => "::selection",
             FirstLetter => "::first-letter",
             Backdrop => "::backdrop",
-            DetailsSummary => "::-servo-details-summary",
             DetailsContent => "::details-content",
             Marker => "::marker",
             ColorSwatch => "::color-swatch",
@@ -257,7 +255,6 @@ impl PseudoElement {
             PseudoElement::Backdrop
             | PseudoElement::ColorSwatch
             | PseudoElement::FileSelectorButton
-            | PseudoElement::DetailsSummary
             | PseudoElement::Marker
             | PseudoElement::Placeholder
             | PseudoElement::DetailsContent
@@ -680,12 +677,6 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "file-selector-button" => FileSelectorButton,
             "first-letter" => FirstLetter,
             "marker" => Marker,
-            "-servo-details-summary" => {
-                if !self.in_user_agent_stylesheet() {
-                    return Err(location.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone())))
-                }
-                DetailsSummary
-            },
             "details-content" => DetailsContent,
             "color-swatch" => ColorSwatch,
             "placeholder" => Placeholder,

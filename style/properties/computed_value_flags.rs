@@ -86,24 +86,6 @@ bitflags! {
         /// https://github.com/w3c/csswg-drafts/issues/4777#issuecomment-604424845
         const HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND = 1 << 14;
 
-        /// Whether there are author-specified rules for `font-family`.
-        const HAS_AUTHOR_SPECIFIED_FONT_FAMILY = 1 << 16;
-
-        /// Whether there are author-specified rules for `font-synthesis-weight`.
-        const HAS_AUTHOR_SPECIFIED_FONT_SYNTHESIS_WEIGHT = 1 << 17;
-
-        /// Whether there are author-specified rules for `font-synthesis-style`.
-        const HAS_AUTHOR_SPECIFIED_FONT_SYNTHESIS_STYLE = 1 << 18;
-
-        // (There's also font-synthesis-small-caps and font-synthesis-position,
-        // but we don't currently need to keep track of those.)
-
-        /// Whether there are author-specified rules for `letter-spacing`.
-        const HAS_AUTHOR_SPECIFIED_LETTER_SPACING = 1 << 19;
-
-        /// Whether there are author-specified rules for `word-spacing`.
-        const HAS_AUTHOR_SPECIFIED_WORD_SPACING = 1 << 20;
-
         /// Whether the style depends on viewport units.
         const USES_VIEWPORT_UNITS = 1 << 21;
 

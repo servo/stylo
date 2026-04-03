@@ -72,6 +72,7 @@ def main():
     write(doc_servo, "css-properties.html", as_html)
     write(doc_servo, "css-properties.json", as_json)
     write(OUT_DIR, "css-properties.json", as_json)
+    write(OUT_DIR, "css-properties.html", as_html)
 
 
 def abort(message):

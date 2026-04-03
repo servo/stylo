@@ -37,7 +37,7 @@ macro_rules! default_value {
         false
     };
     ("layout.css.color-mix-multi-color.enabled") => {
-        false
+        true
     };
     ("layout.css.content.alt-text.enabled") => {
         false

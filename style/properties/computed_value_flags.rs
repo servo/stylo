@@ -57,21 +57,21 @@ bitflags! {
         const DISPLAY_OR_CONTENT_DEPEND_ON_INHERITED_STYLE = 1 << 6;
 
         /// Whether the child explicitly inherits any reset property.
-        const INHERITS_RESET_STYLE = 1 << 8;
+        const INHERITS_RESET_STYLE = 1 << 7;
 
         /// Whether any value on our style is font-metric-dependent on our
         /// primary font.
-        const DEPENDS_ON_SELF_FONT_METRICS = 1 << 9;
+        const DEPENDS_ON_SELF_FONT_METRICS = 1 << 8;
 
         /// Whether any value on our style is font-metric-dependent on the
         /// primary font of our parent.
-        const DEPENDS_ON_INHERITED_FONT_METRICS = 1 << 10;
+        const DEPENDS_ON_INHERITED_FONT_METRICS = 1 << 9;
 
         /// Whether this style is the style of the document element.
-        const IS_ROOT_ELEMENT_STYLE = 1 << 12;
+        const IS_ROOT_ELEMENT_STYLE = 1 << 10;
 
         /// Whether this element is inside an `opacity: 0` subtree.
-        const IS_IN_OPACITY_ZERO_SUBTREE = 1 << 13;
+        const IS_IN_OPACITY_ZERO_SUBTREE = 1 << 11;
 
         /// Whether there are author-specified rules for border-* properties
         /// (except border-image-*), background-color, or background-image.
@@ -79,49 +79,50 @@ bitflags! {
         /// TODO(emilio): Maybe do include border-image, see:
         ///
         /// https://github.com/w3c/csswg-drafts/issues/4777#issuecomment-604424845
-        const HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND = 1 << 14;
+        const HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND = 1 << 12;
 
         /// Whether the style depends on viewport units.
-        const USES_VIEWPORT_UNITS = 1 << 21;
+        const USES_VIEWPORT_UNITS = 1 << 13;
 
         /// Whether the style depends on viewport units on container queries.
         ///
         /// This needs to be a separate flag from `USES_VIEWPORT_UNITS` because
         /// it causes us to re-match the style (rather than re-cascascading it,
         /// which is enough for other uses of viewport units).
-        const USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES = 1 << 22;
+        const USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES = 1 << 14;
 
         /// A flag used to mark styles which have `container-type` of `size` or
         /// `inline-size`, or under one.
-        const SELF_OR_ANCESTOR_HAS_SIZE_CONTAINER_TYPE = 1 << 23;
+        const SELF_OR_ANCESTOR_HAS_SIZE_CONTAINER_TYPE = 1 << 15;
+
         /// Whether the style uses container query units, in which case the style depends on the
         /// container's size and we can't reuse it across cousins (without double-checking the
         /// container at least).
-        const USES_CONTAINER_UNITS = 1 << 24;
+        const USES_CONTAINER_UNITS = 1 << 16;
 
         /// Whether there are author-specific rules for text `color`.
-        const HAS_AUTHOR_SPECIFIED_TEXT_COLOR = 1 << 25;
+        const HAS_AUTHOR_SPECIFIED_TEXT_COLOR = 1 << 17;
 
         /// Whether this style considered a scope style rule.
-        const CONSIDERED_NONTRIVIAL_SCOPED_STYLE = 1 << 26;
+        const CONSIDERED_NONTRIVIAL_SCOPED_STYLE = 1 << 18;
 
         /// Whether this style is that of a `display: contents` element that is either a direct
         /// child of an item container or another `display: contents` element, the style of which
         /// has this flag set, marked in order to cascade beyond them to the descendants of the
         /// the item container that do generate a box.
-        const DISPLAY_CONTENTS_IN_ITEM_CONTAINER = 1 << 27;
+        const DISPLAY_CONTENTS_IN_ITEM_CONTAINER = 1 << 19;
 
         /// Whether there are author-specific rules for `text-shadow`.
-        const HAS_AUTHOR_SPECIFIED_TEXT_SHADOW = 1 << 28;
+        const HAS_AUTHOR_SPECIFIED_TEXT_SHADOW = 1 << 20;
 
         /// Whether this style depends on container style query.
-        const DEPENDS_ON_CONTAINER_STYLE_QUERY = 1 << 29;
+        const DEPENDS_ON_CONTAINER_STYLE_QUERY = 1 << 21;
 
         /// Whether this style is in an appearance: base subtree
-        const IS_IN_APPEARANCE_BASE_SUBTREE = 1 << 30;
+        const IS_IN_APPEARANCE_BASE_SUBTREE = 1 << 22;
 
         /// Whether grid-auto-flow is author-specified.
-        const HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW = 1 << 31;
+        const HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW = 1 << 23;
     }
 }
 

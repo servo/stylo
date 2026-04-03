@@ -49,17 +49,12 @@ bitflags! {
         /// A flag used to mark styles which have contain:style or under one.
         const SELF_OR_ANCESTOR_HAS_CONTAIN_STYLE = 1 << 5;
 
-        /// Whether this style's `display` property depends on our parent style.
+        /// Whether this style's `display` or `content`property depends on our parent style.
         ///
         /// This is important because it may affect our optimizations to avoid
         /// computing the style of pseudo-elements, given whether the
-        /// pseudo-element is generated depends on the `display` value.
-        const DISPLAY_DEPENDS_ON_INHERITED_STYLE = 1 << 6;
-
-        /// Whether this style's `content` depends on our parent style.
-        ///
-        /// Important because of the same reason.
-        const CONTENT_DEPENDS_ON_INHERITED_STYLE = 1 << 7;
+        /// pseudo-element is generated depends on the `display` (or `content`) value.
+        const DISPLAY_OR_CONTENT_DEPEND_ON_INHERITED_STYLE = 1 << 6;
 
         /// Whether the child explicitly inherits any reset property.
         const INHERITS_RESET_STYLE = 1 << 8;

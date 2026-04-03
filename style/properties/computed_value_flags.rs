@@ -147,6 +147,9 @@ bitflags! {
 
         /// Whether this style is in an appearance: base subtree
         const IS_IN_APPEARANCE_BASE_SUBTREE = 1 << 30;
+
+        /// Whether grid-auto-flow is author-specified.
+        const HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW = 1 << 31;
     }
 }
 

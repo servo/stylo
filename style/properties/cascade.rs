@@ -15,9 +15,9 @@ use crate::dom::{AttributeTracker, TElement};
 use crate::font_metrics::FontMetricsOrientation;
 use crate::logical_geometry::WritingMode;
 use crate::properties::{
-    property_counts, CSSWideKeyword, ComputedValues, DeclarationImportanceIterator, LonghandId,
+    CASCADE_PROPERTY, CSSWideKeyword, ComputedValues, DeclarationImportanceIterator, LonghandId,
     LonghandIdSet, PrioritaryPropertyId, PropertyDeclaration, PropertyDeclarationId, PropertyFlags,
-    ShorthandsWithPropertyReferencesCache, StyleBuilder, CASCADE_PROPERTY,
+    ShorthandsWithPropertyReferencesCache, StyleBuilder, property_counts,
 };
 use crate::rule_cache::{RuleCache, RuleCacheConditions};
 use crate::rule_tree::{CascadeLevel, CascadeOrigin, RuleCascadeFlags, StrongRuleNode};
@@ -1171,6 +1171,10 @@ impl<'b> Cascade<'b> {
             builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_FONT_SYNTHESIS_STYLE);
         }
 
+        if self.author_specified.contains(LonghandId::GridAutoFlow) {
+            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW);
+        }
+
         #[cfg(feature = "servo")]
         {
             if let Some(font) = builder.get_font_if_mutated() {
@@ -1210,6 +1214,7 @@ impl<'b> Cascade<'b> {
         // would as well.  It matches the same rules, so it is the right thing
         // to do anyways, even if it's only used on inherited properties.
         let bits_to_copy = ComputedValueFlags::HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND
+            | ComputedValueFlags::HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW
             | ComputedValueFlags::DEPENDS_ON_SELF_FONT_METRICS
             | ComputedValueFlags::DEPENDS_ON_INHERITED_FONT_METRICS
             | ComputedValueFlags::IS_IN_APPEARANCE_BASE_SUBTREE

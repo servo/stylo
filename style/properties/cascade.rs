@@ -436,6 +436,7 @@ where
 /// This is a bit of a clunky way of achieving this.
 type DeclarationsToApplyUnlessOverriden = SmallVec<[PropertyDeclaration; 2]>;
 
+#[cfg(feature = "gecko")]
 fn is_base_appearance(context: &computed::Context) -> bool {
     use computed::Appearance;
     let box_style = context.builder.get_box();
@@ -814,7 +815,9 @@ impl<'b> Cascade<'b> {
             return;
         }
 
+        #[cfg(feature = "gecko")]
         apply!(MozDefaultAppearance);
+        #[cfg(feature = "gecko")]
         if apply!(Appearance) && is_base_appearance(&context) {
             context
                 .style()

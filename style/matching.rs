@@ -21,6 +21,8 @@ use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::ComputedValues;
 use crate::properties::PropertyDeclarationBlock;
 use crate::rule_tree::{CascadeLevel, CascadeOrigin, StrongRuleNode};
+#[cfg(feature = "servo")]
+use crate::rule_tree::RuleCascadeFlags;
 use crate::selector_parser::{PseudoElement, RestyleDamage};
 use crate::shared_lock::Locked;
 use crate::style_resolver::StyleResolverForElement;

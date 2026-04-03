@@ -19,6 +19,7 @@ use log::Level::Trace;
 use selectors::matching::{
     MatchingContext, MatchingForInvalidation, MatchingMode, NeedsSelectorFlags, VisitedHandlingMode,
 };
+#[cfg(feature = "gecko")]
 use selectors::parser::PseudoElement as PseudoElementTrait;
 use servo_arc::Arc;
 

@@ -726,7 +726,7 @@ pub struct ViewTransitionNameKeyword(AtomIdent);
 impl ViewTransitionNameKeyword {
     /// Returns the `none` value.
     pub fn none() -> Self {
-        Self(AtomIdent(atom!("none")))
+        Self(AtomIdent::new(atom!("none")))
     }
 }
 
@@ -748,12 +748,12 @@ impl Parse for ViewTransitionNameKeyword {
         }
 
         if ident.eq_ignore_ascii_case("match-element") {
-            return Ok(Self(AtomIdent(atom!("match-element"))));
+            return Ok(Self(AtomIdent::new(atom!("match-element"))));
         }
 
         // We check none already, so don't need to exclude none here.
         // Note: "auto" is not supported yet so we exclude it.
-        CustomIdent::from_ident(location, ident, &["auto"]).map(|i| Self(AtomIdent(i.0)))
+        CustomIdent::from_ident(location, ident, &["auto"]).map(|i| Self(AtomIdent::new(i.0)))
     }
 }
 

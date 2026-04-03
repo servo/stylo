@@ -504,9 +504,6 @@ pub fn parse_font_face_block(
     rule
 }
 
-/// A @font-face rule that is known to have font-family and src declarations.
-#[cfg(feature = "servo")]
-pub struct FontFace<'a>(&'a FontFaceRuleData);
 
 impl Parse for Source {
     fn parse<'i, 't>(

@@ -1121,7 +1121,7 @@ fn parse_attribute_value(
     #[cfg(feature = "gecko")]
     let local_name = LocalName::cast(name);
     #[cfg(feature = "servo")]
-    let local_name = LocalName::from(name.as_ref());
+    let local_name = &LocalName::from(name.as_ref());
     let namespace = match attribute_data.namespace {
         ParsedNamespace::Known(ref ns) => ns,
         ParsedNamespace::Unknown => return Err(()),

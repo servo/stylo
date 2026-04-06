@@ -221,13 +221,17 @@ impl ComputedValuesInner {
             attribute_references: self.attribute_references.clone(),
             writing_mode: self.writing_mode.clone(),
             rules: self.rules.clone(),
-            visited_style: self.visited_style.clone(),
+            visited_style: if self.visited_style.is_null() {
+                ptr::null()
+            } else {
+                Arc::into_raw(unsafe { Arc::from_raw_addrefed(self.visited_style) })
+            },
             flags,
             effective_zoom: self.effective_zoom.clone(),
             % for style_struct in data.style_structs:
             ${style_struct.gecko_name}: Arc::into_raw(
-                unsafe {Arc::from_raw_addrefed(self.${style_struct.name_lower}_ptr())}
-            ) as *const _,
+                unsafe { Arc::from_raw_addrefed(self.${style_struct.gecko_name}) }
+            ),
             % endfor
         }.to_outer(pseudo)
     }

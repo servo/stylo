@@ -20,9 +20,9 @@ use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::ComputedValues;
 use crate::properties::PropertyDeclarationBlock;
-use crate::rule_tree::{CascadeLevel, CascadeOrigin, StrongRuleNode};
 #[cfg(feature = "servo")]
 use crate::rule_tree::RuleCascadeFlags;
+use crate::rule_tree::{CascadeLevel, CascadeOrigin, StrongRuleNode};
 use crate::selector_parser::{PseudoElement, RestyleDamage};
 use crate::shared_lock::Locked;
 use crate::style_resolver::StyleResolverForElement;
@@ -30,6 +30,7 @@ use crate::style_resolver::{PseudoElementResolution, ResolvedElementStyles};
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::RuleInclusion;
 use crate::traversal_flags::TraversalFlags;
+use crate::values::computed::ContainerName;
 use servo_arc::{Arc, ArcBorrow};
 
 /// Represents the result of comparing an element's old and new style.
@@ -48,12 +49,48 @@ pub enum StyleChange {
     /// The style hasn't changed.
     Unchanged,
     /// The style has changed.
-    Changed {
-        /// Whether only reset structs changed.
+    Changed(StyleChangeKind),
+}
+
+/// Represents what type of change a style went through.
+#[derive(Clone, Copy, Debug)]
+pub enum StyleChangeKind {
+    /// Style changed without any changes to the properties below.
+    Default,
+    /// Only reset structs changed.
+    ResetOnly,
+    /// Custom properties changed.
+    CustomPropertiesChanged,
+    /// Whether we changed a named container.
+    NamedContainer,
+}
+
+impl StyleChangeKind {
+    /// Determine the type of style change for cascading and re-styling.
+    pub fn new(
         reset_only: bool,
-        /// Whether custom properties changed.
         custom_properties_changed: bool,
-    },
+        old_container_name: ContainerName,
+        new_container_name: ContainerName,
+    ) -> Self {
+        if old_container_name != new_container_name {
+            return StyleChangeKind::NamedContainer;
+        }
+        if custom_properties_changed {
+            // For named containers we need to at least check all descendants
+            // if we know a custom property changed.
+            return if !new_container_name.is_none() {
+                StyleChangeKind::NamedContainer
+            } else {
+                StyleChangeKind::CustomPropertiesChanged
+            };
+        }
+        if reset_only {
+            StyleChangeKind::ResetOnly
+        } else {
+            StyleChangeKind::Default
+        }
+    }
 }
 
 /// Determines which styles are being cascaded currently.
@@ -796,18 +833,22 @@ trait PrivateMatchMethods: TElement {
 
         match difference.change {
             StyleChange::Unchanged => return RestyleHint::empty(),
-            StyleChange::Changed {
-                reset_only,
-                custom_properties_changed,
-            } => {
-                if custom_properties_changed {
-                    return RestyleHint::RECASCADE_SELF
-                        | RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES;
-                }
-                // If inherited properties changed, the best we can do is
-                // cascade the children.
-                if !reset_only {
-                    return RestyleHint::RECASCADE_SELF;
+            StyleChange::Changed(change_kind) => {
+                match change_kind {
+                    StyleChangeKind::NamedContainer => {
+                        return RestyleHint::RECASCADE_SELF
+                            | RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER;
+                    },
+                    StyleChangeKind::CustomPropertiesChanged => {
+                        return RestyleHint::RECASCADE_SELF
+                            | RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES;
+                    },
+                    StyleChangeKind::Default => {
+                        // If inherited properties changed, the best we can do is
+                        // cascade the children.
+                        return RestyleHint::RECASCADE_SELF;
+                    },
+                    StyleChangeKind::ResetOnly => {},
                 }
             },
         }

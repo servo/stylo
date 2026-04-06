@@ -7,6 +7,7 @@
 use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs;
 use crate::gecko_bindings::structs::nsChangeHint;
+use crate::matching::StyleChangeKind;
 use crate::matching::{StyleChange, StyleDifference};
 use crate::properties::ComputedValues;
 use std::ops::{BitAnd, BitOr, BitOrAssign, Not};
@@ -68,10 +69,13 @@ impl GeckoRestyleDamage {
             reset_only = false;
         }
         let change = if any_style_changed {
-            StyleChange::Changed {
+            let change_kind = StyleChangeKind::new(
                 reset_only,
                 custom_properties_changed,
-            }
+                old_style.clone_container_name(),
+                new_style.clone_container_name(),
+            );
+            StyleChange::Changed(change_kind)
         } else {
             StyleChange::Unchanged
         };

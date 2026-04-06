@@ -69,8 +69,8 @@ use crate::values::specified::position::PositionTryFallbacksItem;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
 use crate::values::{computed, AtomIdent, Parser, SourceLocation};
 use crate::AllocErr;
-use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded, WeakAtom};
 use crate::ArcSlice;
+use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded, WeakAtom};
 use cssparser::ParserInput;
 use dom::{DocumentState, ElementState};
 #[cfg(feature = "gecko")]

@@ -362,6 +362,21 @@ pub enum RestyleKind {
     CascadeOnly,
 }
 
+fn needs_to_match_self(hint: RestyleHint, style: &ComputedValues) -> bool {
+    if hint.intersects(RestyleHint::RESTYLE_SELF) {
+        return true;
+    }
+    if hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style() {
+        return true;
+    }
+    hint.intersects(
+        RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES
+            | RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER,
+    ) && style
+        .flags
+        .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY)
+}
+
 impl ElementData {
     /// Invalidates style for this element, its descendants, and later siblings,
     /// based on the snapshot of the element that we took when attributes or
@@ -474,13 +489,7 @@ impl ElementData {
             return None;
         }
 
-        let needs_to_match_self = hint.intersects(RestyleHint::RESTYLE_SELF)
-            || (hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style())
-            || (hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES)
-                && style
-                    .flags
-                    .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY));
-        if needs_to_match_self {
+        if needs_to_match_self(hint, style) {
             return Some(RestyleKind::MatchAndCascade);
         }
 

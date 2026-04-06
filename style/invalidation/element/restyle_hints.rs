@@ -53,8 +53,11 @@ bitflags! {
         /// traversal which is prior to normal traversal.
         const RESTYLE_SMIL = 1 << 10;
 
-        /// Match self or a descendant if it is dependent on a style query.
+        /// Match self if this element is dependent on a style query.
         const RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES = 1 << 11;
+
+        /// Match self or descendants if dependent on a named style query.
+        const RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER = 1 << 12;
     }
 }
 
@@ -124,16 +127,15 @@ impl RestyleHint {
         if self.contains(RestyleHint::RECASCADE_DESCENDANTS) {
             result |= Self::recascade_subtree();
         }
-        if self.contains(RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES) {
+        if self.contains(RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER) {
             // We may need to restyle further down the tree if rules are
             // declared for a named container.
             // e.g @container my-name {#b {...}}
             // and <div id=a> <div> <div id=b> </div> </div> </div>
             // If a toggles `container-name: my-name` the rules for #b
-            // also invalidate.
-            // TODO (bug 2024928): We can be more discerning if we know
-            // a container is named and we could avoid always propagating.
-            result |= RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES;
+            // also invalidate. This is why we need one hint for unnamed
+            // container and one for named containers.
+            result |= RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER;
         }
 
         result

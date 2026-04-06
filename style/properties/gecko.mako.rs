@@ -21,8 +21,7 @@ use crate::gecko_bindings::bindings::Gecko_Destroy_${style_struct.gecko_ffi_name
 use crate::gecko_bindings::bindings::Gecko_EnsureImageLayersLength;
 use crate::gecko_bindings::bindings::Gecko_nsStyleFont_SetLang;
 use crate::gecko_bindings::bindings::Gecko_nsStyleFont_CopyLangFrom;
-use crate::gecko_bindings::structs;
-use crate::gecko_bindings::structs::mozilla::PseudoStyleType;
+use crate::gecko_bindings::structs::{self, PseudoStyleType};
 use crate::gecko::data::PerDocumentStyleData;
 use crate::logical_geometry::WritingMode;
 use crate::properties::longhands;
@@ -72,6 +71,7 @@ impl ComputedValues {
         % endfor
     ) -> Arc<Self> {
         ComputedValuesInner::new(
+            pseudo,
             custom_properties,
             attributes_referenced,
             writing_mode,
@@ -82,11 +82,12 @@ impl ComputedValues {
             % for style_struct in data.style_structs:
             ${style_struct.ident},
             % endfor
-        ).to_outer(pseudo)
+        ).to_outer()
     }
 
     pub fn default_values(doc: &structs::Document) -> Arc<Self> {
         ComputedValuesInner::new(
+            /* pseudo = */ None,
             ComputedCustomProperties::default(),
             AttributeReferences::default(),
             WritingMode::empty(), // FIXME(bz): This seems dubious
@@ -97,7 +98,7 @@ impl ComputedValues {
             % for style_struct in data.style_structs:
             style_structs::${style_struct.name}::default(doc),
             % endfor
-        ).to_outer(None)
+        ).to_outer()
     }
 
     /// Converts the computed values to an Arc<> from a reference.
@@ -111,7 +112,7 @@ impl ComputedValues {
 
     #[inline]
     pub fn is_pseudo_style(&self) -> bool {
-        self.0.mPseudoType != PseudoStyleType::NotPseudo
+        self.pseudo_type != PseudoStyleType::NotPseudo
     }
 
     #[inline]
@@ -119,7 +120,7 @@ impl ComputedValues {
         if !self.is_pseudo_style() {
             return None;
         }
-        PseudoElement::from_pseudo_type(self.0.mPseudoType, None)
+        PseudoElement::from_pseudo_type(self.pseudo_type, None)
     }
 
     #[inline]
@@ -189,6 +190,7 @@ impl Drop for ComputedValuesInner {
 
 impl ComputedValuesInner {
     pub fn new(
+        pseudo: Option<&PseudoElement>,
         custom_properties: ComputedCustomProperties,
         attribute_references: AttributeReferences,
         writing_mode: WritingMode,
@@ -200,13 +202,18 @@ impl ComputedValuesInner {
         ${style_struct.ident}: Arc<style_structs::${style_struct.name}>,
         % endfor
     ) -> Self {
+        let pseudo_type = match pseudo {
+            Some(p) => p.pseudo_type(),
+            None => PseudoStyleType::NotPseudo,
+        };
         Self {
             custom_properties,
             attribute_references,
             writing_mode,
             rules,
-            visited_style: visited_style.map_or(ptr::null(), |p| Arc::into_raw(p)) as *const _,
+            visited_style: visited_style.map_or(ptr::null(), Arc::into_raw) as *const _,
             flags,
+            pseudo_type,
             effective_zoom,
             % for style_struct in data.style_structs:
             ${style_struct.gecko_name}: Arc::into_raw(${style_struct.ident}) as *const _,
@@ -216,37 +223,31 @@ impl ComputedValuesInner {
 
     // Share ComputedValues but with different flags.
     pub fn clone_with_flags(&self, flags: ComputedValueFlags, pseudo: Option<&PseudoElement>) -> Arc<ComputedValues> {
-        Self {
-            custom_properties: self.custom_properties.clone(),
-            attribute_references: self.attribute_references.clone(),
-            writing_mode: self.writing_mode.clone(),
-            rules: self.rules.clone(),
-            visited_style: if self.visited_style.is_null() {
-                ptr::null()
-            } else {
-                Arc::into_raw(unsafe { Arc::from_raw_addrefed(self.visited_style) })
-            },
+        Self::new(
+            pseudo,
+            self.custom_properties.clone(),
+            self.attribute_references.clone(),
+            self.writing_mode.clone(),
+            self.effective_zoom.clone(),
             flags,
-            effective_zoom: self.effective_zoom.clone(),
+            self.rules.clone(),
+            if self.visited_style.is_null() {
+                None
+            } else {
+                Some(unsafe { Arc::from_raw_addrefed(self.visited_style as *const _) })
+            },
             % for style_struct in data.style_structs:
-            ${style_struct.gecko_name}: Arc::into_raw(
-                unsafe { Arc::from_raw_addrefed(self.${style_struct.gecko_name}) }
-            ),
+            unsafe { Arc::from_raw_addrefed(self.${style_struct.gecko_name} as *const _) },
             % endfor
-        }.to_outer(pseudo)
+        ).to_outer()
     }
 
-    fn to_outer(self, pseudo: Option<&PseudoElement>) -> Arc<ComputedValues> {
-        let pseudo_ty = match pseudo {
-            Some(p) => p.pseudo_type(),
-            None => structs::PseudoStyleType::NotPseudo,
-        };
+    fn to_outer(self) -> Arc<ComputedValues> {
         unsafe {
             let mut arc = UniqueArc::<ComputedValues>::new_uninit();
             bindings::Gecko_ComputedStyle_Init(
                 arc.as_mut_ptr() as *mut _,
-                &self,
-                pseudo_ty,
+                &self
             );
             // We're simulating move semantics by having C++ do a memcpy and
             // then forgetting it on this end.

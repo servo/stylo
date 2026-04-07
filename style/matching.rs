@@ -30,7 +30,6 @@ use crate::style_resolver::{PseudoElementResolution, ResolvedElementStyles};
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::RuleInclusion;
 use crate::traversal_flags::TraversalFlags;
-use crate::values::computed::ContainerName;
 use servo_arc::{Arc, ArcBorrow};
 
 /// Represents the result of comparing an element's old and new style.
@@ -38,7 +37,6 @@ use servo_arc::{Arc, ArcBorrow};
 pub struct StyleDifference {
     /// The resulting damage.
     pub damage: RestyleDamage,
-
     /// Whether any styles changed.
     pub change: StyleChange,
 }
@@ -49,48 +47,12 @@ pub enum StyleChange {
     /// The style hasn't changed.
     Unchanged,
     /// The style has changed.
-    Changed(StyleChangeKind),
-}
-
-/// Represents what type of change a style went through.
-#[derive(Clone, Copy, Debug)]
-pub enum StyleChangeKind {
-    /// Style changed without any changes to the properties below.
-    Default,
-    /// Only reset structs changed.
-    ResetOnly,
-    /// Custom properties changed.
-    CustomPropertiesChanged,
-    /// Whether we changed a named container.
-    NamedContainer,
-}
-
-impl StyleChangeKind {
-    /// Determine the type of style change for cascading and re-styling.
-    pub fn new(
+    Changed {
+        /// Whether only reset properties have changed.
         reset_only: bool,
+        /// Whether custom properties have changed.
         custom_properties_changed: bool,
-        old_container_name: ContainerName,
-        new_container_name: ContainerName,
-    ) -> Self {
-        if old_container_name != new_container_name {
-            return StyleChangeKind::NamedContainer;
-        }
-        if custom_properties_changed {
-            // For named containers we need to at least check all descendants
-            // if we know a custom property changed.
-            return if !new_container_name.is_none() {
-                StyleChangeKind::NamedContainer
-            } else {
-                StyleChangeKind::CustomPropertiesChanged
-            };
-        }
-        if reset_only {
-            StyleChangeKind::ResetOnly
-        } else {
-            StyleChangeKind::Default
-        }
-    }
+    },
 }
 
 /// Determines which styles are being cascaded currently.
@@ -812,108 +774,124 @@ trait PrivateMatchMethods: TElement {
 
         debug!(" > style difference: {:?}", difference);
 
-        // We need to cascade the children in order to ensure the correct
-        // propagation of inherited computed value flags.
+        let mut children_hint = RestyleHint::empty();
         if old_values.flags.maybe_inherited() != new_values.flags.maybe_inherited() {
+            // Even if the styles are otherwise equal, we need to cascade the children in order to
+            // ensure the correct propagation of inherited computed value flags.
             debug!(
                 " > flags changed: {:?} != {:?}",
                 old_values.flags, new_values.flags
             );
-            return RestyleHint::RECASCADE_SELF;
-        }
-
-        if old_values.effective_zoom != new_values.effective_zoom {
-            // Zoom changes need to get propagated to children.
+            children_hint |= RestyleHint::RECASCADE_SELF;
+        } else if old_values.effective_zoom != new_values.effective_zoom {
+            // Similarly, even if styles are equal, we need to propagate zoom changes.
             debug!(
                 " > zoom changed: {:?} != {:?}",
                 old_values.effective_zoom, new_values.effective_zoom
             );
-            return RestyleHint::RECASCADE_SELF;
+            children_hint |= RestyleHint::RECASCADE_SELF;
         }
 
-        match difference.change {
-            StyleChange::Unchanged => return RestyleHint::empty(),
-            StyleChange::Changed(change_kind) => {
-                match change_kind {
-                    StyleChangeKind::NamedContainer => {
-                        return RestyleHint::RECASCADE_SELF
-                            | RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER;
-                    },
-                    StyleChangeKind::CustomPropertiesChanged => {
-                        return RestyleHint::RECASCADE_SELF
-                            | RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES;
-                    },
-                    StyleChangeKind::Default => {
-                        // If inherited properties changed, the best we can do is
-                        // cascade the children.
-                        return RestyleHint::RECASCADE_SELF;
-                    },
-                    StyleChangeKind::ResetOnly => {},
-                }
-            },
+        let StyleChange::Changed {
+            reset_only,
+            custom_properties_changed,
+        } = difference.change
+        else {
+            return children_hint;
+        };
+
+        let new_container_name = new_values.clone_container_name();
+        if new_container_name != old_values.clone_container_name() {
+            // If we're becoming or stopped to become a named container, we need to potentially
+            // restyle children.
+            children_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER;
+        } else if custom_properties_changed {
+            // Custom property changes affect style queries. How specifically depends on whether
+            // we're a named container (more expensive, need to check the subtree) or not.
+            children_hint |= if !new_container_name.is_none() {
+                RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER
+            } else {
+                RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES
+            };
         }
 
-        let old_display = old_values.clone_display();
-        let new_display = new_values.clone_display();
-
-        if old_display != new_display {
-            // If we used to be a display: none element, and no longer are, our
-            // children need to be restyled because they're unstyled.
-            if old_display == Display::None {
-                return RestyleHint::RECASCADE_SELF;
-            }
-            // Blockification of children may depend on our display value,
-            // so we need to actually do the recascade. We could potentially
-            // do better, but it doesn't seem worth it.
-            if old_display.is_item_container() != new_display.is_item_container() {
-                return RestyleHint::RECASCADE_SELF;
-            }
-            // We may also need to blockify and un-blockify descendants if our
-            // display goes from / to display: contents, since the "layout
-            // parent style" changes.
-            if old_display.is_contents() || new_display.is_contents() {
-                return RestyleHint::RECASCADE_SELF;
-            }
-            // Line break suppression may also be affected if the display
-            // type changes from ruby to non-ruby.
-            #[cfg(feature = "gecko")]
-            {
-                if old_display.is_ruby_type() != new_display.is_ruby_type() {
-                    return RestyleHint::RECASCADE_SELF;
-                }
-            }
+        if reset_only {
+            // If only reset properties changed, we _might_ need to unconditionally restyle, but
+            // most likely we can get away with stopping the cascade at the next level, if our
+            // children don't inherit reset properties.
+            children_hint |=
+                if need_to_unconditionally_recascade_for_reset_change(old_values, new_values) {
+                    RestyleHint::RECASCADE_SELF
+                } else {
+                    RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE
+                };
+        } else {
+            // If inherited properties changed, we need to cascade our children.
+            children_hint |= RestyleHint::RECASCADE_SELF;
         }
 
-        // Children with justify-items: auto may depend on our
-        // justify-items property value.
-        //
-        // Similarly, we could potentially do better, but this really
-        // seems not common enough to care about.
-        #[cfg(feature = "gecko")]
-        {
-            use crate::values::specified::align::AlignFlags;
-
-            let old_justify_items = old_values.get_position().clone_justify_items();
-            let new_justify_items = new_values.get_position().clone_justify_items();
-
-            let was_legacy_justify_items = old_justify_items.computed.contains(AlignFlags::LEGACY);
-
-            let is_legacy_justify_items = new_justify_items.computed.contains(AlignFlags::LEGACY);
-
-            if is_legacy_justify_items != was_legacy_justify_items {
-                return RestyleHint::RECASCADE_SELF;
-            }
-
-            if was_legacy_justify_items && old_justify_items.computed != new_justify_items.computed
-            {
-                return RestyleHint::RECASCADE_SELF;
-            }
-        }
-
-        // We could prove that, if our children don't inherit reset
-        // properties, we can stop the cascade.
-        RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE
+        children_hint
     }
+}
+
+/// Whether we need to recascade children for a change in non-inherited properties.
+fn need_to_unconditionally_recascade_for_reset_change(
+    old_values: &ComputedValues,
+    new_values: &ComputedValues,
+) -> bool {
+    let old_display = old_values.clone_display();
+    let new_display = new_values.clone_display();
+
+    if old_display != new_display {
+        // If we used to be a display: none element, and no longer are, our
+        // children need to be restyled because they're unstyled.
+        if old_display == Display::None {
+            return true;
+        }
+        // Blockification of children may depend on our display value, so we need to actually do the
+        // recascade. We could potentially do better, but it doesn't seem worth it.
+        if old_display.is_item_container() != new_display.is_item_container() {
+            return true;
+        }
+        // We may also need to blockify and un-blockify descendants if our display goes from / to
+        // display: contents, since the "layout parent style" changes.
+        if old_display.is_contents() || new_display.is_contents() {
+            return true;
+        }
+        // Line break suppression may also be affected if the display
+        // type changes from ruby to non-ruby.
+        #[cfg(feature = "gecko")]
+        if old_display.is_ruby_type() != new_display.is_ruby_type() {
+            return true;
+        }
+    }
+
+    // Children with justify-items: auto may depend on our
+    // justify-items property value.
+    //
+    // Similarly, we could potentially do better, but this really
+    // seems not common enough to care about.
+    #[cfg(feature = "gecko")]
+    {
+        use crate::values::specified::align::AlignFlags;
+
+        let old_justify_items = old_values.get_position().clone_justify_items();
+        let new_justify_items = new_values.get_position().clone_justify_items();
+
+        let was_legacy_justify_items = old_justify_items.computed.contains(AlignFlags::LEGACY);
+
+        let is_legacy_justify_items = new_justify_items.computed.contains(AlignFlags::LEGACY);
+
+        if is_legacy_justify_items != was_legacy_justify_items {
+            return true;
+        }
+
+        if was_legacy_justify_items && old_justify_items.computed != new_justify_items.computed {
+            return true;
+        }
+    }
+
+    false
 }
 
 impl<E: TElement> PrivateMatchMethods for E {}

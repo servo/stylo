@@ -1679,11 +1679,6 @@ impl ComputedValues {
         &self.custom_properties
     }
 
-    /// Returns whether we have the same custom properties as another style.
-    pub fn custom_properties_equal(&self, other: &Self) -> bool {
-      self.custom_properties() == other.custom_properties()
-    }
-
 % for prop in data.longhands:
 % if not prop.logical:
     /// Gets the computed value of a given property.

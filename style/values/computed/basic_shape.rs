@@ -12,8 +12,7 @@ use crate::values::computed::angle::Angle;
 use crate::values::computed::url::ComputedUrl;
 use crate::values::computed::{Image, LengthPercentage, Position};
 use crate::values::generics::basic_shape as generic;
-use crate::values::generics::basic_shape::ShapePosition;
-use crate::values::specified::svg_path::{CoordPair, PathCommand};
+use crate::values::specified::svg_path::{CoordPair, PathCommand, SVGPathPosition};
 use crate::values::CSSFloat;
 
 /// A computed alias for FillRule.
@@ -32,10 +31,10 @@ pub type BasicShape = generic::GenericBasicShape<Angle, Position, LengthPercenta
 pub type InsetRect = generic::GenericInsetRect<LengthPercentage>;
 
 /// A computed circle.
-pub type Circle = generic::Circle<LengthPercentage>;
+pub type Circle = generic::Circle<Position, LengthPercentage>;
 
 /// A computed ellipse.
-pub type Ellipse = generic::Ellipse<LengthPercentage>;
+pub type Ellipse = generic::Ellipse<Position, LengthPercentage>;
 
 /// The computed value of `ShapeRadius`.
 pub type ShapeRadius = generic::GenericShapeRadius<LengthPercentage>;
@@ -211,9 +210,9 @@ impl From<&CoordPair> for CoordinatePair {
     }
 }
 
-impl From<&ShapePosition<CSSFloat>> for Position {
+impl From<&SVGPathPosition> for Position {
     #[inline]
-    fn from(p: &ShapePosition<CSSFloat>) -> Self {
+    fn from(p: &SVGPathPosition) -> Self {
         use crate::values::computed::CSSPixelLength;
         Self::new(
             LengthPercentage::new_length(CSSPixelLength::new(p.horizontal)),
@@ -222,9 +221,9 @@ impl From<&ShapePosition<CSSFloat>> for Position {
     }
 }
 
-impl From<&generic::CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>> for CommandEndPoint {
+impl From<&generic::CommandEndPoint<SVGPathPosition, CSSFloat>> for CommandEndPoint {
     #[inline]
-    fn from(p: &generic::CommandEndPoint<ShapePosition<CSSFloat>, CSSFloat>) -> Self {
+    fn from(p: &generic::CommandEndPoint<SVGPathPosition, CSSFloat>) -> Self {
         match p {
             generic::CommandEndPoint::ToPosition(pos) => Self::ToPosition(pos.into()),
             generic::CommandEndPoint::ByCoordinate(coord) => Self::ByCoordinate(coord.into()),
@@ -251,9 +250,9 @@ impl From<&generic::AxisEndPoint<CSSFloat>> for AxisEndPoint {
     }
 }
 
-impl From<&generic::ControlPoint<ShapePosition<CSSFloat>, CSSFloat>> for ControlPoint {
+impl From<&generic::ControlPoint<SVGPathPosition, CSSFloat>> for ControlPoint {
     #[inline]
-    fn from(p: &generic::ControlPoint<ShapePosition<CSSFloat>, CSSFloat>) -> Self {
+    fn from(p: &generic::ControlPoint<SVGPathPosition, CSSFloat>) -> Self {
         match p {
             generic::ControlPoint::Absolute(pos) => Self::Absolute(pos.into()),
             generic::ControlPoint::Relative(point) => Self::Relative(RelativeControlPoint {

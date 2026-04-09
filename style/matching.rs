@@ -30,6 +30,8 @@ use crate::style_resolver::{PseudoElementResolution, ResolvedElementStyles};
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::RuleInclusion;
 use crate::traversal_flags::TraversalFlags;
+use crate::values::generics::animation::GenericAnimationTimeline;
+use crate::values::specified::animation::Scroller;
 use servo_arc::{Arc, ArcBorrow};
 
 /// Represents the result of comparing an element's old and new style.
@@ -188,6 +190,35 @@ trait PrivateMatchMethods: TElement {
         false
     }
 
+    #[inline]
+    fn requires_animation_update_for_scroll_self(
+        old: &ComputedValues,
+        new: &ComputedValues,
+    ) -> bool {
+        // Need to specifically take care of `animation-timeline: scroll(self)` - unlike other values, it can become inactive.
+        // When we switch in and out of being scrollable, we should make sure to perform the animation update.
+        // Specifying scroll in any axis makes the other axis scrollable [1], so we need to update on either axis changing.
+        // This does not apply to `scroll(root)`, since the viewport scroller is always available, or `scroll(nearest)`,
+        // which will go up to root.
+        // [1]: https://drafts.csswg.org/css-overflow/#propdef-overflow
+        let scrollable_changed = old.clone_overflow_x().is_scrollable()
+            != new.clone_overflow_x().is_scrollable()
+            || old.clone_overflow_y().is_scrollable() != new.clone_overflow_y().is_scrollable();
+        if !scrollable_changed {
+            return false;
+        }
+        new.get_ui().animation_timeline_iter().any(|timeline| {
+            let scroll_function = match timeline {
+                GenericAnimationTimeline::Scroll(ref sf) => sf,
+                _ => return false,
+            };
+            if scroll_function.scroller != Scroller::SelfElement {
+                return false;
+            }
+            true
+        })
+    }
+
     /// If there is no transition rule in the ComputedValues, it returns None.
     fn after_change_style(
         &self,
@@ -280,6 +311,10 @@ trait PrivateMatchMethods: TElement {
         //
         // We may want to be more granular, but it's probably not worth it.
         if new_style.writing_mode != old_style.writing_mode {
+            return has_animations;
+        }
+
+        if Self::requires_animation_update_for_scroll_self(old_style, new_style) {
             return has_animations;
         }
 

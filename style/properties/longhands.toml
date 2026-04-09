@@ -3586,15 +3586,6 @@ enabled_in = "ua"
 affects = "layout"
 keyword = { values = ["none", "top"] }
 
-[-servo-overflow-clip-box]
-struct = "box"
-engine = "servo"
-spec = "Internal, not web-exposed,"
-animation_type = "none"
-enabled_in = "ua"
-affects = "layout"
-keyword = { values = ["padding-box", "content-box"] }
-
 [scroll-behavior]
 struct = "box"
 engine = "gecko"

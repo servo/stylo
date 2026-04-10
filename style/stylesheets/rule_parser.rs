@@ -719,7 +719,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             "font-face" => {
                 AtRulePrelude::FontFace
             },
-            "container" if cfg!(feature = "gecko") => {
+            "container" => {
                 let conditions = input.parse_comma_separated(|input| {
                     ContainerCondition::parse(&self.context, input)
                 })?;

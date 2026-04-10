@@ -301,10 +301,10 @@ struct ComputedKeyframe {
 /// would result in quadratic runtime with respect to the number of keyframes.
 #[derive(Clone, Copy, Debug, Default)]
 struct KeyframeOffsetCacheForProperty {
-    /// The index of a previous keyframe that contains the property.
+    /// The index of a previous keyframe that declares the property.
     ///
     /// Note that if the first keyframe does not declare a property, then it implicitly
-    /// uses the computed value of that property. That's there's always a preceding keyframe
+    /// uses the computed value of that property. That's why there's always a preceding keyframe
     /// with the property.
     last_keyframe_that_defined_property: usize,
 
@@ -336,13 +336,10 @@ enum Direction {
 
 impl Direction {
     fn relative_to_animation_direction(&self, reverse: bool) -> Self {
-        if reverse {
-            match self {
-                Self::Forward => Self::Backward,
-                Self::Backward => Self::Forward,
-            }
-        } else {
-            *self
+        match self {
+            Self::Forward if reverse => Self::Backward,
+            Self::Backward if reverse => Self::Forward,
+            _ => *self,
         }
     }
 }
@@ -360,12 +357,10 @@ impl Animation {
     ) -> Option<KeyframeDataForProperty<'_>> {
         let relevant_keyframe = &self.computed_steps[keyframe_index];
         let parameters = match &relevant_keyframe.values[property_index] {
-            AnimationValueOrReference::AnimationValue(animation_value) => {
-                KeyframeDataForProperty {
-                    timing_function: &relevant_keyframe.timing_function,
-                    start_percentage: relevant_keyframe.start_percentage,
-                    value: animation_value,
-                }
+            AnimationValueOrReference::AnimationValue(animation_value) => KeyframeDataForProperty {
+                timing_function: &relevant_keyframe.timing_function,
+                start_percentage: relevant_keyframe.start_percentage,
+                value: animation_value,
             },
             AnimationValueOrReference::NotDefinedHere(offsets) => {
                 let next_relevant_keyframe_index = match direction {
@@ -399,7 +394,7 @@ impl ComputedKeyframe {
         default_timing_function: TimingFunction,
         resolver: &mut StyleResolverForElement<E>,
         animating_properties: PropertyDeclarationIdSet,
-        number_of_animating_properties: usize
+        number_of_animating_properties: usize,
     ) -> Box<[Self]>
     where
         E: TElement,
@@ -442,8 +437,7 @@ impl ComputedKeyframe {
                     .map(|(property_index, property_declaration)| {
                         let keyframe_offset_cache = &mut keyframe_offset_caches[property_index];
                         if properties_changed_in_step.contains(property_declaration) {
-                            keyframe_offset_cache.last_keyframe_that_defined_property =
-                                step_index;
+                            keyframe_offset_cache.last_keyframe_that_defined_property = step_index;
                             let animation_value = AnimationValue::from_computed_values(
                                 property_declaration,
                                 &step_style,
@@ -457,8 +451,10 @@ impl ComputedKeyframe {
                         // > using the computed values of the properties being animated. If a 100% or to keyframe is
                         // > not specified, then the user agent constructs a 100% keyframe using the computed values
                         // > of the properties being animated.
-                        if step_index == 0 || remaining_steps.as_slice().is_empty()  {
-                            return AnimationValueOrReference::AnimationValue(animation_values_from_style[property_index].clone());
+                        if step_index == 0 || remaining_steps.as_slice().is_empty() {
+                            return AnimationValueOrReference::AnimationValue(
+                                animation_values_from_style[property_index].clone(),
+                            );
                         }
 
                         // This animating property is not defined on this keyframe - we should act as if this keyframe
@@ -489,9 +485,8 @@ impl ComputedKeyframe {
 
                         AnimationValueOrReference::NotDefinedHere(PropertyDeclarationOffsets {
                             preceding_declaration,
-                            following_declaration
+                            following_declaration,
                         })
-
                     })
                     .collect()
             };
@@ -508,11 +503,17 @@ impl ComputedKeyframe {
 
         // The first and last steps (at 0% and 100% respectively) should declare all animating properties.
         // If they don't then we should have filled the missing properties with the computed values.
-        debug_assert!(computed_steps.first().is_some_and(|first_step| {
-            first_step.values.iter().all(|value| matches!(value, AnimationValueOrReference::AnimationValue(_)))
+        debug_assert!(computed_steps.first().is_none_or(|first_step| {
+            first_step
+                .values
+                .iter()
+                .all(|value| matches!(value, AnimationValueOrReference::AnimationValue(_)))
         }));
-        debug_assert!(computed_steps.last().is_some_and(|first_step| {
-            first_step.values.iter().all(|value| matches!(value, AnimationValueOrReference::AnimationValue(_)))
+        debug_assert!(computed_steps.last().is_none_or(|first_step| {
+            first_step
+                .values
+                .iter()
+                .all(|value| matches!(value, AnimationValueOrReference::AnimationValue(_)))
         }));
 
         computed_steps.into_boxed_slice()
@@ -876,9 +877,8 @@ impl Animation {
                 continue;
             };
 
-            let percentage_between_keyframes = (next_keyframe.start_percentage
-                - previous_keyframe.start_percentage)
-                .abs() as f64;
+            let percentage_between_keyframes =
+                (next_keyframe.start_percentage - previous_keyframe.start_percentage).abs() as f64;
             let duration_between_keyframes = percentage_between_keyframes * self.duration;
             let direction_aware_prev_keyframe_start_percentage = match self.current_direction {
                 AnimationDirection::Normal => previous_keyframe.start_percentage as f64,
@@ -1739,7 +1739,7 @@ pub fn maybe_start_animations<E>(
             AnimationPlayState::Running => AnimationState::Pending,
         };
 
-        // Determine the set of animating properties. This not equivalent to the set of changed properties
+        // Determine the set of animating properties. This is not equivalent to the set of changed properties
         // when one changed property overrides another. (For example, "block-size" with writing-mode: initial
         // is the same as "height")
         let mut animating_properties = PropertyDeclarationIdSet::default();

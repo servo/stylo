@@ -212,16 +212,31 @@ pub struct AbsoluteColor {
     pub alpha: f32,
     /// The current color space that the components represent.
     pub color_space: ColorSpace,
-    /// Extra flags used durring serialization of this color.
+    /// Extra flags used during serialization of this color.
     pub flags: ColorFlags,
 }
 
 impl PartialEq for AbsoluteColor {
-    // Convert both colors to Oklab for comparison; allow EPSILON difference
-    // in component values.
-    // TODO: update this once https://github.com/w3c/csswg-drafts/issues/13157
-    // is resolved to specify a precise comparison algorithm.
+    // See https://github.com/w3c/csswg-drafts/issues/13157#issuecomment-4165667681
     fn eq(&self, other: &Self) -> bool {
+        let none_flags = ColorFlags::C0_IS_NONE
+            | ColorFlags::C1_IS_NONE
+            | ColorFlags::C2_IS_NONE
+            | ColorFlags::ALPHA_IS_NONE;
+        // If both colors have the same color-space, just compare components; note that
+        // any `none` components only match `none` in the other color.
+        if self.color_space == other.color_space {
+            return self.components == other.components
+                && self.alpha == other.alpha
+                && (self.flags & none_flags) == (other.flags & none_flags);
+        }
+        // Otherwise, if any `none` components are present in either color, return false.
+        if self.flags.union(other.flags).intersects(none_flags) {
+            return false;
+        }
+        // Otherwise, convert both colors to Oklab for comparison, and allow EPSILON
+        // difference in component values.
+        // TODO: check value of EPSILON once the spec is updated to cover this.
         const EPSILON: f32 = 0.0001;
         let a = self.to_color_space(ColorSpace::Oklab);
         let b = other.to_color_space(ColorSpace::Oklab);

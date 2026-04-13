@@ -74,21 +74,17 @@ wrapper = true
 wrapper = true
 
 [-moz-canvas]
-inherits = false
 [-moz-page-sequence]
 [-moz-scrolled-content]
+[-moz-scrolled-canvas]
 
 # A column set is a set of columns inside of ColumnSetWrapperFrame, which
 # applies to nsColumnSetFrame. It doesn't contain any column-span elements.
 [-moz-column-set]
 [-moz-column-content]
 
-# The root (viewport) frame
 [-moz-viewport]
-inherits = false
-# The root scrollframe.
 [-moz-viewport-scroll]
-inherits = false
 
 # Inside a flex/grid/-moz-box container, a contiguous run of text gets wrapped
 # in an anonymous block, which is then treated as a flex item.

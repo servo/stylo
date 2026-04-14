@@ -84,6 +84,7 @@ pub use self::list::Quotes;
 pub use self::motion::{OffsetPath, OffsetPosition, OffsetRotate};
 pub use self::outline::OutlineStyle;
 pub use self::page::{PageName, PageOrientation, PageSize, PageSizeOrientation, PaperSize};
+pub use self::param::LinkParameters;
 pub use self::percentage::{NonNegativePercentage, Percentage};
 pub use self::position::{
     AnchorFunction, AnchorName, AnchorNameIdent, AspectRatio, GridAutoFlow, GridTemplateAreas,
@@ -142,6 +143,7 @@ pub mod list;
 pub mod motion;
 pub mod outline;
 pub mod page;
+pub mod param;
 pub mod percentage;
 pub mod position;
 pub mod ratio;

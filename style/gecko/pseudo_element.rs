@@ -558,7 +558,7 @@ impl PseudoElement {
                 // https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle
                 input.parse_nested_block(|input| {
                     selector_parser::parse_functional_pseudo_element_with_name(
-                        name,
+                        &name,
                         input,
                         Target::Cssom,
                     )

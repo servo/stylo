@@ -76,6 +76,7 @@ argument = "PtNameAndClassSelector"
 [-moz-snapshot-containing-block]
 enabled_in = "ua"
 [picker]
+enabled_in = "ua"
 pref = "dom.select.customizable_select.enabled"
 argument = "AtomIdent"
 is_element_backed = true

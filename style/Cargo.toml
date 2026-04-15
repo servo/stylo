@@ -71,7 +71,7 @@ itoa = "1.0"
 log = "0.4"
 malloc_size_of = { workspace = true }
 malloc_size_of_derive = "0.1"
-web_atoms = { version = "0.2.0", optional = true }
+web_atoms = { version = "0.2.4", optional = true }
 mime = { version = "0.3.13", optional = true }
 num_cpus = {version = "1.1.0"}
 num-integer = "0.1"

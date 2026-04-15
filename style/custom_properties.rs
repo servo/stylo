@@ -28,7 +28,6 @@ use crate::stylesheets::UrlExtraData;
 use crate::stylist::Stylist;
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::calc::SortKey as AttrUnit;
-use crate::values::specified::param::LinkParamValueOrNone;
 use crate::values::specified::FontRelativeLength;
 use crate::values::specified::ParsedNamespace;
 use crate::{derives::*, Namespace, Prefix};
@@ -204,23 +203,6 @@ static CHROME_ENVIRONMENT_VARIABLES: [EnvironmentVariable; 9] = [
 impl CssEnvironment {
     #[inline]
     fn get(&self, name: &Atom, device: &Device, url_data: &UrlExtraData) -> Option<VariableValue> {
-        if name.as_slice().starts_with(&[b'-' as u16, b'-' as u16]) {
-            let param = device
-                .pres_context()?
-                .mLinkParameters
-                .0
-                .iter()
-                .find(|p| p.name.0 == *name)?;
-            if let LinkParamValueOrNone::Specified(val) = &param.value {
-                let mut input = cssparser::ParserInput::new(val.as_ref());
-                let mut parser = cssparser::Parser::new(&mut input);
-
-                // need to carry around full variable value https://bugzilla.mozilla.org/show_bug.cgi?id=2028998
-                return VariableValue::parse(&mut parser, None, url_data).ok();
-            }
-            return None;
-        }
-
         if let Some(var) = ENVIRONMENT_VARIABLES.iter().find(|var| var.name == *name) {
             return Some((var.evaluator)(device, url_data));
         }

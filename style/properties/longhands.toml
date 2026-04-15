@@ -1707,7 +1707,7 @@ affects = "layout"
 
 [position-anchor]
 type = "PositionAnchor"
-initial = "computed::PositionAnchor::normal()"
+initial = "computed::PositionAnchor::none()"
 struct = "position"
 engine = "gecko"
 animation_type = "discrete"

@@ -1240,8 +1240,6 @@ class PropertyRestrictions:
             props.add(p)
         # ::placeholder can't be SVG text
         props -= PropertyRestrictions.svg_text_properties()
-        # Historically ::placeholder's line-height was !important in the UA sheet.
-        props.remove("line-height")
 
         return props
 

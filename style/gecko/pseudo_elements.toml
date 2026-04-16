@@ -85,15 +85,19 @@ is_element_backed = true
 [-moz-number-spin-box]
 supports_user_action_state = true
 enabled_in = "chrome"
+is_element_backed = true
 [-moz-number-spin-down]
 supports_user_action_state = true
 enabled_in = "chrome"
+is_element_backed = true
 [-moz-number-spin-up]
 supports_user_action_state = true
 enabled_in = "chrome"
+is_element_backed = true
 [-moz-search-clear-button]
 supports_user_action_state = true
 enabled_in = "chrome"
+is_element_backed = true
 # The selected label of a <select>
 [-moz-select-content]
 enabled_in = "chrome"
@@ -132,8 +136,8 @@ enabled_in = "ua"
 is_element_backed = true
 # The Reveal Password button for <input type=password>.
 [-moz-reveal]
-supports_user_action_state = true
 enabled_in = "ua"
+is_element_backed = true
 # The button in an <input type=file>
 [file-selector-button]
 supports_user_action_state = true

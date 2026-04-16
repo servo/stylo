@@ -601,6 +601,73 @@ pub mod specified {
     }
 }
 
+/// A single segment of an unparsed Typed OM value.
+///
+/// This corresponds to the `CSSUnparsedSegment` union in the Typed OM
+/// specification. Unparsed values are represented as a list of string
+/// fragments and variable references.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub enum UnparsedSegment {
+    /// A string fragment.
+    ///
+    /// This corresponds to the string branch of `CSSUnparsedSegment` and is
+    /// used for the non-variable parts of a `CSSUnparsedValue`.
+    String(CssString),
+
+    /// A `var()` reference segment.
+    ///
+    /// This corresponds to `CSSVariableReferenceValue` in the Typed OM
+    /// specification.
+    VariableReference(VariableReferenceValue),
+}
+
+/// An unparsed value used by the Typed OM.
+///
+/// This corresponds to `CSSUnparsedValue` in the Typed OM specification. It
+/// is used for values that cannot be reified into a more specific
+/// property-agnostic representation and therefore need to preserve their
+/// token-like structure as a sequence of string fragments and variable
+/// references.
+///
+/// The underlying list of segments corresponds to the `[[tokens]]` internal
+/// slot of `CSSUnparsedValue`.
+///
+/// This is represented as a type alias over `ThinVec<UnparsedSegment>` rather
+/// than a dedicated struct. This avoids the need for additional wrapper types
+/// when embedding unparsed values within other structures, while still
+/// allowing recursive representations via the segment list.
+pub type UnparsedValue = ThinVec<UnparsedSegment>;
+
+/// A variable reference inside an unparsed Typed OM value.
+///
+/// This corresponds to `CSSVariableReferenceValue` in the Typed OM
+/// specification.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct VariableReferenceValue {
+    /// The referenced custom property name.
+    ///
+    /// This corresponds to the `variable` attribute of
+    /// `CSSVariableReferenceValue`.
+    pub variable: CssString,
+
+    /// The fallback value, if present.
+    ///
+    /// This corresponds to the `fallback` attribute of
+    /// `CSSVariableReferenceValue`. When `has_fallback` is false, this value
+    /// must be ignored. When `has_fallback` is true, this contains the
+    /// fallback tokens (which may be empty).
+    pub fallback: UnparsedValue,
+
+    /// Whether a fallback was explicitly provided.
+    ///
+    /// This is needed to distinguish between the absence of a fallback
+    /// (`var(--a)`) and an explicitly empty fallback (`var(--a,)`), which are
+    /// observable via Typed OM.
+    pub has_fallback: bool,
+}
+
 /// A keyword value used by the Typed OM.
 ///
 /// This corresponds to `CSSKeywordValue` in the Typed OM specification.
@@ -668,6 +735,12 @@ pub enum NumericValue {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub enum TypedValue {
+    /// An unparsed value consisting of string fragments and variable
+    /// references.
+    ///
+    /// This corresponds to `CSSUnparsedValue` in the Typed OM specification.
+    Unparsed(UnparsedValue),
+
     /// A keyword value such as `"block"`, `"none"`, or `"thin"`.
     ///
     /// This corresponds to `CSSKeywordValue` in the Typed OM specification.
@@ -808,6 +881,15 @@ where
 }
 
 impl<T> ToTyped for Box<T>
+where
+    T: ?Sized + ToTyped,
+{
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        (**self).to_typed(dest)
+    }
+}
+
+impl<T> ToTyped for Arc<T>
 where
     T: ?Sized + ToTyped,
 {

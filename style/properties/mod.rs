@@ -167,6 +167,7 @@ impl ToTyped for WideKeywordDeclaration {
 
 /// An unparsed declaration that contains `var()` functions.
 #[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf, ToTyped)]
+#[typed_value(derive_fields)]
 pub struct VariableDeclaration {
     /// The id of the property this declaration represents.
     #[css(skip)]
@@ -1439,6 +1440,16 @@ impl ToCss for UnparsedValue {
             self.variable_value.to_css(dest)?;
         }
         Ok(())
+    }
+}
+
+impl ToTyped for UnparsedValue {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        if self.from_shorthand.is_none() {
+            self.variable_value.to_typed(dest)?;
+            return Ok(());
+        }
+        Err(())
     }
 }
 

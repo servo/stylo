@@ -78,7 +78,7 @@ pub use crate::specified_value_info::{CssType, KeywordsCollectFn, SpecifiedValue
 pub use crate::values::{
     Comma, CommaWithSpace, CssString, CssStringWriter, CssWriter, KeywordValue, MathSum,
     NumericValue, OneOrMoreSeparated, Separator, Space, ToCss, ToTyped, TypedValue, TypedValueList,
-    UnitValue,
+    UnitValue, UnparsedSegment, UnparsedValue, VariableReferenceValue,
 };
 
 /// The error type for all CSS parsing routines.

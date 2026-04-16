@@ -44,7 +44,11 @@ use std::collections::hash_map::Entry;
 use std::fmt::{self, Write};
 use std::ops::{Index, IndexMut};
 use std::{cmp, num};
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::{
+    CssString, CssWriter, ParseError, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
+    UnparsedSegment, UnparsedValue, VariableReferenceValue,
+};
+use thin_vec::ThinVec;
 
 /// The environment from which to get `env` function values.
 ///
@@ -281,6 +285,100 @@ impl ToCss for SpecifiedValue {
     {
         dest.write_str(&self.css)
     }
+}
+
+impl ToTyped for SpecifiedValue {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        let unparsed_value = reify_variable_value(self)?;
+        dest.push(TypedValue::Unparsed(unparsed_value));
+        Ok(())
+    }
+}
+
+fn reify_variable_value(value: &VariableValue) -> Result<UnparsedValue, ()> {
+    let mut reference_index = 0;
+    reify_variable_value_range(
+        &value.css,
+        &value.references.refs,
+        &mut reference_index,
+        0,
+        value.css.len(),
+    )
+}
+
+/// Reify a slice of the CSS string into UnparsedSegment entries.
+///
+/// References are stored in source order, with outer substitution functions
+/// inserted before references in their fallback. The shared `reference_index`
+/// relies on this ordering to recurse into fallbacks without reprocessing
+/// nested referecences.
+fn reify_variable_value_range(
+    css: &str,
+    references: &[SubstitutionFunctionReference],
+    reference_index: &mut usize,
+    start: usize,
+    end: usize,
+) -> Result<UnparsedValue, ()> {
+    debug_assert!(start <= end);
+    debug_assert!(end <= css.len());
+
+    let mut values = ThinVec::new();
+    let mut cur_pos = start;
+
+    while *reference_index < references.len() {
+        let reference = &references[*reference_index];
+
+        if reference.start >= end {
+            break;
+        }
+
+        debug_assert!(reference.start >= cur_pos);
+        debug_assert!(reference.start <= reference.end);
+        debug_assert!(reference.end <= css.len());
+
+        if cur_pos < reference.start {
+            values.push(UnparsedSegment::String(CssString::from(
+                &css[cur_pos..reference.start],
+            )));
+        }
+
+        *reference_index += 1;
+
+        if reference.substitution_kind != SubstitutionFunctionKind::Var {
+            return Err(());
+        }
+
+        let (fallback, has_fallback) = if let Some(fallback) = &reference.fallback {
+            debug_assert!(fallback.start.get() <= reference.end - 1);
+
+            (
+                reify_variable_value_range(
+                    css,
+                    references,
+                    reference_index,
+                    fallback.start.get(),
+                    reference.end - 1, // Skip the closing ')'.
+                )?,
+                true,
+            )
+        } else {
+            (ThinVec::new(), false)
+        };
+
+        values.push(UnparsedSegment::VariableReference(VariableReferenceValue {
+            variable: CssString::from(format!("--{}", reference.name)),
+            fallback,
+            has_fallback,
+        }));
+
+        cur_pos = reference.end;
+    }
+
+    if cur_pos < end {
+        values.push(UnparsedSegment::String(CssString::from(&css[cur_pos..end])));
+    }
+
+    Ok(values)
 }
 
 /// A pair of separate CustomPropertiesMaps, split between custom properties

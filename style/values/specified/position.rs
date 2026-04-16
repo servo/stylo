@@ -521,6 +521,8 @@ impl ScopedName {
 )]
 #[repr(u8)]
 pub enum PositionAnchorKeyword {
+    /// `normal`
+    Normal,
     /// `none`
     None,
     /// `auto`
@@ -529,17 +531,11 @@ pub enum PositionAnchorKeyword {
     Ident(DashedIdent),
 }
 
-impl PositionAnchorKeyword {
-    /// Return the `none` value.
-    pub fn none() -> Self {
-        Self::None
-    }
-}
 
 impl IsTreeScoped for PositionAnchorKeyword {
     fn is_tree_scoped(&self) -> bool {
         match *self {
-            Self::None | Self::Auto => false,
+            Self::Normal | Self::None | Self::Auto => false,
             Self::Ident(_) => true,
         }
     }
@@ -549,9 +545,9 @@ impl IsTreeScoped for PositionAnchorKeyword {
 pub type PositionAnchor = TreeScoped<PositionAnchorKeyword>;
 
 impl PositionAnchor {
-    /// Return the `none` value.
-    pub fn none() -> Self {
-        Self::with_default_level(PositionAnchorKeyword::none())
+    /// Return the `normal` value.
+    pub fn normal() -> Self {
+        Self::with_default_level(PositionAnchorKeyword::Normal)
     }
 }
 

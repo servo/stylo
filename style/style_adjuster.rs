@@ -15,7 +15,6 @@ use crate::properties::longhands::position::computed_value::T as Position;
 use crate::properties::longhands::{
     contain::computed_value::T as Contain, container_type::computed_value::T as ContainerType,
     content_visibility::computed_value::T as ContentVisibility,
-    overflow_x::computed_value::T as Overflow,
 };
 use crate::properties::{ComputedValues, LonghandId, LonghandIdSet, StyleBuilder};
 use crate::values::computed::position::{
@@ -560,20 +559,6 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
                 .mutate_inherited_text()
                 .set_white_space_collapse(new_collapse);
         }
-
-        let box_style = self.style.get_box();
-        let overflow_x = box_style.clone_overflow_x();
-        let overflow_y = box_style.clone_overflow_y();
-
-        // If at least one is scrollable we'll adjust the other one in
-        // adjust_for_overflow if needed.
-        if overflow_x.is_scrollable() || overflow_y.is_scrollable() {
-            return;
-        }
-
-        let box_style = self.style.mutate_box();
-        box_style.set_overflow_x(Overflow::Auto);
-        box_style.set_overflow_y(Overflow::Auto);
     }
 
     /// If a <fieldset> has grid/flex display type, we need to inherit
@@ -1070,8 +1055,6 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         {
             self.adjust_for_prohibited_display_contents(element);
             self.adjust_for_fieldset_content();
-            // NOTE: It's important that this happens before
-            // adjust_for_overflow.
             self.adjust_for_text_control_editing_root();
         }
         self.adjust_for_top_layer();

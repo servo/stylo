@@ -22,7 +22,6 @@ use crate::derives::*;
 )]
 #[value_info(ty = "TIMING_FUNCTION")]
 #[repr(u8, C)]
-#[typed(derive_fields)]
 pub enum TimingFunction<Integer, Number, LinearStops> {
     /// `linear | ease | ease-in | ease-out | ease-in-out`
     Keyword(TimingKeyword),

@@ -167,7 +167,6 @@ impl ToTyped for WideKeywordDeclaration {
 
 /// An unparsed declaration that contains `var()` functions.
 #[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf, ToTyped)]
-#[typed(derive_fields)]
 pub struct VariableDeclaration {
     /// The id of the property this declaration represents.
     #[css(skip)]

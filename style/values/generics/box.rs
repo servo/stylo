@@ -66,7 +66,6 @@ pub enum BaselineShiftKeyword {
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(derive_fields)]
 pub enum GenericBaselineShift<LengthPercentage> {
     /// One of the baseline-shift keywords
     Keyword(BaselineShiftKeyword),
@@ -208,7 +207,6 @@ impl<I: Zero + ToCss> ToCss for LineClamp<I> {
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(derive_fields)]
 pub enum GenericPerspective<NonNegativeLength> {
     /// A non-negative length.
     Length(NonNegativeLength),

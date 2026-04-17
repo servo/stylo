@@ -24,7 +24,6 @@ use crate::derives::*;
     ToTyped,
 )]
 #[repr(C)]
-#[typed(derive_fields)]
 pub enum GenericFlexBasis<S> {
     /// `content`
     Content,

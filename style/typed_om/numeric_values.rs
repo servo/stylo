@@ -13,7 +13,6 @@ use style_traits::ParsingMode;
 /// A numeric value without a `calc` expression.
 #[derive(Clone, ToTyped)]
 #[repr(u8)]
-#[typed(derive_fields)]
 pub enum NoCalcNumeric {
     /// A `<length>` value.
     ///

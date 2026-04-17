@@ -160,7 +160,6 @@ impl<N: ToCss + Zero, I: ToCss + Zero> ToCss for InitialLetter<N, I> {
     ToTyped,
 )]
 #[allow(missing_docs)]
-#[typed(derive_fields)]
 pub enum GenericTextDecorationLength<L> {
     LengthPercentage(L),
     Auto,

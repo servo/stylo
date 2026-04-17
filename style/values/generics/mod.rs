@@ -60,7 +60,6 @@ pub mod url;
     ToTyped,
 )]
 #[repr(transparent)]
-#[typed(derive_fields)]
 pub struct NonNegative<T>(pub T);
 
 /// A trait to clamp a negative value to another.

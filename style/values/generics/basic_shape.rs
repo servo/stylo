@@ -37,7 +37,6 @@ use style_traits::{CssWriter, ToCss};
     ToTyped,
 )]
 #[repr(u8)]
-#[typed(derive_fields)]
 pub enum ShapeGeometryBox {
     /// Depending on which kind of element this style value applied on, the
     /// default value of the reference-box can be different.  For an HTML
@@ -122,7 +121,6 @@ impl Default for ShapeBox {
 )]
 #[animation(no_bound(U))]
 #[repr(u8)]
-#[typed(derive_fields)]
 pub enum GenericClipPath<BasicShape, U> {
     #[animation(error)]
     None,

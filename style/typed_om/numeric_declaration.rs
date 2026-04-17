@@ -16,7 +16,6 @@ use style_traits::{ParseError, StyleParseErrorKind};
 
 /// A numeric declaration, with or without a `calc()` expression.
 #[derive(Clone, ToTyped)]
-#[typed(derive_fields)]
 pub enum NumericDeclaration {
     /// A numeric value without a `calc()` expression.
     NoCalc(NoCalcNumeric),

@@ -590,7 +590,6 @@ impl Parse for NonNegativeNumberOrPercentage {
     ToShmem,
     ToTyped,
 )]
-#[typed(derive_fields)]
 pub struct Opacity(Number);
 
 impl Parse for Opacity {

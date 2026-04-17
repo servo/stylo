@@ -26,7 +26,6 @@ use crate::values::generics::length::{GenericLengthPercentageOrAuto, LengthPerce
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(derive_fields)]
 pub enum GenericBackgroundSize<LengthPercent> {
     /// `<width> <height>`
     ExplicitSize {

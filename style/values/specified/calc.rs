@@ -147,7 +147,6 @@ impl ToTyped for Leaf {
 /// function work properly.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
 #[allow(missing_docs)]
-#[typed(derive_fields)]
 pub struct CalcLengthPercentage {
     #[css(skip)]
     pub clamping_mode: AllowedNumericType,

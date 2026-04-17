@@ -267,7 +267,6 @@ impl FontWeight {
     ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
-#[typed(derive_fields)]
 /// The computed value of font-size
 pub struct FontSize {
     /// The computed size, that we use to compute ems etc. This accounts for

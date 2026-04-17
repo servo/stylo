@@ -140,7 +140,6 @@ pub const MAX_FONT_WEIGHT: f32 = 1000.;
 #[derive(
     Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
-#[typed(derive_fields)]
 pub enum FontWeight {
     /// `<font-weight-absolute>`
     Absolute(AbsoluteFontWeight),
@@ -205,7 +204,6 @@ impl ToComputedValue for FontWeight {
 #[derive(
     Clone, Copy, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
-#[typed(derive_fields)]
 pub enum AbsoluteFontWeight {
     /// A `<number>`, with the additional constraints specified in:
     ///
@@ -410,7 +408,6 @@ impl ToComputedValue for FontStyle {
 #[derive(
     Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
-#[typed(derive_fields)]
 pub enum FontStretch {
     Stretch(NonNegativePercentage),
     Keyword(FontStretchKeyword),
@@ -564,7 +561,6 @@ impl Default for FontSizeKeyword {
     ToTyped,
 )]
 #[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
-#[typed(derive_fields)]
 /// Additional information for keyword-derived font sizes.
 pub struct KeywordInfo {
     /// The keyword used
@@ -630,7 +626,6 @@ impl SpecifiedValueInfo for KeywordInfo {
 }
 
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
-#[typed(derive_fields)]
 /// A specified font-size value
 pub enum FontSize {
     /// A length; e.g. 10px.
@@ -745,7 +740,6 @@ impl Parse for FamilyName {
 #[derive(
     Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
-#[typed(derive_fields)]
 pub enum FontSizeAdjustFactor {
     /// An explicitly-specified number.
     Number(NonNegativeNumber),

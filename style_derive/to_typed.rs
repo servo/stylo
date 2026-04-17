@@ -461,13 +461,6 @@ pub(crate) fn field_generic_arguments(field: &BindingInfo) -> Vec<syn::Type> {
 #[derive(Default, FromDeriveInput)]
 #[darling(attributes(typed), default)]
 pub struct TypedInputAttrs {
-    /// Formerly enabled field-level recursion when deriving `ToTyped`.
-    ///
-    /// Field recursion is now the default behavior, so this attribute is
-    /// accepted for compatibility but currently has no effect. It will be
-    /// removed in a follow-up cleanup once existing annotations are dropped.
-    pub derive_fields: bool,
-
     /// Disables field-level recursion when deriving `ToTyped`.
     ///
     /// When set, the derive will not call `.to_typed()` on inner values (for
@@ -492,14 +485,6 @@ pub struct TypedInputAttrs {
 #[derive(Default, FromVariant)]
 #[darling(attributes(typed), default)]
 pub struct TypedVariantAttrs {
-    /// Same as the top-level `derive_fields`, but included here because
-    /// struct variants are represented as both a variant and a type
-    /// definition.
-    ///
-    /// This attribute is accepted for compatibility but currently has no
-    /// effect, since field recursion is now the default behavior.
-    pub derive_fields: bool,
-
     /// Same as the top-level `skip_derive_fields`, but included here because
     /// struct variants are represented as both a variant and a type
     /// definition.

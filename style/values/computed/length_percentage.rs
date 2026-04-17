@@ -220,7 +220,7 @@ impl EqualsPercentage for LengthPercentage {
 
 /// An unpacked `<length-percentage>` that borrows the `calc()` variant.
 #[derive(Clone, Debug, PartialEq, ToCss, ToTyped)]
-#[typed_value(derive_fields)]
+#[typed(derive_fields)]
 pub enum Unpacked<'a> {
     /// A `calc()` value
     Calc(&'a CalcLengthPercentage),
@@ -727,7 +727,7 @@ impl<'de> Deserialize<'de> for LengthPercentage {
 )]
 #[allow(missing_docs)]
 #[repr(u8)]
-#[typed_value(derive_fields)]
+#[typed(derive_fields)]
 pub enum CalcLengthPercentageLeaf {
     Length(Length),
     Percentage(Percentage),
@@ -939,7 +939,7 @@ pub type CalcNode = calc::GenericCalcNode<CalcLengthPercentageLeaf>;
     ToTyped,
 )]
 #[repr(C)]
-#[typed_value(derive_fields)]
+#[typed(derive_fields)]
 pub struct CalcLengthPercentage {
     #[animation(constant)]
     #[css(skip)]

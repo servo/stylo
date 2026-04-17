@@ -314,7 +314,7 @@ pub mod ${property.ident} {
         % if property.vector.separator == "Comma":
         #[css(comma)]
         % endif
-        #[typed_value(derive_fields)]
+        #[typed(derive_fields)]
         pub struct OwnedList<T>(
             % if not allow_empty:
             #[css(iterable)]
@@ -335,7 +335,7 @@ pub mod ${property.ident} {
         % if property.vector.separator == "Comma":
         #[css(comma)]
         % endif
-        #[typed_value(derive_fields)]
+        #[typed(derive_fields)]
         pub struct ComputedList(
             % if not allow_empty:
             #[css(iterable)]
@@ -453,7 +453,7 @@ pub mod ${property.ident} {
     % if property.vector.separator == "Comma":
     #[css(comma)]
     % endif
-    #[typed_value(derive_fields)]
+    #[typed(derive_fields)]
     pub struct SpecifiedValue(
         % if not allow_empty:
         #[css(iterable)]

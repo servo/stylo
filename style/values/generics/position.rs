@@ -57,7 +57,7 @@ pub trait IsTreeScoped {
     Serialize,
     Deserialize,
 )]
-#[typed_value(derive_fields)]
+#[typed(derive_fields)]
 pub struct TreeScoped<T> {
     /// The scoped value.
     pub value: T,
@@ -399,7 +399,7 @@ impl<N> ToAnimatedZero for AspectRatio<N> {
     ToTyped,
 )]
 #[repr(C)]
-#[typed_value(derive_fields)]
+#[typed(derive_fields)]
 pub enum GenericInset<P, LP> {
     /// A `<length-percentage>` value.
     LengthPercentage(LP),

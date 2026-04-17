@@ -46,18 +46,18 @@ use synstructure::{BindingInfo, Structure};
 ///
 /// Summary of derive attributes recognized by this derive:
 ///
-/// * `#[typed_value(derive_fields)]` on the type enables limited recursion
-///   for structs and data-carrying enum variants.
+/// * `#[typed(derive_fields)]` on the type enables limited recursion for
+///   structs and data-carrying enum variants.
 ///
-/// * `#[css(skip)]`, `#[typed_value(skip)]`, or `#[typed_value(todo)]` on a
-///   variant mark it as unsupported and cause the generated arm to return
+/// * `#[css(skip)]`, `#[typed(skip)]`, or `#[typed(todo)]` on a variant mark
+///   it as unsupported and cause the generated arm to return
 ///   `Err(())`.
 ///
 /// * `#[css(skip)]` on a field disables reification for that field.
 ///
-/// * `#[typed_value(skip_if = "...")]` on a field conditionally disables
-///   reification for that field. If the provided function returns `true` for
-///   the field value, the field is ignored.
+/// * `#[typed(skip_if = "...")]` on a field conditionally disables reification
+///   for that field. If the provided function returns `true` for the field
+///   value, the field is ignored.
 ///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword
 ///   string.
@@ -85,7 +85,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
 
     let css_input_attrs = cg::parse_input_attrs::<CssInputAttrs>(&input);
 
-    let input_attrs = cg::parse_input_attrs::<TypedValueInputAttrs>(&input);
+    let input_attrs = cg::parse_input_attrs::<TypedInputAttrs>(&input);
 
     let body = match &input.data {
         // Handle enums.
@@ -171,8 +171,8 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
 /// * Unit variants are reified into `TypedValue::Keyword`, using the variant’s
 ///   identifier converted with `cg::to_css_identifier` or a custom keyword if
 ///   provided through `#[css(keyword = "...")]`.
-/// * Variants marked with `#[css(skip)]` or `#[typed_value(skip)]` or
-///   `#[typed_value(todo)]` return `Err(())`.
+/// * Variants marked with `#[css(skip)]` or `#[typed(skip)]` or
+///   `#[typed(todo)]` return `Err(())`.
 /// * Variants with fields delegate to `derive_variant_fields_expr()` when
 ///   `derive_fields` is enabled; otherwise they return `Err(())`.
 ///
@@ -195,8 +195,8 @@ fn derive_variant_arm(
     // Parse any #[css(...)] attributes attached to this variant.
     let css_variant_attrs = cg::parse_variant_attrs_from_ast::<CssVariantAttrs>(&ast);
 
-    // Parse any #[typed_value(...)] attributes attached to this variant.
-    let variant_attrs = cg::parse_variant_attrs_from_ast::<TypedValueVariantAttrs>(&ast);
+    // Parse any #[typed(...)] attributes attached to this variant.
+    let variant_attrs = cg::parse_variant_attrs_from_ast::<TypedVariantAttrs>(&ast);
 
     // If the variant is explicitly marked #[css(skip)], don’t generate
     // anything for it, always return Err(()).
@@ -204,9 +204,8 @@ fn derive_variant_arm(
         return quote! {Err(())};
     }
 
-    // If the variant is explicitly marked #[typed_value(skip)] or
-    // #[typed_value(todo)], don’t generate anything for it, always return
-    // Err(()).
+    // If the variant is explicitly marked #[typed(skip)] or #[typed(todo)],
+    // don’t generate anything for it, always return Err(()).
     if variant_attrs.skip || variant_attrs.todo {
         return quote! {Err(())};
     }
@@ -255,7 +254,7 @@ fn derive_variant_arm(
 ///   variant’s `#[css(comma)]` setting.
 ///
 /// Fields marked with `#[css(skip)]`, or skipped by
-/// `#[typed_value(skip_if = "...")]`, are ignored.
+/// `#[typed(skip_if = "...")]`, are ignored.
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
@@ -267,7 +266,7 @@ fn derive_variant_fields_expr(
         .iter()
         .filter_map(|binding| {
             let css_field_attrs = cg::parse_field_attrs::<CssFieldAttrs>(&binding.ast());
-            let field_attrs = cg::parse_field_attrs::<TypedValueFieldAttrs>(&binding.ast());
+            let field_attrs = cg::parse_field_attrs::<TypedFieldAttrs>(&binding.ast());
             if css_field_attrs.skip {
                 return None;
             }
@@ -334,16 +333,15 @@ fn derive_variant_fields_expr(
 /// For non-iterable fields, it generates a direct `ToTyped::to_typed` call
 /// for the field value.
 ///
-/// If `#[typed_value(skip_if = "...")]` is present and the provided function
-/// returns `true` for the field value, the field contributes no reified
-/// output.
+/// If `#[typed(skip_if = "...")]` is present and the provided function returns
+/// `true` for the field value, the field contributes no reified output.
 ///
 /// The appropriate `T: ToTyped` bounds for the field type or iterable element
 /// type(s) are added to the `where` clause.
 fn derive_single_field_expr(
     field: &BindingInfo,
     css_field_attrs: CssFieldAttrs,
-    field_attrs: TypedValueFieldAttrs,
+    field_attrs: TypedFieldAttrs,
     where_clause: &mut Option<WhereClause>,
 ) -> TokenStream {
     let mut expr = if css_field_attrs.iterable {
@@ -453,8 +451,8 @@ pub(crate) fn field_generic_arguments(field: &BindingInfo) -> Vec<syn::Type> {
 }
 
 #[derive(Default, FromDeriveInput)]
-#[darling(attributes(typed_value), default)]
-pub struct TypedValueInputAttrs {
+#[darling(attributes(typed), default)]
+pub struct TypedInputAttrs {
     /// Enables field-level recursion when deriving `ToTyped`.
     ///
     /// When set, the derive will attempt to call `.to_typed()` on inner
@@ -469,8 +467,8 @@ pub struct TypedValueInputAttrs {
 }
 
 #[derive(Default, FromVariant)]
-#[darling(attributes(typed_value), default)]
-pub struct TypedValueVariantAttrs {
+#[darling(attributes(typed), default)]
+pub struct TypedVariantAttrs {
     /// Same as the top-level `derive_fields`, but included here because
     /// struct variants are represented as both a variant and a type
     /// definition.
@@ -487,8 +485,8 @@ pub struct TypedValueVariantAttrs {
 }
 
 #[derive(Default, FromField)]
-#[darling(attributes(typed_value), default)]
-pub struct TypedValueFieldAttrs {
+#[darling(attributes(typed), default)]
+pub struct TypedFieldAttrs {
     /// Conditionally skips reification of this field.
     ///
     /// The provided function is called with the field value. If it returns

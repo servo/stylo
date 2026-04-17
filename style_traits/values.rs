@@ -785,9 +785,9 @@ pub struct TypedValueList {
 ///   serialization logic as [`ToCss`].
 ///
 /// * Structs and data-carrying variants: When the
-///   `#[typed_value(derive_fields)]` attribute is present, the derive
-///   attempts to call `.to_typed()` recursively on supported fields or
-///   variant payloads, producing [`TypedValue`]s when possible.
+///   `#[typed(derive_fields)]` attribute is present, the derive attempts to
+///   call `.to_typed()` recursively on supported fields or variant payloads,
+///   producing [`TypedValue`]s when possible.
 ///
 /// * Other cases: If no automatic mapping is defined or recursion is not
 ///   enabled, the derived implementation falls back to the default method
@@ -803,19 +803,19 @@ pub struct TypedValueList {
 ///
 /// Summary of derive attributes recognized by `#[derive(ToTyped)]`:
 ///
-/// * `#[typed_value(derive_fields)]` on the type enables limited recursion
-///   for structs and data-carrying enum variants.
+/// * `#[typed(derive_fields)]` on the type enables limited recursion for
+///   structs and data-carrying enum variants.
 ///
-/// * `#[css(skip)]`, `#[typed_value(skip)]`, or `#[typed_value(todo)]` on a
-///   variant cause that variant to be treated as unsupported (the derived
-///   implementation returns `Err(())`).
+/// * `#[css(skip)]`, `#[typed(skip)]`, or `#[typed(todo)]` on a variant cause
+///   that variant to be treated as unsupported (the derived implementation
+///   returns `Err(())`).
 ///
 /// * `#[css(skip)]` on a field causes that field to be ignored during
 ///   reification.
 ///
-/// * `#[typed_value(skip_if = "...")]` on a field conditionally disables
-///   reification for that field. If the provided function returns `true` for
-///   the field value, the field is ignored.
+/// * `#[typed(skip_if = "...")]` on a field conditionally disables reification
+///   for that field. If the provided function returns `true` for the field
+///   value, the field is ignored.
 ///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword that
 ///   would otherwise be derived from the Rust identifier.

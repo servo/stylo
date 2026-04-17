@@ -6,6 +6,7 @@
 
 use super::{Context, ToResolvedValue};
 
+use crate::properties::{PropertyId, ShorthandId};
 use crate::values::computed::color as computed;
 use crate::values::generics::color as generics;
 
@@ -15,7 +16,7 @@ impl ToResolvedValue for computed::Color {
 
     #[inline]
     fn to_resolved_value(self, context: &Context) -> Self::ResolvedValue {
-        if context.for_property == crate::properties::ShorthandId::TextDecoration.into()
+        if context.for_property == PropertyId::NonCustom(ShorthandId::TextDecoration.into())
             && matches!(self, Self::CurrentColor)
         {
             return self;

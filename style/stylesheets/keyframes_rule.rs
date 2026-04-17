@@ -70,7 +70,7 @@ impl KeyframesRule {
     /// <https://drafts.csswg.org/css-animations-1/#interface-csskeyframesrule-findrule>
     pub fn find_rule(&self, guard: &SharedRwLockReadGuard, selector: &str) -> Option<usize> {
         let mut input = ParserInput::new(selector);
-        if let Ok(selector) = Parser::new(&mut input).parse_entirely(KeyframeSelector::parse) {
+        if let Ok(selector) = Parser::new(&mut input).parse_entirely(KeyframeSelectors::parse) {
             for (i, keyframe) in self.keyframes.iter().enumerate().rev() {
                 if keyframe.read_with(guard).selector == selector {
                     return Some(i);
@@ -146,13 +146,13 @@ impl KeyframePercentage {
     }
 }
 
-/// A keyframes selector is a list of percentages or from/to symbols, which are
-/// converted at parse time to percentages.
+/// A list of <keyframe-selector> which is a percentages or from/to symbols, which are converted at
+/// parse time to percentages.
 #[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem)]
 #[css(comma)]
-pub struct KeyframeSelector(#[css(iterable)] Vec<KeyframePercentage>);
+pub struct KeyframeSelectors(#[css(iterable)] Vec<KeyframePercentage>);
 
-impl KeyframeSelector {
+impl KeyframeSelectors {
     /// Return the list of percentages this selector contains.
     #[inline]
     pub fn percentages(&self) -> &[KeyframePercentage] {
@@ -160,15 +160,15 @@ impl KeyframeSelector {
     }
 
     /// A dummy public function so we can write a unit test for this.
-    pub fn new_for_unit_testing(percentages: Vec<KeyframePercentage>) -> KeyframeSelector {
-        KeyframeSelector(percentages)
+    pub fn new_for_unit_testing(percentages: Vec<KeyframePercentage>) -> KeyframeSelectors {
+        KeyframeSelectors(percentages)
     }
 
     /// Parse a keyframe selector from CSS input.
     pub fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
         input
             .parse_comma_separated(KeyframePercentage::parse)
-            .map(KeyframeSelector)
+            .map(KeyframeSelectors)
     }
 }
 
@@ -176,7 +176,7 @@ impl KeyframeSelector {
 #[derive(Debug, ToShmem)]
 pub struct Keyframe {
     /// The selector this keyframe was specified from.
-    pub selector: KeyframeSelector,
+    pub selector: KeyframeSelectors,
 
     /// The declaration block that was declared inside this keyframe.
     ///
@@ -544,7 +544,7 @@ impl<'a, 'b, 'i> DeclarationParser<'i> for KeyframeListParser<'a, 'b> {
 }
 
 impl<'a, 'b, 'i> QualifiedRuleParser<'i> for KeyframeListParser<'a, 'b> {
-    type Prelude = KeyframeSelector;
+    type Prelude = KeyframeSelectors;
     type QualifiedRule = Arc<Locked<Keyframe>>;
     type Error = StyleParseErrorKind<'i>;
 
@@ -553,7 +553,7 @@ impl<'a, 'b, 'i> QualifiedRuleParser<'i> for KeyframeListParser<'a, 'b> {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::Prelude, ParseError<'i>> {
         let start_position = input.position();
-        KeyframeSelector::parse(input).map_err(|e| {
+        KeyframeSelectors::parse(input).map_err(|e| {
             let location = e.location;
             let error = ContextualParseError::InvalidKeyframeRule(
                 input.slice_from(start_position),

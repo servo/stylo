@@ -316,6 +316,7 @@ impl<LengthPercentage> MaxSize<LengthPercentage> {
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericLengthOrNumber<L, N> {
     /// A number.
     ///
@@ -400,6 +401,7 @@ impl<LengthPercent> LengthPercentageOrNormal<LengthPercent> {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct GenericAnchorSizeFunction<Fallback> {
     /// Anchor name of the element to anchor to.
     /// If omitted (i.e. empty), selects the implicit anchor element.

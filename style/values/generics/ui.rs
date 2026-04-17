@@ -24,6 +24,7 @@ use style_traits::{CssWriter, ToCss};
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct GenericCursor<Image> {
     /// The parsed images for the cursor.
     pub images: crate::OwnedSlice<Image>,

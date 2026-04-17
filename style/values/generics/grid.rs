@@ -38,6 +38,7 @@ pub const MAX_GRID_LINE: i32 = 10000;
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct GenericGridLine<Integer> {
     /// A custom identifier for named lines, or the empty atom otherwise.
     ///
@@ -389,6 +390,7 @@ impl<L: ToCss> ToCss for TrackSize<L> {
     ToTyped,
 )]
 #[repr(transparent)]
+#[typed(todo_derive_fields)]
 pub struct GenericImplicitGridTracks<T>(
     #[css(if_empty = "auto", iterable)] pub crate::OwnedSlice<T>,
 );
@@ -833,6 +835,7 @@ impl<I: ToCss> ToCss for LineNameList<I> {
 )]
 #[value_info(other_values = "subgrid")]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericGridTemplateComponent<L, I> {
     /// `none` value.
     None,

@@ -205,6 +205,7 @@ bitflags! {
 #[derive(Copy, Clone, Debug, MallocSizeOf, ToShmem, ToTyped)]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct AbsoluteColor {
     /// The 3 components that make up colors in any color space.
     pub components: ColorComponents,

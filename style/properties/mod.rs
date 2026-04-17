@@ -191,6 +191,7 @@ pub enum CustomDeclarationValue {
 
 /// A custom property declaration with the property name and the declared value.
 #[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf, ToTyped)]
+#[typed(todo_derive_fields)]
 pub struct CustomDeclaration {
     /// The name of the custom property.
     #[css(skip)]

@@ -373,6 +373,7 @@ pub enum BorderImageRepeatKeyword {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct BorderImageRepeat(pub BorderImageRepeatKeyword, pub BorderImageRepeatKeyword);
 
 impl ToCss for BorderImageRepeat {

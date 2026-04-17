@@ -185,6 +185,7 @@ pub use self::GenericClipRect as ClipRect;
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericClipRectOrAuto<R> {
     Auto,
     Rect(R),

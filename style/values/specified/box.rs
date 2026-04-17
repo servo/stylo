@@ -163,6 +163,7 @@ impl DisplayInside {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct Display(u16);
 
 /// Gecko-only impl block for Display (shared stuff later in this file):
@@ -851,6 +852,7 @@ pub enum ScrollSnapStrictness {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct ScrollSnapType {
     axis: ScrollSnapAxis,
     strictness: ScrollSnapStrictness,
@@ -947,6 +949,7 @@ pub enum ScrollSnapAlignKeyword {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct ScrollSnapAlign {
     block: ScrollSnapAlignKeyword,
     inline: ScrollSnapAlignKeyword,
@@ -1076,6 +1079,7 @@ pub enum OverflowAnchor {
 )]
 #[css(comma)]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 /// Provides a rendering hint to the user agent, stating what kinds of changes
 /// the author expects to perform on the element.
 ///
@@ -2043,6 +2047,7 @@ impl ScrollbarGutter {
     Clone, Copy, Debug, MallocSizeOf, PartialEq, Parse, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 #[allow(missing_docs)]
+#[typed(todo_derive_fields)]
 pub enum Zoom {
     Normal,
     /// An internal value that resets the effective zoom to 1. Used for scrollbar parts, which

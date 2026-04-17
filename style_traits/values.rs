@@ -784,26 +784,22 @@ pub struct TypedValueList {
 ///   automatically reified as [`TypedValue::Keyword`], using the same
 ///   serialization logic as [`ToCss`].
 ///
-/// * Structs and data-carrying variants: When the
-///   `#[typed(derive_fields)]` attribute is present, the derive attempts to
+/// * Structs and data-carrying variants: By default, the derive attempts to
 ///   call `.to_typed()` recursively on supported fields or variant payloads,
-///   producing [`TypedValue`]s when possible.
+///   producing [`TypedValue`]s when possible. This recursion can be disabled
+///   with `#[typed(skip_derive_fields)]`.
 ///
-/// * Other cases: If no automatic mapping is defined or recursion is not
-///   enabled, the derived implementation falls back to the default method
-///   (which returns `Err(())`, and thus `to_typed_value()` returns `None`).
-///
-/// The `derive_fields` attribute is intentionally opt-in for now to avoid
-/// forcing types that do not participate in reification to implement
-/// [`ToTyped`]. Once Typed OM coverage stabilizes, this behavior is expected
-/// to become the default (see the corresponding follow-up bug).
+/// * Other cases: If no automatic mapping is defined, or recursion is
+///   explicitly disabled, the derived implementation falls back to the
+///   default method (which returns `Err(())`, and thus `to_typed_value()`
+///   returns `None`).
 ///
 /// Over time, the derive may be extended to handle additional CSS value
 /// categories such as numeric, color, and transform types.
 ///
 /// Summary of derive attributes recognized by `#[derive(ToTyped)]`:
 ///
-/// * `#[typed(derive_fields)]` on the type enables limited recursion for
+/// * `#[typed(skip_derive_fields)]` on the type disables recursion for
 ///   structs and data-carrying enum variants.
 ///
 /// * `#[css(skip)]`, `#[typed(skip)]`, or `#[typed(todo)]` on a variant cause

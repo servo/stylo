@@ -28,6 +28,7 @@ use style_traits::ParseError;
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 /// <https://drafts.csswg.org/css-ui/#propdef-outline-style>
 pub enum OutlineStyle {
     /// auto

@@ -162,6 +162,7 @@ impl ToCss for Absolute {
 
 /// Specified color value
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem, ToTyped)]
+#[typed(todo_derive_fields)]
 pub enum Color {
     /// The 'currentColor' keyword
     CurrentColor,
@@ -1074,6 +1075,7 @@ bitflags! {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 #[value_info(other_values = "normal")]
 pub struct ColorScheme {
     #[ignore_malloc_size_of = "Arc"]

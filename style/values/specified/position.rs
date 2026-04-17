@@ -52,6 +52,7 @@ pub type VerticalPosition = PositionComponent<VerticalPositionKeyword>;
 
 /// The specified value of a component of a CSS `<position>`.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
+#[typed(todo_derive_fields)]
 pub enum PositionComponent<S> {
     /// `center`
     Center,
@@ -364,6 +365,7 @@ impl<S: Side> PositionComponent<S> {
 )]
 #[css(comma)]
 #[repr(transparent)]
+#[typed(todo_derive_fields)]
 pub struct AnchorNameIdent(
     #[css(iterable, if_empty = "none")]
     #[ignore_malloc_size_of = "Arc"]
@@ -430,6 +432,7 @@ impl AnchorName {
 )]
 #[repr(transparent)]
 #[css(comma)]
+#[typed(todo_derive_fields)]
 pub struct ScopedNameList(
     /// `none | all | <dashed-ident>#`
     #[css(iterable, if_empty = "none")]
@@ -520,6 +523,7 @@ impl ScopedName {
     ToTyped,
 )]
 #[repr(u8)]
+#[typed(todo_derive_fields)]
 pub enum PositionAnchorKeyword {
     /// `normal`
     Normal,
@@ -735,6 +739,7 @@ pub enum PositionTryFallbacksItem {
 )]
 #[css(comma)]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 /// https://drafts.csswg.org/css-anchor-position-1/#position-try-fallbacks
 pub struct PositionTryFallbacks(
     #[css(iterable, if_empty = "none")]
@@ -1293,6 +1298,7 @@ impl PositionAreaKeyword {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 /// https://drafts.csswg.org/css-anchor-position-1/#propdef-position-area
 pub struct PositionArea {
     /// First keyword, if any.
@@ -1678,6 +1684,7 @@ pub enum MasonryItemOrder {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 /// Controls how the Masonry layout algorithm works
 /// specifying exactly how auto-placed items get flowed in the masonry axis.
 pub struct MasonryAutoFlow {
@@ -2044,6 +2051,7 @@ fn is_name_code_point(c: char) -> bool {
     ToShmem,
     ToTyped,
 )]
+#[typed(todo_derive_fields)]
 pub enum GridTemplateAreas {
     /// The `none` value.
     None,

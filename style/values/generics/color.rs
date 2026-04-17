@@ -17,6 +17,7 @@ use style_traits::{owned_slice::OwnedSlice, CssWriter, ToCss};
 /// the current foreground color (currentcolor keyword).
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToAnimatedValue, ToShmem, ToTyped)]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub enum GenericColor<Percentage> {
     /// The actual numeric color.
     Absolute(AbsoluteColor),

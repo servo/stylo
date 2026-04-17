@@ -21,6 +21,7 @@ use style_traits::{CssWriter, ToCss};
 /// https://drafts.csswg.org/css-images/#image-values
 #[derive(Clone, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToResolvedValue, ToShmem, ToTyped)]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericImage<G, ImageUrl, Color, Percentage, Resolution> {
     /// `none` variant.
     None,

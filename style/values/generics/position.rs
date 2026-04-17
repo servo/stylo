@@ -343,6 +343,7 @@ pub enum PreferredRatio<N> {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct GenericAspectRatio<N> {
     /// Specifiy auto or not.
     #[animation(constant)]
@@ -470,6 +471,7 @@ pub use self::GenericInset as Inset;
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct GenericAnchorFunction<Percentage, Fallback> {
     /// Anchor name of the element to anchor to.
     /// If omitted, selects the implicit anchor element.

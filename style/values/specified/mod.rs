@@ -633,6 +633,7 @@ impl ToComputedValue for Opacity {
 ///
 /// <https://drafts.csswg.org/css-values/#integers>
 #[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToShmem, ToTyped)]
+#[typed(todo_derive_fields)]
 pub enum Integer {
     /// A literal integer value.
     Literal(CSSInteger),

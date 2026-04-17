@@ -25,6 +25,7 @@ use style_traits::{ParseError, StyleParseErrorKind};
     ToTyped,
 )]
 #[repr(transparent)]
+#[typed(todo_derive_fields)]
 pub struct ListStyleType(pub CounterStyle);
 
 impl ListStyleType {
@@ -139,6 +140,7 @@ pub struct QuoteList(
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub enum Quotes {
     /// list of quote pairs
     QuoteList(QuoteList),

@@ -63,6 +63,7 @@ pub use self::GenericBorderImageSideWidth as BorderImageSideWidth;
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct GenericBorderImageSlice<NumberOrPercentage> {
     /// The offsets.
     #[css(field_bound)]
@@ -96,6 +97,7 @@ pub use self::GenericBorderImageSlice as BorderImageSlice;
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct GenericBorderCornerRadius<L>(
     #[css(field_bound)]
     #[shmem(field_bound)]
@@ -140,6 +142,7 @@ impl<L: Zero> Zero for BorderCornerRadius<L> {
     ToTyped,
 )]
 #[repr(transparent)]
+#[typed(todo_derive_fields)]
 pub struct GenericBorderSpacing<L>(
     #[css(field_bound)]
     #[shmem(field_bound)]

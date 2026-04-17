@@ -371,6 +371,7 @@ impl SpecifiedFontStyle {
     Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 #[allow(missing_docs)]
+#[typed(todo_derive_fields)]
 pub enum FontStyle {
     Specified(SpecifiedFontStyle),
     #[css(skip)]
@@ -657,6 +658,7 @@ pub enum FontSize {
 /// Specifies a prioritized list of font family names or generic family names.
 #[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem, ToTyped)]
 #[cfg_attr(feature = "servo", derive(Hash))]
+#[typed(todo_derive_fields)]
 pub enum FontFamily {
     /// List of `font-family`
     #[css(comma)]
@@ -1154,6 +1156,7 @@ pub enum VariantAlternates {
     ToTyped,
 )]
 #[repr(transparent)]
+#[typed(todo_derive_fields)]
 /// List of Variant Alternates
 pub struct FontVariantAlternates(
     #[css(if_empty = "normal", iterable)] crate::OwnedSlice<VariantAlternates>,
@@ -1599,6 +1602,7 @@ pub enum FontSynthesisStyle {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 /// Allows authors to choose a palette from those supported by a color font
 /// (and potentially @font-palette-values overrides).
 pub struct FontPalette(Atom);

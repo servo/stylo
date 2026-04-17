@@ -118,6 +118,7 @@ impl<T> TaggedFontValue for VariationValue<T> {
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[css(comma)]
+#[typed(todo_derive_fields)]
 pub struct FontSettings<T>(#[css(if_empty = "normal", iterable)] pub Box<[T]>);
 
 impl<T> FontSettings<T> {
@@ -326,6 +327,7 @@ impl<Factor: ToTyped> ToTyped for GenericFontSizeAdjust<Factor> {
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericLineHeight<N, L> {
     /// `normal`
     Normal,

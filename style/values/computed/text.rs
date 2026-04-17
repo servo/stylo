@@ -128,6 +128,7 @@ impl WordSpacing {
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToTyped)]
 #[allow(missing_docs)]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum TextEmphasisStyle {
     /// [ <fill> || <shape> ]
     Keyword {

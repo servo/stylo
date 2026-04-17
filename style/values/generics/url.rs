@@ -25,6 +25,7 @@ use crate::derives::*;
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericUrlOrNone<U> {
     /// `none`
     None,

@@ -187,6 +187,7 @@ pub use self::GenericOffsetPathFunction as OffsetPathFunction;
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericOffsetPath<Function> {
     /// <offset-path> || <coord-box>.
     OffsetPath {

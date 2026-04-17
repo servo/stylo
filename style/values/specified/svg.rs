@@ -140,6 +140,7 @@ pub const PAINT_ORDER_MASK: u8 = 0b11;
     ToTyped,
 )]
 #[repr(transparent)]
+#[typed(todo_derive_fields)]
 pub struct SVGPaintOrder(pub u8);
 
 impl SVGPaintOrder {
@@ -374,6 +375,7 @@ impl Parse for MozContextProperties {
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum DProperty {
     /// Path value for path(<string>) or just a <string>.
     #[css(function)]

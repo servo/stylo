@@ -31,6 +31,7 @@ use style_traits::{CssWriter, ParseError, ToCss};
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct Rect<T>(pub T, pub T, pub T, pub T);
 
 impl<T> Rect<T> {

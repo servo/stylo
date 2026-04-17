@@ -24,6 +24,7 @@ pub use specified::PageName;
 /// the computed value of page-size.
 #[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem, ToTyped)]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum PageSize {
     /// Specified size, paper size, or paper size and orientation.
     Size(Size2D<NonNegativeLength>),

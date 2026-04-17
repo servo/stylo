@@ -134,6 +134,7 @@ pub use self::GenericViewFunction as ViewFunction;
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericAnimationTimeline<LengthPercent> {
     /// Use default timeline. The animation’s timeline is a DocumentTimeline.
     Auto,
@@ -293,6 +294,7 @@ impl<LengthPercent> AnimationRangeValue<LengthPercent> {
     ToTyped,
 )]
 #[repr(transparent)]
+#[typed(todo_derive_fields)]
 pub struct GenericAnimationRangeStart<LengthPercent>(pub GenericAnimationRangeValue<LengthPercent>);
 
 pub use self::GenericAnimationRangeStart as AnimationRangeStart;
@@ -345,6 +347,7 @@ impl<LengthPercent: ToCss + EqualsPercentage> ToCss for AnimationRangeStart<Leng
     ToTyped,
 )]
 #[repr(transparent)]
+#[typed(todo_derive_fields)]
 pub struct GenericAnimationRangeEnd<LengthPercent>(pub GenericAnimationRangeValue<LengthPercent>);
 
 pub use self::GenericAnimationRangeEnd as AnimationRangeEnd;

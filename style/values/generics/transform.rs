@@ -120,6 +120,7 @@ impl<T: Into<f64>> From<Matrix3D<T>> for Transform3D<f64> {
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 pub struct GenericTransformOrigin<H, V, Depth> {
     /// The horizontal origin.
     pub horizontal: H,
@@ -327,6 +328,7 @@ pub use self::GenericTransformOperation as TransformOperation;
     ToTyped,
 )]
 #[repr(C)]
+#[typed(todo_derive_fields)]
 /// A value of the `transform` property
 pub struct GenericTransform<T>(#[css(if_empty = "none", iterable)] pub crate::OwnedSlice<T>);
 
@@ -687,6 +689,7 @@ pub fn get_normalized_vector_and_angle<T: Zero>(
     ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 /// A value of the `Rotate` property
 ///
 /// <https://drafts.csswg.org/css-transforms-2/#individual-transforms>

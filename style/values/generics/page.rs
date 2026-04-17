@@ -135,6 +135,7 @@ fn is_portrait(orientation: &PageSizeOrientation) -> bool {
     Clone, Copy, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 #[repr(C, u8)]
+#[typed(todo_derive_fields)]
 pub enum GenericPageSize<S> {
     /// `auto` value.
     Auto,

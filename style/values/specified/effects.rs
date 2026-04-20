@@ -242,15 +242,11 @@ impl Filter {
             ))),
             Filter::DropShadow(ref shadow) => {
                 if cfg!(feature = "gecko") {
-                    let color = match shadow
+                    let color = shadow
                         .color
                         .as_ref()
                         .unwrap_or(&Color::currentcolor())
-                        .to_computed_color(None)
-                    {
-                        Some(c) => c,
-                        None => return Err(()),
-                    };
+                        .to_computed_color(None)?;
 
                     let horizontal = ComputedCSSPixelLength::new(
                         shadow

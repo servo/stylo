@@ -52,7 +52,7 @@ impl Parse for FontPaletteOverrideColor {
         //   https://drafts.csswg.org/css-color-5/#absolute-color
         // so check that the specified color can be resolved without a context
         // or currentColor value.
-        if color.resolve_to_absolute().is_some() {
+        if color.resolve_to_absolute().is_ok() {
             // We store the specified color (not the resolved absolute color)
             // because that is what the rule exposes to authors.
             return Ok(FontPaletteOverrideColor { index, color });

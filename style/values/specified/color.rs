@@ -619,7 +619,7 @@ impl Color {
         context: &ParserContext,
         input: &mut Parser,
         device: Option<&Device>,
-    ) -> Option<ComputedColor> {
+    ) -> Result<ComputedColor, ()> {
         use crate::error_reporting::ContextualParseError;
         let start = input.position();
         let result = input
@@ -628,22 +628,22 @@ impl Color {
         let specified = match result {
             Ok(s) => s,
             Err(e) => {
-                if !context.error_reporting_enabled() {
-                    return None;
+                if context.error_reporting_enabled() {
+                    // Ignore other kinds of errors that might be reported, such as
+                    // ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken),
+                    // since Gecko didn't use to report those to the error console.
+                    //
+                    // TODO(emilio): Revise whether we want to keep this at all, we
+                    // use this only for canvas, this warnings are disabled by
+                    // default and not available on OffscreenCanvas anyways...
+                    if let ParseErrorKind::Custom(StyleParseErrorKind::ValueError(..)) = e.kind {
+                        let location = e.location.clone();
+                        let error =
+                            ContextualParseError::UnsupportedValue(input.slice_from(start), e);
+                        context.log_css_error(location, error);
+                    }
                 }
-                // Ignore other kinds of errors that might be reported, such as
-                // ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken),
-                // since Gecko didn't use to report those to the error console.
-                //
-                // TODO(emilio): Revise whether we want to keep this at all, we
-                // use this only for canvas, this warnings are disabled by
-                // default and not available on OffscreenCanvas anyways...
-                if let ParseErrorKind::Custom(StyleParseErrorKind::ValueError(..)) = e.kind {
-                    let location = e.location.clone();
-                    let error = ContextualParseError::UnsupportedValue(input.slice_from(start), e);
-                    context.log_css_error(location, error);
-                }
-                return None;
+                return Err(());
             },
         };
 
@@ -733,12 +733,12 @@ impl Color {
     /// forms that are invalid in an absolute color.
     ///   https://drafts.csswg.org/css-color-5/#absolute-color
     /// Returns None if the specified color is not valid as an absolute color.
-    pub fn resolve_to_absolute(&self) -> Option<AbsoluteColor> {
+    pub fn resolve_to_absolute(&self) -> Result<AbsoluteColor, ()> {
         use crate::values::specified::percentage::ToPercentage;
 
         match self {
-            Self::Absolute(c) => Some(c.color),
-            Self::ColorFunction(ref color_function) => color_function.resolve_to_absolute().ok(),
+            Self::Absolute(c) => Ok(c.color),
+            Self::ColorFunction(ref color_function) => color_function.resolve_to_absolute(),
             Self::ColorMix(ref mix) => {
                 use crate::color::mix;
 
@@ -750,9 +750,9 @@ impl Color {
                     ))
                 }
 
-                Some(mix::mix_many(mix.interpolation, items, mix.flags))
+                Ok(mix::mix_many(mix.interpolation, items, mix.flags))
             },
-            _ => None,
+            _ => Err(()),
         }
     }
 
@@ -855,7 +855,7 @@ impl Color {
     ///
     /// If `context` is `None`, and the specified color requires data from
     /// the context to resolve, then `None` is returned.
-    pub fn to_computed_color(&self, context: Option<&Context>) -> Option<ComputedColor> {
+    pub fn to_computed_color(&self, context: Option<&Context>) -> Result<ComputedColor, ()> {
         macro_rules! adjust_absolute_color {
             ($color:expr) => {{
                 // Computed lightness values can not be NaN.
@@ -875,7 +875,7 @@ impl Color {
             }};
         }
 
-        Some(match *self {
+        Ok(match *self {
             Color::CurrentColor => ComputedColor::CurrentColor,
             Color::Absolute(ref absolute) => {
                 let mut color = absolute.color;
@@ -891,11 +891,11 @@ impl Color {
                     ComputedColor::Absolute(absolute)
                 } else {
                     let color_function = color_function
-                        .map_origin_color(|origin_color| origin_color.to_computed_color(context));
+                        .map_origin_color(|origin_color| origin_color.to_computed_color(context))?;
                     ComputedColor::ColorFunction(Box::new(color_function))
                 }
             },
-            Color::LightDark(ref ld) => ld.compute(context?),
+            Color::LightDark(ref ld) => ld.compute(context.ok_or(())?),
             Color::ColorMix(ref mix) => {
                 use crate::values::computed::percentage::Percentage;
 
@@ -916,9 +916,9 @@ impl Color {
             Color::ContrastColor(ref c) => {
                 ComputedColor::ContrastColor(Box::new(c.to_computed_color(context)?))
             },
-            Color::System(system) => system.compute(context?),
+            Color::System(system) => system.compute(context.ok_or(())?),
             Color::InheritFromBodyQuirk => {
-                ComputedColor::Absolute(context?.device().body_text_color())
+                ComputedColor::Absolute(context.ok_or(())?.device().body_text_color())
             },
         })
     }
@@ -928,7 +928,7 @@ impl ToComputedValue for Color {
     type ComputedValue = ComputedColor;
 
     fn to_computed_value(&self, context: &Context) -> ComputedColor {
-        self.to_computed_color(Some(context)).unwrap_or_else(|| {
+        self.to_computed_color(Some(context)).unwrap_or_else(|_| {
             debug_assert!(
                 false,
                 "Specified color could not be resolved to a computed color!"
@@ -941,8 +941,9 @@ impl ToComputedValue for Color {
         match *computed {
             ComputedColor::Absolute(ref color) => Self::from_absolute_color(color.clone()),
             ComputedColor::ColorFunction(ref color_function) => {
-                let color_function =
-                    color_function.map_origin_color(|o| Some(Self::from_computed_value(o)));
+                let color_function = color_function
+                    .map_origin_color(|o| Ok(Self::from_computed_value(o)))
+                    .unwrap();
                 Self::ColorFunction(Box::new(color_function))
             },
             ComputedColor::CurrentColor => Color::CurrentColor,

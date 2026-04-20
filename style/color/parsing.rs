@@ -146,7 +146,9 @@ fn parse_color_function<'i, 't>(
         // Validate the channels and calc expressions by trying to resolve them against
         // transparent.
         // FIXME(emilio, bug 1925572): This could avoid cloning, or be done earlier.
-        let abs = color.map_origin_color(|_| Some(AbsoluteColor::TRANSPARENT_BLACK));
+        let abs = color
+            .map_origin_color(|_| Ok(AbsoluteColor::TRANSPARENT_BLACK))
+            .unwrap();
         if abs.resolve_to_absolute().is_err() {
             return Err(arguments.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }

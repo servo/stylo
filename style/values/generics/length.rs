@@ -313,7 +313,6 @@ impl<LengthPercentage> MaxSize<LengthPercentage> {
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(todo_derive_fields)]
 pub enum GenericLengthOrNumber<L, N> {
     /// A number.
     ///

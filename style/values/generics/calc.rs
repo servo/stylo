@@ -182,11 +182,67 @@ pub enum SortKey {
     Other,
 }
 
+/// Fallback type for anchor functions within `calc()`.
+/// Ideally, the fallback type is initial type of the property (e.g.
+/// `GenericInset` for `left`), but that causes circular reference.
+/// TODO(dshin, bug 2034100): Investigate ways to not require this.
+/// This handles the parsing of unitless zeros, as well as ensuring
+/// that e.g. `calc(anchor(--foo left, 1px) + 10%)` round trips
+/// (sorting aside), instead of becoming
+/// `calc(anchor(--foo left, calc(1px)) + 10%)`.
+#[repr(C)]
+#[derive(
+    Clone,
+    Debug,
+    Deserialize,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToAnimatedZero,
+    ToResolvedValue,
+    ToShmem,
+)]
+pub struct GenericAnchorFunctionFallback<L> {
+    /// Was this node parsed as a calc node?
+    #[animation(constant)]
+    is_calc_node: bool,
+    /// The parsed fallback value. Stored as a calc node to break
+    /// the circular reference.
+    pub node: GenericCalcNode<L>,
+}
+
+impl<L> GenericAnchorFunctionFallback<L> {
+    /// Create a new anchor function fallback value.
+    pub fn new(is_calc_node: bool, node: GenericCalcNode<L>) -> Self {
+        Self {
+            is_calc_node,
+            node,
+        }
+    }
+}
+
+impl<L: CalcNodeLeaf> ToCss for GenericAnchorFunctionFallback<L> {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        self.node.to_css_impl(
+            dest,
+            if self.is_calc_node {
+                ArgumentLevel::CalculationRoot
+            } else {
+                ArgumentLevel::ArgumentRoot
+            },
+        )
+    }
+}
+
 /// `anchor()` function used in math functions.
 pub type GenericCalcAnchorFunction<L> =
-    GenericAnchorFunction<Box<GenericCalcNode<L>>, Box<GenericCalcNode<L>>>;
+    GenericAnchorFunction<Box<GenericCalcNode<L>>, Box<GenericAnchorFunctionFallback<L>>>;
 /// `anchor-size()` function used in math functions.
-pub type GenericCalcAnchorSizeFunction<L> = GenericAnchorSizeFunction<Box<GenericCalcNode<L>>>;
+pub type GenericCalcAnchorSizeFunction<L> =
+    GenericAnchorSizeFunction<Box<GenericAnchorFunctionFallback<L>>>;
 
 /// A generic node in a calc expression.
 ///
@@ -898,7 +954,12 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 fallback: f
                     .fallback
                     .as_ref()
-                    .map(|fb| Box::new(fb.map_leaves_internal(map)))
+                    .map(|fb| {
+                        Box::new(GenericAnchorFunctionFallback::new(
+                            fb.is_calc_node,
+                            fb.node.map_leaves_internal(map),
+                        ))
+                    })
                     .into(),
             })),
             Self::AnchorSize(ref f) => CalcNode::AnchorSize(Box::new(GenericAnchorSizeFunction {
@@ -907,7 +968,12 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 fallback: f
                     .fallback
                     .as_ref()
-                    .map(|fb| Box::new(fb.map_leaves_internal(map)))
+                    .map(|fb| {
+                        Box::new(GenericAnchorFunctionFallback::new(
+                            fb.is_calc_node,
+                            fb.node.map_leaves_internal(map),
+                        ))
+                    })
                     .into(),
             })),
         }
@@ -1740,12 +1806,12 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     n.simplify_and_sort();
                 }
                 if let Some(fallback) = f.fallback.as_mut() {
-                    fallback.simplify_and_sort();
+                    fallback.node.simplify_and_sort();
                 }
             },
             Self::AnchorSize(ref mut f) => {
                 if let Some(fallback) = f.fallback.as_mut() {
-                    fallback.simplify_and_sort();
+                    fallback.node.simplify_and_sort();
                 }
             },
         }
@@ -1831,13 +1897,14 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     true
                 },
             },
-            Self::Leaf(_) | Self::Anchor(_) | Self::AnchorSize(_) => match level {
+            Self::Leaf(_) => match level {
                 ArgumentLevel::CalculationRoot => {
                     dest.write_str("calc(")?;
                     true
                 },
                 ArgumentLevel::ArgumentRoot | ArgumentLevel::Nested => false,
             },
+            Self::Anchor(_) | Self::AnchorSize(_) => false,
         };
 
         match *self {

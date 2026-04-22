@@ -10,8 +10,8 @@ use crate::color::parsing::ChannelKeyword;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::generics::calc::{
-    self as generic, CalcNodeLeaf, CalcUnits, MinMaxOp, ModRemOp, PositivePercentageBasis,
-    RoundingStrategy, SortKey,
+    self as generic, CalcNodeLeaf, CalcUnits, GenericAnchorFunctionFallback, MinMaxOp, ModRemOp,
+    PositivePercentageBasis, RoundingStrategy, SortKey,
 };
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{
@@ -529,7 +529,46 @@ impl GenericAnchorSide<Box<CalcNode>> {
     }
 }
 
-impl GenericAnchorFunction<Box<CalcNode>, Box<CalcNode>> {
+fn parse_anchor_function_fallback<'i, 't>(
+    context: &ParserContext,
+    additional_functions: AdditionalFunctions,
+    input: &mut Parser<'i, 't>,
+) -> Result<Box<GenericAnchorFunctionFallback<Leaf>>, ParseError<'i>> {
+    if let Ok(l) = input.try_parse(|i| -> Result<CalcNode, ParseError<'i>> {
+        Ok(CalcNode::Leaf(match i.next()? {
+            &Token::Number { value, .. } => {
+                if value != 0.0 {
+                    return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                }
+                Leaf::Length(NoCalcLength::Absolute(AbsoluteLength::Px(0.0)))
+            },
+            &Token::Dimension {
+                value, ref unit, ..
+            } => Leaf::Length(
+                NoCalcLength::parse_dimension_with_context(context, value, unit)
+                    .map_err(|_| i.new_custom_error(StyleParseErrorKind::UnspecifiedError))?,
+            ),
+            &Token::Percentage { unit_value, .. } => Leaf::Percentage(unit_value),
+            _ => return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+        }))
+    }) {
+        return Ok(Box::new(GenericAnchorFunctionFallback::new(false, l)));
+    }
+    let node = CalcNode::parse_argument(
+        context,
+        input,
+        AllowParse {
+            units: CalcUnits::LENGTH_PERCENTAGE,
+            additional_functions,
+        },
+    )?
+    .into_length_or_percentage(AllowedNumericType::All)
+    .map_err(|_| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
+    .node;
+    Ok(Box::new(GenericAnchorFunctionFallback::new(true, node)))
+}
+
+impl GenericAnchorFunction<Box<CalcNode>, Box<GenericAnchorFunctionFallback<Leaf>>> {
     fn parse_in_calc<'i, 't>(
         context: &ParserContext,
         additional_functions: AdditionalFunctions,
@@ -549,19 +588,7 @@ impl GenericAnchorFunction<Box<CalcNode>, Box<CalcNode>> {
             let fallback = i
                 .try_parse(|i| {
                     i.expect_comma()?;
-                    Ok::<Box<CalcNode>, ParseError<'i>>(Box::new(
-                        CalcNode::parse_argument(
-                            context,
-                            i,
-                            AllowParse {
-                                units: CalcUnits::LENGTH_PERCENTAGE,
-                                additional_functions,
-                            },
-                        )?
-                        .into_length_or_percentage(AllowedNumericType::All)
-                        .map_err(|_| i.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
-                        .node,
-                    ))
+                    parse_anchor_function_fallback(context, additional_functions, i)
                 })
                 .ok();
             Ok(Self {
@@ -575,7 +602,7 @@ impl GenericAnchorFunction<Box<CalcNode>, Box<CalcNode>> {
     }
 }
 
-impl GenericAnchorSizeFunction<Box<CalcNode>> {
+impl GenericAnchorSizeFunction<Box<GenericAnchorFunctionFallback<Leaf>>> {
     fn parse_in_calc<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -584,16 +611,7 @@ impl GenericAnchorSizeFunction<Box<CalcNode>> {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
         GenericAnchorSizeFunction::parse_inner(context, input, |i| {
-            Ok(Box::new(
-                CalcNode::parse_argument(
-                    context,
-                    i,
-                    AllowParse::new(CalcUnits::LENGTH_PERCENTAGE),
-                )?
-                .into_length_or_percentage(AllowedNumericType::All)
-                .map_err(|_| i.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
-                .node,
-            ))
+            parse_anchor_function_fallback(context, AdditionalFunctions::ANCHOR_SIZE, i)
         })
     }
 }

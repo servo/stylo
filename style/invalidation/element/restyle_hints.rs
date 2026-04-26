@@ -58,6 +58,10 @@ bitflags! {
 
         /// Match self or descendants if dependent on a named style query.
         const RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER = 1 << 12;
+
+        /// Do a selector match of the element if it depends on an ancestor's
+        /// font metrics.
+        const RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT_METRICS = 1 << 13;
     }
 }
 
@@ -126,6 +130,9 @@ impl RestyleHint {
         }
         if self.contains(RestyleHint::RECASCADE_DESCENDANTS) {
             result |= Self::recascade_subtree();
+        }
+        if self.contains(RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT_METRICS) {
+            result |= Self::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT_METRICS;
         }
         if self.contains(RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER) {
             // We may need to restyle further down the tree if rules are

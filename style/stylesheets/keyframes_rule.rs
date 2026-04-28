@@ -216,6 +216,7 @@ impl Keyframe {
             Cow::Borrowed(&*namespaces),
             None,
             None,
+            /* attr_taint */ Default::default(),
         );
         let mut input = ParserInput::new(css);
         let mut input = Parser::new(&mut input);

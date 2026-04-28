@@ -353,7 +353,7 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
                 }
 
                 let url_string = input.expect_url_or_string()?.as_ref().to_owned();
-                let url = CssUrl::parse_from_string(url_string, &self.context, CorsMode::None);
+                let url = CssUrl::new_from_untainted_string(url_string, &self.context, CorsMode::None);
 
                 let (layer, supports) = ImportRule::parse_layer_and_supports(input, &mut self.context);
 

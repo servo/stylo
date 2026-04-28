@@ -736,6 +736,7 @@ impl CssRule {
             Cow::Borrowed(&*namespaces),
             None,
             None,
+            /* attr_taint */ Default::default(),
         );
         // Override the nesting context with existing data.
         context.nesting_context = NestingContext::new(

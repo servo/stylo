@@ -172,6 +172,7 @@ impl PropertyRegistration {
             &self.url_data,
             computed_context,
             AllowComputationallyDependent::No,
+            /* attr_taint */ Default::default(),
         ) {
             Ok(computed) => Ok(computed),
             Err(_) => Err(()),
@@ -221,6 +222,7 @@ impl PropertyRegistration {
             &initial.url_data,
             None,
             AllowComputationallyDependent::No,
+            /* attr_taint */ Default::default(),
         ) {
             Ok(_) => {},
             Err(_) => return Err(PropertyRegistrationError::InvalidInitialValue),

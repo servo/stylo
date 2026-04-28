@@ -1103,6 +1103,7 @@ impl QueryStyleRange {
             /* namespaces = */ Default::default(),
             /* error_reporter = */ None,
             /* use_counters = */ None,
+            /* attr_taint */ Default::default(),
         );
         let mut input = ParserInput::new(css_text);
         QueryExpressionValue::parse_for_style_range(&parser_context, &mut Parser::new(&mut input))

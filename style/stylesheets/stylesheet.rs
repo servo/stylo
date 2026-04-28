@@ -444,6 +444,7 @@ impl Stylesheet {
             /* namespaces = */ Default::default(),
             error_reporter,
             use_counters,
+            /* attr_taint */ Default::default(),
         );
 
         let mut rule_parser = TopLevelRuleParser {

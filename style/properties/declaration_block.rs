@@ -1390,6 +1390,7 @@ pub fn parse_style_attribute(
         /* namespaces = */ Default::default(),
         error_reporter,
         None,
+        /* attr_taint */ Default::default(),
     );
 
     let mut input = ParserInput::new(input);
@@ -1421,6 +1422,7 @@ pub fn parse_one_declaration_into(
         /* namespaces = */ Default::default(),
         error_reporter,
         None,
+        /* attr_taint */ Default::default(),
     );
 
     let property_id_for_error_reporting = if context.error_reporting_enabled() {

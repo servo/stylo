@@ -10,7 +10,7 @@ use super::{
         data_type::DataType, Component as SyntaxComponent, ComponentName, Descriptor, Multiplier,
     },
 };
-use crate::custom_properties::ComputedValue as ComputedPropertyValue;
+use crate::custom_properties::{AttrTaint, ComputedValue as ComputedPropertyValue};
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties;
@@ -213,7 +213,7 @@ pub struct Value<Component> {
     url_data: UrlExtraData,
     /// Flag indicating whether this value is tainted by an attr().
     #[css(skip)]
-    pub attribute_tainted: bool,
+    pub attr_tainted: bool,
 }
 
 impl<Component: PartialEq> PartialEq for Value<Component> {
@@ -229,7 +229,7 @@ impl<Component: Animate> Animate for Value<Component> {
         Ok(Value {
             v,
             url_data: self.url_data.clone(),
-            attribute_tainted: self.attribute_tainted,
+            attr_tainted: self.attr_tainted,
         })
     }
 }
@@ -240,19 +240,19 @@ impl<Component> Value<Component> {
         Self {
             v,
             url_data,
-            attribute_tainted: Default::default(),
+            attr_tainted: Default::default(),
         }
     }
 
     /// Creates a new registered custom property value presumed to have universal syntax.
     pub fn universal(var: Arc<ComputedPropertyValue>) -> Self {
-        let attribute_tainted = var.is_tainted_by_attr();
+        let attr_tainted = var.is_attr_tainted();
         let url_data = var.url_data.clone();
         let v = ValueInner::Universal(var);
         Self {
             v,
             url_data,
-            attribute_tainted,
+            attr_tainted,
         }
     }
 }
@@ -284,7 +284,6 @@ where
             &self.url_data,
             serialization_types.0,
             serialization_types.1,
-            self.attribute_tainted,
         )
     }
 }
@@ -320,6 +319,7 @@ impl SpecifiedValue {
         url_data: &UrlExtraData,
         context: &computed::Context,
         allow_computationally_dependent: AllowComputationallyDependent,
+        attr_taint: AttrTaint,
     ) -> Result<ComputedValue, ()> {
         debug_assert!(!registration.is_universal(), "Shouldn't be needed");
         let Some(ref syntax) = registration.syntax else {
@@ -331,6 +331,7 @@ impl SpecifiedValue {
             url_data,
             namespaces,
             allow_computationally_dependent,
+            attr_taint,
         ) else {
             return Err(());
         };
@@ -346,6 +347,7 @@ impl SpecifiedValue {
         url_data: &UrlExtraData,
         namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         allow_computationally_dependent: AllowComputationallyDependent,
+        attr_taint: AttrTaint,
     ) -> Result<Self, StyleParseError<'i>> {
         if syntax.is_universal() {
             let parsed = ComputedPropertyValue::parse(&mut input, namespaces, url_data)?;
@@ -359,7 +361,12 @@ impl SpecifiedValue {
         let mut multiplier = None;
         {
             let mut parser = Parser::new(syntax, &mut values, &mut multiplier);
-            parser.parse(&mut input, url_data, allow_computationally_dependent)?;
+            parser.parse(
+                &mut input,
+                url_data,
+                allow_computationally_dependent,
+                attr_taint,
+            )?;
         }
         let v = if let Some(multiplier) = multiplier {
             ValueInner::List(ComponentList {
@@ -430,6 +437,7 @@ impl<'a> Parser<'a> {
         input: &mut CSSParser<'i, 't>,
         url_data: &UrlExtraData,
         allow_computationally_dependent: AllowComputationallyDependent,
+        attr_taint: AttrTaint,
     ) -> Result<(), StyleParseError<'i>> {
         use self::AllowComputationallyDependent::*;
         let parsing_mode = match allow_computationally_dependent {
@@ -445,6 +453,7 @@ impl<'a> Parser<'a> {
             /* namespaces = */ Default::default(),
             None,
             None,
+            attr_taint,
         );
         for component in self.syntax.components.iter() {
             let result = input.try_parse(|input| {
@@ -673,6 +682,7 @@ impl CustomAnimatedValue {
                         &value.url_data,
                         context,
                         AllowComputationallyDependent::Yes,
+                        /* attr_taint */ Default::default(),
                     )
                     .unwrap_or_else(|_| {
                         ComputedValue::new(

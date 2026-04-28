@@ -1500,10 +1500,7 @@ impl UnparsedValue {
             }
         }
 
-        let SubstitutionResult {
-            css,
-            attribute_tainted,
-        } = match custom_properties::substitute(
+        let SubstitutionResult { css, attr_taint } = match custom_properties::substitute(
             &self.variable_value,
             substitution_functions,
             stylist,
@@ -1524,19 +1521,16 @@ impl UnparsedValue {
         // whether you want to do this!
         //
         // FIXME(emilio): ParsingMode is slightly fishy...
-        let mut parsing_mode = ParsingMode::DEFAULT;
-        if attribute_tainted {
-            parsing_mode.insert(ParsingMode::DISALLOW_URLS);
-        }
         let context = ParserContext::new(
             Origin::Author,
             &self.variable_value.url_data,
             None,
-            parsing_mode,
+            ParsingMode::DEFAULT,
             computed_context.quirks_mode,
             /* namespaces = */ Default::default(),
             None,
             None,
+            attr_taint,
         );
 
         let mut input = ParserInput::new(&css);

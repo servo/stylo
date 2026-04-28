@@ -266,7 +266,14 @@ pub fn compute_variable_value(
     if registration.is_universal() {
         return Some(ComputedRegisteredValue::universal(Arc::clone(value)));
     }
-    compute_value(&value.css, &value.url_data, registration, computed_context).ok()
+    compute_value(
+        &value.css,
+        &value.url_data,
+        registration,
+        computed_context,
+        AttrTaint::default(),
+    )
+    .ok()
 }
 
 // For all purposes, we want values to be considered equal if their css text is equal.
@@ -657,6 +664,60 @@ struct AttributeData {
     namespace: ParsedNamespace,
 }
 
+/// For a CSS string, the range, counted in bytes, that is attr()-tainted.
+#[derive(Clone, Debug, Default, MallocSizeOf, PartialEq, ToShmem, ToComputedValue)]
+pub struct AttrTaintedRange {
+    /// Start of the range, counted in bytes. Inclusive.
+    start: usize,
+    /// End of the range, counted in bytes. Exclusive.
+    end: usize,
+}
+
+impl AttrTaintedRange {
+    /// Creates a range within a CSS string that is tainted by attr().
+    #[inline(always)]
+    pub fn new(start: usize, end: usize) -> Self {
+        debug_assert!(start <= end);
+        Self { start, end }
+    }
+}
+
+/// In CSS Values and Units, values produced by `attr()` are considered attr()-tainted, as are
+/// functions that contain an attr()-tainted value. Using an attr()-tainted value as or in a <url>
+/// makes a declaration invalid at computed-value time.
+/// https://drafts.csswg.org/css-values-5/#attr-security
+#[derive(Clone, Debug, Default, MallocSizeOf, PartialEq, ToShmem)]
+pub struct AttrTaint(SmallVec<[AttrTaintedRange; 1]>);
+
+impl AttrTaint {
+    /// For a CSS string, determine whether any `<url>` overlapping this `range`
+    /// is disallowed due to attr()-tainting.
+    #[inline(always)]
+    pub fn should_disallow_urls_in_range(&self, range: &AttrTaintedRange) -> bool {
+        self.0
+            .iter()
+            .any(|r| r.start <= range.end && r.end >= range.start)
+    }
+
+    /// Returns true if the attr()-tainted range contains no elements.
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    #[inline(always)]
+    fn new_fully_tainted(end: usize) -> Self {
+        let mut taint = Self::default();
+        taint.push(0, end);
+        taint
+    }
+
+    #[inline(always)]
+    fn push(&mut self, start: usize, end: usize) {
+        self.0.push(AttrTaintedRange::new(start, end));
+    }
+}
+
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 struct VariableFallback {
     // NOTE(emilio): We don't track fallback end, because we rely on the missing closing
@@ -722,16 +783,13 @@ impl VariableValue {
         url_data: &UrlExtraData,
         first_token_type: TokenSerializationType,
         last_token_type: TokenSerializationType,
-        attribute_tainted: bool,
     ) -> Self {
-        let mut references = References::default();
-        references.any_attr = attribute_tainted;
         Self {
             css,
             url_data: url_data.clone(),
             first_token_type,
             last_token_type,
-            references,
+            references: References::default(),
         }
     }
 
@@ -740,6 +798,7 @@ impl VariableValue {
         css: &str,
         css_first_token_type: TokenSerializationType,
         css_last_token_type: TokenSerializationType,
+        attr_taint: Option<&mut AttrTaint>,
     ) -> Result<(), ()> {
         /// Prevent values from getting terribly big since you can use custom
         /// properties exponentially.
@@ -771,7 +830,12 @@ impl VariableValue {
         {
             self.css.push_str("/**/")
         }
+        let start = self.css.len();
         self.css.push_str(css);
+        let end = self.css.len();
+        if let Some(taint) = attr_taint {
+            taint.push(start, end);
+        }
         self.last_token_type = css_last_token_type;
         Ok(())
     }
@@ -819,8 +883,8 @@ impl VariableValue {
         })
     }
 
-    /// Returns whether this value is tainted by an `attr()` reference.
-    pub fn is_tainted_by_attr(&self) -> bool {
+    /// Returns whether this value is tainted by `attr()`.
+    pub fn is_attr_tainted(&self) -> bool {
         self.references.any_attr
     }
 
@@ -1599,6 +1663,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                         &value.url_data,
                         registration,
                         self.computed_context,
+                        AttrTaint::default(),
                     )
                     .ok()
                 } else {
@@ -2309,6 +2374,7 @@ fn handle_invalid_at_computed_value_time(
                 &initial_value.url_data,
                 registration,
                 computed_context,
+                AttrTaint::default(),
             ) {
                 substitution_functions.insert_var(registration, name, initial_value);
                 return;
@@ -2346,6 +2412,7 @@ fn substitute_references_if_needed_and_apply(
         stylist,
         computed_context,
         attribute_tracker,
+        None,
     ) {
         Ok(v) => v,
         Err(..) => {
@@ -2426,34 +2493,34 @@ fn substitute_references_if_needed_and_apply(
             substitution_functions.insert_var(registration, name, value);
         },
         SubstitutionFunctionKind::Attr => {
-            let value = ComputedRegisteredValue::universal(Arc::new(VariableValue::new(
+            let mut value = ComputedRegisteredValue::universal(Arc::new(VariableValue::new(
                 substitution.css.into_owned(),
                 url_data,
                 substitution.first_token_type,
                 substitution.last_token_type,
-                substitution.attribute_tainted,
             )));
+            value.attr_tainted |= substitution.attr_tainted;
             substitution_functions.insert_attr(name, value);
         },
         SubstitutionFunctionKind::Env => unreachable!("Kind cannot be env."),
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct Substitution<'a> {
     css: Cow<'a, str>,
     first_token_type: TokenSerializationType,
     last_token_type: TokenSerializationType,
-    attribute_tainted: bool,
+    attr_tainted: bool,
 }
 
 impl<'a> Substitution<'a> {
-    fn from_value(v: VariableValue) -> Self {
+    fn from_value(v: VariableValue, attr_tainted: bool) -> Self {
         Substitution {
             css: v.css.into(),
             first_token_type: v.first_token_type,
             last_token_type: v.last_token_type,
-            attribute_tainted: v.references.any_attr,
+            attr_tainted,
         }
     }
 
@@ -2464,17 +2531,26 @@ impl<'a> Substitution<'a> {
         computed_context: &computed::Context,
     ) -> Result<ComputedRegisteredValue, ()> {
         if registration.is_universal() {
-            let value = VariableValue::new(
+            let mut value = ComputedRegisteredValue::universal(Arc::new(VariableValue::new(
                 self.css.into_owned(),
                 url_data,
                 self.first_token_type,
                 self.last_token_type,
-                self.attribute_tainted,
-            );
-            return Ok(ComputedRegisteredValue::universal(Arc::new(value)));
+            )));
+            value.attr_tainted |= self.attr_tainted;
+            return Ok(value);
         }
-        let mut v = compute_value(&self.css, url_data, registration, computed_context)?;
-        v.attribute_tainted |= self.attribute_tainted;
+        let taint = if self.attr_tainted {
+            // Per spec: substitution value of an arbitrary substitution function is
+            // attr()-tainted as a whole if any attr()-tainted values were involved
+            // in creating that substitution value.
+            // https://drafts.csswg.org/css-values-5/#attr-security
+            AttrTaint::new_fully_tainted(self.css.len())
+        } else {
+            AttrTaint::default()
+        };
+        let mut v = compute_value(&self.css, url_data, registration, computed_context, taint)?;
+        v.attr_tainted |= self.attr_tainted;
         Ok(v)
     }
 
@@ -2482,13 +2558,13 @@ impl<'a> Substitution<'a> {
         css: Cow<'a, str>,
         first_token_type: TokenSerializationType,
         last_token_type: TokenSerializationType,
-        attribute_tainted: bool,
+        attr_tainted: bool,
     ) -> Self {
         Self {
             css,
             first_token_type,
             last_token_type,
-            attribute_tainted,
+            attr_tainted,
         }
     }
 }
@@ -2498,17 +2574,8 @@ impl<'a> Substitution<'a> {
 pub struct SubstitutionResult<'a> {
     /// The resolved CSS string after substitution.
     pub css: Cow<'a, str>,
-    /// Flag indicating whether the value was attr()-tainted.
-    pub attribute_tainted: bool,
-}
-
-impl<'a> From<Substitution<'a>> for SubstitutionResult<'a> {
-    fn from(s: Substitution<'a>) -> Self {
-        Self {
-            css: s.css,
-            attribute_tainted: s.attribute_tainted,
-        }
-    }
+    /// Regions in the `css` string that are attr()-tainted, if any.
+    pub attr_taint: AttrTaint,
 }
 
 fn compute_value(
@@ -2516,6 +2583,7 @@ fn compute_value(
     url_data: &UrlExtraData,
     registration: &PropertyDescriptors,
     computed_context: &computed::Context,
+    attr_taint: AttrTaint,
 ) -> Result<ComputedRegisteredValue, ()> {
     debug_assert!(!registration.is_universal());
 
@@ -2529,6 +2597,7 @@ fn compute_value(
         url_data,
         computed_context,
         AllowComputationallyDependent::Yes,
+        attr_taint,
     )
 }
 
@@ -2557,6 +2626,7 @@ fn do_substitute_chunk<'a>(
     computed_context: &computed::Context,
     references: &mut std::iter::Peekable<std::slice::Iter<SubstitutionFunctionReference>>,
     attribute_tracker: &mut AttributeTracker,
+    mut attr_taint: Option<&mut AttrTaint>,
 ) -> Result<Substitution<'a>, ()> {
     if start == end {
         // Empty string. Easy.
@@ -2579,12 +2649,14 @@ fn do_substitute_chunk<'a>(
     let mut substituted = ComputedValue::empty(url_data);
     let mut next_token_type = first_token_type;
     let mut cur_pos = start;
+    let mut attr_tainted = false;
     while let Some(reference) = references.next_if(|reference| reference.end <= end) {
         if reference.start != cur_pos {
             substituted.push(
                 &css[cur_pos..reference.start],
                 next_token_type,
                 reference.prev_token_type,
+                /* attr_taint */ None,
             )?;
         }
 
@@ -2601,6 +2673,9 @@ fn do_substitute_chunk<'a>(
 
         // Optimize the property: var(--...) case to avoid allocating at all.
         if reference.start == start && reference.end == end {
+            if let Some(taint) = attr_taint.filter(|_| substitution.attr_tainted) {
+                taint.push(start, end);
+            }
             return Ok(substitution);
         }
 
@@ -2608,16 +2683,24 @@ fn do_substitute_chunk<'a>(
             &substitution.css,
             substitution.first_token_type,
             substitution.last_token_type,
+            attr_taint
+                .as_deref_mut()
+                .filter(|_| substitution.attr_tainted),
         )?;
-        substituted.references.any_attr |= substitution.attribute_tainted;
+        attr_tainted |= substitution.attr_tainted;
         next_token_type = reference.next_token_type;
         cur_pos = reference.end;
     }
     // Push the rest of the value if needed.
     if cur_pos != end {
-        substituted.push(&css[cur_pos..end], next_token_type, last_token_type)?;
+        substituted.push(
+            &css[cur_pos..end],
+            next_token_type,
+            last_token_type,
+            /* attr_taint */ None,
+        )?;
     }
-    Ok(Substitution::from_value(substituted))
+    Ok(Substitution::from_value(substituted, attr_tainted))
 }
 
 fn quoted_css_string(src: &str) -> String {
@@ -2641,7 +2724,7 @@ fn substitute_one_reference<'a>(
             Cow::Owned(quoted_css_string(s)),
             TokenSerializationType::Nothing,
             TokenSerializationType::Nothing,
-            /* attribute_tainted */ true,
+            /* attr_tainted */ true,
         ))
     };
     let substitution: Option<_> = match reference.substitution_kind {
@@ -2649,14 +2732,14 @@ fn substitute_one_reference<'a>(
             let registration = stylist.get_custom_property_registration(&reference.name);
             substitution_functions
                 .get_var(registration, &reference.name)
-                .map(|v| Substitution::from_value(v.to_variable_value()))
+                .map(|v| Substitution::from_value(v.to_variable_value(), v.attr_tainted))
         },
         SubstitutionFunctionKind::Env => {
             let device = stylist.device();
             device
                 .environment()
                 .get(&reference.name, device, url_data)
-                .map(Substitution::from_value)
+                .map(|v| Substitution::from_value(v, /* attr_tainted */ false))
         },
         // https://drafts.csswg.org/css-values-5/#attr-substitution
         SubstitutionFunctionKind::Attr => {
@@ -2717,14 +2800,11 @@ fn substitute_one_reference<'a>(
                                     AttrUnit::Percentage => TokenSerializationType::Percentage,
                                     _ => TokenSerializationType::Dimension,
                                 };
-                                let value = ComputedValue::new(
-                                    css,
-                                    url_data,
-                                    serialization,
-                                    serialization,
-                                    /* attribute_tainted */ true,
-                                );
-                                Some(Substitution::from_value(value))
+                                let value =
+                                    ComputedValue::new(css, url_data, serialization, serialization);
+                                Some(Substitution::from_value(
+                                    value, /* attr_tainted */ true,
+                                ))
                             },
                             AttributeType::Type(syntax) => {
                                 let value = SpecifiedRegisteredValue::parse(
@@ -2733,11 +2813,13 @@ fn substitute_one_reference<'a>(
                                     url_data,
                                     None,
                                     AllowComputationallyDependent::Yes,
+                                    AttrTaint::default(),
                                 )
                                 .ok()?;
-                                let mut value = value.to_variable_value();
-                                value.references.any_attr = true;
-                                Some(Substitution::from_value(value))
+                                let value = value.to_variable_value();
+                                Some(Substitution::from_value(
+                                    value, /* attr_tainted */ true,
+                                ))
                             },
                             AttributeType::RawString | AttributeType::None => {
                                 simple_attr_subst(&attr)
@@ -2773,6 +2855,7 @@ fn substitute_one_reference<'a>(
         computed_context,
         references,
         attribute_tracker,
+        /* attr_taint */ None,
     )
 }
 
@@ -2783,6 +2866,7 @@ fn substitute_internal<'a>(
     stylist: &Stylist,
     computed_context: &computed::Context,
     attribute_tracker: &mut AttributeTracker,
+    mut attr_taint: Option<&mut AttrTaint>,
 ) -> Result<Substitution<'a>, ()> {
     let mut refs = variable_value.references.refs.iter().peekable();
     do_substitute_chunk(
@@ -2797,6 +2881,7 @@ fn substitute_internal<'a>(
         computed_context,
         &mut refs,
         attribute_tracker,
+        attr_taint.as_deref_mut(),
     )
 }
 
@@ -2809,12 +2894,17 @@ pub fn substitute<'a>(
     attribute_tracker: &mut AttributeTracker,
 ) -> Result<SubstitutionResult<'a>, ()> {
     debug_assert!(variable_value.has_references());
+    let mut attr_taint = AttrTaint::default();
     let v = substitute_internal(
         variable_value,
         substitution_functions,
         stylist,
         computed_context,
         attribute_tracker,
+        Some(&mut attr_taint),
     )?;
-    Ok(v.into())
+    Ok(SubstitutionResult {
+        css: v.css,
+        attr_taint,
+    })
 }

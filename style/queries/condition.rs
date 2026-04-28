@@ -420,17 +420,17 @@ impl StyleFeaturePlain {
             Some(ctx.inherited_custom_properties().clone()),
             None,
         );
-        // FIXME(bug2026241): `attribute_tainted` should be used.
-        let custom_properties::SubstitutionResult { css, .. } = match custom_properties::substitute(
-            &value,
-            &substitution_functions,
-            stylist,
-            ctx,
-            attribute_tracker,
-        ) {
-            Ok(sub) => sub,
-            Err(_) => return current_value.is_none(),
-        };
+        let custom_properties::SubstitutionResult { css, attr_taint } =
+            match custom_properties::substitute(
+                &value,
+                &substitution_functions,
+                stylist,
+                ctx,
+                attribute_tracker,
+            ) {
+                Ok(sub) => sub,
+                Err(_) => return current_value.is_none(),
+            };
         if registration.is_universal() {
             return match current_value {
                 Some(v) => v.as_universal().is_some_and(|v| v.css == css),
@@ -446,6 +446,7 @@ impl StyleFeaturePlain {
             &value.url_data,
             ctx,
             AllowComputationallyDependent::Yes,
+            attr_taint,
         )
         .ok();
         computed.as_ref() == current_value
@@ -889,34 +890,29 @@ impl QueryCondition {
             Some(context.inherited_custom_properties().clone()),
             None,
         );
-        let custom_properties::SubstitutionResult {
-            css,
-            attribute_tainted,
-        } = match custom_properties::substitute(
-            &value,
-            &substitution_functions,
-            stylist,
-            context,
-            attribute_tracker,
-        ) {
-            Ok(sub) => sub,
-            Err(_) => return KleeneValue::Unknown,
-        };
+        let custom_properties::SubstitutionResult { css, attr_taint } =
+            match custom_properties::substitute(
+                &value,
+                &substitution_functions,
+                stylist,
+                context,
+                attribute_tracker,
+            ) {
+                Ok(sub) => sub,
+                Err(_) => return KleeneValue::Unknown,
+            };
 
         // Re-parse the result as a query-condition, and evaluate it.
-        let mut parsing_mode = ParsingMode::DEFAULT;
-        if attribute_tainted {
-            parsing_mode.insert(ParsingMode::DISALLOW_URLS);
-        }
         let parser_context = ParserContext::new(
             Origin::Author,
             url_data,
             Some(CssRuleType::Container),
-            parsing_mode,
+            ParsingMode::DEFAULT,
             QuirksMode::NoQuirks,
             /* namespaces = */ Default::default(),
             /* error_reporter = */ None,
             /* use_counters = */ None,
+            attr_taint,
         );
         let mut input = ParserInput::new(&css);
         let result = match Self::parse(

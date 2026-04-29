@@ -854,6 +854,7 @@ impl ViewTransitionClass {
     Copy,
     Clone,
     Debug,
+    Eq,
     MallocSizeOf,
     Parse,
     PartialEq,

@@ -30,6 +30,7 @@ use crate::values::computed::TimingFunction;
 use crate::values::generics::easing::{BeforeFlag, StepPosition};
 use crate::values::specified::TransitionBehavior;
 use crate::Atom;
+use debug_unreachable::debug_unreachable;
 use parking_lot::RwLock;
 use rustc_hash::FxHashMap;
 use servo_arc::Arc;
@@ -801,10 +802,11 @@ impl Animation {
             return;
         }
 
-        // Progress clamped to the current iteration (0.0 to 1.0).
+        // Progress clamped to the current iteration [0.0, 1.0].
         let total_progress = progress.min(self.current_iteration_end_progress()).max(0.0);
 
-        if total_progress >= 1.0 {
+        // At 1.0 there is nothing left to interpolate. Return end keyframe.
+        if total_progress == 1.0 {
             let keyframe = match self.current_direction {
                 AnimationDirection::Normal => self.computed_steps.last().unwrap(),
                 AnimationDirection::Reverse => self.computed_steps.first().unwrap(),
@@ -855,7 +857,14 @@ impl Animation {
 
         let prev_keyframe = &self.computed_steps[prev_keyframe_index];
         let Some(next_keyframe_index) = next_keyframe_index else {
-            debug_assert!(false, "next_keyframe_index should always be Some");
+            unsafe {
+                debug_unreachable!(
+                    "next_keyframe_index should always be Some: \
+                     total_progress is in [0, 1) at this point. \
+                     Normal direction: keyframe with start_percentage 1.0 always satisfies. \
+                     Reverse direction: keyframe with start_percentage 0.0 always satisfies."
+                );
+            }
             return;
         };
 

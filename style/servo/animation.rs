@@ -865,7 +865,6 @@ impl Animation {
                      Reverse direction: keyframe with start_percentage 0.0 always satisfies."
                 );
             }
-            return;
         };
 
         // Prevent division by zero from percentage_between_keyframes.

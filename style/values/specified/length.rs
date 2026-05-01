@@ -368,6 +368,12 @@ impl FontRelativeLength {
             metrics.ic_width_or_default(reference_font_size.used_size())
         }
 
+        if context.in_container_query {
+            context
+                .builder
+                .add_flags(ComputedValueFlags::DEPENDS_ON_FONT_METRICS_IN_CONTAINER_QUERY);
+        }
+
         let reference_font_size = base_size.resolve(context);
         match *self {
             // Local font-relative units

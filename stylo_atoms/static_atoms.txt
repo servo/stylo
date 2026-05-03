@@ -113,6 +113,10 @@ play
 playing
 popstate
 postershown
+any-hover
+any-pointer
+hover
+pointer
 prefers-color-scheme
 print
 progress

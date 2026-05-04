@@ -850,7 +850,6 @@ impl ToCss for QueryStyleRange {
     where
         W: fmt::Write,
     {
-        dest.write_char('(')?;
         match self {
             Self::StyleRange2 {
                 ref value1,
@@ -861,7 +860,7 @@ impl ToCss for QueryStyleRange {
                 dest.write_char(' ')?;
                 op1.to_css(dest)?;
                 dest.write_char(' ')?;
-                value2.to_css(dest, None)?;
+                value2.to_css(dest, None)
             },
             Self::StyleRange3 {
                 ref value1,
@@ -878,10 +877,9 @@ impl ToCss for QueryStyleRange {
                 dest.write_char(' ')?;
                 op2.to_css(dest)?;
                 dest.write_char(' ')?;
-                value3.to_css(dest, None)?;
+                value3.to_css(dest, None)
             },
         }
-        dest.write_char(')')
     }
 }
 

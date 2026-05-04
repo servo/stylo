@@ -1004,6 +1004,7 @@ impl FontSize {
                         .unwrap()
                         .font_size
                         .computed_size()
+                        .zoom(context.builder.effective_zoom)
                 }
             },
         };

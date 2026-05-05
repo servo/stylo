@@ -701,7 +701,7 @@ impl QueryExpressionValue {
             QueryExpressionValue::Length(ref l) => l.to_css(dest),
             QueryExpressionValue::Integer(v) => v.to_css(dest),
             QueryExpressionValue::Float(v) => v.to_css(dest),
-            QueryExpressionValue::BoolInteger(v) => dest.write_str(if v { "1" } else { "0" }),
+            QueryExpressionValue::BoolInteger(v) => dest.write_char(if v { '1' } else { '0' }),
             QueryExpressionValue::NumberRatio(ratio) => ratio.to_css(dest),
             QueryExpressionValue::Resolution(ref r) => r.to_css(dest),
             QueryExpressionValue::Keyword(k) => k.to_css(dest),

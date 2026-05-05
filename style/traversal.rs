@@ -462,8 +462,8 @@ pub fn recalc_style_at<E, D, F>(
     //
     // We only do this if we're not a display: none root, since in that case
     // it's useless to style children.
-    let mut traverse_children = has_dirty_descendants_for_this_restyle
-        || !propagated_hint.is_empty();
+    let mut traverse_children =
+        has_dirty_descendants_for_this_restyle || !propagated_hint.is_empty();
 
     traverse_children = traverse_children && !data.styles.is_display_none();
 

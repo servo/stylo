@@ -189,7 +189,6 @@ pub struct GenericCounters<I>(
 );
 pub use self::GenericCounters as Counters;
 
-
 #[inline]
 fn is_decimal(counter_type: &CounterStyle) -> bool {
     *counter_type == CounterStyle::decimal()

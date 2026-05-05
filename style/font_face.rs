@@ -504,7 +504,6 @@ pub fn parse_font_face_block(
     rule
 }
 
-
 impl Parse for Source {
     fn parse<'i, 't>(
         context: &ParserContext,

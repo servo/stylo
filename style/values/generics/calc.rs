@@ -214,10 +214,7 @@ pub struct GenericAnchorFunctionFallback<L> {
 impl<L> GenericAnchorFunctionFallback<L> {
     /// Create a new anchor function fallback value.
     pub fn new(is_calc_node: bool, node: GenericCalcNode<L>) -> Self {
-        Self {
-            is_calc_node,
-            node,
-        }
+        Self { is_calc_node, node }
     }
 }
 

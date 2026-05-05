@@ -34,7 +34,9 @@ use crate::values::animated::{
 };
 use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
-use crate::values::generics::calc::{CalcUnits, GenericAnchorFunctionFallback, PositivePercentageBasis};
+use crate::values::generics::calc::{
+    CalcUnits, GenericAnchorFunctionFallback, PositivePercentageBasis,
+};
 #[cfg(feature = "gecko")]
 use crate::values::generics::length::AnchorResolutionResult;
 use crate::values::generics::position::GenericAnchorSide;
@@ -1035,7 +1037,10 @@ impl CalcLengthPercentage {
         };
 
         fn resolve_anchor_function<'a>(
-            f: &'a GenericAnchorFunction<Box<CalcNode>, Box<GenericAnchorFunctionFallback<CalcLengthPercentageLeaf>>>,
+            f: &'a GenericAnchorFunction<
+                Box<CalcNode>,
+                Box<GenericAnchorFunctionFallback<CalcLengthPercentageLeaf>>,
+            >,
             side: PhysicalSide,
             params: &AnchorPosOffsetResolutionParams,
         ) -> AnchorResolutionResult<'a, Box<CalcNode>> {
@@ -1073,7 +1078,9 @@ impl CalcLengthPercentage {
         }
 
         fn resolve_anchor_size_function<'a>(
-            f: &'a GenericAnchorSizeFunction<Box<GenericAnchorFunctionFallback<CalcLengthPercentageLeaf>>>,
+            f: &'a GenericAnchorSizeFunction<
+                Box<GenericAnchorFunctionFallback<CalcLengthPercentageLeaf>>,
+            >,
             allowed: AllowAnchorPosResolutionInCalcPercentage,
             params: &AnchorPosOffsetResolutionParams,
         ) -> AnchorResolutionResult<'a, Box<CalcNode>> {

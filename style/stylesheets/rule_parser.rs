@@ -43,8 +43,8 @@ use cssparser::{
 };
 use selectors::parser::{ParseRelative, SelectorList};
 use servo_arc::Arc;
-use style_traits::{ParseError, StyleParseErrorKind};
 use style_traits::arc_slice::ArcSlice;
+use style_traits::{ParseError, StyleParseErrorKind};
 
 /// The information we need particularly to do CSSOM insertRule stuff.
 pub struct InsertRuleContext<'a> {

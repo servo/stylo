@@ -535,7 +535,6 @@ pub enum PositionAnchorKeyword {
     Ident(DashedIdent),
 }
 
-
 impl IsTreeScoped for PositionAnchorKeyword {
     fn is_tree_scoped(&self) -> bool {
         match *self {

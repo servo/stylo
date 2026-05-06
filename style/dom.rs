@@ -486,6 +486,11 @@ pub trait TElement:
         false
     }
 
+    /// Return whether this element is an HTML <video> or <audio> element.
+    fn is_html_media_element(&self) -> bool {
+        false
+    }
+
     /// Returns the bloom filter for this element's subtree, used for fast
     /// querySelector optimization by allowing subtrees to be skipped.
     /// Each element's filter includes hashes for all of it's class names and

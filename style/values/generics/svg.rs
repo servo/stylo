@@ -157,7 +157,6 @@ impl<C: Parse, U: Parse> Parse for SVGPaint<C, U> {
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(todo_derive_fields)]
 pub enum GenericSVGLength<L> {
     /// `<length> | <percentage> | <number>`
     LengthPercentage(L),

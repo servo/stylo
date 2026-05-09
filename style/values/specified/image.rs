@@ -563,7 +563,7 @@ impl Gradient {
         };
         type Point = GenericPosition<Component<X>, Component<Y>>;
 
-        #[derive(Clone, Parse)]
+        #[derive(Clone, Copy, Parse)]
         enum Component<S> {
             Center,
             Number(NumberOrPercentage),
@@ -600,14 +600,6 @@ impl Gradient {
                     let x = Component::parse(context, i)?;
                     let y = Component::parse(context, i)?;
 
-                    // TODO(Bug 2037751) - Enable calc()-expressions that can only be resolved at
-                    // computed value time (due to relative lengths, sibling-index(), etc.).
-                    if matches!(&x, Component::Number(NumberOrPercentage::Number(n)) if n.resolve().is_none()) ||
-                        matches!(&y, Component::Number(NumberOrPercentage::Number(n)) if n.resolve().is_none())
-                    {
-                        return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-                    }
-
                     Ok(Self::new(x, y))
                 })
             }
@@ -635,8 +627,7 @@ impl Gradient {
                 match self {
                     Component::Center => PositionComponent::Center,
                     Component::Number(NumberOrPercentage::Number(number)) => {
-                        // Unresolvable calc is rejected in Point::parse.
-                        PositionComponent::Length(Length::from_px(number.resolve().unwrap()).into())
+                        PositionComponent::Length(Length::from_px(number.value).into())
                     },
                     Component::Number(NumberOrPercentage::Percentage(p)) => {
                         PositionComponent::Length(p.into())
@@ -648,13 +639,12 @@ impl Gradient {
 
         impl<S: Copy + Side> Component<S> {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-                match (self.clone().into(), other.clone().into()) {
-                    (
-                        NumberOrPercentage::Percentage(ref a),
-                        NumberOrPercentage::Percentage(ref b),
-                    ) => a.resolve().partial_cmp(&b.resolve()),
+                match ((*self).into(), (*other).into()) {
+                    (NumberOrPercentage::Percentage(a), NumberOrPercentage::Percentage(b)) => {
+                        a.get().partial_cmp(&b.get())
+                    },
                     (NumberOrPercentage::Number(a), NumberOrPercentage::Number(b)) => {
-                        a.resolve().partial_cmp(&b.resolve())
+                        a.value.partial_cmp(&b.value)
                     },
                     (_, _) => None,
                 }
@@ -691,20 +681,13 @@ impl Gradient {
                 input.expect_comma()?;
                 let second_radius = Number::parse_non_negative(context, input)?;
 
-                // TODO(Bug 2037751) - Enable calc()-expressions that can only be resolved at
-                // computed value time (due to relative lengths, sibling-index(), etc.).
-                if first_radius.resolve().is_none() || second_radius.resolve().is_none() {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-                }
-
-                let (reverse_stops, point, radius) = if second_radius.resolve() >= first_radius.resolve() {
+                let (reverse_stops, point, radius) = if second_radius.value >= first_radius.value {
                     (false, second_point, second_radius)
                 } else {
                     (true, first_point, first_radius)
                 };
 
-                // Unresolvable calc is rejected above.
-                let rad = Circle::Radius(NonNegative(Length::from_px(radius.resolve().unwrap())));
+                let rad = Circle::Radius(NonNegative(Length::from_px(radius.value)));
                 let shape = generic::EndingShape::Circle(rad);
                 let position = Position::new(point.horizontal.into(), point.vertical.into());
                 let items = Gradient::parse_webkit_gradient_stops(context, input, reverse_stops)?;
@@ -739,11 +722,7 @@ impl Gradient {
                     let (color, mut p) = i.parse_nested_block(|i| {
                         let p = match_ignore_ascii_case! { &function,
                             "color-stop" => {
-                                // TODO(Bug 2037751) - Enable calc()-expressions that can only be resolved at
-                                // computed value time (due to relative lengths, sibling-index(), etc.).
-                                let Some(p) = NumberOrPercentage::parse(context, i)?.to_percentage() else {
-                                    return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-                                };
+                                let p = NumberOrPercentage::parse(context, i)?.to_percentage();
                                 i.expect_comma()?;
                                 p
                             },
@@ -800,7 +779,7 @@ impl Gradient {
                         },
                     ) => match (a_position, b_position) {
                         (&LengthPercentage::Percentage(a), &LengthPercentage::Percentage(b)) => {
-                            return a.get().partial_cmp(&b.get()).unwrap_or(Ordering::Equal);
+                            return a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal);
                         },
                         _ => {},
                     },
@@ -1027,7 +1006,7 @@ impl Gradient {
 impl generic::LineDirection for LineDirection {
     fn points_downwards(&self, compat_mode: GradientCompatMode) -> bool {
         match *self {
-            LineDirection::Angle(Angle::NoCalc(angle)) => angle.degrees() == 180.0,
+            LineDirection::Angle(ref angle) => angle.degrees() == 180.0,
             LineDirection::Vertical(VerticalPositionKeyword::Bottom) => {
                 compat_mode == GradientCompatMode::Modern
             },
@@ -1043,7 +1022,7 @@ impl generic::LineDirection for LineDirection {
         W: Write,
     {
         match *self {
-            LineDirection::Angle(ref angle) => angle.to_css(dest),
+            LineDirection::Angle(angle) => angle.to_css(dest),
             LineDirection::Horizontal(x) => {
                 if compat_mode == GradientCompatMode::Modern {
                     dest.write_str("to ")?;

@@ -66,6 +66,8 @@ impl Color {
     /// Combine this complex color with the given foreground color into an
     /// absolute color.
     pub fn resolve_to_absolute(&self, current_color: &AbsoluteColor) -> AbsoluteColor {
+        use crate::values::specified::percentage::ToPercentage;
+
         match *self {
             Self::Absolute(c) => c,
             Self::ColorFunction(ref color_function) => {
@@ -80,7 +82,7 @@ impl Color {
                     mix.items.iter().map(|item| {
                         mix::ColorMixItem::new(
                             item.color.resolve_to_absolute(current_color),
-                            item.percentage.0,
+                            item.percentage.to_percentage(),
                         )
                     }),
                     mix.flags,

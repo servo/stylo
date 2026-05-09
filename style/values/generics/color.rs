@@ -125,17 +125,13 @@ impl<Color: ToCss, Percentage: ToCss + ToPercentage> ToCss for ColorMix<Color, P
                     if a.is_calc() {
                         return false;
                     }
-                    // Percentages are enforced to be resolvable at parse time for the specified
-                    // colors, and are already resolved for computed colors.
-                    let a = a.to_percentage().unwrap();
-                    let b = b.to_percentage().unwrap();
-                    if a == 0.5 {
-                        return b == 0.5;
+                    if a.to_percentage() == 0.5 {
+                        return b.to_percentage() == 0.5;
                     }
                     if is_left {
                         return false;
                     }
-                    (1.0 - a - b).abs() <= f32::EPSILON
+                    (1.0 - a.to_percentage() - b.to_percentage()).abs() <= f32::EPSILON
                 };
 
                 let other = &self.items[1 - index].percentage;
@@ -143,7 +139,7 @@ impl<Color: ToCss, Percentage: ToCss + ToPercentage> ToCss for ColorMix<Color, P
             } else {
                 !item.percentage.is_calc()
                     && uniform
-                    && item.percentage.to_percentage() == Some(uniform_value)
+                    && item.percentage.to_percentage() == uniform_value
             };
 
             if !omit {
@@ -169,7 +165,7 @@ impl<Percentage> ColorMix<GenericColor<Percentage>, Percentage> {
         for item in self.items.iter() {
             items.push(mix::ColorMixItem::new(
                 *item.color.as_absolute()?,
-                item.percentage.to_percentage()?,
+                item.percentage.to_percentage(),
             ))
         }
 

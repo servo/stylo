@@ -2980,13 +2980,7 @@ impl Descriptors {
         match id {
         % for descriptor in descriptors:
             DescriptorId::${descriptor.camel_case} => {
-                let value = Some(input.parse_entirely(|i|
-                    % if descriptor.parser:
-                        ${descriptor.type}::${descriptor.parser}(context, i)
-                    % else:
-                        Parse::parse(context, i)
-                    % endif
-                )?);
+                let value = Some(input.parse_entirely(|i| Parse::parse(context, i))?);
                 let change = self.${descriptor.ident} != value;
                 self.${descriptor.ident} = value;
                 Ok(change)

@@ -10,9 +10,7 @@ use crate::color::{parsing, AbsoluteColor, ColorFunction, ColorMixItemList, Colo
 use crate::derives::*;
 use crate::device::Device;
 use crate::parser::{Parse, ParserContext};
-use crate::values::computed::{
-    Color as ComputedColor, Context, Percentage as ComputedPercentage, ToComputedValue,
-};
+use crate::values::computed::{Color as ComputedColor, Context, ToComputedValue};
 use crate::values::generics::color::{
     ColorMixFlags, GenericCaretColor, GenericColorMix, GenericColorMixItem, GenericColorOrAuto,
     GenericLightDark,
@@ -70,12 +68,6 @@ impl ColorMix {
                     percentage = try_parse_percentage(input);
                 }
 
-                // TODO(Bug 2037742) - Enable calc()-expressions that can only be resolved at
-                // computed value time (due to relative lengths, sibling-index(), etc.).
-                if matches!(percentage, Some(ref p) if p.to_percentage().is_none()) {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-                }
-
                 items.push((color, percentage));
 
                 if input.try_parse(|i| i.expect_comma()).is_err() {
@@ -100,8 +92,7 @@ impl ColorMix {
             let (mut sum_specified, mut missing) = (0.0, 0);
             for (_, percentage) in items.iter() {
                 if let Some(p) = percentage {
-                    // Percentage was enforced to be resolvable at parse time.
-                    sum_specified += p.to_percentage().unwrap();
+                    sum_specified += p.to_percentage();
                 } else {
                     missing += 1;
                 }
@@ -116,7 +107,7 @@ impl ColorMix {
             if let Some(default) = default_for_missing_items {
                 for (_, percentage) in items.iter_mut() {
                     if percentage.is_none() {
-                        *percentage = Some(default.clone());
+                        *percentage = Some(default);
                     }
                 }
             }
@@ -126,8 +117,7 @@ impl ColorMix {
                 .into_iter()
                 .map(|(color, percentage)| {
                     let percentage = percentage.expect("percentage filled above");
-                    // Percentage was enforced to be resolvable at parse time.
-                    total += percentage.to_percentage().unwrap();
+                    total += percentage.to_percentage();
                     GenericColorMixItem { color, percentage }
                 })
                 .collect::<ColorMixItemList<_>>();
@@ -756,7 +746,7 @@ impl Color {
                 for item in mix.items.iter() {
                     items.push(mix::ColorMixItem::new(
                         item.color.resolve_to_absolute()?,
-                        item.percentage.to_percentage().ok_or(())?,
+                        item.percentage.to_percentage(),
                     ))
                 }
 
@@ -907,14 +897,13 @@ impl Color {
             },
             Color::LightDark(ref ld) => ld.compute(context.ok_or(())?),
             Color::ColorMix(ref mix) => {
+                use crate::values::computed::percentage::Percentage;
+
                 let mut items = ColorMixItemList::with_capacity(mix.items.len());
                 for item in mix.items.iter() {
                     items.push(GenericColorMixItem {
                         color: item.color.to_computed_color(context)?,
-                        percentage: match context {
-                            None => ComputedPercentage(item.percentage.to_percentage().ok_or(())?),
-                            Some(ctx) => item.percentage.to_computed_value(ctx),
-                        },
+                        percentage: Percentage(item.percentage.get()),
                     });
                 }
 

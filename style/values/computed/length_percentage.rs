@@ -641,7 +641,7 @@ impl ToComputedValue for specified::LengthPercentage {
                 // We simplify before constructing the LengthPercentage if
                 // needed, so this is always fine.
                 specified::LengthPercentage::Calc(Box::new(
-                    specified::CalcNumeric::from_computed_value(c),
+                    specified::CalcLengthPercentage::from_computed_value(c),
                 ))
             },
         }
@@ -1171,7 +1171,7 @@ impl PartialEq for CalcLengthPercentage {
     }
 }
 
-impl specified::CalcNumeric {
+impl specified::CalcLengthPercentage {
     /// Compute the value, zooming any absolute units by the zoom function.
     fn to_computed_value_with_zoom<F>(
         &self,
@@ -1185,7 +1185,7 @@ impl specified::CalcNumeric {
     {
         use crate::values::specified::calc::Leaf;
 
-        let node = self.node.map_leaves(|leaf| match *leaf {
+        let node = self.0.node.map_leaves(|leaf| match *leaf {
             Leaf::Percentage(p) => CalcLengthPercentageLeaf::Percentage(Percentage(p.get())),
             Leaf::Length(l) => CalcLengthPercentageLeaf::Length({
                 let result =
@@ -1202,7 +1202,7 @@ impl specified::CalcNumeric {
             },
         });
 
-        LengthPercentage::new_calc(node, self.clamping_mode)
+        LengthPercentage::new_calc(node, self.0.clamping_mode)
     }
 
     /// Compute font-size or line-height taking into account text-zoom if necessary.
@@ -1228,7 +1228,7 @@ impl specified::CalcNumeric {
 
         // Simplification should've turned this into an absolute length,
         // otherwise it wouldn't have been able to.
-        match self.node {
+        match self.0.node {
             calc::CalcNode::Leaf(Leaf::Length(NoCalcLength::Absolute(ref l))) => Ok(l.to_px()),
             _ => Err(()),
         }
@@ -1244,7 +1244,7 @@ impl specified::CalcNumeric {
         use crate::values::specified::calc::Leaf;
         use crate::values::specified::length::NoCalcLength;
 
-        match self.node {
+        match self.0.node {
             calc::CalcNode::Leaf(Leaf::Length(NoCalcLength::Absolute(ref l))) => Ok(l.to_px()),
             calc::CalcNode::Leaf(Leaf::Length(NoCalcLength::FontRelative(ref l))) => {
                 if let Some(getter) = get_font_metrics {
@@ -1272,7 +1272,7 @@ impl specified::CalcNumeric {
         use crate::values::specified::calc::Leaf;
         use crate::values::specified::length::NoCalcLength;
 
-        specified::CalcNumeric {
+        specified::CalcLengthPercentage(specified::CalcNumeric {
             clamping_mode: computed.clamping_mode,
             node: computed.node.map_leaves(|l| match l {
                 CalcLengthPercentageLeaf::Length(ref l) => {
@@ -1283,7 +1283,7 @@ impl specified::CalcNumeric {
                 },
                 CalcLengthPercentageLeaf::Number(n) => Leaf::Number(NoCalcNumber::new(*n)),
             }),
-        }
+        })
     }
 }
 

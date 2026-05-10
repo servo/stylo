@@ -198,16 +198,13 @@ impl ToComputedValue for Angle {
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         let degrees = match self {
             Angle::NoCalc(a) => a.degrees(),
-            Angle::Calc(ref calc) => {
-                calc.clamping_mode
-                    .clamp(match calc.node.with_computed_context(context).resolve() {
-                        Ok(Leaf::Angle(a)) => a.degrees(),
-                        _ => {
-                            debug_assert!(false, "Unexpected Angle::Calc without resolved angle");
-                            f32::NAN
-                        },
-                    })
-            },
+            Angle::Calc(ref calc) => calc.resolve(context, |result| match result {
+                Ok(Leaf::Angle(a)) => a.degrees(),
+                _ => {
+                    debug_assert!(false, "Unexpected Angle::Calc without resolved angle");
+                    f32::NAN
+                },
+            }),
         };
 
         // NaN and +-infinity should degenerate to 0: https://github.com/w3c/csswg-drafts/issues/6105

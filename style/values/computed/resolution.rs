@@ -40,19 +40,16 @@ impl ToComputedValue for specified::Resolution {
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         Resolution(crate::values::normalize(match self {
             specified::Resolution::NoCalc(r) => r.dppx().max(0.0),
-            specified::Resolution::Calc(ref calc) => {
-                calc.clamping_mode
-                    .clamp(match calc.node.with_computed_context(context).resolve() {
-                        Ok(Leaf::Resolution(r)) => r.dppx().max(0.0),
-                        __ => {
-                            debug_assert!(
-                                false,
-                                "Unexpected Resolution::Calc without resolved resolution"
-                            );
-                            0.0
-                        },
-                    })
-            },
+            specified::Resolution::Calc(ref calc) => calc.resolve(context, |result| match result {
+                Ok(Leaf::Resolution(r)) => r.dppx().max(0.0),
+                _ => {
+                    debug_assert!(
+                        false,
+                        "Unexpected Resolution::Calc without resolved resolution"
+                    );
+                    0.0
+                },
+            }),
         }))
     }
 

@@ -183,10 +183,10 @@ pub use self::GenericSVGLength as SVGLength;
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(todo_derive_fields)]
 pub enum GenericSVGStrokeDashArray<L> {
     /// `[ <length> | <percentage> | <number> ]#`
     #[css(comma)]
+    #[typed(no_multiple_values)]
     Values(#[css(if_empty = "none", iterable)] crate::OwnedSlice<L>),
     /// `context-value`
     ContextValue,

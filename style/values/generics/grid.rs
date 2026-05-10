@@ -14,6 +14,7 @@ use cssparser::Parser;
 use std::fmt::{self, Write};
 use std::usize;
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::values::specified::AllowedNumericType;
 
 /// These are the limits that we choose to clamp grid line numbers to.
 /// http://drafts.csswg.org/css-grid/#overlarge-grids
@@ -201,31 +202,22 @@ impl Parse for GridLine<specified::Integer> {
             }
         }
 
-        let mut grid_line = Self::auto();
-        grid_line.is_span = is_span;
-        if let Some(line_num) = line_num {
-            grid_line.line_num = line_num
-        }
-        if let Some(ident) = ident {
-            grid_line.ident = ident
-        }
-
-        if grid_line.is_auto() {
+        if line_num.is_none() && ident.is_none() {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
 
-        if grid_line.is_span {
-            if !grid_line.line_num.is_zero() {
-                if matches!(grid_line.line_num.get(), Some(v) if v <= 0) {
-                    // disallow negative integers for grid spans
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-                }
-            } else if grid_line.ident.0 == atom!("") {
-                // integer could be omitted
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        let mut grid_line = Self::auto();
+        grid_line.is_span = is_span;
+        if let Some(mut line_num) = line_num {
+            if is_span && line_num.ensure_clamping_mode(AllowedNumericType::AtLeastOne).is_err() {
+                // Disallow negative integers for grid spans.
+                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
             }
+            grid_line.line_num = line_num;
         }
-
+        if let Some(ident) = ident {
+            grid_line.ident = ident;
+        }
         Ok(grid_line)
     }
 }

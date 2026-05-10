@@ -75,7 +75,10 @@ fn clamp_to_one(number: NumberOrPercentage) -> NumberOrPercentage {
         NumberOrPercentage::Percentage(percent) => {
             NumberOrPercentage::Percentage(percent.clamp_to_hundred())
         },
-        NumberOrPercentage::Number(number) => NumberOrPercentage::Number(number.clamp_to_one()),
+        NumberOrPercentage::Number(mut number) => {
+            number.clamp_to_one();
+            NumberOrPercentage::Number(number)
+        },
     }
 }
 

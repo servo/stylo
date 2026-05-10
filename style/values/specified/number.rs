@@ -18,7 +18,9 @@ use crate::{One, Zero};
 use cssparser::{Parser, Token};
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss, ToTyped, TypedValue};
+use style_traits::{
+    CssWriter, ParseError, ParsingMode, SpecifiedValueInfo, ToCss, ToTyped, TypedValue,
+};
 use thin_vec::ThinVec;
 
 /// Parse a `<number>` value, with a given clamping mode.
@@ -229,12 +231,12 @@ impl Number {
 
     /// Clamp to 1.0 if the value is over 1.0.
     #[inline]
-    pub fn clamp_to_one(self) -> Self {
+    pub fn clamp_to_one(&mut self) {
         match self {
-            Number::NoCalc(n) => Number::new(n.value().min(1.)),
-            Number::Calc(ref calc) => Number::Calc(Box::new(
-                calc.with_clamping_mode(AllowedNumericType::ZeroToOne),
-            )),
+            Number::NoCalc(ref mut n) => n.0 = n.value().min(1.),
+            Number::Calc(ref mut calc) => {
+                calc.clamping_mode = AllowedNumericType::ZeroToOne;
+            },
         }
     }
 }
@@ -436,6 +438,21 @@ impl Integer {
                 (value + 0.5).floor() as CSSInteger
             },
         })
+    }
+
+    /// Makes sure this number matches the clamping, or errors otherwise.
+    pub fn ensure_clamping_mode(&mut self, clamping_mode: AllowedNumericType) -> Result<(), ()> {
+        match self {
+            Self::NoCalc(i) => {
+                if !clamping_mode.is_ok(ParsingMode::DEFAULT, *i as f32) {
+                    return Err(());
+                }
+            },
+            Self::Calc(ref mut calc) => {
+                calc.clamping_mode = clamping_mode;
+            },
+        }
+        Ok(())
     }
 }
 

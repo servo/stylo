@@ -248,13 +248,18 @@ impl ToComputedValue for Number {
     fn to_computed_value(&self, context: &Context) -> CSSFloat {
         match self {
             Number::NoCalc(n) => n.to_computed_value(context),
-            Number::Calc(ref calc) => calc.resolve(context, |result| match result {
-                Ok(Leaf::Number(n)) => n.get(),
-                _ => {
-                    debug_assert!(false, "Unexpected Number::Calc without resolved number");
-                    f32::NAN
-                },
-            }),
+            Number::Calc(ref calc) => {
+                let value = match calc.node.with_computed_context(context).resolve() {
+                    Ok(Leaf::Number(n)) => n.get(),
+                    _ => {
+                        debug_assert!(false, "Unexpected Number::Calc without resolved number");
+                        f32::NAN
+                    },
+                };
+                crate::values::normalize(calc.clamping_mode.clamp(value))
+                    .min(f32::MAX)
+                    .max(f32::MIN)
+            },
         }
     }
 
@@ -486,14 +491,17 @@ impl ToComputedValue for Integer {
         match *self {
             Self::NoCalc(i) => i,
             Self::Calc(ref calc) => {
-                let value = calc.resolve(context, |result| match result {
+                let value = match calc.node.with_computed_context(context).resolve() {
                     Ok(Leaf::Number(n)) => n.get(),
                     _ => {
                         debug_assert!(false, "Unexpected Integer::Calc without resolved number");
                         f32::NAN
                     },
-                });
-                (value + 0.5).floor() as i32
+                };
+                let clamped = crate::values::normalize(calc.clamping_mode.clamp(value))
+                    .min(f32::MAX)
+                    .max(f32::MIN);
+                (clamped + 0.5).floor() as i32
             },
         }
     }

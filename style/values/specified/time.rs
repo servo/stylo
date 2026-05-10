@@ -218,13 +218,18 @@ impl ToComputedValue for Time {
         match self {
             Time::NoCalc(t) => t.to_computed_value(context),
             Time::Calc(ref calc) => {
-                ComputedTime::from_seconds(calc.resolve(context, |result| match result {
+                let value = match calc.node.with_computed_context(context).resolve() {
                     Ok(Leaf::Time(t)) => t.seconds(),
                     _ => {
                         debug_assert!(false, "Unexpected Time::Calc without resolved time");
                         f32::NAN
                     },
-                }))
+                };
+                ComputedTime::from_seconds(
+                    crate::values::normalize(calc.clamping_mode.clamp(value))
+                        .min(f32::MAX)
+                        .max(f32::MIN),
+                )
             },
         }
     }

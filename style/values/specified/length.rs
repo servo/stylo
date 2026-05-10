@@ -40,7 +40,7 @@ use thin_vec::ThinVec;
 
 pub use super::image::Image;
 pub use super::image::{EndingShape as GradientEndingShape, Gradient};
-pub use crate::values::specified::calc::{CalcLengthPercentage, CalcNumeric};
+pub use crate::values::specified::calc::CalcNumeric;
 
 /// Number of pixels per inch
 pub const PX_PER_IN: CSSFloat = 96.;
@@ -1487,7 +1487,7 @@ pub enum Length {
     /// A calc expression.
     ///
     /// <https://drafts.csswg.org/css-values/#calc-notation>
-    Calc(Box<CalcLengthPercentage>),
+    Calc(Box<CalcNumeric>),
 }
 
 impl From<NoCalcLength> for Length {
@@ -1790,7 +1790,7 @@ impl NonNegativeLength {
 pub enum LengthPercentage {
     Length(NoCalcLength),
     Percentage(NoCalcPercentage),
-    Calc(Box<CalcLengthPercentage>),
+    Calc(Box<CalcNumeric>),
 }
 
 impl From<Length> for LengthPercentage {
@@ -1814,7 +1814,7 @@ impl From<Percentage> for LengthPercentage {
     fn from(pc: Percentage) -> Self {
         match pc {
             Percentage::NoCalc(p) => LengthPercentage::Percentage(p),
-            Percentage::Calc(calc) => LengthPercentage::Calc(Box::new(CalcLengthPercentage(*calc))),
+            Percentage::Calc(calc) => LengthPercentage::Calc(calc),
         }
     }
 }

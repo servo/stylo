@@ -65,7 +65,6 @@ impl Parse for PageSize {
     ToTyped,
 )]
 #[repr(C, u8)]
-#[typed(todo_derive_fields)]
 pub enum PageName {
     /// `auto` value.
     Auto,

@@ -371,7 +371,6 @@ impl Parse for GreaterThanOrEqualToOneNumber {
 ///
 /// <https://drafts.csswg.org/css-values/#integers>
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
-#[typed(todo_derive_fields)]
 pub enum Integer {
     /// A literal integer value.
     NoCalc(CSSInteger),

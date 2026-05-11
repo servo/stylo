@@ -25,10 +25,7 @@ use style_traits::{
 use thin_vec::ThinVec;
 use to_shmem::impl_trivial_to_shmem;
 
-#[cfg(feature = "gecko")]
-pub use crate::gecko::url::CssUrl;
-#[cfg(feature = "servo")]
-pub use crate::servo::url::CssUrl;
+pub use crate::url::CssUrl;
 
 pub mod animated;
 pub mod computed;

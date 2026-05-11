@@ -14,4 +14,3 @@ pub mod media_features;
 pub mod restyle_damage;
 pub mod selector_parser;
 mod shadow_parts;
-pub mod url;

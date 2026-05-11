@@ -225,7 +225,7 @@ impl FontFaceRule {
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum FontFaceSourceListComponent {
-    Url(*const crate::gecko::url::CssUrl),
+    Url(*const crate::url::CssUrl),
     Local(*mut crate::gecko_bindings::structs::nsAtom),
     FormatHintKeyword(FontFaceSourceFormatKeyword),
     FormatHintString {

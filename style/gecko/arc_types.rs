@@ -7,7 +7,6 @@
 
 #![allow(non_snake_case, missing_docs)]
 
-use crate::gecko::url::CssUrlData;
 use crate::media_queries::MediaList;
 use crate::properties::animated_properties::AnimationValue;
 use crate::properties::{ComputedValues, PropertyDeclarationBlock};
@@ -23,6 +22,7 @@ pub use crate::stylesheets::{
     LockedCounterStyleRule, LockedFontFaceRule, LockedImportRule, LockedKeyframesRule,
     LockedNestedDeclarationsRule, LockedPageRule, LockedPositionTryRule, LockedStyleRule,
 };
+use crate::url::gecko::CssUrlData;
 use servo_arc::Arc;
 
 macro_rules! impl_simple_arc_ffi {

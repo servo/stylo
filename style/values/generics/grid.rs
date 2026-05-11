@@ -16,13 +16,6 @@ use std::usize;
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use style_traits::values::specified::AllowedNumericType;
 
-/// These are the limits that we choose to clamp grid line numbers to.
-/// http://drafts.csswg.org/css-grid/#overlarge-grids
-/// line_num is clamped to this range at parse time.
-pub const MIN_GRID_LINE: i32 = -10000;
-/// See above.
-pub const MAX_GRID_LINE: i32 = 10000;
-
 /// A `<grid-line>` type.
 ///
 /// <https://drafts.csswg.org/css-grid/#typedef-grid-row-start-grid-line>
@@ -46,12 +39,6 @@ pub struct GenericGridLine<Integer> {
     /// <https://drafts.csswg.org/css-grid/#grid-placement-slot>
     pub ident: CustomIdent,
     /// Denotes the nth grid line from grid item's placement.
-    ///
-    /// This is clamped by MIN_GRID_LINE and MAX_GRID_LINE.
-    ///
-    /// NOTE(emilio): If we ever allow animating these we need to either do
-    /// something more complicated for the clamping, or do this clamping at
-    /// used-value time.
     pub line_num: Integer,
     /// Flag to check whether it's a `span` keyword.
     pub is_span: bool,
@@ -186,10 +173,7 @@ impl Parse for GridLine<specified::Integer> {
                     return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
 
-                line_num = Some(match i.get() {
-                    Some(v) => specified::Integer::new(v.min(MAX_GRID_LINE).max(MIN_GRID_LINE)),
-                    None => i,
-                });
+                line_num = Some(i);
             } else if let Ok(name) = input.try_parse(|i| CustomIdent::parse(i, &["auto"])) {
                 if val_before_span || ident.is_some() {
                     return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
@@ -471,10 +455,7 @@ impl Parse for RepeatCount<specified::Integer> {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        if let Ok(mut i) = input.try_parse(|i| specified::Integer::parse_positive(context, i)) {
-            if matches!(i.get(), Some(v) if v > MAX_GRID_LINE) {
-                i = specified::Integer::new(MAX_GRID_LINE);
-            }
+        if let Ok(i) = input.try_parse(|i| specified::Integer::parse_positive(context, i)) {
             return Ok(RepeatCount::Number(i));
         }
         try_match_ident_ignore_ascii_case! { input,

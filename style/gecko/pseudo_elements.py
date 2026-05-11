@@ -93,7 +93,6 @@ class PseudoElement(Pseudo):
         is_tree_abiding=False,
         parses_as_element_backed=None,
         supports_user_action_state=False,
-        disabled_domains_pref=None,
         pref=None,
         argument=None,
     ):
@@ -110,7 +109,6 @@ class PseudoElement(Pseudo):
             else is_element_backed
         )
         self.supports_user_action_state = supports_user_action_state
-        self.disabled_domains_pref = disabled_domains_pref
 
 
 class PseudoElementData:

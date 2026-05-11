@@ -101,21 +101,6 @@ impl PseudoElement {
         }
     }
 
-    /// Returns the current value of the `disabled_domains_pref` pref for
-    /// this pseudo, if it has one. The value is a list of domains for which
-    /// this pseudo should be treated as disabled (see
-    /// `nsContentUtils::IsURIInList` for the format).
-    pub fn disabled_domains(&self) -> Option<nsstring::nsCString> {
-        match *self {
-        % for pseudo in PSEUDOS:
-        % if pseudo.is_pseudo_element() and pseudo.disabled_domains_pref:
-            ${pseudo_element_variant(pseudo)} => Some(pref!("${pseudo.disabled_domains_pref}")),
-        % endif
-        % endfor
-            _ => None,
-        }
-    }
-
     /// Construct a pseudo-element from a `PseudoStyleType`.
     #[inline]
     pub fn from_pseudo_type(type_: PseudoStyleType, functional_pseudo_parameter: Option<AtomIdent>) -> Option<Self> {

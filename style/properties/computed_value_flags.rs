@@ -123,9 +123,6 @@ bitflags! {
 
         /// Whether grid-auto-flow is author-specified.
         const HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW = 1 << 23;
-
-        /// Whether this style depends on root font metrics in container queries.
-        const DEPENDS_ON_FONT_METRICS_IN_CONTAINER_QUERY = 1 << 24;
     }
 }
 
@@ -163,7 +160,6 @@ impl ComputedValueFlags {
         Self::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES
             | Self::CONSIDERED_NONTRIVIAL_SCOPED_STYLE
             | Self::DEPENDS_ON_CONTAINER_STYLE_QUERY
-            | Self::DEPENDS_ON_FONT_METRICS_IN_CONTAINER_QUERY
     }
 
     /// Returns the flags that are always propagated to descendants.

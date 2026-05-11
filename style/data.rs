@@ -369,13 +369,6 @@ fn needs_to_match_self(hint: RestyleHint, style: &ComputedValues) -> bool {
     if hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style() {
         return true;
     }
-    if hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT_METRICS)
-        && style
-            .flags
-            .contains(ComputedValueFlags::DEPENDS_ON_FONT_METRICS_IN_CONTAINER_QUERY)
-    {
-        return true;
-    }
     hint.intersects(
         RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES
             | RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER,

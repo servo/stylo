@@ -238,7 +238,6 @@ impl<T> Locked<T> {
     }
 
     /// Access the data for reading without verifying the lock. Use with caution.
-    #[cfg(feature = "gecko")]
     pub unsafe fn read_unchecked<'a>(&'a self) -> &'a T {
         let ptr = self.data.get();
         &*ptr

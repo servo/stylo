@@ -594,6 +594,13 @@ impl<Static: string_cache::StaticAtomSet> ToShmem for string_cache::Atom<Static>
     }
 }
 
+impl ToShmem for std::sync::atomic::AtomicBool {
+    fn to_shmem(&self, _: &mut SharedMemoryBuilder) -> Result<Self> {
+        use std::sync::atomic::Ordering;
+        Ok(ManuallyDrop::new(Self::new(self.load(Ordering::Relaxed))))
+    }
+}
+
 #[cfg(feature = "cssparser")]
 impl_trivial_to_shmem!(
     cssparser::SourceLocation,

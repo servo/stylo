@@ -317,6 +317,7 @@ impl RuleNode {
         cascade_priority: CascadePriority,
     ) -> Self {
         debug_assert!(root.p.parent.is_none());
+        source.mark_in_rule_tree();
         RuleNode {
             root: Some(root),
             parent: Some(parent),

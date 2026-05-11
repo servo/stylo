@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-#![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::{Locked, SharedRwLockReadGuard};
@@ -52,5 +52,26 @@ impl StyleSource {
     #[inline]
     pub fn get(&self) -> &Arc<Locked<PropertyDeclarationBlock>> {
         &self.0
+    }
+
+    /// Marks this block as part of the rule tree.
+    #[inline]
+    pub fn mark_in_rule_tree(&self) {
+        use std::sync::atomic::Ordering;
+        if self.0.is_static() {
+            // For static pointers, it doesn't matter whether we might be in the rule tree or not,
+            // because those are not mutable.
+            return;
+        }
+        // SAFETY: We're only accessing a relaxed atomic inside the locked object, which we know
+        // is alive. In theory, we could/should track that boolean outside of the
+        // Locked<PropertyDeclarationBlock>, but that is kind of a PITA.
+        #[allow(unsafe_code)]
+        unsafe {
+            self.0
+                .read_unchecked()
+                .may_be_in_rule_tree
+                .store(true, Ordering::Relaxed);
+        }
     }
 }

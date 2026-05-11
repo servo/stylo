@@ -31,8 +31,8 @@ use crate::logical_geometry::{LogicalAxis, LogicalCorner, LogicalSide};
 use crate::use_counters::UseCounters;
 use crate::rule_tree::StrongRuleNode;
 use crate::values::{
-    computed,
-    resolved,
+    computed::{self, ToComputedValue},
+    resolved::{self, ToResolvedValue},
     specified::{font::SystemFont, length::LineHeightBase, color::ColorSchemeFlags},
 };
 use std::cell::Cell;
@@ -1709,7 +1709,6 @@ impl ComputedValues {
         context: Option<&mut resolved::Context>,
         dest: &mut CssStringWriter,
     ) -> fmt::Result {
-        use crate::values::resolved::ToResolvedValue;
         let mut dest = CssWriter::new(dest);
         let property_id = property_id.to_physical(self.writing_mode);
         match property_id {
@@ -1766,8 +1765,6 @@ impl ComputedValues {
         property_id: LonghandId,
         context: Option<&mut resolved::Context>,
     ) -> PropertyDeclaration {
-        use crate::values::resolved::ToResolvedValue;
-        use crate::values::computed::ToComputedValue;
         let physical_property_id = property_id.to_physical(self.writing_mode);
         match physical_property_id {
             % for specified_type, props in groupby(data.longhands, key=lambda x: x.specified_type()):
@@ -1946,11 +1943,19 @@ impl ComputedValues {
                 // whether the name corresponds to an inherited custom property
                 // and then choose the inherited/non_inherited map accordingly.
                 let p = &self.custom_properties;
-                let value = p
-                    .inherited
-                    .get(name)
-                    .or_else(|| p.non_inherited.get(name));
-                value.map_or(String::new(), |value| value.to_css_string())
+                let Some(value) = p.inherited.get(name).or_else(|| p.non_inherited.get(name))
+                else {
+                    return String::new();
+                };
+                let mut context = resolved::Context {
+                    style: self,
+                    for_property: PropertyId::Custom(name.clone()),
+                    current_longhand: None,
+                };
+                value
+                    .clone()
+                    .to_resolved_value(&mut context)
+                    .to_css_string()
             }
         }
     }

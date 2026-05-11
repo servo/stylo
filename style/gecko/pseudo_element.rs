@@ -458,9 +458,23 @@ impl PseudoElement {
             .intersects(PseudoStyleTypeFlags::SUPPORTS_USER_ACTION_STATE)
     }
 
+    /// Returns true if the given pseudo-element should be treated as disabled for
+    /// the document represented by `url_data`, based on its `disabled_domains_pref`
+    /// toml setting.
+    fn is_pseudo_disabled_for_url(&self, url_data: &crate::stylesheets::UrlExtraData) -> bool {
+        let Some(list) = self.disabled_domains() else {
+            return false;
+        };
+        if list.is_empty() {
+            return false;
+        }
+        unsafe { crate::gecko_bindings::bindings::Gecko_IsURIInList(url_data.ptr(), &*list) }
+    }
+
     /// Whether this pseudo-element is enabled for all content.
-    pub fn enabled_in_content(&self) -> bool {
+    pub fn enabled_in_content(&self, url_data: &crate::stylesheets::UrlExtraData) -> bool {
         Self::type_enabled_in_content(self.pseudo_type())
+            && !self.is_pseudo_disabled_for_url(url_data)
     }
 
     /// Whether this pseudo is enabled explicitly in UA sheets.

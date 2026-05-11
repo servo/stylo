@@ -386,7 +386,7 @@ impl<'a> SelectorParser<'a> {
     }
 
     fn is_pseudo_element_enabled(&self, pseudo_element: &PseudoElement) -> bool {
-        if pseudo_element.enabled_in_content() {
+        if pseudo_element.enabled_in_content(&self.url_data) {
             return true;
         }
 

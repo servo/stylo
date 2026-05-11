@@ -18,6 +18,12 @@
 #   is_element_backed - whether this is an element-backed pseudo-element
 #                       https://drafts.csswg.org/css-pseudo-4/#element-like
 #   supports_user_action_state - true if this pseudo supports :hover etc.
+#   disabled_domains_pref - name of a pref (`DataMutexString`,
+#                           `mirror: always`, `rust: true`) listing domains
+#                           for which this pseudo-element should be treated
+#                           as disabled, even when it is otherwise enabled.
+#                           See `nsContentUtils::IsURIInList` for the value
+#                           format.
 #   argument - If provided, the argument this functional pseudo takes.
 #   pref - Same semantics as gecko_pref in longhands.toml
 #
@@ -162,6 +168,7 @@ pref = "layout.css.details-content.enabled"
 is_element_backed = true
 [-webkit-scrollbar]
 pref = "layout.css.fake-webkit-scrollbar.enabled"
+disabled_domains_pref = "layout.css.fake-webkit-scrollbar.disabled-domains"
 
 # Tree pseudo-elements
 [-moz-tree-column]

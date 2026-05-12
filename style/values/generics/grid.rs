@@ -13,8 +13,8 @@ use crate::{One, Zero};
 use cssparser::Parser;
 use std::fmt::{self, Write};
 use std::usize;
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use style_traits::values::specified::AllowedNumericType;
+use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 
 /// A `<grid-line>` type.
 ///
@@ -193,9 +193,13 @@ impl Parse for GridLine<specified::Integer> {
         let mut grid_line = Self::auto();
         grid_line.is_span = is_span;
         if let Some(mut line_num) = line_num {
-            if is_span && line_num.ensure_clamping_mode(AllowedNumericType::AtLeastOne).is_err() {
+            if is_span
+                && line_num
+                    .ensure_clamping_mode(AllowedNumericType::AtLeastOne)
+                    .is_err()
+            {
                 // Disallow negative integers for grid spans.
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
             }
             grid_line.line_num = line_num;
         }

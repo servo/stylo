@@ -18,7 +18,6 @@ use crate::values::generics::position::TreeScoped;
 use crate::values::generics::NonNegative;
 use crate::values::generics::{length as generics, ClampToNonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
-use crate::values::specified::length::{AbsoluteLength, FontBaseSize, LineHeightBase};
 #[cfg(feature = "gecko")]
 use crate::values::DashedIdent;
 use crate::values::{specified, CSSFloat};
@@ -35,45 +34,6 @@ pub use super::image::Image;
 pub use super::length_percentage::{LengthPercentage, NonNegativeLengthPercentage};
 pub use crate::values::specified::url::UrlOrNone;
 pub use crate::values::specified::{Angle, BorderStyle, Time};
-
-impl ToComputedValue for specified::NoCalcLength {
-    type ComputedValue = Length;
-
-    #[inline]
-    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
-        self.to_computed_value_with_base_size(
-            context,
-            FontBaseSize::CurrentStyle,
-            LineHeightBase::CurrentStyle,
-        )
-    }
-
-    #[inline]
-    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
-        Self::Absolute(AbsoluteLength::Px(computed.px()))
-    }
-}
-
-impl specified::NoCalcLength {
-    /// Computes a length with a given font-relative base size.
-    pub fn to_computed_value_with_base_size(
-        &self,
-        context: &Context,
-        base_size: FontBaseSize,
-        line_height_base: LineHeightBase,
-    ) -> Length {
-        match *self {
-            Self::Absolute(length) => length.to_computed_value(context),
-            Self::FontRelative(length) => {
-                length.to_computed_value(context, base_size, line_height_base)
-            },
-            Self::ViewportPercentage(length) => length.to_computed_value(context),
-            Self::ContainerRelative(length) => length.to_computed_value(context),
-            Self::ServoCharacterWidth(length) => length
-                .to_computed_value(context.style().get_font().clone_font_size().computed_size()),
-        }
-    }
-}
 
 impl ToComputedValue for specified::Length {
     type ComputedValue = Length;

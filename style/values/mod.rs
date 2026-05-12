@@ -27,13 +27,13 @@ use to_shmem::impl_trivial_to_shmem;
 
 pub use crate::url::CssUrl;
 
-pub mod tagged_numeric;
 pub mod animated;
 pub mod computed;
 pub mod distance;
 pub mod generics;
 pub mod resolved;
 pub mod specified;
+pub mod tagged_numeric;
 
 /// A CSS float value.
 pub type CSSFloat = f32;

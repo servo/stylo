@@ -6,7 +6,7 @@
 
 use crate::derives::*;
 use crate::values::generics::NonNegative;
-use crate::values::specified::length::AbsoluteLength;
+use crate::values::specified::length::{LengthUnit, NoCalcLength};
 
 /// Page size names.
 ///
@@ -40,33 +40,33 @@ pub enum PaperSize {
 
 impl PaperSize {
     /// Gets the long edge length of the paper size
-    pub fn long_edge(&self) -> NonNegative<AbsoluteLength> {
+    pub fn long_edge(&self) -> NonNegative<NoCalcLength> {
         NonNegative(match *self {
-            PaperSize::A5 => AbsoluteLength::Mm(210.0),
-            PaperSize::A4 => AbsoluteLength::Mm(297.0),
-            PaperSize::A3 => AbsoluteLength::Mm(420.0),
-            PaperSize::B5 => AbsoluteLength::Mm(250.0),
-            PaperSize::B4 => AbsoluteLength::Mm(353.0),
-            PaperSize::JisB5 => AbsoluteLength::Mm(257.0),
-            PaperSize::JisB4 => AbsoluteLength::Mm(364.0),
-            PaperSize::Letter => AbsoluteLength::In(11.0),
-            PaperSize::Legal => AbsoluteLength::In(14.0),
-            PaperSize::Ledger => AbsoluteLength::In(17.0),
+            PaperSize::A5 => NoCalcLength::new(LengthUnit::Mm, 210.0),
+            PaperSize::A4 => NoCalcLength::new(LengthUnit::Mm, 297.0),
+            PaperSize::A3 => NoCalcLength::new(LengthUnit::Mm, 420.0),
+            PaperSize::B5 => NoCalcLength::new(LengthUnit::Mm, 250.0),
+            PaperSize::B4 => NoCalcLength::new(LengthUnit::Mm, 353.0),
+            PaperSize::JisB5 => NoCalcLength::new(LengthUnit::Mm, 257.0),
+            PaperSize::JisB4 => NoCalcLength::new(LengthUnit::Mm, 364.0),
+            PaperSize::Letter => NoCalcLength::new(LengthUnit::In, 11.0),
+            PaperSize::Legal => NoCalcLength::new(LengthUnit::In, 14.0),
+            PaperSize::Ledger => NoCalcLength::new(LengthUnit::In, 17.0),
         })
     }
     /// Gets the short edge length of the paper size
-    pub fn short_edge(&self) -> NonNegative<AbsoluteLength> {
+    pub fn short_edge(&self) -> NonNegative<NoCalcLength> {
         NonNegative(match *self {
-            PaperSize::A5 => AbsoluteLength::Mm(148.0),
-            PaperSize::A4 => AbsoluteLength::Mm(210.0),
-            PaperSize::A3 => AbsoluteLength::Mm(297.0),
-            PaperSize::B5 => AbsoluteLength::Mm(176.0),
-            PaperSize::B4 => AbsoluteLength::Mm(250.0),
-            PaperSize::JisB5 => AbsoluteLength::Mm(182.0),
-            PaperSize::JisB4 => AbsoluteLength::Mm(257.0),
-            PaperSize::Letter => AbsoluteLength::In(8.5),
-            PaperSize::Legal => AbsoluteLength::In(8.5),
-            PaperSize::Ledger => AbsoluteLength::In(11.0),
+            PaperSize::A5 => NoCalcLength::new(LengthUnit::Mm, 148.0),
+            PaperSize::A4 => NoCalcLength::new(LengthUnit::Mm, 210.0),
+            PaperSize::A3 => NoCalcLength::new(LengthUnit::Mm, 297.0),
+            PaperSize::B5 => NoCalcLength::new(LengthUnit::Mm, 176.0),
+            PaperSize::B4 => NoCalcLength::new(LengthUnit::Mm, 250.0),
+            PaperSize::JisB5 => NoCalcLength::new(LengthUnit::Mm, 182.0),
+            PaperSize::JisB4 => NoCalcLength::new(LengthUnit::Mm, 257.0),
+            PaperSize::Letter => NoCalcLength::new(LengthUnit::In, 8.5),
+            PaperSize::Legal => NoCalcLength::new(LengthUnit::In, 8.5),
+            PaperSize::Ledger => NoCalcLength::new(LengthUnit::In, 11.0),
         })
     }
 }

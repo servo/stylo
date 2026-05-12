@@ -10,7 +10,7 @@
 //! that they pack along the tag that we use internally in InlineVariant.
 
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
-use std::{marker, mem, fmt};
+use std::{fmt, marker, mem};
 use to_shmem::{SharedMemoryBuilder, ToShmem};
 
 // NOTE(emilio): cbindgen only understands the #[cfg] on the top level definition.
@@ -205,12 +205,13 @@ impl<T: Copy + ToShmem, N: Copy + ToShmem, B: ToShmem> ToShmem for NumericUnion<
     }
 }
 
-impl<T: Copy + fmt::Debug, N: Copy + fmt::Debug, B: fmt::Debug> fmt::Debug for NumericUnion<T, N, B> {
+impl<T: Copy + fmt::Debug, N: Copy + fmt::Debug, B: fmt::Debug> fmt::Debug
+    for NumericUnion<T, N, B>
+{
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         self.unpack().fmt(formatter)
     }
 }
-
 
 impl<T: Copy + PartialEq, N: Copy + PartialEq, B: PartialEq> PartialEq for NumericUnion<T, N, B> {
     fn eq(&self, other: &Self) -> bool {

@@ -1224,12 +1224,13 @@ impl specified::CalcNumeric {
     /// so it returns Err(()) if there is any non-absolute unit.
     pub fn to_computed_pixel_length_without_context(&self) -> Result<CSSFloat, ()> {
         use crate::values::specified::calc::Leaf;
-        use crate::values::specified::length::NoCalcLength;
 
         // Simplification should've turned this into an absolute length,
         // otherwise it wouldn't have been able to.
         match self.node {
-            calc::CalcNode::Leaf(Leaf::Length(NoCalcLength::Absolute(ref l))) => Ok(l.to_px()),
+            calc::CalcNode::Leaf(Leaf::Length(ref l)) => {
+                l.to_computed_pixel_length_without_context()
+            },
             _ => Err(()),
         }
     }
@@ -1242,16 +1243,10 @@ impl specified::CalcNumeric {
         get_font_metrics: Option<impl Fn() -> GeckoFontMetrics>,
     ) -> Result<CSSFloat, ()> {
         use crate::values::specified::calc::Leaf;
-        use crate::values::specified::length::NoCalcLength;
 
         match self.node {
-            calc::CalcNode::Leaf(Leaf::Length(NoCalcLength::Absolute(ref l))) => Ok(l.to_px()),
-            calc::CalcNode::Leaf(Leaf::Length(NoCalcLength::FontRelative(ref l))) => {
-                if let Some(getter) = get_font_metrics {
-                    l.to_computed_pixel_length_with_font_metrics(getter)
-                } else {
-                    Err(())
-                }
+            calc::CalcNode::Leaf(Leaf::Length(ref l)) => {
+                l.to_computed_pixel_length_with_font_metrics(get_font_metrics)
             },
             _ => Err(()),
         }

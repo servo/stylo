@@ -28,7 +28,7 @@ use crate::stylesheets::UrlExtraData;
 use crate::stylist::Stylist;
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::calc::SortKey as AttrUnit;
-use crate::values::specified::FontRelativeLength;
+use crate::values::specified::NoCalcLength;
 use crate::values::specified::ParsedNamespace;
 use crate::{derives::*, Namespace, Prefix};
 use crate::{Atom, LocalName};
@@ -510,25 +510,25 @@ impl NonCustomReferences {
         // make it dependent on font-related properties.
         // TODO(dshin): When we unit algebra gets implemented and handled -
         // Is it valid to say that `calc(1em / 2em * 3px)` triggers this?
-        if value.eq_ignore_ascii_case(FontRelativeLength::LH) {
+        if value.eq_ignore_ascii_case(NoCalcLength::LH) {
             return Self::FONT_UNITS | Self::LH_UNITS;
         }
-        if value.eq_ignore_ascii_case(FontRelativeLength::EM)
-            || value.eq_ignore_ascii_case(FontRelativeLength::EX)
-            || value.eq_ignore_ascii_case(FontRelativeLength::CAP)
-            || value.eq_ignore_ascii_case(FontRelativeLength::CH)
-            || value.eq_ignore_ascii_case(FontRelativeLength::IC)
+        if value.eq_ignore_ascii_case(NoCalcLength::EM)
+            || value.eq_ignore_ascii_case(NoCalcLength::EX)
+            || value.eq_ignore_ascii_case(NoCalcLength::CAP)
+            || value.eq_ignore_ascii_case(NoCalcLength::CH)
+            || value.eq_ignore_ascii_case(NoCalcLength::IC)
         {
             return Self::FONT_UNITS;
         }
-        if value.eq_ignore_ascii_case(FontRelativeLength::RLH) {
+        if value.eq_ignore_ascii_case(NoCalcLength::RLH) {
             return Self::ROOT_FONT_UNITS | Self::ROOT_LH_UNITS;
         }
-        if value.eq_ignore_ascii_case(FontRelativeLength::REM)
-            || value.eq_ignore_ascii_case(FontRelativeLength::REX)
-            || value.eq_ignore_ascii_case(FontRelativeLength::RCH)
-            || value.eq_ignore_ascii_case(FontRelativeLength::RCAP)
-            || value.eq_ignore_ascii_case(FontRelativeLength::RIC)
+        if value.eq_ignore_ascii_case(NoCalcLength::REM)
+            || value.eq_ignore_ascii_case(NoCalcLength::REX)
+            || value.eq_ignore_ascii_case(NoCalcLength::RCH)
+            || value.eq_ignore_ascii_case(NoCalcLength::RCAP)
+            || value.eq_ignore_ascii_case(NoCalcLength::RIC)
         {
             return Self::ROOT_FONT_UNITS;
         }

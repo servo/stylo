@@ -18,8 +18,7 @@ use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{
     AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide, TreeScoped,
 };
-use crate::values::specified::length::{AbsoluteLength, FontRelativeLength, NoCalcLength};
-use crate::values::specified::length::{ContainerRelativeLength, ViewportPercentageLength};
+use crate::values::specified::length::NoCalcLength;
 use crate::values::specified::{
     NoCalcAngle, NoCalcNumber, NoCalcPercentage, NoCalcResolution, NoCalcTime,
 };
@@ -372,66 +371,17 @@ impl generic::CalcNodeLeaf for Leaf {
             Self::Time(..) => SortKey::S,
             Self::Resolution(..) => SortKey::Dppx,
             Self::Angle(..) => SortKey::Deg,
-            Self::Length(ref l) => match *l {
-                NoCalcLength::Absolute(..) => SortKey::Px,
-                NoCalcLength::FontRelative(ref relative) => match *relative {
-                    FontRelativeLength::Em(..) => SortKey::Em,
-                    FontRelativeLength::Ex(..) => SortKey::Ex,
-                    FontRelativeLength::Rex(..) => SortKey::Rex,
-                    FontRelativeLength::Ch(..) => SortKey::Ch,
-                    FontRelativeLength::Rch(..) => SortKey::Rch,
-                    FontRelativeLength::Cap(..) => SortKey::Cap,
-                    FontRelativeLength::Rcap(..) => SortKey::Rcap,
-                    FontRelativeLength::Ic(..) => SortKey::Ic,
-                    FontRelativeLength::Ric(..) => SortKey::Ric,
-                    FontRelativeLength::Rem(..) => SortKey::Rem,
-                    FontRelativeLength::Lh(..) => SortKey::Lh,
-                    FontRelativeLength::Rlh(..) => SortKey::Rlh,
-                },
-                NoCalcLength::ViewportPercentage(ref vp) => match *vp {
-                    ViewportPercentageLength::Vh(..) => SortKey::Vh,
-                    ViewportPercentageLength::Svh(..) => SortKey::Svh,
-                    ViewportPercentageLength::Lvh(..) => SortKey::Lvh,
-                    ViewportPercentageLength::Dvh(..) => SortKey::Dvh,
-                    ViewportPercentageLength::Vw(..) => SortKey::Vw,
-                    ViewportPercentageLength::Svw(..) => SortKey::Svw,
-                    ViewportPercentageLength::Lvw(..) => SortKey::Lvw,
-                    ViewportPercentageLength::Dvw(..) => SortKey::Dvw,
-                    ViewportPercentageLength::Vmax(..) => SortKey::Vmax,
-                    ViewportPercentageLength::Svmax(..) => SortKey::Svmax,
-                    ViewportPercentageLength::Lvmax(..) => SortKey::Lvmax,
-                    ViewportPercentageLength::Dvmax(..) => SortKey::Dvmax,
-                    ViewportPercentageLength::Vmin(..) => SortKey::Vmin,
-                    ViewportPercentageLength::Svmin(..) => SortKey::Svmin,
-                    ViewportPercentageLength::Lvmin(..) => SortKey::Lvmin,
-                    ViewportPercentageLength::Dvmin(..) => SortKey::Dvmin,
-                    ViewportPercentageLength::Vb(..) => SortKey::Vb,
-                    ViewportPercentageLength::Svb(..) => SortKey::Svb,
-                    ViewportPercentageLength::Lvb(..) => SortKey::Lvb,
-                    ViewportPercentageLength::Dvb(..) => SortKey::Dvb,
-                    ViewportPercentageLength::Vi(..) => SortKey::Vi,
-                    ViewportPercentageLength::Svi(..) => SortKey::Svi,
-                    ViewportPercentageLength::Lvi(..) => SortKey::Lvi,
-                    ViewportPercentageLength::Dvi(..) => SortKey::Dvi,
-                },
-                NoCalcLength::ContainerRelative(ref cq) => match *cq {
-                    ContainerRelativeLength::Cqw(..) => SortKey::Cqw,
-                    ContainerRelativeLength::Cqh(..) => SortKey::Cqh,
-                    ContainerRelativeLength::Cqi(..) => SortKey::Cqi,
-                    ContainerRelativeLength::Cqb(..) => SortKey::Cqb,
-                    ContainerRelativeLength::Cqmin(..) => SortKey::Cqmin,
-                    ContainerRelativeLength::Cqmax(..) => SortKey::Cqmax,
-                },
-                NoCalcLength::ServoCharacterWidth(..) => unreachable!(),
-            },
+            Self::Length(ref l) => l.sort_key(),
             Self::ColorComponent(..) => SortKey::ColorComponent,
         }
     }
 
     fn simplify(&mut self) {
         match self {
-            Leaf::Length(NoCalcLength::Absolute(ref mut abs)) => {
-                *abs = AbsoluteLength::Px(abs.to_px())
+            Leaf::Length(ref mut l) => {
+                if let Some(px) = l.to_px_if_absolute() {
+                    *l = NoCalcLength::from_px(px);
+                }
             },
             Leaf::Resolution(ref mut r) => *r = NoCalcResolution::from_dppx(r.dppx()),
             Leaf::Time(ref mut t) => *t = NoCalcTime::from_seconds(t.seconds()),
@@ -615,7 +565,7 @@ fn parse_anchor_function_fallback<'i, 't>(
                 if value != 0.0 {
                     return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
-                Leaf::Length(NoCalcLength::Absolute(AbsoluteLength::Px(0.0)))
+                Leaf::Length(NoCalcLength::from_px(0.0))
             },
             &Token::Dimension {
                 value, ref unit, ..

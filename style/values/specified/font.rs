@@ -362,7 +362,7 @@ impl SpecifiedFontStyle {
     ) -> Result<Angle, ParseError<'i>> {
         let angle = Angle::parse(context, input)?;
         // Calc angles can exceed the range and are clamped at computed-value time.
-        if matches!(angle, Angle::Calc(_)) {
+        if angle.is_calc() {
             return Ok(angle);
         }
 

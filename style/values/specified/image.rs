@@ -1028,7 +1028,9 @@ impl Gradient {
 impl generic::LineDirection for LineDirection {
     fn points_downwards(&self, compat_mode: GradientCompatMode) -> bool {
         match *self {
-            LineDirection::Angle(Angle::NoCalc(angle)) => angle.degrees() == 180.0,
+            LineDirection::Angle(ref angle) => {
+                angle.as_no_calc().is_some_and(|a| a.degrees() == 180.0)
+            },
             LineDirection::Vertical(VerticalPositionKeyword::Bottom) => {
                 compat_mode == GradientCompatMode::Modern
             },

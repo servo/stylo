@@ -2517,13 +2517,13 @@ pub mod font {
     use super::*;
     #[cfg(feature = "gecko")]
     use crate::properties::longhands::{
-        font_family, font_feature_settings, font_language_override, font_size,
-        font_size_adjust, font_variant_alternates, font_variant_east_asian, font_variant_emoji,
-        font_variant_ligatures, font_variant_numeric, font_variant_position,
+        font_family, font_feature_settings, font_language_override, font_size, font_size_adjust,
+        font_variant_alternates, font_variant_east_asian, font_variant_emoji, font_variant_numeric,
+        font_variant_position,
     };
     use crate::properties::longhands::{
-        font_kerning, font_optical_sizing, font_stretch, font_style, font_variant_caps, font_variation_settings,
-        font_weight,
+        font_kerning, font_optical_sizing, font_stretch, font_style, font_variant_caps,
+        font_variant_ligatures, font_variation_settings, font_weight,
     };
     #[cfg(feature = "gecko")]
     use crate::values::specified::font::SystemFont;
@@ -2634,7 +2634,6 @@ pub mod font {
             font_variant_east_asian: font_variant_east_asian::get_initial_specified_value(),
             #[cfg(feature = "gecko")]
             font_variant_emoji: font_variant_emoji::get_initial_specified_value(),
-            #[cfg(feature = "gecko")]
             font_variant_ligatures: font_variant_ligatures::get_initial_specified_value(),
             #[cfg(feature = "gecko")]
             font_variant_numeric: font_variant_numeric::get_initial_specified_value(),
@@ -2705,7 +2704,6 @@ pub mod font {
             {
                 return Ok(());
             }
-            #[cfg(feature = "gecko")]
             if self.font_variant_ligatures != &font_variant_ligatures::get_initial_specified_value()
             {
                 return Ok(());
@@ -2843,20 +2841,18 @@ pub mod font_variant {
     pub use crate::properties::generated::shorthands::font_variant::*;
 
     use super::*;
-    use crate::properties::longhands::font_variant_caps;
     #[cfg(feature = "gecko")]
     use crate::properties::longhands::{
-        font_variant_alternates, font_variant_east_asian, font_variant_emoji,
-        font_variant_ligatures, font_variant_numeric, font_variant_position,
+        font_variant_alternates, font_variant_east_asian, font_variant_emoji, font_variant_numeric,
+        font_variant_position,
     };
-    #[allow(unused_imports)]
+    use crate::properties::longhands::{font_variant_caps, font_variant_ligatures};
     use crate::values::specified::FontVariantLigatures;
 
     pub fn parse_value<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
-        #[cfg(feature = "gecko")]
         let mut ligatures = None;
         let mut caps = None;
         #[cfg(feature = "gecko")]
@@ -2878,10 +2874,7 @@ pub mod font_variant {
             .try_parse(|input| input.expect_ident_matching("none"))
             .is_ok()
         {
-            #[cfg(feature = "gecko")]
-            {
-                ligatures = Some(FontVariantLigatures::NONE);
-            }
+            ligatures = Some(FontVariantLigatures::NONE);
         } else {
             let mut parsed = 0;
             loop {
@@ -2895,7 +2888,6 @@ pub mod font_variant {
                 {
                     return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
-                #[cfg(feature = "gecko")]
                 try_parse_one!(context, input, ligatures, font_variant_ligatures::parse);
                 try_parse_one!(context, input, caps, font_variant_caps::parse);
                 #[cfg(feature = "gecko")]
@@ -2929,6 +2921,7 @@ pub mod font_variant {
         });
         #[cfg(feature = "servo")]
         return Ok(expanded! {
+            font_variant_ligatures: unwrap_or_initial!(font_variant_ligatures, ligatures),
             font_variant_caps: unwrap_or_initial!(font_variant_caps, caps),
         });
     }
@@ -2939,15 +2932,12 @@ pub mod font_variant {
         where
             W: fmt::Write,
         {
-            #[cfg(feature = "gecko")]
             let has_none_ligatures = self.font_variant_ligatures == &FontVariantLigatures::NONE;
-            #[cfg(feature = "servo")]
-            let has_none_ligatures = false;
 
             #[cfg(feature = "gecko")]
             const TOTAL_SUBPROPS: usize = 7;
             #[cfg(feature = "servo")]
-            const TOTAL_SUBPROPS: usize = 1;
+            const TOTAL_SUBPROPS: usize = 2;
             let mut nb_normals = 0;
             macro_rules! count_normal {
                 ($e: expr, $p: ident) => {
@@ -2959,7 +2949,6 @@ pub mod font_variant {
                     count_normal!(self.$v, $v);
                 };
             }
-            #[cfg(feature = "gecko")]
             count_normal!(font_variant_ligatures);
             count_normal!(font_variant_caps);
             #[cfg(feature = "gecko")]
@@ -3001,7 +2990,6 @@ pub mod font_variant {
                 };
             }
 
-            #[cfg(feature = "gecko")]
             write!(font_variant_ligatures);
             write!(font_variant_caps);
             #[cfg(feature = "gecko")]

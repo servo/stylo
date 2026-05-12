@@ -743,13 +743,20 @@ pub enum PositionTryFallbacksItem {
 #[repr(C)]
 #[typed(todo_derive_fields)]
 /// https://drafts.csswg.org/css-anchor-position-1/#position-try-fallbacks
-pub struct PositionTryFallbacks(
+pub struct PositionTryFallbacksList(
     #[css(iterable, if_empty = "none")]
     #[ignore_malloc_size_of = "Arc"]
     pub crate::ArcSlice<PositionTryFallbacksItem>,
 );
 
-impl PositionTryFallbacks {
+
+impl IsTreeScoped for PositionTryFallbacksList {
+    fn is_tree_scoped(&self) -> bool {
+        !self.is_none()
+    }
+}
+
+impl PositionTryFallbacksList {
     #[inline]
     /// Return the `none` value.
     pub fn none() -> Self {
@@ -762,7 +769,7 @@ impl PositionTryFallbacks {
     }
 }
 
-impl Parse for PositionTryFallbacks {
+impl Parse for PositionTryFallbacksList {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -778,6 +785,16 @@ impl Parse for PositionTryFallbacks {
             items.push(PositionTryFallbacksItem::parse(context, input)?);
         }
         Ok(Self(ArcSlice::from_iter(items.drain(..))))
+    }
+}
+
+/// https://drafts.csswg.org/css-anchor-position-1/#position-try-fallbacks
+pub type PositionTryFallbacks = TreeScoped<PositionTryFallbacksList>;
+
+impl PositionTryFallbacks {
+    /// Returns the default value, `none`.
+    pub fn none() -> Self {
+        Self::with_default_level(PositionTryFallbacksList::none())
     }
 }
 

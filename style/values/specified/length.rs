@@ -24,6 +24,7 @@ use crate::values::specified::calc::{AllowAnchorPositioningFunctions, CalcNode};
 use crate::values::specified::font::QueryFontMetricsFlags;
 use crate::values::specified::percentage::NoCalcPercentage;
 use crate::values::specified::NonNegativeNumber;
+use crate::values::tagged_numeric::{Extracted, NumericUnion, Unpacked};
 use crate::values::CSSFloat;
 use crate::{Zero, ZeroNoPercent};
 use app_units::AU_PER_PX;
@@ -1074,25 +1075,61 @@ impl Zero for NoCalcLength {
 /// An extension to `NoCalcLength` to parse `calc` expressions.
 /// This is commonly used for the `<length>` values.
 ///
+/// Either stored inline as length + unit without calc or as a boxed calc node.
+///
 /// <https://drafts.csswg.org/css-values/#lengths>
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
-pub enum Length {
-    /// The internal length type that cannot parse `calc`
-    NoCalc(NoCalcLength),
-    /// A calc expression.
-    ///
-    /// <https://drafts.csswg.org/css-values/#calc-notation>
-    Calc(Box<CalcNumeric>),
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct Length(NumericUnion<LengthUnit, f32, CalcNumeric>);
+
+impl ToCss for Length {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        match self.0.unpack() {
+            Unpacked::Inline(unit, value) => NoCalcLength::new(unit, value).to_css(dest),
+            Unpacked::Boxed(calc) => calc.to_css(dest),
+        }
+    }
 }
+
+impl ToTyped for Length {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        match self.0.unpack() {
+            Unpacked::Inline(unit, value) => NoCalcLength::new(unit, value).to_typed(dest),
+            Unpacked::Boxed(calc) => calc.to_typed(dest),
+        }
+    }
+}
+
+impl SpecifiedValueInfo for Length {}
 
 impl From<NoCalcLength> for Length {
     #[inline]
     fn from(len: NoCalcLength) -> Self {
-        Length::NoCalc(len)
+        Self::new(len)
     }
 }
 
 impl Length {
+    /// Creates a length from a non-calc `NoCalcLength`.
+    #[inline]
+    pub fn new(len: NoCalcLength) -> Self {
+        Self(NumericUnion::inline(len.unit, len.value))
+    }
+
+    /// Creates a length from a `calc()` expression.
+    #[inline]
+    pub fn new_calc(calc: Box<CalcNumeric>) -> Self {
+        Self(NumericUnion::boxed(calc))
+    }
+
+    /// Returns true if this is a `calc()` expression.
+    #[inline]
+    pub fn is_calc(&self) -> bool {
+        self.0.is_boxed()
+    }
+
     #[inline]
     fn parse_internal<'i, 't>(
         context: &ParserContext,
@@ -1107,7 +1144,7 @@ impl Length {
                 value, ref unit, ..
             } if num_context.is_ok(context.parsing_mode, value) => {
                 NoCalcLength::parse_dimension_with_context(context, value, unit)
-                    .map(Length::NoCalc)
+                    .map(Self::new)
                     .map_err(|()| location.new_unexpected_token_error(token.clone()))
             },
             Token::Number { value, .. } if num_context.is_ok(context.parsing_mode, value) => {
@@ -1117,12 +1154,12 @@ impl Length {
                 {
                     return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
-                Ok(Length::NoCalc(NoCalcLength::from_px(value)))
+                Ok(Self::new(NoCalcLength::from_px(value)))
             },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
                 let calc = CalcNode::parse_length(context, input, num_context, function)?;
-                Ok(Length::Calc(Box::new(calc)))
+                Ok(Self::new_calc(Box::new(calc)))
             },
             ref token => return Err(location.new_unexpected_token_error(token.clone())),
         }
@@ -1155,14 +1192,16 @@ impl Length {
     /// Get an absolute length from a px value.
     #[inline]
     pub fn from_px(px_value: CSSFloat) -> Length {
-        Length::NoCalc(NoCalcLength::from_px(px_value))
+        Self::new(NoCalcLength::from_px(px_value))
     }
 
     /// Get a px value without context.
     pub fn to_computed_pixel_length_without_context(&self) -> Result<CSSFloat, ()> {
-        match *self {
-            Self::NoCalc(ref l) => l.to_computed_pixel_length_without_context(),
-            Self::Calc(ref l) => l.to_computed_pixel_length_without_context(),
+        match self.0.unpack() {
+            Unpacked::Inline(unit, value) => {
+                NoCalcLength::new(unit, value).to_computed_pixel_length_without_context()
+            },
+            Unpacked::Boxed(calc) => calc.to_computed_pixel_length_without_context(),
         }
     }
 
@@ -1172,9 +1211,10 @@ impl Length {
         &self,
         get_font_metrics: Option<impl Fn() -> GeckoFontMetrics>,
     ) -> Result<CSSFloat, ()> {
-        match *self {
-            Self::NoCalc(ref l) => l.to_computed_pixel_length_with_font_metrics(get_font_metrics),
-            Self::Calc(ref l) => l.to_computed_pixel_length_with_font_metrics(get_font_metrics),
+        match self.0.unpack() {
+            Unpacked::Inline(unit, value) => NoCalcLength::new(unit, value)
+                .to_computed_pixel_length_with_font_metrics(get_font_metrics),
+            Unpacked::Boxed(calc) => calc.to_computed_pixel_length_with_font_metrics(get_font_metrics),
         }
     }
 }
@@ -1188,17 +1228,45 @@ impl Parse for Length {
     }
 }
 
+impl ToComputedValue for Length {
+    type ComputedValue = computed::Length;
+
+    #[inline]
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
+        match self.0.unpack() {
+            Unpacked::Inline(unit, value) => {
+                NoCalcLength::new(unit, value).to_computed_value(context)
+            },
+            Unpacked::Boxed(calc) => {
+                let result = calc.to_computed_value(context);
+                debug_assert!(
+                    result.to_length().is_some(),
+                    "{:?} didn't resolve to a length: {:?}",
+                    calc,
+                    result,
+                );
+                result.to_length().unwrap_or_else(computed::Length::zero)
+            },
+        }
+    }
+
+    #[inline]
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        Self::new(NoCalcLength::from_computed_value(computed))
+    }
+}
+
 impl Zero for Length {
     fn zero() -> Self {
-        Length::NoCalc(NoCalcLength::zero())
+        Self::new(NoCalcLength::zero())
     }
 
     fn is_zero(&self) -> bool {
         // FIXME(emilio): Seems a bit weird to treat calc() unconditionally as
         // non-zero here?
-        match *self {
-            Length::NoCalc(ref l) => l.is_zero(),
-            Length::Calc(..) => false,
+        match self.0.unpack() {
+            Unpacked::Inline(_, value) => value == 0.0,
+            Unpacked::Boxed(_) => false,
         }
     }
 }
@@ -1230,7 +1298,7 @@ impl Parse for NonNegativeLength {
 impl From<NoCalcLength> for NonNegativeLength {
     #[inline]
     fn from(len: NoCalcLength) -> Self {
-        NonNegative(Length::NoCalc(len))
+        NonNegative(Length::new(len))
     }
 }
 
@@ -1277,9 +1345,9 @@ pub enum LengthPercentage {
 
 impl From<Length> for LengthPercentage {
     fn from(len: Length) -> LengthPercentage {
-        match len {
-            Length::NoCalc(l) => LengthPercentage::Length(l),
-            Length::Calc(l) => LengthPercentage::Calc(l),
+        match len.0.extract() {
+            Extracted::Inline(unit, value) => LengthPercentage::Length(NoCalcLength::new(unit, value)),
+            Extracted::Boxed(calc) => LengthPercentage::Calc(calc),
         }
     }
 }

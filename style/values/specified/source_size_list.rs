@@ -73,7 +73,7 @@ impl SourceSizeList {
                 Some(source_size) => source_size.value.to_computed_value(context),
                 None => match self.value {
                     Some(ref v) => v.to_computed_value(context),
-                    None => Length::NoCalc(NoCalcLength::new(LengthUnit::Vw, 100.))
+                    None => Length::new(NoCalcLength::new(LengthUnit::Vw, 100.))
                         .to_computed_value(context),
                 },
             }

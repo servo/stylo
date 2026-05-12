@@ -4,7 +4,7 @@
 
 //! `<length>` computed values, and related ones.
 
-use super::{Context, Number, ToComputedValue};
+use super::{Number, ToComputedValue};
 use crate::derives::*;
 use crate::logical_geometry::PhysicalSide;
 use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
@@ -20,7 +20,7 @@ use crate::values::generics::{length as generics, ClampToNonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 #[cfg(feature = "gecko")]
 use crate::values::DashedIdent;
-use crate::values::{specified, CSSFloat};
+use crate::values::CSSFloat;
 use crate::Zero;
 use app_units::Au;
 use std::fmt::{self, Write};
@@ -34,32 +34,6 @@ pub use super::image::Image;
 pub use super::length_percentage::{LengthPercentage, NonNegativeLengthPercentage};
 pub use crate::values::specified::url::UrlOrNone;
 pub use crate::values::specified::{Angle, BorderStyle, Time};
-
-impl ToComputedValue for specified::Length {
-    type ComputedValue = Length;
-
-    #[inline]
-    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
-        match *self {
-            Self::NoCalc(l) => l.to_computed_value(context),
-            Self::Calc(ref calc) => {
-                let result = calc.to_computed_value(context);
-                debug_assert!(
-                    result.to_length().is_some(),
-                    "{:?} didn't resolve to a length: {:?}",
-                    calc,
-                    result,
-                );
-                result.to_length().unwrap_or_else(Length::zero)
-            },
-        }
-    }
-
-    #[inline]
-    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
-        Self::NoCalc(specified::NoCalcLength::from_computed_value(computed))
-    }
-}
 
 /// Some boilerplate to share between negative and non-negative
 /// length-percentage or auto.

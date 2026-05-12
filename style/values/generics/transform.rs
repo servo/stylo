@@ -388,10 +388,7 @@ impl ToAbsoluteLength for SpecifiedLength {
     // if there is relative length.
     #[inline]
     fn to_pixel_length(&self, _containing_len: Option<ComputedLength>) -> Result<CSSFloat, ()> {
-        match *self {
-            SpecifiedLength::NoCalc(len) => len.to_computed_pixel_length_without_context(),
-            SpecifiedLength::Calc(ref calc) => calc.to_computed_pixel_length_without_context(),
-        }
+        self.to_computed_pixel_length_without_context()
     }
 }
 

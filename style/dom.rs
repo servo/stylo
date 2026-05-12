@@ -813,13 +813,11 @@ pub trait TElement:
     /// The shadow root which roots the subtree this element is contained in.
     fn containing_shadow(&self) -> Option<<Self::ConcreteNode as TNode>::ConcreteShadowRoot>;
 
-    /// Return the element which we can use to look up rules in the selector
-    /// maps.
-    ///
-    /// This is always the element itself, except in the case where we are an
-    /// element-backed pseudo-element, in which case we return the originating
-    /// element.
-    fn rule_hash_target(&self) -> Self {
+    /// If this element is not a pseudo-element, return self. Otherwise,
+    /// return the ultimate originating element [1]. This is the element
+    /// used to look up rules in the selector maps.
+    /// [1]: https://drafts.csswg.org/selectors-4/#ultimate-originating-element
+    fn ultimate_originating_element(&self) -> Self {
         let mut cur = *self;
         while cur.is_pseudo_element() {
             cur = cur
@@ -846,7 +844,7 @@ pub trait TElement:
     {
         use crate::rule_collector::containing_shadow_ignoring_svg_use;
 
-        let target = self.rule_hash_target();
+        let target = self.ultimate_originating_element();
         let matches_user_and_content_rules = target.matches_user_and_content_rules();
         let mut doc_rules_apply = matches_user_and_content_rules;
 

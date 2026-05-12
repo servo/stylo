@@ -94,7 +94,7 @@ where
         rules: &'a mut ApplicableDeclarationList,
         context: &'a mut MatchingContext<'b, E::Impl>,
     ) -> Self {
-        let rule_hash_target = element.rule_hash_target();
+        let rule_hash_target = element.ultimate_originating_element();
         let matches_user_and_content_rules = rule_hash_target.matches_user_and_content_rules();
 
         debug_assert!(pseudo_elements.iter().all(|p| !p.is_precomputed()));

@@ -7,6 +7,7 @@
 //! The cascade level and shadow cascade order for tracking shadow tree rules.
 
 use crate::derives::*;
+use crate::dom::{TElement, TNode, TShadowRoot};
 use crate::properties::Importance;
 use crate::shared_lock::{SharedRwLockReadGuard, StylesheetGuards};
 use crate::stylesheets::Origin;
@@ -286,6 +287,40 @@ impl CascadeLevel {
         result |= Self::from_bits_truncate(abs);
         result.set(Self::CASCADE_ORDER_SIGN, shadow_cascade_order.0 < 0);
         result
+    }
+
+    /// Get the shadow root corresponding to the shadow cascade order, from the given element.
+    pub fn get_shadow_root_for_scoped<E: TElement>(
+        &self,
+        element: E,
+    ) -> Option<<<E as TElement>::ConcreteNode as TNode>::ConcreteShadowRoot> {
+        let mut cascade_order = self.shadow_order().0;
+        if cascade_order < 0 {
+            let element = element.ultimate_originating_element();
+            let mut slot = element.assigned_slot();
+            while let Some(s) = slot {
+                cascade_order += 1;
+                if cascade_order == 0 {
+                    return s.containing_shadow();
+                }
+                slot = s.assigned_slot();
+            }
+            if cascade_order != -1 {
+                return None;
+            }
+
+            return element.shadow_root();
+        }
+        debug_assert!(cascade_order >= 0);
+        let mut containing_shadow = element.containing_shadow();
+        while let Some(s) = containing_shadow {
+            if cascade_order == 0 {
+                break;
+            }
+            cascade_order -= 1;
+            containing_shadow = s.host().containing_shadow();
+        }
+        containing_shadow
     }
 }
 

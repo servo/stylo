@@ -13,7 +13,7 @@ use crate::custom_properties::ComputedCustomProperties;
 use crate::custom_properties::{parse_name, SpecifiedValue};
 use crate::derives::*;
 use crate::device::Device;
-use crate::dom::TElement;
+use crate::dom::{TElement, TShadowRoot};
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{ServoStyleSetSizes, StyleRuleInclusion};
 use crate::invalidation::element::invalidation_map::{
@@ -1381,6 +1381,7 @@ impl Stylist {
         &self,
         style: &ComputedValues,
         guards: &StylesheetGuards,
+        scope: CascadeLevel,
         element: E,
         fallback_item: &PositionTryFallbacksItem,
     ) -> Option<Arc<ComputedValues>>
@@ -1404,7 +1405,7 @@ impl Stylist {
         };
 
         let fallback_rule = if !name_and_try_tactic.ident.is_empty() {
-            Some(self.lookup_position_try(&name_and_try_tactic.ident.0, element)?)
+            Some(self.lookup_position_try(&name_and_try_tactic.ident.0, scope, element)?)
         } else {
             None
         };
@@ -1831,14 +1832,33 @@ impl Stylist {
     fn lookup_position_try<'a, E>(
         &'a self,
         name: &Atom,
+        scope: CascadeLevel,
         element: E,
     ) -> Option<&'a Arc<Locked<PositionTryRule>>>
     where
         E: TElement + 'a,
     {
-        self.lookup_element_dependent_at_rule(element, |data| {
-            data.extra_data.position_try_rules.get(name)
-        })
+        let mut shadow_root = scope.get_shadow_root_for_scoped(element);
+        // https://drafts.csswg.org/css-shadow/#tree-scoped-name-global
+        // "First search only the tree-scoped names associated with the same root as the tree-scoped reference."
+        while let Some(r) = shadow_root {
+            if let Some(rule) = r
+                .style_data()
+                .map(|data| data.extra_data.position_try_rules.get(name))
+                .flatten()
+            {
+                return Some(rule);
+            }
+            // "If no relevant tree-scoped name is found, and the root is a shadow root, then repeat this search in the root’s host’s node tree (recursively)."
+            shadow_root = r.host().containing_shadow();
+        }
+
+        for (data, _) in self.iter_extra_data_origins() {
+            if let Some(r) = data.position_try_rules.get(name) {
+                return Some(r);
+            }
+        }
+        None
     }
 
     /// Computes the match results of a given element against the set of
@@ -3848,7 +3868,7 @@ impl CascadeData {
             }
 
             debug_assert!(!pseudo_elements
-                .iter()
+                    .iter()
                 .any(|p| p.is_precomputed() || p.is_unknown_webkit_pseudo_element()));
 
             let selector = match ancestor_selectors {

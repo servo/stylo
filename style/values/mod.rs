@@ -27,6 +27,7 @@ use to_shmem::impl_trivial_to_shmem;
 
 pub use crate::url::CssUrl;
 
+pub mod tagged_numeric;
 pub mod animated;
 pub mod computed;
 pub mod distance;
@@ -96,30 +97,11 @@ where
 }
 
 /// Serialize a number with calc, and NaN/infinity handling (if enabled)
-pub fn serialize_number<W>(v: f32, was_calc: bool, dest: &mut CssWriter<W>) -> fmt::Result
+pub fn serialize_number<W>(v: f32, dest: &mut CssWriter<W>) -> fmt::Result
 where
     W: Write,
 {
-    serialize_specified_dimension(v, "", was_calc, dest)
-}
-
-/// Reify a number with calc.
-pub fn reify_number(v: f32, was_calc: bool, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-    let numeric_value = NumericValue::Unit(UnitValue {
-        value: v,
-        unit: CssString::from("number"),
-    });
-
-    // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-math-expression
-    if was_calc {
-        dest.push(TypedValue::Numeric(NumericValue::Sum(MathSum {
-            values: ThinVec::from([numeric_value]),
-        })));
-    } else {
-        dest.push(TypedValue::Numeric(numeric_value));
-    }
-
-    Ok(())
+    serialize_specified_dimension(v, "", /* was_calc = */ false, dest)
 }
 
 /// Serialize a specified dimension with unit, calc, and NaN/infinity handling (if enabled)

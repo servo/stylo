@@ -12,8 +12,8 @@ use crate::values::generics::transform::IsParallelTo;
 use crate::values::generics::{GreaterThanOrEqualToOne, NonNegative};
 use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
 use crate::values::specified::{NoCalcPercentage, Percentage};
-use crate::values::{reify_number, serialize_number};
-use crate::values::{CSSFloat, CSSInteger};
+use crate::values::tagged_numeric::{NumericUnion, Unpacked, UnpackedMut};
+use crate::values::{serialize_number, CSSFloat, CSSInteger};
 use crate::{One, Zero};
 use cssparser::{Parser, Token};
 use std::fmt::{self, Write};
@@ -30,18 +30,17 @@ pub fn parse_number_with_clamping_mode<'i, 't>(
     clamping_mode: AllowedNumericType,
 ) -> Result<Number, ParseError<'i>> {
     let location = input.current_source_location();
-    match *input.next()? {
+    Ok(Number(match *input.next()? {
         Token::Number { value, .. } if clamping_mode.is_ok(context.parsing_mode, value) => {
-            Ok(Number::NoCalc(NoCalcNumber::new(value)))
+            NumericUnion::inline((), value)
         },
         Token::Function(ref name) => {
             let function = CalcNode::math_function(context, name, location)?;
-            CalcNode::parse_number(context, input, clamping_mode, function)
-                .map(Box::new)
-                .map(Number::Calc)
+            let number = CalcNode::parse_number(context, input, clamping_mode, function)?;
+            NumericUnion::boxed(Box::new(number))
         },
-        ref t => Err(location.new_unexpected_token_error(t.clone())),
-    }
+        ref t => return Err(location.new_unexpected_token_error(t.clone())),
+    }))
 }
 
 /// Parse an `<integer>` value, with a given clamping mode.
@@ -51,22 +50,21 @@ pub fn parse_integer_with_clamping_mode<'i, 't>(
     clamping_mode: AllowedNumericType,
 ) -> Result<Integer, ParseError<'i>> {
     let location = input.current_source_location();
-    match *input.next()? {
+    Ok(Integer(match *input.next()? {
         Token::Number {
             int_value: Some(v), ..
-        } if clamping_mode.is_ok(context.parsing_mode, v as f32) => Ok(Integer::new(v)),
+        } if clamping_mode.is_ok(context.parsing_mode, v as f32) => NumericUnion::inline((), v),
         Token::Function(ref name) => {
             let function = CalcNode::math_function(context, name, location)?;
-            CalcNode::parse_number(context, input, clamping_mode, function)
-                .map(Box::new)
-                .map(Integer::Calc)
+            let calc = CalcNode::parse_number(context, input, clamping_mode, function)?;
+            NumericUnion::boxed(Box::new(calc))
         },
-        ref t => Err(location.new_unexpected_token_error(t.clone())),
-    }
+        ref t => return Err(location.new_unexpected_token_error(t.clone())),
+    }))
 }
 
 /// A non-calc `<number>` value.
-#[derive(Clone, Copy, Debug, MallocSizeOf, ToShmem)]
+#[derive(Clone, Copy, Debug, MallocSizeOf, ToShmem, ToTyped)]
 #[repr(C)]
 pub struct NoCalcNumber(CSSFloat);
 
@@ -125,13 +123,7 @@ impl ToCss for NoCalcNumber {
     where
         W: Write,
     {
-        serialize_number(self.0, /* was_calc = */ false, dest)
-    }
-}
-
-impl ToTyped for NoCalcNumber {
-    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        reify_number(self.0, /* was_calc = */ false, dest)
+        serialize_number(self.0, dest)
     }
 }
 
@@ -150,12 +142,28 @@ impl ToComputedValue for NoCalcNumber {
 /// A CSS `<number>` specified value.
 ///
 /// https://drafts.csswg.org/css-values-3/#number-value
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
-pub enum Number {
-    /// A literal <number> value.
-    NoCalc(NoCalcNumber),
-    /// A calc() expression that produces a <number>.
-    Calc(Box<CalcNumeric>),
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct Number(NumericUnion<(), f32, CalcNumeric>);
+
+impl ToCss for Number {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        match self.0.unpack() {
+            Unpacked::Inline(_, v) => NoCalcNumber(v).to_css(dest),
+            Unpacked::Boxed(calc) => calc.to_css(dest),
+        }
+    }
+}
+
+impl ToTyped for Number {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        match self.0.unpack() {
+            Unpacked::Inline((), v) => NoCalcNumber(v).to_typed(dest),
+            Unpacked::Boxed(ref calc) => calc.to_typed(dest),
+        }
+    }
 }
 
 impl Parse for Number {
@@ -177,16 +185,22 @@ impl Number {
     /// Returns a new number with the value `val`.
     #[inline]
     pub fn new(val: CSSFloat) -> Self {
-        Number::NoCalc(NoCalcNumber::new(val))
+        Self(NumericUnion::inline((), val))
+    }
+
+    /// Returns a new number with the value `val`.
+    #[inline]
+    pub fn new_calc(val: Box<CalcNumeric>) -> Self {
+        Self(NumericUnion::boxed(val))
     }
 
     /// Returns this number as a percentage.
     pub fn to_percentage(&self) -> Option<Percentage> {
-        Some(match self {
-            Number::NoCalc(n) => Percentage::new(n.0),
-            Number::Calc(ref calc) => {
+        Some(match self.0.unpack() {
+            Unpacked::Inline((), n) => Percentage::new(n),
+            Unpacked::Boxed(ref calc) => {
                 let n = calc.as_number()?.get();
-                Percentage::Calc(Box::new(
+                Percentage::new_calc(Box::new(
                     calc.with_leaf_node(Leaf::Percentage(NoCalcPercentage::new(n))),
                 ))
             },
@@ -198,18 +212,18 @@ impl Number {
     /// when computed context is available.
     #[inline]
     pub fn get(&self) -> Option<f32> {
-        match self {
-            Number::NoCalc(n) => Some(n.get()),
-            Number::Calc(_) => None,
+        match self.0.unpack() {
+            Unpacked::Inline((), f) => Some(NoCalcNumber(f).get()),
+            Unpacked::Boxed(..) => None,
         }
     }
 
     /// Returns the value if it can be resolved at parse time, including resolvable calc
     /// expressions. Returns None for calc expressions that require computed-value context.
     pub fn resolve(&self) -> Option<f32> {
-        match self {
-            Number::NoCalc(n) => Some(n.get()),
-            Number::Calc(ref calc) => calc.as_number().map(|n| n.get()),
+        match self.0.unpack() {
+            Unpacked::Inline((), f) => Some(NoCalcNumber(f).get()),
+            Unpacked::Boxed(ref calc) => calc.as_number().map(|n| n.get()),
         }
     }
 
@@ -232,9 +246,9 @@ impl Number {
     /// Clamp to 1.0 if the value is over 1.0.
     #[inline]
     pub fn clamp_to_one(&mut self) {
-        match self {
-            Number::NoCalc(ref mut n) => n.0 = n.value().min(1.),
-            Number::Calc(ref mut calc) => {
+        match self.0.unpack_mut() {
+            UnpackedMut::Inline(_, ref mut v) => **v = v.min(1.),
+            UnpackedMut::Boxed(ref mut calc) => {
                 calc.clamping_mode = AllowedNumericType::ZeroToOne;
             },
         }
@@ -246,9 +260,9 @@ impl ToComputedValue for Number {
 
     #[inline]
     fn to_computed_value(&self, context: &Context) -> CSSFloat {
-        match self {
-            Number::NoCalc(n) => n.to_computed_value(context),
-            Number::Calc(ref calc) => {
+        match self.0.unpack() {
+            Unpacked::Inline((), n) => NoCalcNumber(n).to_computed_value(context),
+            Unpacked::Boxed(ref calc) => {
                 let value = match calc.node.with_computed_context(context).resolve() {
                     Ok(Leaf::Number(n)) => n.get(),
                     _ => {
@@ -295,7 +309,7 @@ impl Zero for Number {
     // Returns true if this number was a non-calc 0.
     #[inline]
     fn is_zero(&self) -> bool {
-        matches!(self, Self::NoCalc(NoCalcNumber(0.)))
+        self.get() == Some(0.)
     }
 }
 
@@ -321,14 +335,14 @@ impl One for NonNegativeNumber {
     // Returns true if this number was a non-calc 1.
     #[inline]
     fn is_one(&self) -> bool {
-        matches!(self.0, Number::NoCalc(NoCalcNumber(1.)))
+        self.get() == Some(1.)
     }
 }
 
 impl NonNegativeNumber {
     /// Returns a new non-negative number with the value `val`.
     pub fn new(val: CSSFloat) -> Self {
-        NonNegative::<Number>(Number::new(val.max(0.)))
+        NonNegative(Number::new(val.max(0.)))
     }
 
     /// Returns the numeric value.
@@ -370,14 +384,8 @@ impl Parse for GreaterThanOrEqualToOneNumber {
 /// at computed-value time.
 ///
 /// <https://drafts.csswg.org/css-values/#integers>
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
-pub enum Integer {
-    /// A literal integer value.
-    NoCalc(CSSInteger),
-    /// A calc expression that produces an <integer>, stored as a full
-    /// AST node to be evaluated at computed-value time.
-    Calc(Box<CalcNumeric>),
-}
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct Integer(NumericUnion<(), i32, CalcNumeric>);
 
 impl Zero for Integer {
     #[inline]
@@ -388,7 +396,7 @@ impl Zero for Integer {
     // Returns true if this integer was a non-calc 0.
     #[inline]
     fn is_zero(&self) -> bool {
-        matches!(self, Self::NoCalc(0))
+        self.get() == Some(0)
     }
 }
 
@@ -401,7 +409,7 @@ impl One for Integer {
     // Returns true if this integer was a non-calc 1.
     #[inline]
     fn is_one(&self) -> bool {
-        matches!(self, Self::NoCalc(1))
+        self.get() == Some(1)
     }
 }
 
@@ -414,25 +422,25 @@ impl PartialEq<i32> for Integer {
 impl Integer {
     /// Trivially constructs a new `Integer` value.
     pub fn new(val: CSSInteger) -> Self {
-        Self::NoCalc(val)
+        Self(NumericUnion::inline((), val))
     }
 
     /// Returns the value if this is a plain (non-calc) integer, or None otherwise.
     /// Use `resolve()` to also handle resolvable calc expressions, or `to_computed_value()`
     /// when computed context is available.
     pub fn get(&self) -> Option<CSSInteger> {
-        match *self {
-            Self::NoCalc(i) => Some(i),
-            Self::Calc(_) => None,
+        match self.0.unpack() {
+            Unpacked::Inline((), v) => Some(v),
+            Unpacked::Boxed(..) => None,
         }
     }
 
     /// Returns the value if it can be resolved at parse time, including resolvable calc
     /// expressions. Returns None for calc expressions that require computed-value context.
     pub fn resolve(&self) -> Option<CSSInteger> {
-        Some(match self {
-            Self::NoCalc(i) => *i,
-            Self::Calc(ref calc) => {
+        Some(match self.0.unpack() {
+            Unpacked::Inline((), v) => v,
+            Unpacked::Boxed(ref calc) => {
                 let value = calc.as_number()?.get();
                 (value + 0.5).floor() as CSSInteger
             },
@@ -441,13 +449,13 @@ impl Integer {
 
     /// Makes sure this number matches the clamping, or errors otherwise.
     pub fn ensure_clamping_mode(&mut self, clamping_mode: AllowedNumericType) -> Result<(), ()> {
-        match self {
-            Self::NoCalc(i) => {
+        match self.0.unpack_mut() {
+            UnpackedMut::Inline(_, i) => {
                 if !clamping_mode.is_ok(ParsingMode::DEFAULT, *i as f32) {
                     return Err(());
                 }
             },
-            Self::Calc(ref mut calc) => {
+            UnpackedMut::Boxed(ref mut calc) => {
                 calc.clamping_mode = clamping_mode;
             },
         }
@@ -482,14 +490,35 @@ impl Integer {
     }
 }
 
+impl ToCss for Integer {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        match self.0.unpack() {
+            Unpacked::Inline(_, v) => v.to_css(dest),
+            Unpacked::Boxed(calc) => calc.to_css(dest),
+        }
+    }
+}
+
+impl ToTyped for Integer {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        match self.0.unpack() {
+            Unpacked::Inline((), n) => n.to_typed(dest),
+            Unpacked::Boxed(ref calc) => calc.to_typed(dest),
+        }
+    }
+}
+
 impl ToComputedValue for Integer {
     type ComputedValue = i32;
 
     #[inline]
     fn to_computed_value(&self, context: &Context) -> i32 {
-        match *self {
-            Self::NoCalc(i) => i,
-            Self::Calc(ref calc) => {
+        match self.0.unpack() {
+            Unpacked::Inline((), i) => i,
+            Unpacked::Boxed(ref calc) => {
                 let value = match calc.node.with_computed_context(context).resolve() {
                     Ok(Leaf::Number(n)) => n.get(),
                     _ => {
@@ -507,7 +536,7 @@ impl ToComputedValue for Integer {
 
     #[inline]
     fn from_computed_value(computed: &i32) -> Self {
-        Integer::new(*computed)
+        Self::new(*computed)
     }
 }
 

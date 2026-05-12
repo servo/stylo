@@ -10,7 +10,8 @@ use crate::values::computed::percentage::Percentage as ComputedPercentage;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::NonNegative;
 use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
-use crate::values::specified::{NoCalcNumber, Number};
+use crate::values::specified::{LengthPercentage, NoCalcNumber, Number};
+use crate::values::tagged_numeric::{Extracted, NumericUnion, Unpacked, UnpackedMut};
 use crate::values::{normalize, reify_percentage, serialize_percentage, CSSFloat};
 use cssparser::{Parser, Token};
 use std::fmt::{self, Write};
@@ -97,40 +98,62 @@ impl ToComputedValue for NoCalcPercentage {
 }
 
 /// A specified percentage value, either a plain value or a `calc()` expression.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
-pub enum Percentage {
-    /// A plain percentage value.
-    NoCalc(NoCalcPercentage),
-    /// A `calc()` expression that resolves to a percentage.
-    Calc(Box<CalcNumeric>),
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct Percentage(NumericUnion<(), f32, CalcNumeric>);
+
+impl ToCss for Percentage {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        match self.0.unpack() {
+            Unpacked::Inline((), p) => NoCalcPercentage(p).to_css(dest),
+            Unpacked::Boxed(calc) => calc.to_css(dest),
+        }
+    }
+}
+
+impl ToTyped for Percentage {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        match self.0.unpack() {
+            Unpacked::Inline((), p) => NoCalcPercentage(p).to_typed(dest),
+            Unpacked::Boxed(calc) => calc.to_typed(dest),
+        }
+    }
 }
 
 impl Percentage {
     /// Creates a percentage from a numeric value.
     pub fn new(value: CSSFloat) -> Self {
-        Self::NoCalc(NoCalcPercentage::new(value))
+        Self(NumericUnion::inline((), value))
+    }
+
+    /// Returns a new percentage calc value with the value `val`.
+    #[inline]
+    pub fn new_calc(val: Box<CalcNumeric>) -> Self {
+        Self(NumericUnion::boxed(val))
     }
 
     /// `0%`
     #[inline]
     pub fn zero() -> Self {
-        Self::NoCalc(NoCalcPercentage::zero())
+        Self::new(0.)
     }
 
     /// `100%`
     #[inline]
     pub fn hundred() -> Self {
-        Self::NoCalc(NoCalcPercentage::hundred())
+        Self::new(1.)
     }
 
     /// Returns the value if this is a plain (non-calc) percentage, or None otherwise.
     /// Use `resolve()` to also handle resolvable calc expressions, or `to_computed_value()`
     /// when computed context is available.
     #[inline]
-    pub fn get(&self) -> Option<CSSFloat> {
-        match self {
-            Percentage::NoCalc(p) => Some(p.get()),
-            Percentage::Calc(_) => None,
+    pub fn get(&self) -> Option<f32> {
+        match self.0.unpack() {
+            Unpacked::Inline((), f) => Some(f),
+            Unpacked::Boxed(..) => None,
         }
     }
 
@@ -139,34 +162,42 @@ impl Percentage {
     /// (e.g. those using relative lengths or sibling-index()).
     #[inline]
     pub fn resolve(&self) -> Option<CSSFloat> {
-        match self {
-            Percentage::NoCalc(p) => Some(p.get()),
-            Percentage::Calc(ref calc) => calc.as_percentage().map(|p| p.get()),
+        match self.0.unpack() {
+            Unpacked::Inline((), f) => Some(f),
+            Unpacked::Boxed(calc) => calc.as_percentage().map(|p| p.get()),
         }
     }
 
     /// Returns this percentage as a number.
     pub fn to_number(&self) -> Option<Number> {
-        Some(match self {
-            Percentage::NoCalc(p) => Number::new(p.0),
-            Percentage::Calc(ref calc) => {
+        Some(match self.0.unpack() {
+            Unpacked::Inline((), p) => Number::new(p),
+            Unpacked::Boxed(ref calc) => {
                 let p = calc.as_percentage()?.get();
-                Number::Calc(Box::new(
+                Number::new_calc(Box::new(
                     calc.with_leaf_node(Leaf::Number(NoCalcNumber::new(p))),
                 ))
             },
         })
     }
 
+    /// Returns this percentage as a LengthPercentage.
+    pub fn to_length_percentage(self) -> LengthPercentage {
+        match self.0.extract() {
+            Extracted::Inline((), p) => LengthPercentage::Percentage(NoCalcPercentage(p)),
+            Extracted::Boxed(calc) => LengthPercentage::Calc(calc),
+        }
+    }
+
     /// Reverses this percentage, preserving calc-ness.
     ///
     /// For example: If it was 20%, convert it into 80%.
     pub fn reverse(&mut self) {
-        match self {
-            Percentage::NoCalc(p) => {
-                p.0 = 1. - p.0;
+        match self.0.unpack_mut() {
+            UnpackedMut::Inline(_, p) => {
+                *p = 1. - *p;
             },
-            Percentage::Calc(calc) => {
+            UnpackedMut::Boxed(calc) => {
                 let mut sum = smallvec::SmallVec::<[CalcNode; 2]>::new();
                 sum.push(CalcNode::Leaf(
                     Leaf::Percentage(NoCalcPercentage::hundred()),
@@ -188,20 +219,19 @@ impl Percentage {
         num_context: AllowedNumericType,
     ) -> Result<Self, ParseError<'i>> {
         let location = input.current_source_location();
-        match *input.next()? {
+        Ok(Self(match *input.next()? {
             Token::Percentage { unit_value, .. }
                 if num_context.is_ok(context.parsing_mode, unit_value) =>
             {
-                Ok(Percentage::new(unit_value))
+                NumericUnion::inline((), unit_value)
             },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
-                CalcNode::parse_percentage(context, input, num_context, function)
-                    .map(Box::new)
-                    .map(Percentage::Calc)
+                let calc = CalcNode::parse_percentage(context, input, num_context, function)?;
+                NumericUnion::boxed(Box::new(calc))
             },
-            ref t => Err(location.new_unexpected_token_error(t.clone())),
-        }
+            ref t => return Err(location.new_unexpected_token_error(t.clone())),
+        }))
     }
 
     /// Parses a percentage token, but rejects it if it's negative.
@@ -223,12 +253,12 @@ impl Percentage {
 
     /// Clamp to 100% if the value is over 100%.
     #[inline]
-    pub fn clamp_to_hundred(self) -> Self {
-        match self {
-            Percentage::NoCalc(p) => Percentage::NoCalc(NoCalcPercentage::new(p.0.min(1.))),
-            Percentage::Calc(ref calc) => Percentage::Calc(Box::new(
-                calc.with_clamping_mode(AllowedNumericType::ZeroToOne),
-            )),
+    pub fn clamp_to_hundred(&mut self) {
+        match self.0.unpack_mut() {
+            UnpackedMut::Inline((), p) => *p = p.min(1.),
+            UnpackedMut::Boxed(calc) => {
+                calc.clamping_mode = AllowedNumericType::ZeroToOne;
+            },
         }
     }
 }
@@ -248,9 +278,9 @@ impl ToComputedValue for Percentage {
 
     #[inline]
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
-        match self {
-            Percentage::NoCalc(p) => p.to_computed_value(context),
-            Percentage::Calc(ref calc) => {
+        match self.0.unpack() {
+            Unpacked::Inline((), p) => NoCalcPercentage(p).to_computed_value(context),
+            Unpacked::Boxed(ref calc) => {
                 let resolved = calc.node.with_computed_context(context).resolve();
                 let value = match resolved {
                     Ok(Leaf::Percentage(p)) => p.get(),
@@ -292,7 +322,7 @@ pub trait ToPercentage {
 
 impl ToPercentage for Percentage {
     fn is_calc(&self) -> bool {
-        matches!(self, Percentage::Calc(_))
+        self.0.is_boxed()
     }
 
     fn to_percentage(&self) -> Option<CSSFloat> {

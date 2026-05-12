@@ -6,7 +6,7 @@
 //!
 //! [length]: https://drafts.csswg.org/css-values/#lengths
 
-use super::{AllowQuirks, Number, Percentage, ToComputedValue};
+use super::{AllowQuirks, Number, ToComputedValue};
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::derives::*;
 use crate::font_metrics::{FontMetrics, FontMetricsOrientation};
@@ -1800,16 +1800,6 @@ impl From<NoCalcLength> for LengthPercentage {
     #[inline]
     fn from(len: NoCalcLength) -> Self {
         LengthPercentage::Length(len)
-    }
-}
-
-impl From<Percentage> for LengthPercentage {
-    #[inline]
-    fn from(pc: Percentage) -> Self {
-        match pc {
-            Percentage::NoCalc(p) => LengthPercentage::Percentage(p),
-            Percentage::Calc(calc) => LengthPercentage::Calc(calc),
-        }
     }
 }
 

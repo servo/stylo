@@ -72,8 +72,9 @@ impl ToComputedValue for FilterFactor {
 #[inline]
 fn clamp_to_one(number: NumberOrPercentage) -> NumberOrPercentage {
     match number {
-        NumberOrPercentage::Percentage(percent) => {
-            NumberOrPercentage::Percentage(percent.clamp_to_hundred())
+        NumberOrPercentage::Percentage(mut percent) => {
+            percent.clamp_to_hundred();
+            NumberOrPercentage::Percentage(percent)
         },
         NumberOrPercentage::Number(mut number) => {
             number.clamp_to_one();

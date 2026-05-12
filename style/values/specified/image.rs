@@ -338,10 +338,11 @@ impl CrossFadeElement {
         // implementation handle out-of-bounds percentages but whether or not
         // this behavior follows the specification is still being discussed.
         // See: <https://github.com/w3c/csswg-drafts/issues/5333>
-        input
+        let mut p = input
             .try_parse(|input| Percentage::parse_non_negative(context, input))
-            .ok()
-            .map(|p| p.clamp_to_hundred())
+            .ok()?;
+        p.clamp_to_hundred();
+        Some(p)
     }
 
     /// <cf-image> = <percentage>? && [ <image> | <color> ]
@@ -639,7 +640,7 @@ impl Gradient {
                         PositionComponent::Length(Length::from_px(number.resolve().unwrap()).into())
                     },
                     Component::Number(NumberOrPercentage::Percentage(p)) => {
-                        PositionComponent::Length(p.into())
+                        PositionComponent::Length(p.to_length_percentage())
                     },
                     Component::Side(side) => PositionComponent::Side(side, None),
                 }
@@ -766,7 +767,7 @@ impl Gradient {
                     }
                     Ok(generic::GradientItem::ComplexColorStop {
                         color,
-                        position: p.into(),
+                        position: p.to_length_percentage(),
                     })
                 })
             })
@@ -1214,7 +1215,7 @@ impl EndingShape {
                 NonNegativeLengthPercentage::parse(context, i)?
             };
             Ok(generic::EndingShape::Ellipse(Ellipse::Radii(
-                NonNegative(LengthPercentage::from(x)),
+                NonNegative(x.to_length_percentage()),
                 y,
             )))
         })

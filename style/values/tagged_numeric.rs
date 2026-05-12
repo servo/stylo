@@ -15,7 +15,6 @@ use to_shmem::{SharedMemoryBuilder, ToShmem};
 
 // NOTE(emilio): cbindgen only understands the #[cfg] on the top level definition.
 #[doc(hidden)]
-#[derive(Clone, Copy)]
 #[repr(C)]
 #[cfg(target_pointer_width = "32")]
 pub struct BoxedVariant<B> {

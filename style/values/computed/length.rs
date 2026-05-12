@@ -18,9 +18,9 @@ use crate::values::generics::position::TreeScoped;
 use crate::values::generics::NonNegative;
 use crate::values::generics::{length as generics, ClampToNonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
+use crate::values::CSSFloat;
 #[cfg(feature = "gecko")]
 use crate::values::DashedIdent;
-use crate::values::CSSFloat;
 use crate::Zero;
 use app_units::Au;
 use std::fmt::{self, Write};

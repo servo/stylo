@@ -1214,7 +1214,9 @@ impl Length {
         match self.0.unpack() {
             Unpacked::Inline(unit, value) => NoCalcLength::new(unit, value)
                 .to_computed_pixel_length_with_font_metrics(get_font_metrics),
-            Unpacked::Boxed(calc) => calc.to_computed_pixel_length_with_font_metrics(get_font_metrics),
+            Unpacked::Boxed(calc) => {
+                calc.to_computed_pixel_length_with_font_metrics(get_font_metrics)
+            },
         }
     }
 }
@@ -1346,7 +1348,9 @@ pub enum LengthPercentage {
 impl From<Length> for LengthPercentage {
     fn from(len: Length) -> LengthPercentage {
         match len.0.extract() {
-            Extracted::Inline(unit, value) => LengthPercentage::Length(NoCalcLength::new(unit, value)),
+            Extracted::Inline(unit, value) => {
+                LengthPercentage::Length(NoCalcLength::new(unit, value))
+            },
             Extracted::Boxed(calc) => LengthPercentage::Calc(calc),
         }
     }

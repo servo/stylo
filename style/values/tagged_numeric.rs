@@ -25,12 +25,18 @@ pub struct BoxedVariant<B> {
 }
 
 #[doc(hidden)]
-#[derive(Clone, Copy)]
 #[repr(C)]
 #[cfg(target_pointer_width = "64")]
 pub struct BoxedVariant<B> {
     ptr: usize, // In little-endian byte order
     _phantom: marker::PhantomData<B>,
+}
+
+impl<B> Copy for BoxedVariant<B> {}
+impl<B> Clone for BoxedVariant<B> {
+    fn clone(&self) -> Self {
+        *self
+    }
 }
 
 unsafe impl<B: Send> Send for BoxedVariant<B> {}
@@ -55,23 +61,23 @@ pub struct InlineVariant<T, N> {
 #[doc(hidden)]
 #[repr(C)]
 pub union NumericUnionImpl<T: Copy, N: Copy, B> {
-    inline: InlineVariant<T, N>,
-    boxed: mem::ManuallyDrop<BoxedVariant<B>>,
+    inl: InlineVariant<T, N>,
+    boxed: BoxedVariant<B>,
     tag: TagVariant,
 }
 
-/// Generic helper to support a tagged inline value of 4 bytes, and a boxed pointer in the same
-/// pointer value in 64-bit builds.
+/// cbindgen:derive-eq=false
+/// cbindgen:derive-neq=false
 #[repr(C)]
 pub struct NumericUnion<T: Copy, N: Copy, B>(NumericUnionImpl<T, N, B>);
 
-impl<T: Copy, N: Copy, B> NumericUnion<T, N, B> {
-    #[doc(hidden)] // Need to be public so that cbindgen generates it.
-    pub const TAG_INLINE: u8 = 0b1;
+#[doc(hidden)] // Need to be public so that cbindgen generates it.
+pub const NUMERIC_UNION_TAG_INLINE: u8 = 0b1;
 
+impl<T: Copy, N: Copy, B> NumericUnion<T, N, B> {
     /// Whether we hold an inline value.
     pub fn is_inline(&self) -> bool {
-        unsafe { (self.0.tag.tag & Self::TAG_INLINE) != 0 }
+        unsafe { (self.0.tag.tag & NUMERIC_UNION_TAG_INLINE) != 0 }
     }
 
     /// Whether we hold a boxed value.
@@ -98,7 +104,7 @@ impl<T: Copy, N: Copy, B> NumericUnion<T, N, B> {
             if self.is_boxed() {
                 UnpackedMut::Boxed(&mut *self.boxed_ptr())
             } else {
-                UnpackedMut::Inline(&mut self.0.inline.numeric_tag, &mut self.0.inline.value)
+                UnpackedMut::Inline(&mut self.0.inl.numeric_tag, &mut self.0.inl.value)
             }
         }
     }
@@ -109,7 +115,7 @@ impl<T: Copy, N: Copy, B> NumericUnion<T, N, B> {
             if self.is_boxed() {
                 Unpacked::Boxed(&*self.boxed_ptr())
             } else {
-                Unpacked::Inline(self.0.inline.numeric_tag, self.0.inline.value)
+                Unpacked::Inline(self.0.inl.numeric_tag, self.0.inl.value)
             }
         }
     }
@@ -120,7 +126,7 @@ impl<T: Copy, N: Copy, B> NumericUnion<T, N, B> {
             if self.is_boxed() {
                 Extracted::Boxed(Box::from_raw(self.boxed_ptr()))
             } else {
-                Extracted::Inline(self.0.inline.numeric_tag, self.0.inline.value)
+                Extracted::Inline(self.0.inl.numeric_tag, self.0.inl.value)
             }
         };
         mem::forget(self);
@@ -130,8 +136,8 @@ impl<T: Copy, N: Copy, B> NumericUnion<T, N, B> {
     /// Constructs an inline value.
     pub fn inline(numeric_tag: T, value: N) -> Self {
         Self(NumericUnionImpl {
-            inline: InlineVariant {
-                tag: Self::TAG_INLINE,
+            inl: InlineVariant {
+                tag: NUMERIC_UNION_TAG_INLINE,
                 numeric_tag,
                 value,
             },
@@ -143,20 +149,20 @@ impl<T: Copy, N: Copy, B> NumericUnion<T, N, B> {
         let ptr = Box::into_raw(v);
 
         #[cfg(target_pointer_width = "32")]
-        let boxed = mem::ManuallyDrop::new(BoxedVariant {
+        let boxed = BoxedVariant {
             tag: 0,
             ptr,
             _phantom: marker::PhantomData,
-        });
+        };
 
         #[cfg(target_pointer_width = "64")]
-        let boxed = mem::ManuallyDrop::new(BoxedVariant {
+        let boxed = BoxedVariant {
             #[cfg(target_endian = "little")]
             ptr: ptr as usize,
             #[cfg(target_endian = "big")]
             ptr: (ptr as usize).swap_bytes(),
             _phantom: marker::PhantomData,
-        });
+        };
 
         let union = Self(NumericUnionImpl { boxed });
         debug_assert!(union.is_boxed());
@@ -194,8 +200,8 @@ impl<T: Copy + ToShmem, N: Copy + ToShmem, B: ToShmem> ToShmem for NumericUnion<
     fn to_shmem(&self, builder: &mut SharedMemoryBuilder) -> to_shmem::Result<Self> {
         unsafe {
             Ok(mem::ManuallyDrop::new(if self.is_inline() {
-                let inline = self.0.inline;
-                Self(NumericUnionImpl { inline })
+                let inl = self.0.inl;
+                Self(NumericUnionImpl { inl })
             } else {
                 let b = mem::ManuallyDrop::new(Box::from_raw(self.boxed_ptr()));
                 let b = (*b).to_shmem(builder)?;

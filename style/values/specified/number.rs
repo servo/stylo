@@ -263,16 +263,14 @@ impl ToComputedValue for Number {
         match self.0.unpack() {
             Unpacked::Inline((), n) => NoCalcNumber(n).to_computed_value(context),
             Unpacked::Boxed(ref calc) => {
-                let value = match calc.node.with_computed_context(context).resolve() {
+                let value = calc.resolve(context, |result| match result {
                     Ok(Leaf::Number(n)) => n.get(),
                     _ => {
                         debug_assert!(false, "Unexpected Number::Calc without resolved number");
                         f32::NAN
                     },
-                };
-                crate::values::normalize(calc.clamping_mode.clamp(value))
-                    .min(f32::MAX)
-                    .max(f32::MIN)
+                });
+                crate::values::normalize(value).min(f32::MAX).max(f32::MIN)
             },
         }
     }
@@ -519,16 +517,14 @@ impl ToComputedValue for Integer {
         match self.0.unpack() {
             Unpacked::Inline((), i) => i,
             Unpacked::Boxed(ref calc) => {
-                let value = match calc.node.with_computed_context(context).resolve() {
+                let value = calc.resolve(context, |result| match result {
                     Ok(Leaf::Number(n)) => n.get(),
                     _ => {
                         debug_assert!(false, "Unexpected Integer::Calc without resolved number");
                         f32::NAN
                     },
-                };
-                let clamped = crate::values::normalize(calc.clamping_mode.clamp(value))
-                    .min(f32::MAX)
-                    .max(f32::MIN);
+                });
+                let clamped = crate::values::normalize(value).min(f32::MAX).max(f32::MIN);
                 (clamped + 0.5).floor() as i32
             },
         }

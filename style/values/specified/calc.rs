@@ -187,6 +187,25 @@ impl CalcNumeric {
         }
     }
 
+    /// Resolves this calc expression given a computed context, applying clamping.
+    pub fn resolve(
+        &self,
+        context: &computed::Context,
+        leaf_to_f32: impl FnOnce(Result<Leaf, ()>) -> f32,
+    ) -> f32 {
+        let result = self.node.resolve_map(|leaf| {
+            Ok(match leaf {
+                // Lengths can contain relative units that can only resolve at computed value time
+                Leaf::Length(length) => Leaf::Length(NoCalcLength::from_px(
+                    length.to_computed_value(context).px(),
+                )),
+                // Other nodes have been resolved eagerly at parse time
+                _ => leaf.clone(),
+            })
+        });
+        self.clamping_mode.clamp(leaf_to_f32(result))
+    }
+
     /// Gets this calc expression as a number
     pub fn as_number(&self) -> Option<NoCalcNumber> {
         match self.node.resolve() {
@@ -1475,18 +1494,5 @@ impl CalcNode {
         )?
         .into_resolution()
         .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
-    }
-
-    /// Constructs a new calculation tree that replaces leaf nodes with their computed values
-    /// if they can only be resolved at computed value time.
-    pub fn with_computed_context(&self, context: &computed::Context) -> Self {
-        self.map_leaves(|leaf| match leaf {
-            // Lengths can contain relative units that can only resolve at computed value time
-            Leaf::Length(length) => Leaf::Length(NoCalcLength::from_px(
-                length.to_computed_value(context).px(),
-            )),
-            // Other nodes have been resolved eagerly at parse time
-            _ => leaf.clone(),
-        })
     }
 }

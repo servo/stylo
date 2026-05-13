@@ -265,17 +265,15 @@ impl ToComputedValue for Time {
                 NoCalcTime::new(unit, value).to_computed_value(context)
             },
             Unpacked::Boxed(calc) => {
-                let value = match calc.node.with_computed_context(context).resolve() {
+                let value = calc.resolve(context, |result| match result {
                     Ok(Leaf::Time(t)) => t.seconds(),
                     _ => {
                         debug_assert!(false, "Unexpected Time::Calc without resolved time");
                         f32::NAN
                     },
-                };
+                });
                 ComputedTime::from_seconds(
-                    crate::values::normalize(calc.clamping_mode.clamp(value))
-                        .min(f32::MAX)
-                        .max(f32::MIN),
+                    crate::values::normalize(value).min(f32::MAX).max(f32::MIN),
                 )
             },
         }

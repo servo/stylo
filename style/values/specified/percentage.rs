@@ -281,8 +281,7 @@ impl ToComputedValue for Percentage {
         match self.0.unpack() {
             Unpacked::Inline((), p) => NoCalcPercentage(p).to_computed_value(context),
             Unpacked::Boxed(ref calc) => {
-                let resolved = calc.node.with_computed_context(context).resolve();
-                let value = match resolved {
+                let value = calc.resolve(context, |result| match result {
                     Ok(Leaf::Percentage(p)) => p.get(),
                     _ => {
                         debug_assert!(
@@ -291,12 +290,8 @@ impl ToComputedValue for Percentage {
                         );
                         f32::NAN
                     },
-                };
-                ComputedPercentage(
-                    crate::values::normalize(calc.clamping_mode.clamp(value))
-                        .min(f32::MAX)
-                        .max(f32::MIN),
-                )
+                });
+                ComputedPercentage(crate::values::normalize(value).min(f32::MAX).max(f32::MIN))
             },
         }
     }

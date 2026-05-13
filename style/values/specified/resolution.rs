@@ -181,19 +181,16 @@ impl ToComputedValue for Resolution {
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         let dppx = match self.0.unpack() {
             Unpacked::Inline(unit, value) => NoCalcResolution::new(unit, value).dppx().max(0.0),
-            Unpacked::Boxed(calc) => {
-                calc.clamping_mode
-                    .clamp(match calc.node.with_computed_context(context).resolve() {
-                        Ok(Leaf::Resolution(r)) => r.dppx().max(0.0),
-                        _ => {
-                            debug_assert!(
-                                false,
-                                "Unexpected Resolution::Calc without resolved resolution"
-                            );
-                            0.0
-                        },
-                    })
-            },
+            Unpacked::Boxed(calc) => calc.resolve(context, |result| match result {
+                Ok(Leaf::Resolution(r)) => r.dppx().max(0.0),
+                _ => {
+                    debug_assert!(
+                        false,
+                        "Unexpected Resolution::Calc without resolved resolution"
+                    );
+                    0.0
+                },
+            }),
         };
         ComputedResolution::from_dppx(crate::values::normalize(dppx))
     }

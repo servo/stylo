@@ -10,7 +10,7 @@ use crate::values::computed::percentage::Percentage as ComputedPercentage;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::NonNegative;
 use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
-use crate::values::specified::{LengthPercentage, NoCalcNumber, Number};
+use crate::values::specified::{CalcLengthPercentage, LengthPercentage, NoCalcNumber, Number};
 use crate::values::tagged_numeric::{Extracted, NumericUnion, Unpacked, UnpackedMut};
 use crate::values::{normalize, reify_percentage, serialize_percentage, CSSFloat};
 use cssparser::{Parser, Token};
@@ -185,7 +185,7 @@ impl Percentage {
     pub fn to_length_percentage(self) -> LengthPercentage {
         match self.0.extract() {
             Extracted::Inline((), p) => LengthPercentage::Percentage(NoCalcPercentage(p)),
-            Extracted::Boxed(calc) => LengthPercentage::Calc(calc),
+            Extracted::Boxed(calc) => LengthPercentage::Calc(Box::new(CalcLengthPercentage(*calc))),
         }
     }
 

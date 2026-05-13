@@ -20,7 +20,9 @@ use crate::values::generics::length::{
     GenericMargin, GenericMaxSize, GenericSize,
 };
 use crate::values::generics::NonNegative;
-use crate::values::specified::calc::{AllowAnchorPositioningFunctions, CalcNode};
+use crate::values::specified::calc::{
+    AllowAnchorPositioningFunctions, CalcLengthPercentage, CalcNode,
+};
 use crate::values::specified::font::QueryFontMetricsFlags;
 use crate::values::specified::percentage::NoCalcPercentage;
 use crate::values::specified::NonNegativeNumber;
@@ -40,7 +42,6 @@ use thin_vec::ThinVec;
 
 pub use super::image::Image;
 pub use super::image::{EndingShape as GradientEndingShape, Gradient};
-pub use crate::values::specified::calc::CalcNumeric;
 
 /// Number of pixels per inch
 pub const PX_PER_IN: CSSFloat = 96.;
@@ -1079,7 +1080,7 @@ impl Zero for NoCalcLength {
 ///
 /// <https://drafts.csswg.org/css-values/#lengths>
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
-pub struct Length(NumericUnion<LengthUnit, f32, CalcNumeric>);
+pub struct Length(NumericUnion<LengthUnit, f32, CalcLengthPercentage>);
 
 impl ToCss for Length {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
@@ -1120,7 +1121,7 @@ impl Length {
 
     /// Creates a length from a `calc()` expression.
     #[inline]
-    pub fn new_calc(calc: Box<CalcNumeric>) -> Self {
+    pub fn new_calc(calc: Box<CalcLengthPercentage>) -> Self {
         Self(NumericUnion::boxed(calc))
     }
 
@@ -1342,7 +1343,7 @@ impl NonNegativeLength {
 pub enum LengthPercentage {
     Length(NoCalcLength),
     Percentage(NoCalcPercentage),
-    Calc(Box<CalcNumeric>),
+    Calc(Box<CalcLengthPercentage>),
 }
 
 impl From<Length> for LengthPercentage {

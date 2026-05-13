@@ -155,22 +155,6 @@ pub struct CalcNumeric {
 }
 
 impl CalcNumeric {
-    fn same_unit_length_as(a: &Self, b: &Self) -> Option<(CSSFloat, CSSFloat)> {
-        debug_assert_eq!(a.clamping_mode, b.clamping_mode);
-        debug_assert_eq!(a.clamping_mode, AllowedNumericType::All);
-
-        let a = a.node.as_leaf()?;
-        let b = b.node.as_leaf()?;
-
-        if a.sort_key() != b.sort_key() {
-            return None;
-        }
-
-        let a = a.as_length()?.unitless_value();
-        let b = b.as_length()?.unitless_value();
-        return Some((a, b));
-    }
-
     /// Returns a new CalcNumeric with the same expression but the specified clamping mode
     pub fn with_clamping_mode(&self, clamping_mode: AllowedNumericType) -> Self {
         Self {
@@ -248,6 +232,30 @@ impl CalcNumeric {
 }
 
 impl SpecifiedValueInfo for CalcNumeric {}
+
+/// A `calc()` expression that is known to resolve to a `<length-percentage>`.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
+pub struct CalcLengthPercentage(pub CalcNumeric);
+
+impl CalcLengthPercentage {
+    fn same_unit_length_as(a: &Self, b: &Self) -> Option<(CSSFloat, CSSFloat)> {
+        debug_assert_eq!(a.0.clamping_mode, b.0.clamping_mode);
+        debug_assert_eq!(a.0.clamping_mode, AllowedNumericType::All);
+
+        let a = a.0.node.as_leaf()?;
+        let b = b.0.node.as_leaf()?;
+
+        if a.sort_key() != b.sort_key() {
+            return None;
+        }
+
+        let a = a.as_length()?.unitless_value();
+        let b = b.as_length()?.unitless_value();
+        Some((a, b))
+    }
+}
+
+impl SpecifiedValueInfo for CalcLengthPercentage {}
 
 /// Should parsing anchor-positioning functions in `calc()` be allowed?
 #[derive(Clone, Copy, PartialEq)]
@@ -610,6 +618,7 @@ fn parse_anchor_function_fallback<'i, 't>(
     )?
     .into_length_or_percentage(AllowedNumericType::All)
     .map_err(|_| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
+    .0
     .node;
     Ok(Box::new(GenericAnchorFunctionFallback::new(true, node)))
 }
@@ -962,7 +971,7 @@ impl CalcNode {
 
                         let a = a.into_length_or_percentage(AllowedNumericType::All)?;
                         let b = b.into_length_or_percentage(AllowedNumericType::All)?;
-                        let (a, b) = CalcNumeric::same_unit_length_as(&a, &b).ok_or(())?;
+                        let (a, b) = CalcLengthPercentage::same_unit_length_as(&a, &b).ok_or(())?;
 
                         Ok(a.atan2(b))
                     })?;
@@ -1218,7 +1227,7 @@ impl CalcNode {
     pub fn into_length_or_percentage(
         mut self,
         clamping_mode: AllowedNumericType,
-    ) -> Result<CalcNumeric, ()> {
+    ) -> Result<CalcLengthPercentage, ()> {
         self.simplify_and_sort();
 
         // Although we allow numbers inside CalcNumeric, calculations that resolve to a
@@ -1227,10 +1236,10 @@ impl CalcNode {
         if !CalcUnits::LENGTH_PERCENTAGE.intersects(unit) {
             Err(())
         } else {
-            Ok(CalcNumeric {
+            Ok(CalcLengthPercentage(CalcNumeric {
                 clamping_mode,
                 node: self,
-            })
+            }))
         }
     }
 
@@ -1389,7 +1398,7 @@ impl CalcNode {
         clamping_mode: AllowedNumericType,
         function: MathFunction,
         allow_anchor: AllowAnchorPositioningFunctions,
-    ) -> Result<CalcNumeric, ParseError<'i>> {
+    ) -> Result<CalcLengthPercentage, ParseError<'i>> {
         let allowed = if allow_anchor == AllowAnchorPositioningFunctions::No {
             AllowParse::new(CalcUnits::LENGTH_PERCENTAGE)
         } else {
@@ -1434,7 +1443,7 @@ impl CalcNode {
         input: &mut Parser<'i, 't>,
         clamping_mode: AllowedNumericType,
         function: MathFunction,
-    ) -> Result<CalcNumeric, ParseError<'i>> {
+    ) -> Result<CalcLengthPercentage, ParseError<'i>> {
         Self::parse(context, input, function, AllowParse::new(CalcUnits::LENGTH))?
             .into_length_or_percentage(clamping_mode)
             .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))

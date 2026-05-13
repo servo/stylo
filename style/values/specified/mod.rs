@@ -47,6 +47,7 @@ pub use self::box_::{
     ScrollSnapStop, ScrollSnapStrictness, ScrollSnapType, ScrollbarGutter, TouchAction, WillChange,
     WillChangeBits, WritingModeProperty, Zoom,
 };
+pub use self::calc::{CalcLengthPercentage, CalcNumeric};
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,
 };
@@ -65,7 +66,6 @@ pub use self::font::{FontVariantAlternates, FontWeight};
 pub use self::font::{FontVariantEastAsian, FontVariationSettings, LineHeight};
 pub use self::font::{MathDepth, MozScriptMinSize, MozScriptSizeMultiplier, XLang, XTextScale};
 pub use self::image::{EndingShape as GradientEndingShape, Gradient, Image, ImageRendering};
-pub use self::length::CalcNumeric;
 pub use self::length::{Length, LengthOrNumber, LengthUnit, NonNegativeLengthOrNumber};
 pub use self::length::{LengthOrAuto, LengthPercentage, LengthPercentageOrAuto};
 pub use self::length::{Margin, MaxSize, Size};

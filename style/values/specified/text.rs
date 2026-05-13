@@ -556,7 +556,6 @@ pub enum TextAlignKeyword {
     ToShmem,
     ToTyped,
 )]
-#[typed(todo_derive_fields)]
 pub enum TextAlign {
     /// Keyword value of text-align property.
     Keyword(TextAlignKeyword),

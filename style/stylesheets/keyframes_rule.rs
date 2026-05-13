@@ -125,7 +125,6 @@ impl KeyframePercentage {
     /// Trivially constructs a new `KeyframePercentage`.
     #[inline]
     pub fn new(value: f32) -> KeyframePercentage {
-        debug_assert!(value >= 0. && value <= 1.);
         KeyframePercentage(value)
     }
 
@@ -165,6 +164,7 @@ pub struct KeyframeSelector {
 impl KeyframeSelector {
     /// Returns Self as a percentage.
     fn from_percentage(percentage: KeyframePercentage) -> Self {
+        debug_assert!(percentage.0 >= 0. && percentage.0 <= 1.);
         KeyframeSelector {
             range_name: TimelineRangeName::None,
             percentage,
@@ -175,10 +175,7 @@ impl KeyframeSelector {
     pub fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
         // `from | to | <percentage [0,100]>`
         if let Ok(percentage) = input.try_parse(KeyframePercentage::parse) {
-            return Ok(Self {
-                range_name: TimelineRangeName::None,
-                percentage,
-            });
+            return Ok(Self::from_percentage(percentage));
         }
 
         // We parse the the extension of keyframe selector for scroll-driven animation.

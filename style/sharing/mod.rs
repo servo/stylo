@@ -781,11 +781,21 @@ impl<E: TElement> StyleSharingCache<E> {
             return None;
         }
 
-        // If two elements belong to different shadow trees, different rules may
-        // apply to them, from the respective trees.
-        if target.element.containing_shadow() != candidate.element.containing_shadow() {
-            trace!("Miss: Different containing shadow roots");
-            return None;
+        // If two elements belong to different shadow trees, different rules may apply to them, from
+        // the respective trees, so check their cascade data pointers.
+        let target_shadow = target.element.containing_shadow();
+        let candidate_shadow = candidate.element.containing_shadow();
+        if target_shadow != candidate_shadow {
+            match (
+                target_shadow.and_then(|s| s.style_data()),
+                candidate_shadow.and_then(|s| s.style_data()),
+            ) {
+                (Some(td), Some(cd)) if std::ptr::eq(td, cd) => {},
+                _ => {
+                    trace!("Miss: Different containing shadow roots");
+                    return None;
+                },
+            }
         }
 
         // If the elements are not assigned to the same slot they could match

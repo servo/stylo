@@ -12,7 +12,8 @@ use std::f64::consts::PI;
 use std::fmt::{self, Write};
 use std::ops::Neg;
 use std::{f32, f64};
-use style_traits::{CssWriter, ToCss, ToTyped};
+use style_traits::{CssString, CssWriter, NumericValue, ToCss, ToTyped, TypedValue, UnitValue};
+use thin_vec::ThinVec;
 
 /// A computed angle in degrees.
 #[derive(
@@ -42,7 +43,15 @@ impl ToCss for Angle {
     }
 }
 
-impl ToTyped for Angle {}
+impl ToTyped for Angle {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            value: self.degrees(),
+            unit: CssString::from("deg"),
+        })));
+        Ok(())
+    }
+}
 
 const RAD_PER_DEG: f64 = PI / 180.0;
 

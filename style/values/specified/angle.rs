@@ -16,7 +16,11 @@ use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::f32::consts::PI;
 use std::fmt::{self, Write};
 use std::ops::Neg;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss, ToTyped};
+use style_traits::{
+    CssString, CssWriter, NumericValue, ParseError, SpecifiedValueInfo, ToCss, ToTyped, TypedValue,
+    UnitValue,
+};
+use thin_vec::ThinVec;
 
 /// Number of degrees per radian.
 const DEG_PER_RAD: f32 = 180.0 / PI;
@@ -96,7 +100,17 @@ impl ToCss for NoCalcAngle {
     }
 }
 
-impl ToTyped for NoCalcAngle {}
+impl ToTyped for NoCalcAngle {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        let value = self.unitless_value();
+        let unit = CssString::from(self.unit());
+        dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            value,
+            unit,
+        })));
+        Ok(())
+    }
+}
 
 impl SpecifiedValueInfo for NoCalcAngle {}
 
@@ -202,6 +216,15 @@ impl ToCss for Angle {
         match self.0.unpack() {
             Unpacked::Inline(unit, value) => NoCalcAngle::new(unit, value).to_css(dest),
             Unpacked::Boxed(calc) => calc.to_css(dest),
+        }
+    }
+}
+
+impl ToTyped for Angle {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        match self.0.unpack() {
+            Unpacked::Inline(unit, value) => NoCalcAngle::new(unit, value).to_typed(dest),
+            Unpacked::Boxed(calc) => calc.to_typed(dest),
         }
     }
 }

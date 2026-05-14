@@ -129,11 +129,13 @@ impl ToCss for Leaf {
 
 impl ToTyped for Leaf {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        // XXX Only supporting Length, Number,  Percentage and Time for now
+        // XXX Only supporting Length, Number, Percentage, Angle and Time for
+        // now
         match *self {
             Self::Length(ref l) => l.to_typed(dest),
             Self::Number(n) => n.to_typed(dest),
             Self::Percentage(p) => p.to_typed(dest),
+            Self::Angle(ref a) => a.to_typed(dest),
             Self::Time(t) => t.to_typed(dest),
             _ => Err(()),
         }

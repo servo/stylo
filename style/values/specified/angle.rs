@@ -33,6 +33,18 @@ pub enum AngleUnit {
 }
 
 impl AngleUnit {
+    /// Returns the angle unit for the given string.
+    #[inline]
+    pub fn from_str(unit: &str) -> Result<Self, ()> {
+        Ok(match_ignore_ascii_case! { unit,
+            "deg" => AngleUnit::Deg,
+            "grad" => AngleUnit::Grad,
+            "turn" => AngleUnit::Turn,
+            "rad" => AngleUnit::Rad,
+             _ => return Err(())
+        })
+    }
+
     /// Returns this unit as a string.
     #[inline]
     pub fn as_str(self) -> &'static str {
@@ -139,13 +151,7 @@ impl NoCalcAngle {
 
     /// Parse an `<angle>` value given a value and a unit.
     pub fn parse_dimension(value: CSSFloat, unit: &str) -> Result<Self, ()> {
-        let unit = match_ignore_ascii_case! { unit,
-            "deg" => AngleUnit::Deg,
-            "grad" => AngleUnit::Grad,
-            "turn" => AngleUnit::Turn,
-            "rad" => AngleUnit::Rad,
-             _ => return Err(())
-        };
+        let unit = AngleUnit::from_str(unit)?;
         Ok(Self::new(unit, value))
     }
 }

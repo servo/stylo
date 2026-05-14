@@ -18,6 +18,13 @@ use std::fmt::{self, Write};
 use std::ops::Neg;
 use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss};
 
+/// Number of degrees per radian.
+const DEG_PER_RAD: f32 = 180.0 / PI;
+/// Number of degrees per turn.
+const DEG_PER_TURN: f32 = 360.0;
+/// Number of degrees per gradian.
+const DEG_PER_GRAD: f32 = 180.0 / 200.0;
+
 /// The unit of a `<angle>` value.
 #[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToShmem)]
 #[repr(u8)]
@@ -118,10 +125,6 @@ impl NoCalcAngle {
     /// Returns the value of the angle in degrees.
     #[inline]
     pub fn degrees(&self) -> CSSFloat {
-        const DEG_PER_RAD: f32 = 180.0 / PI;
-        const DEG_PER_TURN: f32 = 360.0;
-        const DEG_PER_GRAD: f32 = 180.0 / 200.0;
-
         match self.unit {
             AngleUnit::Deg => self.value,
             AngleUnit::Rad => self.value * DEG_PER_RAD,
@@ -141,6 +144,24 @@ impl NoCalcAngle {
     #[inline]
     pub fn unit(&self) -> &'static str {
         self.unit.as_str()
+    }
+
+    /// Return the canonical unit for this value.
+    pub fn canonical_unit(&self) -> Option<&'static str> {
+        Some("deg")
+    }
+
+    /// Convert this value to the specified unit, if possible.
+    pub fn to(&self, unit: &str) -> Result<Self, ()> {
+        let degrees = self.degrees();
+        let unit = AngleUnit::from_str(unit)?;
+        let divisor = match unit {
+            AngleUnit::Deg => 1.0,
+            AngleUnit::Grad => DEG_PER_GRAD,
+            AngleUnit::Turn => DEG_PER_TURN,
+            AngleUnit::Rad => DEG_PER_RAD,
+        };
+        Ok(Self::new(unit, degrees / divisor))
     }
 
     /// Returns the unitless, raw value.

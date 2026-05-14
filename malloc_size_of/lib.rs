@@ -277,6 +277,14 @@ impl<T: MallocSizeOf> MallocSizeOf for std::cell::RefCell<T> {
     }
 }
 
+impl<T: MallocSizeOf> MallocSizeOf for std::sync::OnceLock<T> {
+    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        self.get()
+            .map(|value| value.size_of(ops))
+            .unwrap_or_default()
+    }
+}
+
 impl<'a, B: ?Sized + ToOwned> MallocSizeOf for std::borrow::Cow<'a, B>
 where
     B::Owned: MallocSizeOf,

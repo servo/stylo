@@ -6,24 +6,29 @@
 //!
 //! [attr]: https://dom.spec.whatwg.org/#interface-attr
 
-use super::shadow_parts::ShadowParts;
-use crate::color::{parsing::parse_color_keyword, AbsoluteColor};
-use crate::derives::*;
-use crate::properties::PropertyDeclarationBlock;
-use crate::shared_lock::Locked;
-use crate::str::str_join;
-use crate::str::{read_exponent, read_fraction, HTML_SPACE_CHARACTERS};
-use crate::str::{read_numbers, split_commas, split_html_space_chars};
-use crate::values::specified::color::Color;
-use crate::values::specified::LengthPercentage;
-use crate::values::AtomString;
-use crate::{Atom, LocalName, Namespace, Prefix};
+use std::str::FromStr;
+use std::sync::OnceLock;
+
 use app_units::Au;
 use euclid::num::Zero;
 use num_traits::ToPrimitive;
 use selectors::attr::AttrSelectorOperation;
 use servo_arc::Arc;
-use std::str::FromStr;
+
+use super::shadow_parts::ShadowParts;
+use crate::color::parsing::parse_color_keyword;
+use crate::color::AbsoluteColor;
+use crate::derives::*;
+use crate::properties::PropertyDeclarationBlock;
+use crate::shared_lock::{Locked, SharedRwLock};
+use crate::str::{
+    read_exponent, read_fraction, read_numbers, split_commas, split_html_space_chars, str_join,
+    HTML_SPACE_CHARACTERS,
+};
+use crate::values::specified::color::Color;
+use crate::values::specified::LengthPercentage;
+use crate::values::AtomString;
+use crate::{Atom, LocalName, Namespace, Prefix};
 
 // Duplicated from script::dom::values.
 const UNSIGNED_LONG_MAX: u32 = 2147483647;
@@ -39,16 +44,36 @@ pub enum LengthOrPercentageOrAuto {
 #[derive(Clone, Debug)]
 #[cfg_attr(feature = "servo", derive(MallocSizeOf))]
 pub enum AttrValue {
+    //
+    // Variants that are stored in their serialized form.
+    //
     String(String),
-    TokenList(String, Vec<Atom>),
-    UInt(String, u32),
-    Int(String, i32),
-    Double(String, f64),
     Atom(Atom),
+
+    //
+    // Variants that support lazy serialization.
+    //
+    TokenList(OnceLock<String>, Vec<Atom>),
+    UInt(OnceLock<String>, u32),
+    Int(OnceLock<String>, i32),
+    Double(OnceLock<String>, f64),
+    /// Note that this variant is only used transitively as a fast path to set
+    /// the property declaration block relevant to the style of an element when
+    /// set from the inline declaration of that element (that is,
+    /// `element.style`).
+    Declaration {
+        #[ignore_malloc_size_of = "Arc"]
+        block: Arc<Locked<PropertyDeclarationBlock>>,
+        lock: SharedRwLock,
+        serialization: OnceLock<String>,
+    },
+
+    //
+    // Variants without a serialization implementation which must be eagerly serialized.
+    //
     LengthPercentage(String, Option<LengthPercentage>),
     Color(String, Option<AbsoluteColor>),
     Dimension(String, LengthOrPercentageOrAuto),
-
     /// Stores a URL, computed from the input string and a document's base URL.
     ///
     /// The URL is resolved at setting-time, so this kind of attribute value is
@@ -57,26 +82,38 @@ pub enum AttrValue {
         String,
         #[ignore_malloc_size_of = "Arc"] Option<Arc<url::Url>>,
     ),
-
-    /// Note that this variant is only used transitively as a fast path to set
-    /// the property declaration block relevant to the style of an element when
-    /// set from the inline declaration of that element (that is,
-    /// `element.style`).
-    ///
-    /// This can, as of this writing, only correspond to the value of the
-    /// `style` element, and is set from its relevant CSSInlineStyleDeclaration,
-    /// and then converted to a string in Element::attribute_mutated.
-    ///
-    /// Note that we don't necessarily need to do that (we could just clone the
-    /// declaration block), but that avoids keeping a refcounted
-    /// declarationblock for longer than needed.
-    Declaration(
-        String,
-        #[ignore_malloc_size_of = "Arc"] Arc<Locked<PropertyDeclarationBlock>>,
-    ),
-
     /// The value of an `exportparts` attribute.
     ShadowParts(String, ShadowParts),
+}
+
+impl From<String> for AttrValue {
+    fn from(value: String) -> Self {
+        Self::String(value)
+    }
+}
+
+impl From<u32> for AttrValue {
+    fn from(value: u32) -> Self {
+        Self::UInt(OnceLock::new(), value)
+    }
+}
+
+impl From<i32> for AttrValue {
+    fn from(value: i32) -> Self {
+        Self::Int(OnceLock::new(), value)
+    }
+}
+
+impl From<f64> for AttrValue {
+    fn from(value: f64) -> Self {
+        Self::Double(OnceLock::new(), value)
+    }
+}
+
+impl From<Vec<Atom>> for AttrValue {
+    fn from(value: Vec<Atom>) -> Self {
+        Self::TokenList(OnceLock::new(), value)
+    }
 }
 
 /// Shared implementation to parse an integer according to
@@ -176,7 +213,7 @@ impl AttrValue {
                     }
                     acc
                 });
-        AttrValue::TokenList(tokens, atoms)
+        AttrValue::TokenList(tokens.into(), atoms)
     }
 
     pub fn from_comma_separated_tokenlist(tokens: String) -> AttrValue {
@@ -188,13 +225,7 @@ impl AttrValue {
                 }
                 acc
             });
-        AttrValue::TokenList(tokens, atoms)
-    }
-
-    pub fn from_atomic_tokens(atoms: Vec<Atom>) -> AttrValue {
-        // TODO(ajeffrey): effecient conversion of Vec<Atom> to String
-        let tokens = String::from(str_join(&atoms, "\x20"));
-        AttrValue::TokenList(tokens, atoms)
+        AttrValue::TokenList(tokens.into(), atoms)
     }
 
     // https://html.spec.whatwg.org/multipage/#reflecting-content-attributes-in-idl-attributes:idl-unsigned-long
@@ -205,12 +236,12 @@ impl AttrValue {
         } else {
             result
         };
-        AttrValue::UInt(string, result)
+        AttrValue::UInt(string.into(), result)
     }
 
     pub fn from_i32(string: String, default: i32) -> AttrValue {
         let result = parse_integer(string.chars()).unwrap_or(default);
-        AttrValue::Int(string, result)
+        AttrValue::Int(string.into(), result)
     }
 
     // https://html.spec.whatwg.org/multipage/#reflecting-content-attributes-in-idl-attributes:idl-double
@@ -218,9 +249,9 @@ impl AttrValue {
         let result = parse_double(&string).unwrap_or(default);
 
         if result.is_normal() {
-            AttrValue::Double(string, result)
+            AttrValue::Double(string.into(), result)
         } else {
-            AttrValue::Double(string, default)
+            AttrValue::Double(string.into(), default)
         }
     }
 
@@ -229,9 +260,9 @@ impl AttrValue {
         let result = parse_integer(string.chars()).unwrap_or(default);
 
         if result < 0 {
-            AttrValue::Int(string, default)
+            AttrValue::Int(string.into(), default)
         } else {
-            AttrValue::Int(string, result)
+            AttrValue::Int(string.into(), result)
         }
     }
 
@@ -243,12 +274,11 @@ impl AttrValue {
         } else {
             result
         };
-        AttrValue::UInt(string, result)
+        AttrValue::UInt(string.into(), result)
     }
 
     pub fn from_atomic(string: String) -> AttrValue {
-        let value = Atom::from(string);
-        AttrValue::Atom(value)
+        AttrValue::Atom(string.into())
     }
 
     pub fn from_resolved_url(base: &Arc<::url::Url>, url: String) -> AttrValue {
@@ -274,6 +304,17 @@ impl AttrValue {
     pub fn from_shadow_parts(string: String) -> AttrValue {
         let shadow_parts = ShadowParts::parse(&string);
         AttrValue::ShadowParts(string, shadow_parts)
+    }
+
+    pub fn from_declaration(
+        block: Arc<Locked<PropertyDeclarationBlock>>,
+        lock: SharedRwLock,
+    ) -> AttrValue {
+        AttrValue::Declaration {
+            block,
+            lock,
+            serialization: OnceLock::new(),
+        }
     }
 
     /// Assumes the `AttrValue` is a `TokenList` and returns its tokens
@@ -423,19 +464,39 @@ impl ::std::ops::Deref for AttrValue {
     type Target = str;
 
     fn deref(&self) -> &str {
-        match *self {
-            AttrValue::String(ref value)
-            | AttrValue::TokenList(ref value, _)
-            | AttrValue::UInt(ref value, _)
-            | AttrValue::Double(ref value, _)
-            | AttrValue::LengthPercentage(ref value, _)
-            | AttrValue::Color(ref value, _)
-            | AttrValue::Int(ref value, _)
-            | AttrValue::ResolvedUrl(ref value, _)
-            | AttrValue::Declaration(ref value, _)
-            | AttrValue::ShadowParts(ref value, _)
-            | AttrValue::Dimension(ref value, _) => &value,
-            AttrValue::Atom(ref value) => &value,
+        match self {
+            AttrValue::String(value) => &value,
+            AttrValue::Atom(atom) => &atom,
+            AttrValue::TokenList(serialization, tokens) => {
+                serialization.get_or_init(|| {
+                    // TODO(ajeffrey): Efficient conversion of Vec<Atom> to String
+                    str_join(tokens, "\x20")
+                })
+            },
+            AttrValue::UInt(serialization, value) => {
+                serialization.get_or_init(|| value.to_string())
+            },
+            AttrValue::Double(serialization, value) => {
+                serialization.get_or_init(|| value.to_string())
+            },
+            AttrValue::Int(serialization, value) => serialization.get_or_init(|| value.to_string()),
+            AttrValue::Declaration {
+                block,
+                lock,
+                serialization,
+            } => serialization.get_or_init(|| {
+                let mut serialization = String::new();
+                block
+                    .read_with(&lock.read())
+                    .to_css(&mut serialization)
+                    .expect("Should always be able to produce a valid serialization");
+                serialization
+            }),
+            AttrValue::LengthPercentage(serialization, _)
+            | AttrValue::Color(serialization, _)
+            | AttrValue::Dimension(serialization, _)
+            | AttrValue::ResolvedUrl(serialization, _)
+            | AttrValue::ShadowParts(serialization, _) => &serialization,
         }
     }
 }

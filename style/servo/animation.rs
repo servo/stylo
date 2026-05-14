@@ -27,7 +27,7 @@ use crate::stylesheets::keyframes_rule::{KeyframesAnimation, KeyframesStep, Keyf
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::values::animated::{Animate, Procedure};
 use crate::values::computed::TimingFunction;
-use crate::values::generics::easing::{BeforeFlag, StepPosition};
+use crate::values::generics::easing::BeforeFlag;
 use crate::values::specified::TransitionBehavior;
 use crate::Atom;
 use debug_unreachable::debug_unreachable;
@@ -872,27 +872,6 @@ impl Animation {
         if prev_keyframe_index == next_keyframe_index {
             add_declarations_to_map(&prev_keyframe);
             return;
-        }
-
-        // At progress 0 (start of normal direction), we need to handle step functions specially
-        // for "jump-both, jump-start, start" step functions.
-        if total_progress == 0.0 && self.current_direction == AnimationDirection::Normal {
-            if let TimingFunction::Steps(_steps, pos) = &prev_keyframe.timing_function {
-                if *pos == StepPosition::JumpBoth
-                    || *pos == StepPosition::JumpStart
-                    || *pos == StepPosition::Start
-                {
-                    // Continue to interpolation.
-                } else {
-                    // Others use start value
-                    add_declarations_to_map(&prev_keyframe);
-                    return;
-                }
-            } else {
-                // Not a step function, use start value
-                add_declarations_to_map(&prev_keyframe);
-                return;
-            }
         }
 
         let reversed = self.current_direction != AnimationDirection::Normal;

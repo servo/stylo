@@ -12,7 +12,7 @@ use std::f64::consts::PI;
 use std::fmt::{self, Write};
 use std::ops::Neg;
 use std::{f32, f64};
-use style_traits::{CssWriter, ToCss};
+use style_traits::{CssWriter, ToCss, ToTyped};
 
 /// A computed angle in degrees.
 #[derive(
@@ -41,6 +41,8 @@ impl ToCss for Angle {
         dest.write_str("deg")
     }
 }
+
+impl ToTyped for Angle {}
 
 const RAD_PER_DEG: f64 = PI / 180.0;
 

@@ -16,7 +16,7 @@ use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::f32::consts::PI;
 use std::fmt::{self, Write};
 use std::ops::Neg;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss};
+use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss, ToTyped};
 
 /// Number of degrees per radian.
 const DEG_PER_RAD: f32 = 180.0 / PI;
@@ -96,6 +96,8 @@ impl ToCss for NoCalcAngle {
     }
 }
 
+impl ToTyped for NoCalcAngle {}
+
 impl SpecifiedValueInfo for NoCalcAngle {}
 
 impl NoCalcAngle {
@@ -140,6 +142,12 @@ impl NoCalcAngle {
         self.degrees() * RAD_PER_DEG
     }
 
+    /// Returns the unitless, raw value.
+    #[inline]
+    pub fn unitless_value(&self) -> CSSFloat {
+        self.value
+    }
+
     /// Returns the unit of the angle.
     #[inline]
     pub fn unit(&self) -> &'static str {
@@ -162,12 +170,6 @@ impl NoCalcAngle {
             AngleUnit::Rad => DEG_PER_RAD,
         };
         Ok(Self::new(unit, degrees / divisor))
-    }
-
-    /// Returns the unitless, raw value.
-    #[inline]
-    pub fn unitless_value(&self) -> CSSFloat {
-        self.value
     }
 
     /// Parse an `<angle>` value given a value and a unit.

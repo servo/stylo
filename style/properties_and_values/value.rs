@@ -530,7 +530,7 @@ impl<'a> Parser<'a> {
                 SpecifiedValueComponent::Color(specified::Color::parse(context, input)?)
             },
             DataType::Image => {
-                SpecifiedValueComponent::Image(specified::Image::parse(context, input)?)
+                SpecifiedValueComponent::Image(specified::Image::parse_forbid_none(context, input)?)
             },
             DataType::Url => {
                 SpecifiedValueComponent::Url(specified::url::SpecifiedUrl::parse(context, input)?)

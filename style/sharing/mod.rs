@@ -68,7 +68,7 @@ use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::StyleBloom;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::{CascadeInputs, SharedStyleContext, StyleContext};
-use crate::dom::{SendElement, TElement, TShadowRoot};
+use crate::dom::{SendElement, TElement};
 use crate::properties::ComputedValues;
 use crate::selector_map::RelevantAttributes;
 use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles};
@@ -783,19 +783,22 @@ impl<E: TElement> StyleSharingCache<E> {
 
         // If two elements belong to different shadow trees, different rules may apply to them, from
         // the respective trees, so check their cascade data pointers.
-        let target_shadow = target.element.containing_shadow();
-        let candidate_shadow = candidate.element.containing_shadow();
-        if target_shadow != candidate_shadow {
-            match (
-                target_shadow.and_then(|s| s.style_data()),
-                candidate_shadow.and_then(|s| s.style_data()),
-            ) {
-                (Some(td), Some(cd)) if std::ptr::eq(td, cd) => {},
-                _ => {
-                    trace!("Miss: Different containing shadow roots");
-                    return None;
-                },
-            }
+        if !checks::shadow_root_style_data_equals(
+            target.element.containing_shadow(),
+            candidate.element.containing_shadow(),
+        ) {
+            trace!("Miss: Different containing shadow root style data");
+            return None;
+        }
+
+        // Shadow hosts can share style when they have matching CascadeData pointers, which ensures
+        // they match the same :host rules.
+        if !checks::shadow_root_style_data_equals(
+            target.element.shadow_root(),
+            candidate.element.shadow_root(),
+        ) {
+            trace!("Miss: Different shadow root style data");
+            return None;
         }
 
         // If the elements are not assigned to the same slot they could match
@@ -814,20 +817,6 @@ impl<E: TElement> StyleSharingCache<E> {
         if target.implemented_pseudo_element() != candidate.implemented_pseudo_element() {
             trace!("Miss: Element backed pseudo-element");
             return None;
-        }
-
-        // Shadow hosts can share style when they have matching CascadeData pointers, which
-        // ensures they match the same :host rules.
-        match (
-            target.element.shadow_root().and_then(|s| s.style_data()),
-            candidate.element.shadow_root().and_then(|s| s.style_data()),
-        ) {
-            (Some(td), Some(cd)) if std::ptr::eq(td, cd) => {},
-            (None, None) => {},
-            _ => {
-                trace!("Miss: Different shadow root style data");
-                return None;
-            },
         }
 
         if target.element.has_animations(shared_context)

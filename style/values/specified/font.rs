@@ -1447,6 +1447,7 @@ impl FontVariantLigatures {
     mixed = "lining-nums,oldstyle-nums,proportional-nums,tabular-nums,diagonal-fractions,stacked-fractions,ordinal,slashed-zero",
     validate_mixed = "Self::validate_mixed_flags",
 ))]
+#[cfg_attr(feature = "servo", derive(Serialize, Deserialize, Hash))]
 #[repr(C)]
 pub struct FontVariantNumeric(u8);
 bitflags! {

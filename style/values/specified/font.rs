@@ -1375,6 +1375,7 @@ impl FontVariantEastAsian {
     ToShmem,
     ToTyped,
 )]
+#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[css(bitflags(
     single = "normal,none",
     mixed = "common-ligatures,no-common-ligatures,discretionary-ligatures,no-discretionary-ligatures,historical-ligatures,no-historical-ligatures,contextual,no-contextual",

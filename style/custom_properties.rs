@@ -1094,6 +1094,15 @@ fn parse_declaration_value_block<'i, 't>(
                                     .try_parse(|input| ParsedNamespace::parse(namespaces, input))
                                 {
                                     namespace = ns;
+                                    let prev = input.state();
+                                    let next = match *input.next_including_whitespace()? {
+                                        Token::Ident(_) => Ok(()),
+                                        ref t => Err(prev
+                                            .source_location()
+                                            .new_unexpected_token_error(t.clone())),
+                                    };
+                                    input.reset(&prev);
+                                    next?;
                                 }
                             }
                         }

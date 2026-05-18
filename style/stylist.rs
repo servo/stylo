@@ -1714,7 +1714,7 @@ impl Stylist {
         E: TElement,
     {
         let mut cur = element;
-        let mut pseudos = SmallVec::new();
+        let mut pseudos = SmallVec::<[_; 2]>::new();
         if let Some(pseudo) = pseudo_element {
             pseudos.push(pseudo.clone());
         }
@@ -1728,7 +1728,8 @@ impl Stylist {
         RuleCollector::new(
             self,
             element,
-            pseudos,
+            cur,
+            &pseudos,
             style_attribute,
             smil_override,
             animation_declarations,

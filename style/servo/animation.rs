@@ -621,7 +621,9 @@ impl Animation {
                 self.current_direction = match self.current_direction {
                     AnimationDirection::Normal => AnimationDirection::Reverse,
                     AnimationDirection::Reverse => AnimationDirection::Normal,
-                    _ => unreachable!(),
+                    _ => unreachable!(
+                        "Current animation direction can only be `normal` or `reverse`."
+                    ),
                 };
             },
             _ => {},
@@ -796,7 +798,7 @@ impl Animation {
             let keyframe = match self.current_direction {
                 AnimationDirection::Normal => self.computed_steps.first().unwrap(),
                 AnimationDirection::Reverse => self.computed_steps.last().unwrap(),
-                _ => unreachable!(),
+                _ => unreachable!("Current animation direction can only be `normal` or `reverse`."),
             };
             add_declarations_to_map(keyframe);
             return;
@@ -810,7 +812,7 @@ impl Animation {
             let keyframe = match self.current_direction {
                 AnimationDirection::Normal => self.computed_steps.last().unwrap(),
                 AnimationDirection::Reverse => self.computed_steps.first().unwrap(),
-                _ => unreachable!(),
+                _ => unreachable!("Current animation direction can only be `normal` or `reverse`."),
             };
             add_declarations_to_map(keyframe);
             return;
@@ -874,9 +876,8 @@ impl Animation {
             return;
         }
 
-        let reversed = self.current_direction != AnimationDirection::Normal;
-
         // Interpolate a new value for each animating property
+        let reversed = self.current_direction != AnimationDirection::Normal;
         for property_index in 0..self.number_of_animating_properties {
             let Some(previous_keyframe) = self.next_relevant_keyframe_for_property_in_direction(
                 property_index,

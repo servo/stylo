@@ -841,6 +841,9 @@ pub struct TypedValueList {
 ///
 /// * `#[css(if_empty = "...")]` on an iterable field specifies a keyword
 ///   value that should be produced when the iterable is empty.
+///
+/// * `#[css(represents_keyword)]` on a bool field causes the field name to be
+///   reified as a keyword when the field is true.
 pub trait ToTyped {
     /// Attempt to convert `self` into one or more [`TypedValue`] items.
     ///

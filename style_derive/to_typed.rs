@@ -86,6 +86,9 @@ use synstructure::{BindingInfo, Structure};
 ///
 /// * `#[css(if_empty = "...")]` on an iterable field causes the provided
 ///   keyword to be emitted when the iterable contains no elements.
+///
+/// * `#[css(represents_keyword)]` on a bool field causes the field name to be
+///   reified as a keyword when the field is true.
 pub fn derive(mut input: DeriveInput) -> TokenStream {
     // The mutable `where_clause` is passed down to helper functions so they
     // can append trait bounds only when necessary. In particular, a bound of
@@ -400,6 +403,20 @@ fn derive_single_field_expr(
                 for item in #field.iter() {
                     style_traits::ToTyped::to_typed(&item, dest)?;
                 }
+            }
+        }
+    } else if css_field_attrs.represents_keyword {
+        let ident = field
+            .ast()
+            .ident
+            .as_ref()
+            .expect("Unnamed field with represents_keyword?");
+        let ident = cg::to_css_identifier(&ident.to_string()).replace("_", "-");
+        quote! {
+            if *#field {
+                dest.push(style_traits::TypedValue::Keyword(
+                    style_traits::KeywordValue(style_traits::CssString::from(#ident)),
+                ));
             }
         }
     } else {

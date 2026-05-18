@@ -48,7 +48,6 @@ fn is_auto_zero_angle(auto: &bool, angle: &Angle) -> bool {
     ToTyped,
 )]
 #[repr(C)]
-#[typed(todo_derive_fields)]
 pub struct OffsetRotate {
     /// If auto is false, this is a fixed angle which indicates a
     /// constant clockwise rotation transformation applied to it by this

@@ -795,12 +795,13 @@ impl Animation {
 
         // Handle negative progress (before animation start) with backwards/both fill mode
         if progress < 0.0 {
-            let keyframe = match self.current_direction {
-                AnimationDirection::Normal => self.computed_steps.first().unwrap(),
-                AnimationDirection::Reverse => self.computed_steps.last().unwrap(),
+            if let Some(keyframe) = match self.current_direction {
+                AnimationDirection::Normal => self.computed_steps.first(),
+                AnimationDirection::Reverse => self.computed_steps.last(),
                 _ => unreachable!("Current animation direction can only be `normal` or `reverse`."),
-            };
-            add_declarations_to_map(keyframe);
+            } {
+                add_declarations_to_map(keyframe);
+            }
             return;
         }
 

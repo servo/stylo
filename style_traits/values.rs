@@ -813,6 +813,11 @@ pub struct TypedValueList {
 ///   for that field. If the provided function returns `true` for the field
 ///   value, the field is ignored.
 ///
+/// * `#[typed(contextual_skip_if = "...")]` on a field conditionally disables
+///   reification for that field. The provided function is called with all
+///   fields in the current struct or variant. If it returns `true`, the field
+///   is ignored.
+///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword that
 ///   would otherwise be derived from the Rust identifier.
 ///

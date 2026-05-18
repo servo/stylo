@@ -59,6 +59,11 @@ use synstructure::{BindingInfo, Structure};
 ///   for that field. If the provided function returns `true` for the field
 ///   value, the field is ignored.
 ///
+/// * `#[typed(contextual_skip_if = "...")]` on a field conditionally disables
+///   reification for that field. The provided function is called with all
+///   fields in the current struct or variant. If it returns `true`, the field
+///   is ignored.
+///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword
 ///   string.
 ///
@@ -268,7 +273,8 @@ fn derive_variant_arm(
 ///   to produce multiple `TypedValue`s.
 ///
 /// Fields marked with `#[css(skip)]`, or skipped by
-/// `#[typed(skip_if = "...")]`, are ignored.
+/// `#[typed(skip_if = "...")]` / `#[typed(contextual_skip_if = "...")]`,
+/// are ignored.
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
@@ -298,7 +304,8 @@ fn derive_variant_fields_expr(
 
     // Handle the simple case of exactly one non-iterable field.
     if !css_field_attrs.iterable && iter.peek().is_none() {
-        let expr = derive_single_field_expr(first, css_field_attrs, field_attrs, where_clause);
+        let expr =
+            derive_single_field_expr(first, css_field_attrs, field_attrs, where_clause, bindings);
 
         return quote! {{
             #expr
@@ -308,10 +315,17 @@ fn derive_variant_fields_expr(
 
     // Handle the general case by appending reified output from the supported
     // fields directly to the destination.
-    let mut expr = derive_single_field_expr(first, css_field_attrs, field_attrs, where_clause);
+    let mut expr =
+        derive_single_field_expr(first, css_field_attrs, field_attrs, where_clause, bindings);
     for (binding, css_field_attrs, field_attrs) in iter {
-        derive_single_field_expr(binding, css_field_attrs, field_attrs, where_clause)
-            .to_tokens(&mut expr)
+        derive_single_field_expr(
+            binding,
+            css_field_attrs,
+            field_attrs,
+            where_clause,
+            bindings,
+        )
+        .to_tokens(&mut expr)
     }
 
     quote! {{
@@ -336,8 +350,9 @@ fn derive_variant_fields_expr(
 /// For non-iterable fields, it generates a direct `ToTyped::to_typed` call
 /// for the field value.
 ///
-/// If `#[typed(skip_if = "...")]` is present and the provided function returns
-/// `true` for the field value, the field contributes no reified output.
+/// If `#[typed(skip_if = "...")]` or `#[typed(contextual_skip_if = "...")]`
+/// is present and the provided function returns `true`, the field contributes
+/// no reified output.
 ///
 /// The appropriate `T: ToTyped` bounds for the field type or iterable element
 /// type(s) are added to the `where` clause.
@@ -346,6 +361,7 @@ fn derive_single_field_expr(
     css_field_attrs: CssFieldAttrs,
     field_attrs: TypedFieldAttrs,
     where_clause: &mut Option<WhereClause>,
+    bindings: &[BindingInfo],
 ) -> TokenStream {
     let mut expr = if css_field_attrs.iterable {
         // We add `ToTyped` bounds for the iterable's element type(s), rather
@@ -395,9 +411,24 @@ fn derive_single_field_expr(
         }
     };
 
-    if let Some(condition) = field_attrs.skip_if {
+    let skip_if = field_attrs.skip_if;
+    let contextual_skip_if = field_attrs.contextual_skip_if;
+    assert!(
+        skip_if.is_none() || contextual_skip_if.is_none(),
+        "Field should not have both skip_if and contextual_skip_if"
+    );
+
+    if let Some(condition) = skip_if {
         expr = quote! {
             if !#condition(#field) {
+                #expr
+            }
+        }
+    }
+
+    if let Some(condition) = contextual_skip_if {
+        expr = quote! {
+            if !#condition(#(#bindings), *) {
                 #expr
             }
         }
@@ -529,4 +560,11 @@ pub struct TypedFieldAttrs {
     /// The provided function is called with the field value. If it returns
     /// `true`, the field is ignored and produces no `TypedValue` items.
     pub skip_if: Option<Path>,
+
+    /// Conditionally skips reification of this field based on the full value.
+    ///
+    /// The provided function is called with all fields in the current struct
+    /// or variant. If it returns `true`, the field is ignored and produces no
+    /// `TypedValue` items.
+    pub contextual_skip_if: Option<Path>,
 }

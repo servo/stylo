@@ -55,14 +55,18 @@ use synstructure::{BindingInfo, Structure};
 ///
 /// * `#[css(skip)]` on a field disables reification for that field.
 ///
-/// * `#[typed(skip_if = "...")]` on a field conditionally disables reification
-///   for that field. If the provided function returns `true` for the field
-///   value, the field is ignored.
+/// * `#[css(skip_if = "...")]` / `#[typed(skip_if = "...")]` on a field
+///   conditionally disables reification for that field. If the provided
+///   function returns `true` for the field value, the field is ignored.
 ///
-/// * `#[typed(contextual_skip_if = "...")]` on a field conditionally disables
+/// * `#[css(contextual_skip_if = "...")]` /
+///   `#[typed(contextual_skip_if = "...")]` on a field conditionally disables
 ///   reification for that field. The provided function is called with all
 ///   fields in the current struct or variant. If it returns `true`, the field
 ///   is ignored.
+///
+///   Typed skip annotations override CSS skip annotations when both are
+///   present.
 ///
 /// * `#[css(keyword = "...")]` on a unit variant overrides the keyword
 ///   string.
@@ -272,9 +276,8 @@ fn derive_variant_arm(
 ///   destination and then validates whether the enclosing variant is allowed
 ///   to produce multiple `TypedValue`s.
 ///
-/// Fields marked with `#[css(skip)]`, or skipped by
-/// `#[typed(skip_if = "...")]` / `#[typed(contextual_skip_if = "...")]`,
-/// are ignored.
+/// Fields marked with `#[css(skip)]`, or skipped by css/typed `skip_if` or
+/// `contextual_skip_if` annotations, are ignored.
 fn derive_variant_fields_expr(
     bindings: &[BindingInfo],
     where_clause: &mut Option<WhereClause>,
@@ -350,9 +353,9 @@ fn derive_variant_fields_expr(
 /// For non-iterable fields, it generates a direct `ToTyped::to_typed` call
 /// for the field value.
 ///
-/// If `#[typed(skip_if = "...")]` or `#[typed(contextual_skip_if = "...")]`
-/// is present and the provided function returns `true`, the field contributes
-/// no reified output.
+/// If a css/typed `skip_if` or `contextual_skip_if` annotation is present and
+/// the provided function returns `true`, the field contributes no reified
+/// output. Typed skip annotations override CSS skip annotations.
 ///
 /// The appropriate `T: ToTyped` bounds for the field type or iterable element
 /// type(s) are added to the `where` clause.
@@ -411,8 +414,24 @@ fn derive_single_field_expr(
         }
     };
 
-    let skip_if = field_attrs.skip_if;
-    let contextual_skip_if = field_attrs.contextual_skip_if;
+    let typed_has_skip = field_attrs.skip_if.is_some() || field_attrs.contextual_skip_if.is_some();
+
+    let skip_if = field_attrs.skip_if.or_else(|| {
+        if typed_has_skip {
+            None
+        } else {
+            css_field_attrs.skip_if
+        }
+    });
+
+    let contextual_skip_if = field_attrs.contextual_skip_if.or_else(|| {
+        if typed_has_skip {
+            None
+        } else {
+            css_field_attrs.contextual_skip_if
+        }
+    });
+
     assert!(
         skip_if.is_none() || contextual_skip_if.is_none(),
         "Field should not have both skip_if and contextual_skip_if"

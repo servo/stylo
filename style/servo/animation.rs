@@ -697,57 +697,101 @@ impl Animation {
         // NB: We shall not touch the started_at field, since we don't want to
         // restart the animation.
         let old_started_at = self.started_at;
+        let old_delay = self.delay;
         let old_duration = self.duration;
         let old_direction = self.current_direction;
         let old_state = self.state.clone();
         let old_iteration_state = self.iteration_state.clone();
 
         *self = other.clone();
-
-        self.started_at = old_started_at;
         self.current_direction = old_direction;
 
-        // Don't update the iteration count, just the iteration limit.
-        // TODO: see how changing the limit affects rendering in other browsers.
-        // We might need to keep the iteration count even when it's infinite.
-        match (&mut self.iteration_state, old_iteration_state) {
-            (
-                &mut KeyframesIterationState::Finite(ref mut iters, _),
-                KeyframesIterationState::Finite(old_iters, _),
-            ) => *iters = old_iters,
-            _ => {},
-        }
+        if self.delay != old_delay {
+            // Shift by the delay delta:
+            self.started_at = old_started_at + (self.delay - old_delay);
 
-        // Don't pause or restart animations that should remain finished.
-        // We call mem::replace because `has_ended(...)` looks at `Animation::state`.
-        let new_state = std::mem::replace(&mut self.state, Running);
-        if old_state == Finished && self.has_ended(now) {
-            self.state = Finished;
+            match old_state {
+                Paused(old_progress) => {
+                    let mut progress = old_progress + (old_delay - self.delay) / self.duration;
+                    while progress > 1. && !self.on_last_iteration() {
+                        self.iterate();
+                        progress -= 1.;
+                    }
+                    self.state = Paused(progress);
+                },
+                Finished => {
+                    if self.has_ended(now) {
+                        self.state = Finished;
+                    } else if self.started_at <= now {
+                        self.state = Running;
+                    } else {
+                        self.state = Pending;
+                    }
+                },
+                _ => {
+                    // Running or Pending — re-advance iterations from a fresh
+                    // iteration state.
+                    let mut starting_progress = (now - self.started_at) / self.duration;
+                    match self.iteration_state {
+                        KeyframesIterationState::Finite(ref mut current, _) => *current = 0.0,
+                        _ => {},
+                    }
+                    while starting_progress > 1. && !self.on_last_iteration() {
+                        self.iterate();
+                        starting_progress -= 1.;
+                    }
+                },
+            }
+
+            // Don't check old_state when delay changed.
+            if self.state == Pending && self.started_at <= now {
+                self.state = Running;
+            }
         } else {
-            self.state = new_state;
-        }
+            self.started_at = old_started_at;
 
-        // If we're unpausing the animation, fake the start time so we seem to
-        // restore it.
-        //
-        // If the animation keeps paused, keep the old value.
-        //
-        // If we're pausing the animation, compute the progress value.
-        match (&mut self.state, &old_state) {
-            (&mut Pending, &Paused(progress)) => {
-                self.started_at = now - (self.duration * progress);
-            },
-            (&mut Paused(ref mut new), &Paused(old)) => *new = old,
-            (&mut Paused(ref mut progress), &Running) => {
-                *progress = (now - old_started_at) / old_duration
-            },
-            _ => {},
-        }
+            // Don't update the iteration count, just the iteration limit.
+            // TODO: see how changing the limit affects rendering in other browsers.
+            // We might need to keep the iteration count even when it's infinite.
+            match (&mut self.iteration_state, old_iteration_state) {
+                (
+                    &mut KeyframesIterationState::Finite(ref mut iters, _),
+                    KeyframesIterationState::Finite(old_iters, _),
+                ) => *iters = old_iters,
+                _ => {},
+            }
 
-        // Try to detect when we should skip straight to the running phase to
-        // avoid sending multiple animationstart events.
-        if self.state == Pending && self.started_at <= now && old_state != Pending {
-            self.state = Running;
+            // Don't pause or restart animations that should remain finished.
+            // We call mem::replace because `has_ended(...)` looks at `Animation::state`.
+            let new_state = std::mem::replace(&mut self.state, Running);
+            if old_state == Finished && self.has_ended(now) {
+                self.state = Finished;
+            } else {
+                self.state = new_state;
+            }
+
+            // If we're unpausing the animation, fake the start time so we seem to
+            // restore it.
+            //
+            // If the animation keeps paused, keep the old value.
+            //
+            // If we're pausing the animation, compute the progress value.
+            match (&mut self.state, &old_state) {
+                (&mut Pending, &Paused(progress)) => {
+                    self.started_at = now - (self.duration * progress);
+                },
+                (&mut Paused(ref mut new), &Paused(old)) => *new = old,
+                (&mut Paused(ref mut progress), &Running) => {
+                    *progress = (now - old_started_at) / old_duration
+                },
+                _ => {},
+            }
+
+            // Try to detect when we should skip straight to the running phase to
+            // avoid sending multiple animationstart events.
+            if self.state == Pending && self.started_at <= now && old_state != Pending {
+                self.state = Running;
+            }
         }
     }
 

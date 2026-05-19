@@ -1344,7 +1344,7 @@ fn find_non_custom_references(
     if dependent_types.intersects(DependentDataTypes::COLOR) && may_have_color_scheme {
         // NOTE(emilio): We might want to add a NonCustomReferences::COLOR_SCHEME or something but
         // it's not really needed for correctness, so for now we use an Option for that to signal
-        // that there might be a dependencies.
+        // that there might be a dependency.
         return Some(NonCustomReferences::empty());
     }
     None
@@ -1641,46 +1641,32 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
         }
 
         let existing_value = self.substitution_functions.get_var(registration, &name);
-        let existing_value = match existing_value {
-            None => {
-                if matches!(
-                    value,
-                    CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Initial)
-                ) {
-                    debug_assert!(registration.inherits(), "Should've been handled earlier");
-                    // The initial value of a custom property without a
-                    // guaranteed-invalid initial value is the same as it
-                    // not existing in the map.
-                    if registration.initial_value.is_none() {
-                        return false;
-                    }
+        let Some(existing_value) = existing_value else {
+            if matches!(
+                value,
+                CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Initial)
+            ) {
+                debug_assert!(registration.inherits(), "Should've been handled earlier");
+                // The initial value of a custom property without a
+                // guaranteed-invalid initial value is the same as it
+                // not existing in the map.
+                if registration.initial_value.is_none() {
+                    return false;
                 }
-                return true;
-            },
-            Some(v) => v,
+            }
+            return true;
         };
-        let computed_value = match value {
+        match value {
             CustomDeclarationValue::Unparsed(value) => {
                 // Don't bother overwriting an existing value with the same
                 // specified value.
                 if let Some(existing_value) = existing_value.as_universal() {
                     return existing_value != value;
                 }
-                if !registration.is_universal() {
-                    compute_value(
-                        &value.css,
-                        &value.url_data,
-                        registration,
-                        self.computed_context,
-                        AttrTaint::default(),
-                    )
-                    .ok()
-                } else {
-                    None
-                }
             },
-            CustomDeclarationValue::Parsed(value) => {
-                Some(value.to_computed_value(&self.computed_context))
+            CustomDeclarationValue::Parsed(..) => {
+                // If the value has dependencies, self.computed_context might not yield the same
+                // result as the eventual value.
             },
             CustomDeclarationValue::CSSWideKeyword(kw) => {
                 match kw {
@@ -1718,13 +1704,8 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
                     | CSSWideKeyword::RevertLayer
                     | CSSWideKeyword::RevertRule => {},
                 }
-                None
             },
         };
-
-        if let Some(value) = computed_value {
-            return existing_value.v != value.v;
-        }
 
         true
     }

@@ -7,23 +7,25 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use crate::values::generics::grid::{GridTemplateComponent, ImplicitGridTracks, RepeatCount};
+use crate::values::generics::grid::{Flex, GridTemplateComponent, ImplicitGridTracks, RepeatCount};
 use crate::values::generics::grid::{LineNameList, LineNameListValue, NameRepeat, TrackBreadth};
 use crate::values::generics::grid::{TrackList, TrackListValue, TrackRepeat, TrackSize};
 use crate::values::specified::{Integer, LengthPercentage};
-use crate::values::{CSSFloat, CustomIdent};
+use crate::values::CustomIdent;
 use cssparser::{Parser, Token};
 use std::mem;
 use style_traits::{ParseError, StyleParseErrorKind};
 
-/// Parse a single flexible length.
-pub fn parse_flex<'i, 't>(input: &mut Parser<'i, 't>) -> Result<CSSFloat, ParseError<'i>> {
-    let location = input.current_source_location();
-    match *input.next()? {
-        Token::Dimension {
-            value, ref unit, ..
-        } if unit.eq_ignore_ascii_case("fr") && value.is_sign_positive() => Ok(value),
-        ref t => Err(location.new_unexpected_token_error(t.clone())),
+impl Flex {
+    /// Parse a single flexible length.
+    fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
+        let location = input.current_source_location();
+        match *input.next()? {
+            Token::Dimension {
+                value, ref unit, ..
+            } if unit.eq_ignore_ascii_case("fr") && value.is_sign_positive() => Ok(Self(value)),
+            ref t => Err(location.new_unexpected_token_error(t.clone())),
+        }
     }
 }
 
@@ -57,8 +59,8 @@ impl Parse for TrackBreadth<LengthPercentage> {
             return Ok(TrackBreadth::Breadth(lp));
         }
 
-        if let Ok(f) = input.try_parse(parse_flex) {
-            return Ok(TrackBreadth::Fr(f));
+        if let Ok(f) = input.try_parse(Flex::parse) {
+            return Ok(TrackBreadth::Flex(f));
         }
 
         Self::parse_keyword(input)

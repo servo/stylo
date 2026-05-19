@@ -210,6 +210,35 @@ impl Parse for GridLine<specified::Integer> {
     }
 }
 
+/// A CSS `<flex>` value.
+///
+/// https://drafts.csswg.org/css-grid-2/#typedef-flex
+#[derive(
+    Animate,
+    Clone,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+)]
+#[repr(C)]
+pub struct Flex(pub CSSFloat);
+
+impl ToCss for Flex {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        self.0.to_css(dest)?;
+        dest.write_str("fr")
+    }
+}
+
 /// A track breadth for explicit grid track sizing. It's generic solely to
 /// avoid re-implementing it for the computed type.
 ///
@@ -232,8 +261,7 @@ pub enum GenericTrackBreadth<L> {
     /// The generic type is almost always a non-negative `<length-percentage>`
     Breadth(L),
     /// A flex fraction specified in `fr` units.
-    #[css(dimension)]
-    Fr(CSSFloat),
+    Flex(Flex),
     /// `auto`
     Auto,
     /// `min-content`
@@ -321,7 +349,7 @@ impl<L> TrackSize<L> {
                 }
 
                 match *breadth_1 {
-                    TrackBreadth::Fr(_) => false, // should be <inflexible-breadth> at this point
+                    TrackBreadth::Flex(_) => false, // should be <inflexible-breadth> at this point
                     _ => breadth_2.is_fixed(),
                 }
             },
@@ -347,7 +375,7 @@ impl<L: ToCss> ToCss for TrackSize<L> {
                 // According to gecko minmax(auto, <flex>) is equivalent to <flex>,
                 // and both are serialized as <flex>.
                 if let TrackBreadth::Auto = *min {
-                    if let TrackBreadth::Fr(_) = *max {
+                    if let TrackBreadth::Flex(_) = *max {
                         return max.to_css(dest);
                     }
                 }

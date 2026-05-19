@@ -716,28 +716,18 @@ pub enum AlignmentBaseline {
     /// Use the text-under baseline.
     TextBottom,
     /// Use the alphabetic baseline.
-    /// TODO: Bug 2010717 - Remove css(skip) to support alignment-baseline: alphabetic
-    #[css(skip)]
     Alphabetic,
     /// Use the ideographic-under baseline.
-    /// TODO: Bug 2010718 - Remove css(skip) support alignment-baseline: ideographic
-    #[css(skip)]
     Ideographic,
     /// In general, use the x-middle baselines; except under text-orientation: upright
     /// (where the alphabetic and x-height baselines are essentially meaningless) use
     /// the central baseline instead.
     Middle,
     /// Use the central baseline.
-    /// TODO: Bug 2010719 - Remove css(skip) to support alignment-baseline: central
-    #[css(skip)]
     Central,
     /// Use the math baseline.
-    /// TODO: Bug 2010720 - Remove css(skip) to support alignment-baseline: mathematical
-    #[css(skip)]
     Mathematical,
     /// Use the hanging baseline.
-    /// TODO: Bug 2017197 - Remove css(skip) to support alignment-baseline: hanging
-    #[css(skip)]
     Hanging,
     /// Use the text-over baseline.
     TextTop,

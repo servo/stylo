@@ -30,9 +30,6 @@ use thin_vec::ThinVec;
 ///   iterable will be serialized as the arguments for the function;
 /// * an iterable field can also be annotated with `#[css(if_empty = "foo")]`
 ///   to print `"foo"` if the iterator is empty;
-/// * if `#[css(dimension)]` is found on a variant, that variant needs
-///   to have a single member. The variant would be serialized as a CSS
-///   dimension token, like: <member><identifier>;
 /// * if `#[css(skip)]` is found on a field, the `ToCss` call for that field
 ///   is skipped;
 /// * if `#[css(skip_if = "function")]` is found on a field, the `ToCss` call

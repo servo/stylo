@@ -14,7 +14,11 @@ use cssparser::Parser;
 use std::fmt::{self, Write};
 use std::usize;
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
+use style_traits::{
+    CssString, CssWriter, NumericValue, ParseError, StyleParseErrorKind, ToCss, ToTyped,
+    TypedValue, UnitValue,
+};
+use thin_vec::ThinVec;
 
 /// A `<grid-line>` type.
 ///
@@ -239,6 +243,18 @@ impl ToCss for Flex {
     }
 }
 
+impl ToTyped for Flex {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        let value = self.0;
+        let unit = CssString::from("fr");
+        dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            value,
+            unit,
+        })));
+        Ok(())
+    }
+}
+
 /// A track breadth for explicit grid track sizing. It's generic solely to
 /// avoid re-implementing it for the computed type.
 ///
@@ -255,6 +271,7 @@ impl ToCss for Flex {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericTrackBreadth<L> {
@@ -391,6 +408,15 @@ impl<L: ToCss> ToCss for TrackSize<L> {
                 lp.to_css(dest)?;
                 dest.write_char(')')
             },
+        }
+    }
+}
+
+impl<L: ToTyped> ToTyped for TrackSize<L> {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        match *self {
+            TrackSize::Breadth(ref breadth) => breadth.to_typed(dest),
+            _ => Err(()),
         }
     }
 }
@@ -573,12 +599,14 @@ impl<L: ToCss, I: ToCss> ToCss for TrackRepeat<L, I> {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericTrackListValue<LengthPercentage, Integer> {
     /// A <track-size> value.
     TrackSize(#[animation(field_bound)] GenericTrackSize<LengthPercentage>),
     /// A <track-repeat> value.
+    #[typed(skip)]
     TrackRepeat(#[animation(field_bound)] GenericTrackRepeat<LengthPercentage, Integer>),
 }
 
@@ -684,6 +712,24 @@ impl<L: ToCss, I: ToCss> ToCss for TrackList<L, I> {
         }
 
         Ok(())
+    }
+}
+
+impl<L: ToTyped, I: ToTyped> ToTyped for TrackList<L, I> {
+    // Note: The specification does not currently define how grid track lists
+    // should be reified into Typed OM. The current behavior follows existing
+    // WPT coverage (grid-template-columns-rows.html). Syncing spec with UA/WPT
+    // behavior tracked in https://github.com/w3c/csswg-drafts/issues/13907
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        if self.values.len() != 1 {
+            return Err(());
+        }
+
+        if self.line_names.iter().any(|names| !names.is_empty()) {
+            return Err(());
+        }
+
+        self.values[0].to_typed(dest)
     }
 }
 
@@ -854,7 +900,6 @@ impl<I: ToCss> ToCss for LineNameList<I> {
 )]
 #[value_info(other_values = "subgrid")]
 #[repr(C, u8)]
-#[typed(todo_derive_fields)]
 pub enum GenericGridTemplateComponent<L, I> {
     /// `none` value.
     None,
@@ -869,9 +914,11 @@ pub enum GenericGridTemplateComponent<L, I> {
     /// A `subgrid <line-name-list>?`
     /// TODO: Support animations for this after subgrid is addressed in [grid-2] spec.
     #[animation(error)]
+    #[typed(skip)]
     Subgrid(Box<GenericLineNameList<I>>),
     /// `masonry` value.
     /// https://github.com/w3c/csswg-drafts/issues/4650
+    #[typed(skip)]
     Masonry,
 }
 

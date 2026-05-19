@@ -438,7 +438,6 @@ impl<L: ToTyped> ToTyped for TrackSize<L> {
     ToTyped,
 )]
 #[repr(transparent)]
-#[typed(todo_derive_fields)]
 pub struct GenericImplicitGridTracks<T>(
     #[css(if_empty = "auto", iterable)] pub crate::OwnedSlice<T>,
 );

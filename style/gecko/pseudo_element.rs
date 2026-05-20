@@ -554,7 +554,7 @@ impl PseudoElement {
                 Token::Ident(name) if is_css2_pseudo_element(&name) => name,
                 _ => return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
             };
-            return PseudoElement::from_slice(&name, false).ok_or(location.new_custom_error(
+            return PseudoElement::from_slice(&name).ok_or(location.new_custom_error(
                 SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name.clone()),
             ));
         }
@@ -563,7 +563,7 @@ impl PseudoElement {
         match input.next_including_whitespace()?.clone() {
             Token::Ident(name) => {
                 // We don't need to parse unknown ::-webkit-* pseudo-elements in this function.
-                PseudoElement::from_slice(&name, false).ok_or(input.new_custom_error(
+                PseudoElement::from_slice(&name).ok_or(input.new_custom_error(
                     SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
                 ))
             },

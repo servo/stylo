@@ -3665,7 +3665,6 @@ keyword = { values = ["normal", "text", "emoji", "unicode"] }
 
 [font-variant-position]
 struct = "font"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-position"
 animation_type = "discrete"
 affects = "layout"

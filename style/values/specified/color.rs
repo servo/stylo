@@ -180,7 +180,6 @@ pub enum Color {
     /// https://w3c.github.io/csswg-drafts/css-color-4/#typedef-absolute-color-function
     Absolute(Box<Absolute>),
     /// A color function that could not be resolved to a [Color::Absolute] color at parse time.
-    /// Right now this is only the case for relative colors with `currentColor` as the origin.
     ColorFunction(Box<ColorFunction<Self>>),
     /// A system color.
     System(SystemColor),
@@ -660,7 +659,7 @@ impl Color {
         match device {
             Some(device) => {
                 Context::for_media_query_evaluation(device, device.quirks_mode(), |context| {
-                    specified.to_computed_color(Some(&context))
+                    specified.to_computed_color(Some(context))
                 })
             },
             None => specified.to_computed_color(None),
@@ -692,7 +691,11 @@ impl ToCss for Color {
 
 impl Color {
     /// Returns whether this color is allowed in forced-colors mode.
-    pub fn honored_in_forced_colors_mode(&self, allow_transparent: bool) -> bool {
+    pub fn honored_in_forced_colors_mode(
+        &self,
+        context: &Context,
+        allow_transparent: bool,
+    ) -> bool {
         match *self {
             Self::InheritFromBodyQuirk => false,
             Self::CurrentColor => true,
@@ -702,19 +705,24 @@ impl Color {
                 // For now we allow transparent colors if we can resolve the color function.
                 // <https://bugzilla.mozilla.org/show_bug.cgi?id=1923053>
                 color_function
-                    .resolve_to_absolute()
+                    .resolve_to_absolute(Some(context))
                     .map(|resolved| allow_transparent && resolved.is_transparent())
                     .unwrap_or(false)
             },
             Self::LightDark(ref ld) => {
-                ld.light.honored_in_forced_colors_mode(allow_transparent)
-                    && ld.dark.honored_in_forced_colors_mode(allow_transparent)
+                ld.light
+                    .honored_in_forced_colors_mode(context, allow_transparent)
+                    && ld
+                        .dark
+                        .honored_in_forced_colors_mode(context, allow_transparent)
             },
-            Self::ColorMix(ref mix) => mix
-                .items
-                .iter()
-                .all(|item| item.color.honored_in_forced_colors_mode(allow_transparent)),
-            Self::ContrastColor(ref c) => c.honored_in_forced_colors_mode(allow_transparent),
+            Self::ColorMix(ref mix) => mix.items.iter().all(|item| {
+                item.color
+                    .honored_in_forced_colors_mode(context, allow_transparent)
+            }),
+            Self::ContrastColor(ref c) => {
+                c.honored_in_forced_colors_mode(context, allow_transparent)
+            },
         }
     }
 
@@ -743,19 +751,19 @@ impl Color {
     /// forms that are invalid in an absolute color.
     ///   https://drafts.csswg.org/css-color-5/#absolute-color
     /// Returns None if the specified color is not valid as an absolute color.
-    pub fn resolve_to_absolute(&self) -> Result<AbsoluteColor, ()> {
+    pub fn resolve_to_absolute(&self, context: Option<&Context>) -> Result<AbsoluteColor, ()> {
         use crate::values::specified::percentage::ToPercentage;
 
         match self {
             Self::Absolute(c) => Ok(c.color),
-            Self::ColorFunction(ref color_function) => color_function.resolve_to_absolute(),
+            Self::ColorFunction(ref color_function) => color_function.resolve_to_absolute(context),
             Self::ColorMix(ref mix) => {
                 use crate::color::mix;
 
                 let mut items = ColorMixItemList::with_capacity(mix.items.len());
                 for item in mix.items.iter() {
                     items.push(mix::ColorMixItem::new(
-                        item.color.resolve_to_absolute()?,
+                        item.color.resolve_to_absolute(context)?,
                         item.percentage.to_percentage().ok_or(())?,
                     ))
                 }
@@ -893,11 +901,8 @@ impl Color {
                 ComputedColor::Absolute(color)
             },
             Color::ColorFunction(ref color_function) => {
-                debug_assert!(color_function.has_origin_color(),
-                    "no need for a ColorFunction if it doesn't contain an unresolvable origin color");
-
                 // Try to eagerly resolve the color function before making it a computed color.
-                if let Ok(absolute) = color_function.resolve_to_absolute() {
+                if let Ok(absolute) = color_function.resolve_to_absolute(context) {
                     ComputedColor::Absolute(absolute)
                 } else {
                     let color_function = color_function

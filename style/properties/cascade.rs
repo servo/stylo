@@ -505,7 +505,7 @@ fn tweak_when_ignoring_colors(
             // broken in other applications as well, and not honoring
             // transparent makes stuff uglier or break unconditionally
             // (bug 1666059, bug 1755713).
-            if color.honored_in_forced_colors_mode(/* allow_transparent = */ true) {
+            if color.honored_in_forced_colors_mode(context, /* allow_transparent = */ true) {
                 return;
             }
             // For background-color, we revert or initial-with-preserved-alpha
@@ -524,7 +524,7 @@ fn tweak_when_ignoring_colors(
             // We honor color: transparent and system colors.
             if color
                 .0
-                .honored_in_forced_colors_mode(/* allow_transparent = */ true)
+                .honored_in_forced_colors_mode(context, /* allow_transparent = */ true)
             {
                 return;
             }
@@ -572,7 +572,9 @@ fn tweak_when_ignoring_colors(
             // caret-color doesn't make sense (using currentColor is fine), and
             // we ignore accent-color in high-contrast-mode anyways.
             if let Some(color) = declaration.color_value() {
-                if color.honored_in_forced_colors_mode(/* allow_transparent = */ false) {
+                if color
+                    .honored_in_forced_colors_mode(context, /* allow_transparent = */ false)
+                {
                     return;
                 }
             }

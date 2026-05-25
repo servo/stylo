@@ -178,16 +178,9 @@ impl CalcNumeric {
         context: &computed::Context,
         leaf_to_f32: impl FnOnce(Result<Leaf, ()>) -> f32,
     ) -> f32 {
-        let result = self.node.resolve_map(|leaf| {
-            Ok(match leaf {
-                // Lengths can contain relative units that can only resolve at computed value time
-                Leaf::Length(length) => Leaf::Length(NoCalcLength::from_px(
-                    length.to_computed_value(context).px(),
-                )),
-                // Other nodes have been resolved eagerly at parse time
-                _ => leaf.clone(),
-            })
-        });
+        let result = self
+            .node
+            .resolve_computed(Some(context), |leaf| Ok(leaf.clone()));
         self.clamping_mode.clamp(leaf_to_f32(result))
     }
 
@@ -1221,6 +1214,30 @@ impl CalcNode {
         F: FnOnce() -> Result<CSSFloat, ()>,
     {
         closure().map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+    }
+
+    /// Resolves this calc tree into a leaf node, using the computed context
+    /// if provided for any nodes that require it. Additional node mapping can
+    /// be provided using `leaf_to_output_fn`. Returns Err(()) if the calc tree
+    /// could not be resolved for any reason.
+    pub fn resolve_computed<F>(
+        &self,
+        context: Option<&computed::Context>,
+        leaf_to_output_fn: F,
+    ) -> Result<Leaf, ()>
+    where
+        F: Fn(&Leaf) -> Result<Leaf, ()>,
+    {
+        // TODO(Bug 2040558) - Consider handling all leaf types here via `to_computed_value`.
+        self.resolve_map(|leaf| {
+            Ok(match leaf {
+                Leaf::Length(length) => Leaf::Length(NoCalcLength::from_px(match context {
+                    Some(ctx) => length.to_computed_value(ctx).px(),
+                    None => length.to_computed_pixel_length_without_context()?,
+                })),
+                _ => leaf_to_output_fn(leaf)?,
+            })
+        })
     }
 
     /// Tries to simplify this expression into a `<length>` or `<percentage>`

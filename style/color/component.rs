@@ -15,9 +15,10 @@ use crate::{
     parser::ParserContext,
     values::{
         animated::ToAnimatedValue,
-        generics::calc::{CalcUnits, GenericCalcNode},
-        specified::calc::{AllowParse, Leaf},
-        specified::number::NoCalcNumber,
+        computed,
+        generics::calc::CalcUnits,
+        specified::calc::{AllowParse, CalcNode, Leaf},
+        specified::NoCalcNumber,
     },
 };
 use cssparser::{color::OPAQUE, Parser, Token};
@@ -34,7 +35,7 @@ pub enum ColorComponent<ValueType> {
     /// A channel keyword, e.g. `r`, `l`, `alpha`, etc.
     ChannelKeyword(ChannelKeyword),
     /// A calc() value.
-    Calc(Box<GenericCalcNode<Leaf>>),
+    Calc(Box<CalcNode>),
     /// Used when alpha components are not specified.
     AlphaOmitted,
 }
@@ -73,6 +74,7 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
         allow_none: bool,
+        allow_channel_keyword: bool,
     ) -> Result<Self, ParseError<'i>> {
         let location = input.current_source_location();
 
@@ -80,27 +82,21 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
             Token::Ident(ref value) if allow_none && value.eq_ignore_ascii_case("none") => {
                 Ok(ColorComponent::None)
             },
-            ref t @ Token::Ident(ref ident) => {
+            ref t @ Token::Ident(ref ident) if allow_channel_keyword => {
                 let Ok(channel_keyword) = ChannelKeyword::from_ident(ident) else {
                     return Err(location.new_unexpected_token_error(t.clone()));
                 };
                 Ok(ColorComponent::ChannelKeyword(channel_keyword))
             },
             Token::Function(ref name) => {
-                let function = GenericCalcNode::math_function(context, name, location)?;
-                let allow = AllowParse::new(if rcs_enabled() {
+                let function = CalcNode::math_function(context, name, location)?;
+                let allow = AllowParse::new(if rcs_enabled() && allow_channel_keyword {
                     ValueType::units() | CalcUnits::COLOR_COMPONENT
                 } else {
                     ValueType::units()
                 });
-                let mut node = GenericCalcNode::parse(context, input, function, allow)?;
-
-                // TODO(tlouw): We only have to simplify the node when we have to store it, but we
-                //              only know if we have to store it much later when the whole color
-                //              can't be resolved to absolute at which point the calc nodes are
-                //              burried deep in a [ColorFunction] struct.
+                let mut node = CalcNode::parse(context, input, function, allow)?;
                 node.simplify_and_sort();
-
                 Ok(Self::Calc(Box::new(node)))
             },
             ref t => ValueType::try_from_token(t)
@@ -110,7 +106,11 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
     }
 
     /// Resolve a [ColorComponent] into a float.  None is "none".
-    pub fn resolve(&self, origin_color: Option<&AbsoluteColor>) -> Result<Option<ValueType>, ()> {
+    pub fn resolve(
+        &self,
+        origin_color: Option<&AbsoluteColor>,
+        context: Option<&computed::Context>,
+    ) -> Result<Option<ValueType>, ()> {
         Ok(match self {
             ColorComponent::None => None,
             ColorComponent::Value(value) => Some(value.clone()),
@@ -122,21 +122,17 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
                 None => return Err(()),
             },
             ColorComponent::Calc(node) => {
-                let Ok(resolved_leaf) = node.resolve_map(|leaf| {
-                    Ok(match leaf {
-                        Leaf::ColorComponent(channel_keyword) => match origin_color {
-                            Some(origin_color) => {
-                                let value = origin_color
-                                    .get_component_by_channel_keyword(*channel_keyword)?;
-                                Leaf::Number(NoCalcNumber::new(value.unwrap_or(0.0)))
-                            },
-                            None => return Err(()),
-                        },
-                        l => l.clone(),
-                    })
-                }) else {
-                    return Err(());
-                };
+                let resolved_leaf = node.resolve_computed(context, |leaf| match leaf {
+                    // Map color channel keywords into their corresponding component values,
+                    // or fails if no origin color was provided.
+                    Leaf::ColorComponent(channel_keyword) => match origin_color {
+                        Some(origin_color) => origin_color
+                            .get_component_by_channel_keyword(*channel_keyword)
+                            .map(|v| Leaf::Number(NoCalcNumber::new(v.unwrap_or(0.0)))),
+                        None => Err(()),
+                    },
+                    _ => Ok(leaf.clone()),
+                })?;
 
                 Some(ValueType::try_from_leaf(&resolved_leaf)?)
             },

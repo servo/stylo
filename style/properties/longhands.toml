@@ -863,7 +863,6 @@ affects = "layout"
 type = "FontFeatureSettings"
 initial = "computed::FontFeatureSettings::normal()"
 struct = "font"
-engine = "gecko"
 extra_prefixes = ["moz:layout.css.prefixes.font-features", "webkit"]
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-fonts/#propdef-font-feature-settings"

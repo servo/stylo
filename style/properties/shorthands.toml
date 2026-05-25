@@ -442,15 +442,15 @@ sub_properties = [
   "font-family",
   "font-optical-sizing",
   "font-variation-settings",
-  "font-kerning"
+  "font-kerning",
+  "font-feature-settings",
 ]
 extra_gecko_sub_properties = [
   "font-size-adjust",
   "font-variant-alternates",
   "font-variant-emoji",
   "font-variant-position",
-  "font-language-override",
-  "font-feature-settings"
+  "font-language-override"
 ]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font"
 derive_value_info = false

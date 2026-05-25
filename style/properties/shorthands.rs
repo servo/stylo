@@ -2517,11 +2517,11 @@ pub mod font {
     use super::*;
     #[cfg(feature = "gecko")]
     use crate::properties::longhands::{
-        font_family, font_feature_settings, font_language_override, font_size, font_size_adjust,
+        font_family, font_language_override, font_size, font_size_adjust,
         font_variant_alternates, font_variant_emoji, font_variant_position,
     };
     use crate::properties::longhands::{
-        font_kerning, font_optical_sizing, font_stretch, font_style, font_variant_caps,
+        font_feature_settings, font_kerning, font_optical_sizing, font_stretch, font_style, font_variant_caps,
         font_variant_east_asian, font_variant_ligatures, font_variant_numeric, font_variation_settings,
         font_weight,
     };
@@ -2637,7 +2637,6 @@ pub mod font {
             font_variant_numeric: font_variant_numeric::get_initial_specified_value(),
             #[cfg(feature = "gecko")]
             font_variant_position: font_variant_position::get_initial_specified_value(),
-            #[cfg(feature = "gecko")]
             font_feature_settings: font_feature_settings::get_initial_specified_value(),
         })
     }
@@ -2712,7 +2711,6 @@ pub mod font {
             if self.font_variant_position != &font_variant_position::get_initial_specified_value() {
                 return Ok(());
             }
-            #[cfg(feature = "gecko")]
             if self.font_feature_settings != &font_feature_settings::get_initial_specified_value() {
                 return Ok(());
             }

@@ -200,8 +200,11 @@ impl Parse for AngleOrPercentage {
 /// <number> | <percentage>
 ///
 /// Accepts only non-negative numbers.
+///
+/// TODO(Bug 2040559) - Convert this into a NumericUnion, instead of an enum over
+/// Number and Percentage. Both types are also NumericUnions of unitless floats.
 #[allow(missing_docs)]
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
 pub enum NumberOrPercentage {
     Percentage(Percentage),
     Number(Number),
@@ -243,6 +246,23 @@ impl NumberOrPercentage {
         match self {
             Self::Percentage(p) => p.to_number(),
             Self::Number(n) => Some(n.clone()),
+        }
+    }
+
+    /// Gets a reference to the underlying percentage, or None if this is a number
+    pub fn as_percentage(&self) -> Option<&Percentage> {
+        match self {
+            NumberOrPercentage::Percentage(percentage) => Some(percentage),
+            _ => None,
+        }
+    }
+
+    /// If this is a non-calc percentage, replaces it with the equivalent
+    /// number; otherwise, returns the original value.
+    pub fn into_simplified_number(self) -> NumberOrPercentage {
+        match self.as_percentage().and_then(|p| p.get()) {
+            Some(p) => NumberOrPercentage::Number(Number::new(p)),
+            None => self,
         }
     }
 

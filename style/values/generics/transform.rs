@@ -457,12 +457,12 @@ impl ToRadians for SpecifiedAngle {
     }
 }
 
-// Convert a number type into a float.
-trait ToFloat {
-    // Return the number as an f32, or Err(()) if the conversion is not possible.
+/// Convert a number type into a float.
+pub trait ToFloat {
+    /// Return the number as an f32, or Err(()) if the conversion is not possible.
     fn to_f32(&self) -> Result<f32, ()>;
 
-    // Return the number as an f64, or Err(()) if the conversion is not possible.
+    /// Return the number as an f64, or Err(()) if the conversion is not possible.
     fn to_f64(&self) -> Result<f64, ()>;
 }
 

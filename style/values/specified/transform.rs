@@ -9,7 +9,7 @@ use crate::parser::{Parse, ParserContext};
 use crate::values::computed::{Context, LengthPercentage as ComputedLengthPercentage};
 use crate::values::computed::{Percentage as ComputedPercentage, ToComputedValue};
 use crate::values::generics::transform as generic;
-use crate::values::generics::transform::{Matrix, Matrix3D};
+use crate::values::generics::transform::{Matrix, Matrix3D, ToFloat};
 use crate::values::specified::percentage::NoCalcPercentage;
 use crate::values::specified::position::{
     HorizontalPositionKeyword, Side, VerticalPositionKeyword,
@@ -544,13 +544,61 @@ impl Parse for Translate {
     }
 }
 
+/// An individual value that can appear in a CSS `scale`.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped)]
+pub struct ScaleFactor(NumberOrPercentage);
+
+impl ScaleFactor {
+    fn one() -> Self {
+        ScaleFactor(NumberOrPercentage::Number(Number::new(1.0)))
+    }
+}
+
+impl Parse for ScaleFactor {
+    /// Scale accepts <number> | <percentage>, so we parse it as NumberOrPercentage,
+    /// and then convert into an Number if it's a non-calc Percentage.
+    /// https://github.com/w3c/csswg-drafts/pull/4396
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        Ok(ScaleFactor(
+            NumberOrPercentage::parse(context, input)?.into_simplified_number(),
+        ))
+    }
+}
+
+impl ToComputedValue for ScaleFactor {
+    type ComputedValue = <Number as ToComputedValue>::ComputedValue;
+
+    fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
+        self.0.to_computed_value(context).value()
+    }
+
+    fn from_computed_value(computed: &Self::ComputedValue) -> Self {
+        ScaleFactor(NumberOrPercentage::Number(Number::from_computed_value(
+            computed,
+        )))
+    }
+}
+
+impl ToFloat for ScaleFactor {
+    fn to_f32(&self) -> Result<f32, ()> {
+        match &self.0 {
+            NumberOrPercentage::Number(n) => n.resolve().ok_or(()),
+            NumberOrPercentage::Percentage(p) => p.resolve().ok_or(()),
+        }
+    }
+
+    fn to_f64(&self) -> Result<f64, ()> {
+        self.to_f32().map(|v| v as f64)
+    }
+}
+
 /// A specified CSS `scale`
-pub type Scale = generic::Scale<Number>;
+pub type Scale = generic::Scale<ScaleFactor>;
 
 impl Parse for Scale {
-    /// Scale accepts <number> | <percentage>, so we parse it as NumberOrPercentage,
-    /// and then convert into an Number if it's a Percentage.
-    /// https://github.com/w3c/csswg-drafts/pull/4396
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -559,28 +607,13 @@ impl Parse for Scale {
             return Ok(generic::Scale::None);
         }
 
-        // TODO(Bug 2038213) - Properly handle serialization of percentages in calcs in
-        // scale values by not eagerly converting into numbers here at parse time.
-        let Some(sx) = NumberOrPercentage::parse(context, input)?.to_number() else {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-        };
-        if let Ok(sy) = input.try_parse(|i| NumberOrPercentage::parse(context, i)) {
-            let Some(sy) = sy.to_number() else {
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-            };
-            if let Ok(sz) = input.try_parse(|i| NumberOrPercentage::parse(context, i)) {
-                // 'scale: <number> <number> <number>'
-                let Some(sz) = sz.to_number() else {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-                };
+        let sx = ScaleFactor::parse(context, input)?;
+        if let Ok(sy) = input.try_parse(|i| ScaleFactor::parse(context, i)) {
+            if let Ok(sz) = input.try_parse(|i| ScaleFactor::parse(context, i)) {
                 return Ok(generic::Scale::Scale(sx, sy, sz));
             }
-
-            // 'scale: <number> <number>'
-            return Ok(generic::Scale::Scale(sx, sy, Number::new(1.0)));
+            return Ok(generic::Scale::Scale(sx, sy, ScaleFactor::one()));
         }
-
-        // 'scale: <number>'
-        Ok(generic::Scale::Scale(sx.clone(), sx, Number::new(1.0)))
+        Ok(generic::Scale::Scale(sx.clone(), sx, ScaleFactor::one()))
     }
 }

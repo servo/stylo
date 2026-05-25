@@ -9,12 +9,24 @@ use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::CSSFloat;
 use crate::Zero;
 use std::fmt::{self, Write};
+use std::ops::AddAssign;
 use style_traits::{CssString, CssWriter, ToCss};
 use thin_vec::ThinVec;
 
 /// A computed `<time>` value.
-#[derive(Animate, Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[derive(
+    Animate,
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    MallocSizeOf,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    ToAnimatedZero,
+    ToResolvedValue,
+)]
 #[repr(C)]
 pub struct Time {
     seconds: CSSFloat,
@@ -60,5 +72,11 @@ impl Zero for Time {
 
     fn is_zero(&self) -> bool {
         self.seconds == 0.
+    }
+}
+
+impl AddAssign for Time {
+    fn add_assign(&mut self, rhs: Self) {
+        self.seconds += rhs.seconds
     }
 }

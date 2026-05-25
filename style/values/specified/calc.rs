@@ -23,7 +23,7 @@ use crate::values::specified::length::NoCalcLength;
 use crate::values::specified::{
     NoCalcAngle, NoCalcNumber, NoCalcPercentage, NoCalcResolution, NoCalcTime,
 };
-use crate::values::{CSSFloat, DashedIdent};
+use crate::values::DashedIdent;
 use cssparser::{match_ignore_ascii_case, CowRcStr, Parser, Token};
 use debug_unreachable::debug_unreachable;
 use smallvec::SmallVec;
@@ -98,15 +98,6 @@ pub enum Leaf {
     Percentage(NoCalcPercentage),
     /// `<number>`
     Number(NoCalcNumber),
-}
-
-impl Leaf {
-    fn as_length(&self) -> Option<&NoCalcLength> {
-        match *self {
-            Self::Length(ref l) => Some(l),
-            _ => None,
-        }
-    }
 }
 
 impl ToCss for Leaf {
@@ -231,24 +222,6 @@ impl SpecifiedValueInfo for CalcNumeric {}
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem, ToTyped)]
 pub struct CalcLengthPercentage(pub CalcNumeric);
 
-impl CalcLengthPercentage {
-    fn same_unit_length_as(a: &Self, b: &Self) -> Option<(CSSFloat, CSSFloat)> {
-        debug_assert_eq!(a.0.clamping_mode, b.0.clamping_mode);
-        debug_assert_eq!(a.0.clamping_mode, AllowedNumericType::All);
-
-        let a = a.0.node.as_leaf()?;
-        let b = b.0.node.as_leaf()?;
-
-        if a.sort_key() != b.sort_key() {
-            return None;
-        }
-
-        let a = a.as_length()?.unitless_value();
-        let b = b.as_length()?.unitless_value();
-        Some((a, b))
-    }
-}
-
 impl SpecifiedValueInfo for CalcLengthPercentage {}
 
 /// Should parsing anchor-positioning functions in `calc()` be allowed?
@@ -327,6 +300,45 @@ impl generic::CalcNodeLeaf for Leaf {
             Self::Time(ref t) => t.seconds(),
             Self::ColorComponent(_) => return None,
         })
+    }
+
+    fn is_same_unit_as(&self, other: &Self) -> bool {
+        use self::Leaf::*;
+
+        if std::mem::discriminant(self) != std::mem::discriminant(other) {
+            return false;
+        }
+
+        match (self, other) {
+            (Length(a), Length(b)) => a.length_unit() == b.length_unit(),
+            (Angle(a), Angle(b)) => a.angle_unit() == b.angle_unit(),
+            (Time(a), Time(b)) => a.time_unit() == b.time_unit(),
+            (Resolution(a), Resolution(b)) => a.resolution_unit() == b.resolution_unit(),
+            (ColorComponent(_), ColorComponent(_))
+            | (Percentage(_), Percentage(_))
+            | (Number(_), Number(_)) => true,
+            _ => {
+                match *other {
+                    Number(..) | Percentage(..) | Angle(..) | Time(..) | Resolution(..)
+                    | Length(..) | ColorComponent(..) => {},
+                }
+                unsafe {
+                    debug_unreachable!();
+                }
+            },
+        }
+    }
+
+    fn as_angle_radians(&self) -> Option<f32> {
+        if let Self::Angle(ref a) = *self {
+            Some(a.radians())
+        } else {
+            None
+        }
+    }
+
+    fn new_angle_from_radians(radians: f32) -> Self {
+        Self::Angle(NoCalcAngle::from_degrees(radians.to_degrees()))
     }
 
     fn new_number(value: f32) -> Self {
@@ -904,89 +916,48 @@ impl CalcNode {
                     Ok(Self::MinMax(arguments.into(), op))
                 },
                 MathFunction::Sin | MathFunction::Cos | MathFunction::Tan => {
-                    let a = Self::parse_angle_argument(context, input)?;
-
-                    let number = match function {
-                        MathFunction::Sin => a.sin(),
-                        MathFunction::Cos => a.cos(),
-                        MathFunction::Tan => a.tan(),
-                        _ => unsafe {
-                            debug_unreachable!("We just checked!");
-                        },
-                    };
-
-                    Ok(Self::Leaf(Leaf::Number(NoCalcNumber::new(number))))
+                    let node =
+                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::ANGLE))?;
+                    Ok(match function {
+                        MathFunction::Sin => Self::Sin(Box::new(node)),
+                        MathFunction::Cos => Self::Cos(Box::new(node)),
+                        MathFunction::Tan => Self::Tan(Box::new(node)),
+                        _ => unsafe { debug_unreachable!("We just checked!") },
+                    })
                 },
                 MathFunction::Asin | MathFunction::Acos | MathFunction::Atan => {
-                    let a = Self::parse_number_argument(context, input)?;
-
-                    let radians = match function {
-                        MathFunction::Asin => a.asin(),
-                        MathFunction::Acos => a.acos(),
-                        MathFunction::Atan => a.atan(),
-                        _ => unsafe {
-                            debug_unreachable!("We just checked!");
-                        },
-                    };
-
-                    Ok(Self::Leaf(Leaf::Angle(NoCalcAngle::from_radians(radians))))
+                    let node =
+                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    Ok(match function {
+                        MathFunction::Asin => Self::Asin(Box::new(node)),
+                        MathFunction::Acos => Self::Acos(Box::new(node)),
+                        MathFunction::Atan => Self::Atan(Box::new(node)),
+                        _ => unsafe { debug_unreachable!("We just checked!") },
+                    })
                 },
                 MathFunction::Atan2 => {
                     let allow_all = allowed.new_including(CalcUnits::ALL);
                     let a = Self::parse_argument(context, input, allow_all)?;
                     input.expect_comma()?;
                     let b = Self::parse_argument(context, input, allow_all)?;
-
-                    let radians = Self::try_resolve(input, || {
-                        if let Ok(a) = a.to_number() {
-                            let b = b.to_number()?;
-                            return Ok(a.value().atan2(b.value()));
-                        }
-
-                        if let Ok(a) = a.to_percentage() {
-                            let b = b.to_percentage()?;
-                            return Ok(a.get().atan2(b.get()));
-                        }
-
-                        if let Ok(a) = a.to_time() {
-                            let b = b.to_time()?;
-                            return Ok(a.seconds().atan2(b.seconds()));
-                        }
-
-                        if let Ok(a) = a.to_angle() {
-                            let b = b.to_angle()?;
-                            return Ok(a.radians().atan2(b.radians()));
-                        }
-
-                        if let Ok(a) = a.to_resolution() {
-                            let b = b.to_resolution()?;
-                            return Ok(a.dppx().atan2(b.dppx()));
-                        }
-
-                        let a = a.into_length_or_percentage(AllowedNumericType::All)?;
-                        let b = b.into_length_or_percentage(AllowedNumericType::All)?;
-                        let (a, b) = CalcLengthPercentage::same_unit_length_as(&a, &b).ok_or(())?;
-
-                        Ok(a.atan2(b))
-                    })?;
-
-                    Ok(Self::Leaf(Leaf::Angle(NoCalcAngle::from_radians(radians))))
+                    // TODO(Bug 2042060) - Allow combining length and percentage arguments (if it can be resolved).
+                    if a.unit() != b.unit() {
+                        return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    }
+                    Ok(Self::Atan2(Box::new(a), Box::new(b)))
                 },
                 MathFunction::Pow => {
-                    let a = Self::parse_number_argument(context, input)?;
+                    let a =
+                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
                     input.expect_comma()?;
-                    let b = Self::parse_number_argument(context, input)?;
-
-                    let number = a.powf(b);
-
-                    Ok(Self::Leaf(Leaf::Number(NoCalcNumber::new(number))))
+                    let b =
+                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    Ok(Self::Pow(Box::new(a), Box::new(b)))
                 },
                 MathFunction::Sqrt => {
-                    let a = Self::parse_number_argument(context, input)?;
-
-                    let number = a.sqrt();
-
-                    Ok(Self::Leaf(Leaf::Number(NoCalcNumber::new(number))))
+                    let a =
+                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    Ok(Self::Sqrt(Box::new(a)))
                 },
                 MathFunction::Hypot => {
                     let arguments = input.parse_comma_separated(|input| {
@@ -997,25 +968,24 @@ impl CalcNode {
                     Ok(Self::Hypot(arguments.into()))
                 },
                 MathFunction::Log => {
-                    let a = Self::parse_number_argument(context, input)?;
+                    let a =
+                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
                     let b = input
                         .try_parse(|input| {
                             input.expect_comma()?;
-                            Self::parse_number_argument(context, input)
+                            Self::parse_argument(
+                                context,
+                                input,
+                                AllowParse::new(CalcUnits::empty()),
+                            )
                         })
                         .ok();
-
-                    let number = match b {
-                        Some(b) => a.log(b),
-                        None => a.ln(),
-                    };
-
-                    Ok(Self::Leaf(Leaf::Number(NoCalcNumber::new(number))))
+                    Ok(Self::Log(Box::new(a), b.map(Box::new).into()))
                 },
                 MathFunction::Exp => {
-                    let a = Self::parse_number_argument(context, input)?;
-                    let number = a.exp();
-                    Ok(Self::Leaf(Leaf::Number(NoCalcNumber::new(number))))
+                    let a =
+                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    Ok(Self::Exp(Box::new(a)))
                 },
                 MathFunction::Abs => {
                     let node = Self::parse_argument(context, input, allowed)?;
@@ -1034,28 +1004,6 @@ impl CalcNode {
                 },
             }
         })
-    }
-
-    fn parse_angle_argument<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<CSSFloat, ParseError<'i>> {
-        let argument = Self::parse_argument(context, input, AllowParse::new(CalcUnits::ANGLE))?;
-        argument
-            .to_number()
-            .map(|n| n.value())
-            .or_else(|()| Ok(argument.to_angle()?.radians()))
-            .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
-    }
-
-    fn parse_number_argument<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<CSSFloat, ParseError<'i>> {
-        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?
-            .to_number()
-            .map(|n| n.value())
-            .map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
 
     fn parse_argument<'i, 't>(
@@ -1206,16 +1154,6 @@ impl CalcNode {
         })
     }
 
-    fn try_resolve<'i, 't, F>(
-        input: &Parser<'i, 't>,
-        closure: F,
-    ) -> Result<CSSFloat, ParseError<'i>>
-    where
-        F: FnOnce() -> Result<CSSFloat, ()>,
-    {
-        closure().map_err(|()| input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
-    }
-
     /// Resolves this calc tree into a leaf node, using the computed context
     /// if provided for any nodes that require it. Additional node mapping can
     /// be provided using `leaf_to_output_fn`. Returns Err(()) if the calc tree
@@ -1261,15 +1199,6 @@ impl CalcNode {
         }
     }
 
-    /// Tries to simplify this expression into a `NoCalcTime` value.
-    fn to_time(&self) -> Result<NoCalcTime, ()> {
-        if let Leaf::Time(time) = self.resolve()? {
-            Ok(time)
-        } else {
-            Err(())
-        }
-    }
-
     /// Tries to simplify this expression into a `<time>` value.
     fn into_time(mut self, clamping_mode: AllowedNumericType) -> Result<CalcNumeric, ()> {
         self.simplify_and_sort();
@@ -1283,17 +1212,6 @@ impl CalcNode {
                 node: self,
             })
         }
-    }
-
-    /// Tries to simplify the expression into a `NoCalcResolution` value.
-    fn to_resolution(&self) -> Result<NoCalcResolution, ()> {
-        let dppx = if let Leaf::Resolution(resolution) = self.resolve()? {
-            resolution.dppx()
-        } else {
-            return Err(());
-        };
-
-        Ok(NoCalcResolution::from_dppx(dppx))
     }
 
     /// Tries to simplify this expression into a `<resolution>` value.
@@ -1311,17 +1229,6 @@ impl CalcNode {
         }
     }
 
-    /// Tries to simplify this expression into a `NoCalcAngle` value.
-    fn to_angle(&self) -> Result<NoCalcAngle, ()> {
-        let degrees = if let Leaf::Angle(angle) = self.resolve()? {
-            angle.degrees()
-        } else {
-            return Err(());
-        };
-
-        Ok(NoCalcAngle::from_degrees(degrees))
-    }
-
     /// Tries to simplify this expression into a `CalcNumeric` value.
     fn into_angle(mut self, clamping_mode: AllowedNumericType) -> Result<CalcNumeric, ()> {
         self.simplify_and_sort();
@@ -1335,17 +1242,6 @@ impl CalcNode {
                 node: self,
             })
         }
-    }
-
-    /// Tries to simplify this expression into a `<number>` value.
-    fn to_number(&self) -> Result<NoCalcNumber, ()> {
-        let number = if let Leaf::Number(number) = self.resolve()? {
-            number
-        } else {
-            return Err(());
-        };
-
-        Ok(number)
     }
 
     /// Tries to convert this expression into a `CalcNumeric`, keeping the
@@ -1362,17 +1258,6 @@ impl CalcNode {
                 node: self,
             })
         }
-    }
-
-    /// Tries to simplify this expression into a `NoCalcAngle` value.
-    fn to_percentage(&self) -> Result<NoCalcPercentage, ()> {
-        let value = if let Leaf::Percentage(percentage) = self.resolve()? {
-            percentage.get()
-        } else {
-            return Err(());
-        };
-
-        Ok(NoCalcPercentage::new(value))
     }
 
     /// Tries to convert this expression into a `CalcNumeric`, keeping the

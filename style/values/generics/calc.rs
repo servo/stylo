@@ -10,6 +10,7 @@ use crate::derives::*;
 use crate::typed_om::{MathSum, NumericValue, ToTyped, TypedValue};
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
+use crate::values::generics::Optional;
 use num_traits::Zero;
 use smallvec::SmallVec;
 use std::convert::AsRef;
@@ -269,51 +270,73 @@ pub enum GenericCalcNode<L> {
     /// A leaf node.
     Leaf(L),
     /// A node that negates its child, e.g. Negate(1) == -1.
-    Negate(Box<GenericCalcNode<L>>),
+    Negate(Box<Self>),
     /// A node that inverts its child, e.g. Invert(10) == 1 / 10 == 0.1. The child must always
     /// resolve to a number unit.
-    Invert(Box<GenericCalcNode<L>>),
+    Invert(Box<Self>),
     /// A sum node, representing `a + b + c` where a, b, and c are the
     /// arguments.
-    Sum(crate::OwnedSlice<GenericCalcNode<L>>),
+    Sum(crate::OwnedSlice<Self>),
     /// A product node, representing `a * b * c` where a, b, and c are the
     /// arguments.
-    Product(crate::OwnedSlice<GenericCalcNode<L>>),
+    Product(crate::OwnedSlice<Self>),
     /// A `min` or `max` function.
-    MinMax(crate::OwnedSlice<GenericCalcNode<L>>, MinMaxOp),
+    MinMax(crate::OwnedSlice<Self>, MinMaxOp),
     /// A `clamp()` function.
     Clamp {
         /// The minimum value.
-        min: Box<GenericCalcNode<L>>,
+        min: Box<Self>,
         /// The central value.
-        center: Box<GenericCalcNode<L>>,
+        center: Box<Self>,
         /// The maximum value.
-        max: Box<GenericCalcNode<L>>,
+        max: Box<Self>,
     },
     /// A `round()` function.
     Round {
         /// The rounding strategy.
         strategy: RoundingStrategy,
         /// The value to round.
-        value: Box<GenericCalcNode<L>>,
+        value: Box<Self>,
         /// The step value.
-        step: Box<GenericCalcNode<L>>,
+        step: Box<Self>,
     },
     /// A `mod()` or `rem()` function.
     ModRem {
         /// The dividend calculation.
-        dividend: Box<GenericCalcNode<L>>,
+        dividend: Box<Self>,
         /// The divisor calculation.
-        divisor: Box<GenericCalcNode<L>>,
+        divisor: Box<Self>,
         /// Is the function mod or rem?
         op: ModRemOp,
     },
+    /// A `sin()` function.
+    Sin(Box<Self>),
+    /// A `cos()` function.
+    Cos(Box<Self>),
+    /// A `tan()` function.
+    Tan(Box<Self>),
+    /// An `asin()` function.
+    Asin(Box<Self>),
+    /// An `acos()` function.
+    Acos(Box<Self>),
+    /// An `atan()` function.
+    Atan(Box<Self>),
+    /// An `atan2()` function.
+    Atan2(Box<Self>, Box<Self>),
+    /// A `pow()` function.
+    Pow(Box<Self>, Box<Self>),
+    /// A `sqrt()` function.
+    Sqrt(Box<Self>),
     /// A `hypot()` function
-    Hypot(crate::OwnedSlice<GenericCalcNode<L>>),
+    Hypot(crate::OwnedSlice<Self>),
+    /// A `log()` function.
+    Log(Box<Self>, Optional<Box<Self>>),
+    /// An `exp()` function.
+    Exp(Box<Self>),
     /// An `abs()` function.
-    Abs(Box<GenericCalcNode<L>>),
+    Abs(Box<Self>),
     /// A `sign()` function.
-    Sign(Box<GenericCalcNode<L>>),
+    Sign(Box<Self>),
     /// An `anchor()` function.
     Anchor(Box<GenericCalcAnchorFunction<L>>),
     /// An `anchor-size()` function.
@@ -414,6 +437,12 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped {
     /// Returns the unitless value of this leaf if one is available.
     fn unitless_value(&self) -> Option<f32>;
 
+    /// Returns the angle value in radians if this leaf is an angle.
+    fn as_angle_radians(&self) -> Option<f32>;
+
+    /// Creates a new angle leaf from a value in radians.
+    fn new_angle_from_radians(radians: f32) -> Self;
+
     /// Return true if the units of both leaves are equal. (NOTE: Does not take
     /// the values into account)
     fn is_same_unit_as(&self, other: &Self) -> bool {
@@ -433,6 +462,11 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped {
 
     /// Returns a float value if the leaf is a number.
     fn as_number(&self) -> Option<f32>;
+
+    /// Returns a number or angle radians if the leaf is a number or angle.
+    fn as_number_or_angle_radians(&self) -> Option<f32> {
+        self.as_number().or_else(|| self.as_angle_radians())
+    }
 
     /// Whether this value is known-negative.
     fn is_negative(&self) -> Result<bool, ()> {
@@ -630,6 +664,54 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 CalcUnits::empty()
             },
             CalcNode::Anchor(..) | CalcNode::AnchorSize(..) => CalcUnits::LENGTH_PERCENTAGE,
+            CalcNode::Sin(ref child) | CalcNode::Cos(ref child) | CalcNode::Tan(ref child) => {
+                let child_unit = child.unit()?;
+                if !child_unit.is_empty() && !child_unit.intersects(CalcUnits::ANGLE) {
+                    return Err(());
+                }
+                CalcUnits::empty()
+            },
+            CalcNode::Asin(ref child) | CalcNode::Acos(ref child) | CalcNode::Atan(ref child) => {
+                let child_unit = child.unit()?;
+                if !child_unit.is_empty() {
+                    return Err(());
+                }
+                CalcUnits::ANGLE
+            },
+            CalcNode::Atan2(ref a, ref b) => {
+                let a_unit = a.unit()?;
+                let b_unit = b.unit()?;
+                if !a_unit.can_sum_with(b_unit) {
+                    return Err(());
+                }
+                CalcUnits::ANGLE
+            },
+            CalcNode::Pow(ref a, ref b) => {
+                let a_unit = a.unit()?;
+                let b_unit = b.unit()?;
+                if !a_unit.is_empty() || !b_unit.is_empty() {
+                    return Err(());
+                }
+                CalcUnits::empty()
+            },
+            CalcNode::Sqrt(ref c) | CalcNode::Exp(ref c) => {
+                let child_unit = c.unit()?;
+                if !child_unit.is_empty() {
+                    return Err(());
+                }
+                CalcUnits::empty()
+            },
+            CalcNode::Log(ref a, ref b) => {
+                let a_unit = a.unit()?;
+                let b_unit = match b {
+                    Optional::Some(b) => b.unit()?,
+                    Optional::None => CalcUnits::empty(),
+                };
+                if !a_unit.is_empty() || !b_unit.is_empty() {
+                    return Err(());
+                }
+                CalcUnits::empty()
+            },
         })
     }
 
@@ -726,13 +808,23 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     child.negate();
                 }
             },
-            CalcNode::Abs(_) => {
-                wrap_self_in_negate(self);
-            },
             CalcNode::Sign(ref mut child) => {
                 child.negate();
             },
-            CalcNode::Anchor(_) | CalcNode::AnchorSize(_) => {
+            CalcNode::Sin(..)
+            | CalcNode::Cos(..)
+            | CalcNode::Tan(..)
+            | CalcNode::Asin(..)
+            | CalcNode::Acos(..)
+            | CalcNode::Atan(..)
+            | CalcNode::Atan2(..)
+            | CalcNode::Pow(..)
+            | CalcNode::Sqrt(..)
+            | CalcNode::Log(..)
+            | CalcNode::Exp(..)
+            | CalcNode::Abs(..)
+            | CalcNode::Anchor(..)
+            | CalcNode::AnchorSize(..) => {
                 wrap_self_in_negate(self);
             },
         }
@@ -860,6 +952,19 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 // It is invalid to treat inner `CalcNode`s here - `anchor(--foo 50%) / 2` != `anchor(--foo 25%)`.
                 // Same applies to fallback, as we don't know if it will be used. Similar reasoning applies to `anchor-size()`.
                 CalcNode::Anchor(_) | CalcNode::AnchorSize(_) => Err(()),
+                // Trig functions are nonlinear: 2 * sin(x) != sin(2*x).
+                // Similarly for pow/sqrt/log/exp.
+                CalcNode::Sin(_)
+                | CalcNode::Cos(_)
+                | CalcNode::Tan(_)
+                | CalcNode::Asin(_)
+                | CalcNode::Acos(_)
+                | CalcNode::Atan(_)
+                | CalcNode::Atan2(..)
+                | CalcNode::Pow(..)
+                | CalcNode::Sqrt(_)
+                | CalcNode::Log(..)
+                | CalcNode::Exp(_) => Err(()),
             }
         }
 
@@ -938,7 +1043,29 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     op,
                 }
             },
+            Self::Sin(ref c) => CalcNode::Sin(Box::new(c.map_leaves_internal(map))),
+            Self::Cos(ref c) => CalcNode::Cos(Box::new(c.map_leaves_internal(map))),
+            Self::Tan(ref c) => CalcNode::Tan(Box::new(c.map_leaves_internal(map))),
+            Self::Asin(ref c) => CalcNode::Asin(Box::new(c.map_leaves_internal(map))),
+            Self::Acos(ref c) => CalcNode::Acos(Box::new(c.map_leaves_internal(map))),
+            Self::Atan(ref c) => CalcNode::Atan(Box::new(c.map_leaves_internal(map))),
+            Self::Atan2(ref a, ref b) => CalcNode::Atan2(
+                Box::new(a.map_leaves_internal(map)),
+                Box::new(b.map_leaves_internal(map)),
+            ),
+            Self::Pow(ref a, ref b) => CalcNode::Pow(
+                Box::new(a.map_leaves_internal(map)),
+                Box::new(b.map_leaves_internal(map)),
+            ),
+            Self::Sqrt(ref c) => CalcNode::Sqrt(Box::new(c.map_leaves_internal(map))),
             Self::Hypot(ref c) => CalcNode::Hypot(map_children(c, map)),
+            Self::Log(ref a, ref b) => CalcNode::Log(
+                Box::new(a.map_leaves_internal(map)),
+                b.as_ref()
+                    .map(|b| Box::new(b.map_leaves_internal(map)))
+                    .into(),
+            ),
+            Self::Exp(ref c) => CalcNode::Exp(Box::new(c.map_leaves_internal(map))),
             Self::Abs(ref c) => CalcNode::Abs(Box::new(c.map_leaves_internal(map))),
             Self::Sign(ref c) => CalcNode::Sign(Box::new(c.map_leaves_internal(map))),
             Self::Anchor(ref f) => CalcNode::Anchor(Box::new(GenericAnchorFunction {
@@ -1213,6 +1340,58 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 dividend.map(|dividend| op.apply(dividend, divisor))?;
                 Ok(dividend)
             },
+            Self::Sin(ref c) => {
+                let result = c.resolve_internal(leaf_to_output_fn)?;
+                let radians = result.as_number_or_angle_radians().ok_or(())?;
+                Ok(L::new_number(radians.sin()))
+            },
+            Self::Cos(ref c) => {
+                let result = c.resolve_internal(leaf_to_output_fn)?;
+                let radians = result.as_number_or_angle_radians().ok_or(())?;
+                Ok(L::new_number(radians.cos()))
+            },
+            Self::Tan(ref c) => {
+                let result = c.resolve_internal(leaf_to_output_fn)?;
+                let radians = result.as_number_or_angle_radians().ok_or(())?;
+                Ok(L::new_number(radians.tan()))
+            },
+            Self::Asin(ref c) => {
+                let result = c.resolve_internal(leaf_to_output_fn)?;
+                let value = result.as_number().ok_or(())?;
+                Ok(L::new_angle_from_radians(value.asin()))
+            },
+            Self::Acos(ref c) => {
+                let result = c.resolve_internal(leaf_to_output_fn)?;
+                let value = result.as_number().ok_or(())?;
+                Ok(L::new_angle_from_radians(value.acos()))
+            },
+            Self::Atan(ref c) => {
+                let result = c.resolve_internal(leaf_to_output_fn)?;
+                let value = result.as_number().ok_or(())?;
+                Ok(L::new_angle_from_radians(value.atan()))
+            },
+            Self::Atan2(ref a, ref b) => {
+                let a = a.resolve_internal(leaf_to_output_fn)?;
+                let b = b.resolve_internal(leaf_to_output_fn)?;
+                if !a.is_same_unit_as(&b) {
+                    return Err(());
+                }
+                let a_val = a.unitless_value().ok_or(())?;
+                let b_val = b.unitless_value().ok_or(())?;
+                Ok(L::new_angle_from_radians(a_val.atan2(b_val)))
+            },
+            Self::Pow(ref a, ref b) => {
+                let a = a.resolve_internal(leaf_to_output_fn)?;
+                let b = b.resolve_internal(leaf_to_output_fn)?;
+                let a_val = a.as_number().ok_or(())?;
+                let b_val = b.as_number().ok_or(())?;
+                Ok(L::new_number(a_val.powf(b_val)))
+            },
+            Self::Sqrt(ref c) => {
+                let result = c.resolve_internal(leaf_to_output_fn)?;
+                let value = result.as_number().ok_or(())?;
+                Ok(L::new_number(value.sqrt()))
+            },
             Self::Hypot(children) => {
                 let mut result = children[0].resolve_internal(leaf_to_output_fn)?;
                 result.map(|v| v.powi(2))?;
@@ -1232,6 +1411,24 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 result.map(|v| v.sqrt())?;
                 Ok(result)
+            },
+            Self::Log(ref a, ref b) => {
+                let a = a.resolve_internal(leaf_to_output_fn)?;
+                let a_val = a.as_number().ok_or(())?;
+                let result = match b {
+                    Optional::Some(ref b) => {
+                        let b = b.resolve_internal(leaf_to_output_fn)?;
+                        let b_val = b.as_number().ok_or(())?;
+                        a_val.log(b_val)
+                    },
+                    Optional::None => a_val.ln(),
+                };
+                Ok(L::new_number(result))
+            },
+            Self::Exp(ref c) => {
+                let result = c.resolve_internal(leaf_to_output_fn)?;
+                let value = result.as_number().ok_or(())?;
+                Ok(L::new_number(value.exp()))
             },
             Self::Abs(ref c) => {
                 let mut result = c.resolve_internal(leaf_to_output_fn)?;
@@ -1267,8 +1464,33 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         }
         match self {
             Self::Leaf(_) | Self::Anchor(_) | Self::AnchorSize(_) => (),
-            Self::Negate(child) | Self::Invert(child) | Self::Abs(child) | Self::Sign(child) => {
+            Self::Negate(child)
+            | Self::Invert(child)
+            | Self::Abs(child)
+            | Self::Sign(child)
+            | Self::Sin(child)
+            | Self::Cos(child)
+            | Self::Tan(child)
+            | Self::Asin(child)
+            | Self::Acos(child)
+            | Self::Atan(child)
+            | Self::Sqrt(child)
+            | Self::Exp(child) => {
                 child.map_node_internal(mapping_fn)?;
+            },
+            Self::Atan2(a, b) => {
+                a.map_node_internal(mapping_fn)?;
+                b.map_node_internal(mapping_fn)?;
+            },
+            Self::Pow(a, b) => {
+                a.map_node_internal(mapping_fn)?;
+                b.map_node_internal(mapping_fn)?;
+            },
+            Self::Log(a, b) => {
+                a.map_node_internal(mapping_fn)?;
+                if let Optional::Some(b) = b {
+                    b.map_node_internal(mapping_fn)?;
+                }
             },
             Self::Sum(children)
             | Self::Product(children)
@@ -1371,6 +1593,30 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             },
             Self::Negate(ref mut value) | Self::Invert(ref mut value) => {
                 value.visit_depth_first_internal(f);
+            },
+            Self::Sin(ref mut value)
+            | Self::Cos(ref mut value)
+            | Self::Tan(ref mut value)
+            | Self::Asin(ref mut value)
+            | Self::Acos(ref mut value)
+            | Self::Atan(ref mut value)
+            | Self::Sqrt(ref mut value)
+            | Self::Exp(ref mut value) => {
+                value.visit_depth_first_internal(f);
+            },
+            Self::Atan2(ref mut a, ref mut b) => {
+                a.visit_depth_first_internal(f);
+                b.visit_depth_first_internal(f);
+            },
+            Self::Pow(ref mut a, ref mut b) => {
+                a.visit_depth_first_internal(f);
+                b.visit_depth_first_internal(f);
+            },
+            Self::Log(ref mut a, ref mut b) => {
+                a.visit_depth_first_internal(f);
+                if let Optional::Some(b) = b {
+                    b.visit_depth_first_internal(f);
+                }
             },
             Self::Abs(ref mut value) | Self::Sign(ref mut value) => {
                 value.visit_depth_first_internal(f);
@@ -1734,6 +1980,83 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     *children_slot = children.into_boxed_slice().into();
                 }
             },
+            Self::Sin(ref mut child) => {
+                if let CalcNode::Leaf(ref leaf) = **child {
+                    if let Some(radians) = leaf.as_number_or_angle_radians() {
+                        let mut result = Self::Leaf(L::new_number(radians.sin()));
+                        replace_self_with!(&mut result);
+                    }
+                }
+            },
+            Self::Cos(ref mut child) => {
+                if let CalcNode::Leaf(ref leaf) = **child {
+                    if let Some(radians) = leaf.as_number_or_angle_radians() {
+                        let mut result = Self::Leaf(L::new_number(radians.cos()));
+                        replace_self_with!(&mut result);
+                    }
+                }
+            },
+            Self::Tan(ref mut child) => {
+                if let CalcNode::Leaf(ref leaf) = **child {
+                    if let Some(radians) = leaf.as_number_or_angle_radians() {
+                        let mut result = Self::Leaf(L::new_number(radians.tan()));
+                        replace_self_with!(&mut result);
+                    }
+                }
+            },
+            Self::Asin(ref mut child) => {
+                if let CalcNode::Leaf(ref leaf) = **child {
+                    if let Some(value) = leaf.as_number() {
+                        let mut result = Self::Leaf(L::new_angle_from_radians(value.asin()));
+                        replace_self_with!(&mut result);
+                    }
+                }
+            },
+            Self::Acos(ref mut child) => {
+                if let CalcNode::Leaf(ref leaf) = **child {
+                    if let Some(value) = leaf.as_number() {
+                        let mut result = Self::Leaf(L::new_angle_from_radians(value.acos()));
+                        replace_self_with!(&mut result);
+                    }
+                }
+            },
+            Self::Atan(ref mut child) => {
+                if let CalcNode::Leaf(ref leaf) = **child {
+                    if let Some(value) = leaf.as_number() {
+                        let mut result = Self::Leaf(L::new_angle_from_radians(value.atan()));
+                        replace_self_with!(&mut result);
+                    }
+                }
+            },
+            Self::Atan2(ref mut a, ref mut b) => {
+                if let (CalcNode::Leaf(ref la), CalcNode::Leaf(ref lb)) = (&**a, &**b) {
+                    if la.is_same_unit_as(lb) {
+                        if let (Some(a_val), Some(b_val)) =
+                            (la.unitless_value(), lb.unitless_value())
+                        {
+                            let mut result =
+                                Self::Leaf(L::new_angle_from_radians(a_val.atan2(b_val)));
+                            replace_self_with!(&mut result);
+                        }
+                    }
+                }
+            },
+            Self::Pow(ref mut a, ref mut b) => {
+                if let (CalcNode::Leaf(ref la), CalcNode::Leaf(ref lb)) = (&**a, &**b) {
+                    if let (Some(a_val), Some(b_val)) = (la.as_number(), lb.as_number()) {
+                        let mut result = Self::Leaf(L::new_number(a_val.powf(b_val)));
+                        replace_self_with!(&mut result);
+                    }
+                }
+            },
+            Self::Sqrt(ref mut child) => {
+                if let CalcNode::Leaf(ref leaf) = **child {
+                    if let Some(value) = leaf.as_number() {
+                        let mut result = Self::Leaf(L::new_number(value.sqrt()));
+                        replace_self_with!(&mut result);
+                    }
+                }
+            },
             Self::Hypot(ref children) => {
                 let mut result = value_or_stop!(children[0].try_op(&children[0], Mul::mul));
 
@@ -1745,6 +2068,34 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 result = value_or_stop!(result.try_op(&result, |a, _| a.sqrt()));
 
                 replace_self_with!(&mut result);
+            },
+            Self::Log(ref mut a, ref mut b) => {
+                if let CalcNode::Leaf(ref la) = **a {
+                    if let Some(a_val) = la.as_number() {
+                        let folded = match b {
+                            Optional::Some(ref b) => {
+                                if let CalcNode::Leaf(ref lb) = **b {
+                                    lb.as_number().map(|b_val| a_val.log(b_val))
+                                } else {
+                                    None
+                                }
+                            },
+                            Optional::None => Some(a_val.ln()),
+                        };
+                        if let Some(number) = folded {
+                            let mut result = Self::Leaf(L::new_number(number));
+                            replace_self_with!(&mut result);
+                        }
+                    }
+                }
+            },
+            Self::Exp(ref mut child) => {
+                if let CalcNode::Leaf(ref leaf) = **child {
+                    if let Some(value) = leaf.as_number() {
+                        let mut result = Self::Leaf(L::new_number(value.exp()));
+                        replace_self_with!(&mut result);
+                    }
+                }
             },
             Self::Abs(ref mut child) => {
                 if let CalcNode::Leaf(leaf) = child.as_mut() {
@@ -1854,8 +2205,52 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 true
             },
+            Self::Sin(_) => {
+                dest.write_str("sin(")?;
+                true
+            },
+            Self::Cos(_) => {
+                dest.write_str("cos(")?;
+                true
+            },
+            Self::Tan(_) => {
+                dest.write_str("tan(")?;
+                true
+            },
+            Self::Asin(_) => {
+                dest.write_str("asin(")?;
+                true
+            },
+            Self::Acos(_) => {
+                dest.write_str("acos(")?;
+                true
+            },
+            Self::Atan(_) => {
+                dest.write_str("atan(")?;
+                true
+            },
+            Self::Atan2(..) => {
+                dest.write_str("atan2(")?;
+                true
+            },
+            Self::Pow(..) => {
+                dest.write_str("pow(")?;
+                true
+            },
+            Self::Sqrt(_) => {
+                dest.write_str("sqrt(")?;
+                true
+            },
             Self::Hypot(_) => {
                 dest.write_str("hypot(")?;
+                true
+            },
+            Self::Log(..) => {
+                dest.write_str("log(")?;
+                true
+            },
+            Self::Exp(_) => {
+                dest.write_str("exp(")?;
                 true
             },
             Self::Abs(_) => {
@@ -2000,6 +2395,32 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 dividend.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
                 dest.write_str(", ")?;
                 divisor.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
+            },
+            Self::Sin(ref v)
+            | Self::Cos(ref v)
+            | Self::Tan(ref v)
+            | Self::Asin(ref v)
+            | Self::Acos(ref v)
+            | Self::Atan(ref v) => v.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?,
+            Self::Atan2(ref a, ref b) => {
+                a.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
+                dest.write_str(", ")?;
+                b.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
+            },
+            Self::Pow(ref a, ref b) => {
+                a.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
+                dest.write_str(", ")?;
+                b.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
+            },
+            Self::Sqrt(ref v) | Self::Exp(ref v) => {
+                v.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?
+            },
+            Self::Log(ref a, ref b) => {
+                a.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
+                if let Optional::Some(ref b) = b {
+                    dest.write_str(", ")?;
+                    b.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
+                }
             },
             Self::Abs(ref v) | Self::Sign(ref v) => {
                 v.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?

@@ -88,6 +88,12 @@ impl NoCalcResolution {
         }
     }
 
+    /// Returns the unit of the resolution.
+    #[inline]
+    pub fn resolution_unit(&self) -> ResolutionUnit {
+        self.unit
+    }
+
     /// Parse a resolution given a value and unit.
     pub fn parse_dimension(value: CSSFloat, unit: &str) -> Result<Self, ()> {
         let unit = match_ignore_ascii_case! { &unit,

@@ -7,13 +7,31 @@
 //! https://drafts.csswg.org/css-values/#resolution
 
 use crate::derives::*;
+use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::CSSFloat;
-use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss};
+use std::{
+    fmt::{self, Write},
+    ops::AddAssign,
+};
+use style_traits::{CssString, CssWriter, ToCss};
+use thin_vec::ThinVec;
 
 /// A computed `<resolution>`.
 #[repr(C)]
-#[derive(Animate, Clone, Debug, MallocSizeOf, PartialEq, ToResolvedValue, ToShmem)]
+#[derive(
+    Animate,
+    Copy,
+    Clone,
+    Debug,
+    Deserialize,
+    MallocSizeOf,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    ToAnimatedZero,
+    ToResolvedValue,
+    ToShmem,
+)]
 pub struct Resolution(CSSFloat);
 
 impl Resolution {
@@ -37,5 +55,21 @@ impl ToCss for Resolution {
     {
         self.dppx().to_css(dest)?;
         dest.write_str("dppx")
+    }
+}
+
+impl ToTyped for Resolution {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            value: self.dppx(),
+            unit: CssString::from("dppx"),
+        })));
+        Ok(())
+    }
+}
+
+impl AddAssign for Resolution {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0
     }
 }

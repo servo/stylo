@@ -154,13 +154,19 @@ impl NoCalcAngle {
         self.degrees() * RAD_PER_DEG
     }
 
+    /// Returns the unit of the angle.
+    #[inline]
+    pub fn angle_unit(&self) -> AngleUnit {
+        self.unit
+    }
+
     /// Returns the unitless, raw value.
     #[inline]
     pub fn unitless_value(&self) -> CSSFloat {
         self.value
     }
 
-    /// Returns the unit of the angle.
+    /// Returns the unit of the angle as a string.
     #[inline]
     pub fn unit(&self) -> &'static str {
         self.unit.as_str()

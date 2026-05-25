@@ -115,9 +115,9 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
                 // generating a full match. This avoids code bloat while
                 // producing the same runtime behavior.
                 quote! {
-                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<style_traits::TypedValue>) -> Result<(), ()> {
+                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<crate::typed_om::TypedValue>) -> Result<(), ()> {
                       let s = style_traits::ToCss::to_css_cssstring(self);
-                      dest.push(style_traits::TypedValue::Keyword(style_traits::KeywordValue(s)));
+                      dest.push(crate::typed_om::TypedValue::Keyword(crate::typed_om::KeywordValue(s)));
                       Ok(())
                     }
                 }
@@ -136,7 +136,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
                 });
 
                 quote! {
-                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<style_traits::TypedValue>) -> Result<(), ()> {
+                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<crate::typed_om::TypedValue>) -> Result<(), ()> {
                         match *self {
                             #match_body
                         }
@@ -158,7 +158,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
                 });
 
                 quote! {
-                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<style_traits::TypedValue>) -> Result<(), ()> {
+                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<crate::typed_om::TypedValue>) -> Result<(), ()> {
                         match *self {
                             #match_body
                         }
@@ -183,7 +183,7 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
 
     // Put it all together into the impl block.
     quote! {
-        impl #impl_generics style_traits::ToTyped for #name #ty_generics #where_clause {
+        impl #impl_generics crate::typed_om::ToTyped for #name #ty_generics #where_clause {
             #body
         }
     }
@@ -246,8 +246,8 @@ fn derive_variant_arm(
 
         // Emit code to wrap this keyword into a TypedValue.
         quote! {
-            dest.push(style_traits::TypedValue::Keyword(
-                style_traits::KeywordValue(style_traits::CssString::from(#keyword))
+            dest.push(crate::typed_om::TypedValue::Keyword(
+                crate::typed_om::KeywordValue(style_traits::CssString::from(#keyword))
             ));
             Ok(())
         }
@@ -382,26 +382,29 @@ fn derive_single_field_expr(
         //
         // See also the comment in the beginning of the main `derive` fn.
         for item_ty in field_generic_arguments(field) {
-            cg::add_predicate(where_clause, parse_quote!(#item_ty: style_traits::ToTyped));
+            cg::add_predicate(
+                where_clause,
+                parse_quote!(#item_ty: crate::typed_om::ToTyped),
+            );
         }
 
         if let Some(if_empty) = css_field_attrs.if_empty {
             quote! {
                 let mut iter = #field.iter().peekable();
                 if iter.peek().is_none() {
-                    dest.push(style_traits::TypedValue::Keyword(
-                        style_traits::KeywordValue(style_traits::CssString::from(#if_empty)),
+                    dest.push(crate::typed_om::TypedValue::Keyword(
+                        crate::typed_om::KeywordValue(style_traits::CssString::from(#if_empty)),
                     ));
                 } else {
                     for item in iter {
-                        style_traits::ToTyped::to_typed(&item, dest)?;
+                        crate::typed_om::ToTyped::to_typed(&item, dest)?;
                     }
                 }
             }
         } else {
             quote! {
                 for item in #field.iter() {
-                    style_traits::ToTyped::to_typed(&item, dest)?;
+                    crate::typed_om::ToTyped::to_typed(&item, dest)?;
                 }
             }
         }
@@ -414,8 +417,8 @@ fn derive_single_field_expr(
         let ident = cg::to_css_identifier(&ident.to_string()).replace("_", "-");
         quote! {
             if *#field {
-                dest.push(style_traits::TypedValue::Keyword(
-                    style_traits::KeywordValue(style_traits::CssString::from(#ident)),
+                dest.push(crate::typed_om::TypedValue::Keyword(
+                    crate::typed_om::KeywordValue(style_traits::CssString::from(#ident)),
                 ));
             }
         }
@@ -424,10 +427,10 @@ fn derive_single_field_expr(
         // the required conversion, and emit a call to its `.to_typed()`
         // method.
         let ty = &field.ast().ty;
-        cg::add_predicate(where_clause, parse_quote!(#ty: style_traits::ToTyped));
+        cg::add_predicate(where_clause, parse_quote!(#ty: crate::typed_om::ToTyped));
 
         quote! {
-           style_traits::ToTyped::to_typed(#field, dest)?;
+           crate::typed_om::ToTyped::to_typed(#field, dest)?;
         }
     };
 

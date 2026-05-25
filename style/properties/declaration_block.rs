@@ -30,6 +30,7 @@ use crate::shared_lock::Locked;
 use crate::stylesheets::container_rule::ContainerSizeQuery;
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
 use crate::stylist::Stylist;
+use crate::typed_om::TypedValueList;
 use crate::values::computed::Context;
 use cssparser::{
     parse_important, AtRuleParser, CowRcStr, DeclarationParser, Delimiter, ParseErrorKind, Parser,
@@ -47,7 +48,6 @@ use std::slice::Iter;
 use std::sync::atomic::AtomicBool;
 use style_traits::{
     CssString, CssStringWriter, CssWriter, ParseError, ParsingMode, StyleParseErrorKind, ToCss,
-    TypedValueList,
 };
 use thin_vec::ThinVec;
 

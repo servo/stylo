@@ -24,10 +24,11 @@ use crate::device::Device;
 use crate::parser::ParserContext;
 use crate::selector_parser::PseudoElement;
 use crate::stylist::Stylist;
-use style_traits::{CssStringWriter, CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, TypedValueList, ToTyped};
+use style_traits::{CssStringWriter, CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 use crate::derives::*;
 use crate::stylesheets::{CssRuleType, CssRuleTypes, Origin};
 use crate::logical_geometry::{LogicalAxis, LogicalCorner, LogicalSide};
+use crate::typed_om::{ToTyped, TypedValueList};
 use crate::use_counters::UseCounters;
 use crate::rule_tree::StrongRuleNode;
 use crate::values::{

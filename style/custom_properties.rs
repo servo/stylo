@@ -26,6 +26,9 @@ use crate::properties_and_values::{
 use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet};
 use crate::stylesheets::UrlExtraData;
 use crate::stylist::Stylist;
+use crate::typed_om::{
+    ToTyped, TypedValue, UnparsedSegment, UnparsedValue, VariableReferenceValue,
+};
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::calc::SortKey as AttrUnit;
 use crate::values::specified::NoCalcLength;
@@ -44,10 +47,7 @@ use std::collections::hash_map::Entry;
 use std::fmt::{self, Write};
 use std::ops::{Index, IndexMut};
 use std::{cmp, num};
-use style_traits::{
-    CssString, CssWriter, ParseError, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
-    UnparsedSegment, UnparsedValue, VariableReferenceValue,
-};
+use style_traits::{CssString, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;
 
 /// The environment from which to get `env` function values.

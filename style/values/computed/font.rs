@@ -6,6 +6,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::animated::ToAnimatedValue;
 use crate::values::computed::{
     Angle, Context, Integer, Length, NonNegativeLength, NonNegativeNumber, Number, Percentage,
@@ -27,7 +28,7 @@ use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use num_traits::abs;
 use num_traits::cast::AsPrimitive;
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ParseError, ToCss, ToTyped, TypedValue};
+use style_traits::{CssWriter, ParseError, ToCss};
 use thin_vec::ThinVec;
 
 pub use crate::values::computed::Length as MozScriptMinSize;

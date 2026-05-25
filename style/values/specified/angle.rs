@@ -6,6 +6,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::computed::angle::Angle as ComputedAngle;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
@@ -16,10 +17,7 @@ use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::f32::consts::PI;
 use std::fmt::{self, Write};
 use std::ops::Neg;
-use style_traits::{
-    CssString, CssWriter, NumericValue, ParseError, SpecifiedValueInfo, ToCss, ToTyped, TypedValue,
-    UnitValue,
-};
+use style_traits::{CssString, CssWriter, ParseError, SpecifiedValueInfo, ToCss};
 use thin_vec::ThinVec;
 
 /// Number of degrees per radian.

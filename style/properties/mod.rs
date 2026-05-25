@@ -32,6 +32,7 @@ use crate::parser::ParserContext;
 use crate::stylesheets::CssRuleType;
 use crate::stylesheets::Origin;
 use crate::stylist::Stylist;
+use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::{computed, serialize_atom_name};
 use arrayvec::{ArrayVec, Drain as ArrayVecDrain};
 use cssparser::{match_ignore_ascii_case, Parser, ParserInput};
@@ -44,7 +45,6 @@ use std::{
 };
 use style_traits::{
     CssString, CssWriter, KeywordsCollectFn, ParseError, ParsingMode, SpecifiedValueInfo, ToCss,
-    ToTyped, TypedValue,
 };
 use thin_vec::ThinVec;
 

@@ -6,6 +6,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::computed::transform::DirectionVector;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::transform::IsParallelTo;
@@ -18,9 +19,7 @@ use crate::{One, Zero};
 use cssparser::{Parser, Token};
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{
-    CssWriter, ParseError, ParsingMode, SpecifiedValueInfo, ToCss, ToTyped, TypedValue,
-};
+use style_traits::{CssWriter, ParseError, ParsingMode, SpecifiedValueInfo, ToCss};
 use thin_vec::ThinVec;
 
 /// Parse a `<number>` value, with a given clamping mode.

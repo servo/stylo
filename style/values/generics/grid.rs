@@ -7,6 +7,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::specified;
 use crate::values::{CSSFloat, CustomIdent};
 use crate::{One, Zero};
@@ -14,10 +15,7 @@ use cssparser::Parser;
 use std::fmt::{self, Write};
 use std::usize;
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{
-    CssString, CssWriter, NumericValue, ParseError, StyleParseErrorKind, ToCss, ToTyped,
-    TypedValue, UnitValue,
-};
+use style_traits::{CssString, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;
 
 /// A `<grid-line>` type.

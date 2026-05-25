@@ -5,8 +5,9 @@
 //! Typed OM Sum Value.
 
 use crate::typed_om::numeric_values::NoCalcNumeric;
+use crate::typed_om::{NumericValue, UnitValue};
 use std::collections::HashMap;
-use style_traits::{CssString, NumericValue, UnitValue};
+use style_traits::CssString;
 
 type UnitMap = HashMap<String, i32>;
 

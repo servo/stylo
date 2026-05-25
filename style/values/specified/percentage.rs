@@ -6,6 +6,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::computed::percentage::Percentage as ComputedPercentage;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::NonNegative;
@@ -16,7 +17,7 @@ use crate::values::{normalize, reify_percentage, serialize_percentage, CSSFloat}
 use cssparser::{Parser, Token};
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss, ToTyped, TypedValue};
+use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss};
 use thin_vec::ThinVec;
 
 /// A percentage value, where [0 .. 100%] maps to [0.0 .. 1.0]

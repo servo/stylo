@@ -7,6 +7,7 @@
 use super::{Number, ToComputedValue};
 use crate::derives::*;
 use crate::logical_geometry::PhysicalSide;
+use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
 use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::computed::{NonNegativeNumber, Percentage, Zoom};
@@ -25,9 +26,7 @@ use crate::Zero;
 use app_units::Au;
 use std::fmt::{self, Write};
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
-use style_traits::{
-    CSSPixel, CssString, CssWriter, NumericValue, ToCss, ToTyped, TypedValue, UnitValue,
-};
+use style_traits::{CSSPixel, CssString, CssWriter, ToCss};
 use thin_vec::ThinVec;
 
 pub use super::image::Image;

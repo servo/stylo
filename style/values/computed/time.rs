@@ -5,10 +5,11 @@
 //! Computed time values.
 
 use crate::derives::*;
+use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::CSSFloat;
 use crate::Zero;
 use std::fmt::{self, Write};
-use style_traits::{CssString, CssWriter, NumericValue, ToCss, ToTyped, TypedValue, UnitValue};
+use style_traits::{CssString, CssWriter, ToCss};
 use thin_vec::ThinVec;
 
 /// A computed `<time>` value.

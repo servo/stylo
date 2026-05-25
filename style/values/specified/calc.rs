@@ -9,6 +9,7 @@
 use crate::color::parsing::ChannelKeyword;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::calc::{
     self as generic, CalcNodeLeaf, CalcUnits, GenericAnchorFunctionFallback, MinMaxOp, ModRemOp,
@@ -29,9 +30,7 @@ use smallvec::SmallVec;
 use std::cmp;
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{
-    CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss, ToTyped, TypedValue,
-};
+use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;
 
 /// The name of the mathematical function that we're parsing.

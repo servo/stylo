@@ -10,6 +10,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{KeywordValue, MathSum, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::position::IsTreeScoped;
 use crate::Atom;
@@ -18,10 +19,7 @@ pub use cssparser::{SourceLocation, Token};
 use precomputed_hash::PrecomputedHash;
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Debug, Write};
-use style_traits::{
-    CssString, CssWriter, KeywordValue, MathSum, NumericValue, ParseError, StyleParseErrorKind,
-    ToCss, ToTyped, TypedValue, UnitValue,
-};
+use style_traits::{CssString, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;
 use to_shmem::impl_trivial_to_shmem;
 

@@ -5,6 +5,7 @@
 //! Computed types for text properties.
 
 use crate::derives::*;
+use crate::typed_om::{KeywordValue, ToTyped, TypedValue};
 use crate::values::computed::length::{Length, LengthPercentage};
 use crate::values::generics::text::{
     GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationInset,
@@ -16,7 +17,7 @@ use crate::values::specified::text::{TextEmphasisFillMode, TextEmphasisShapeKeyw
 use crate::values::{CSSFloat, CSSInteger};
 use crate::Zero;
 use std::fmt::{self, Write};
-use style_traits::{CssString, CssWriter, KeywordValue, ToCss, ToTyped, TypedValue};
+use style_traits::{CssString, CssWriter, ToCss};
 use thin_vec::ThinVec;
 
 pub use crate::values::specified::text::{

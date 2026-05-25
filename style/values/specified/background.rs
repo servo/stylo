@@ -6,6 +6,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{KeywordValue, ToTyped, TypedValue};
 use crate::values::generics::background::BackgroundSize as GenericBackgroundSize;
 use crate::values::specified::length::{
     NonNegativeLengthPercentage, NonNegativeLengthPercentageOrAuto,
@@ -13,7 +14,7 @@ use crate::values::specified::length::{
 use cssparser::{match_ignore_ascii_case, Parser};
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Write};
-use style_traits::{CssString, CssWriter, KeywordValue, ParseError, ToCss, ToTyped, TypedValue};
+use style_traits::{CssString, CssWriter, ParseError, ToCss};
 use thin_vec::ThinVec;
 
 /// A specified value for the `background-size` property.

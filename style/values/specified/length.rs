@@ -13,6 +13,7 @@ use crate::font_metrics::{FontMetrics, FontMetricsOrientation};
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::GeckoFontMetrics;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::computed::{self, CSSPixelLength, Context, FontSize};
 use crate::values::generics::length as generics;
 use crate::values::generics::length::{
@@ -35,8 +36,7 @@ use std::cmp;
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{
-    CssString, CssWriter, NumericValue, ParseError, ParsingMode, SpecifiedValueInfo,
-    StyleParseErrorKind, ToCss, ToTyped, TypedValue, UnitValue,
+    CssString, CssWriter, ParseError, ParsingMode, SpecifiedValueInfo, StyleParseErrorKind, ToCss,
 };
 use thin_vec::ThinVec;
 

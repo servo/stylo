@@ -13,6 +13,7 @@ use crate::derives::*;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{AnchorPosOffsetResolutionParams, GeckoFontMetrics};
 use crate::logical_geometry::{PhysicalAxis, PhysicalSide};
+use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::animated::{
     Animate, Context as AnimatedContext, Procedure, ToAnimatedValue, ToAnimatedZero,
 };
@@ -37,7 +38,7 @@ use debug_unreachable::debug_unreachable;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Write};
 use style_traits::values::specified::AllowedNumericType;
-use style_traits::{CssWriter, ToCss, ToTyped, TypedValue};
+use style_traits::{CssWriter, ToCss};
 use thin_vec::ThinVec;
 
 /// The discriminator used for inline LengthPercentage variants.

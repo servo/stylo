@@ -7,6 +7,7 @@
 //! [calc]: https://drafts.csswg.org/css-values/#calc-notation
 
 use crate::derives::*;
+use crate::typed_om::{MathSum, NumericValue, ToTyped, TypedValue};
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
 use num_traits::Zero;
@@ -16,7 +17,7 @@ use std::fmt::{self, Write};
 use std::ops::{Add, Mul, Neg, Rem, Sub};
 use std::{cmp, mem};
 use strum_macros::AsRefStr;
-use style_traits::{CssWriter, MathSum, NumericValue, ToCss, ToTyped, TypedValue};
+use style_traits::{CssWriter, ToCss};
 
 use thin_vec::ThinVec;
 

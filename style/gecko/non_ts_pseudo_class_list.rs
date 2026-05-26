@@ -100,7 +100,6 @@ macro_rules! apply_non_ts_list {
                 ("stalled", Stalled, STALLED, _),
                 ("muted", Muted, MUTED, _),
                 ("volume-locked", VolumeLocked, _, _),
-                ("picture-in-picture", PictureInPicture, PICTURE_IN_PICTURE, _),
 
 
                 // NOTE(emilio): Pseudo-classes below only depend on document state, and thus

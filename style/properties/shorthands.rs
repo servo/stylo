@@ -2518,12 +2518,12 @@ pub mod font {
     #[cfg(feature = "gecko")]
     use crate::properties::longhands::{
         font_family, font_language_override, font_size, font_size_adjust,
-        font_variant_alternates, font_variant_emoji, font_variant_position,
+        font_variant_alternates, font_variant_emoji
     };
     use crate::properties::longhands::{
         font_feature_settings, font_kerning, font_optical_sizing, font_stretch, font_style, font_variant_caps,
         font_variant_east_asian, font_variant_ligatures, font_variant_numeric, font_variation_settings,
-        font_weight,
+        font_variant_position, font_weight,
     };
     #[cfg(feature = "gecko")]
     use crate::values::specified::font::SystemFont;
@@ -2635,7 +2635,6 @@ pub mod font {
             font_variant_emoji: font_variant_emoji::get_initial_specified_value(),
             font_variant_ligatures: font_variant_ligatures::get_initial_specified_value(),
             font_variant_numeric: font_variant_numeric::get_initial_specified_value(),
-            #[cfg(feature = "gecko")]
             font_variant_position: font_variant_position::get_initial_specified_value(),
             font_feature_settings: font_feature_settings::get_initial_specified_value(),
         })
@@ -2707,7 +2706,6 @@ pub mod font {
             if self.font_variant_numeric != &font_variant_numeric::get_initial_specified_value() {
                 return Ok(());
             }
-            #[cfg(feature = "gecko")]
             if self.font_variant_position != &font_variant_position::get_initial_specified_value() {
                 return Ok(());
             }
@@ -2837,9 +2835,12 @@ pub mod font_variant {
     use super::*;
     #[cfg(feature = "gecko")]
     use crate::properties::longhands::{
-        font_variant_alternates, font_variant_emoji, font_variant_position,
+        font_variant_alternates, font_variant_emoji,
     };
-    use crate::properties::longhands::{font_variant_caps, font_variant_east_asian, font_variant_ligatures, font_variant_numeric};
+    use crate::properties::longhands::{
+        font_variant_caps, font_variant_east_asian, font_variant_ligatures, font_variant_numeric,
+        font_variant_position,
+    };
     use crate::values::specified::FontVariantLigatures;
 
     pub fn parse_value<'i, 't>(
@@ -2852,7 +2853,6 @@ pub mod font_variant {
         let mut alternates = None;
         let mut numeric = None;
         let mut east_asian = None;
-        #[cfg(feature = "gecko")]
         let mut position = None;
         #[cfg(feature = "gecko")]
         let mut emoji = None;
@@ -2885,7 +2885,6 @@ pub mod font_variant {
                 try_parse_one!(context, input, alternates, font_variant_alternates::parse);
                 try_parse_one!(context, input, numeric, font_variant_numeric::parse);
                 try_parse_one!(context, input, east_asian, font_variant_east_asian::parse);
-                #[cfg(feature = "gecko")]
                 try_parse_one!(context, input, position, font_variant_position::parse);
                 #[cfg(feature = "gecko")]
                 try_parse_one!(context, input, emoji, font_variant_emoji::parse);
@@ -2914,6 +2913,7 @@ pub mod font_variant {
             font_variant_east_asian: unwrap_or_initial!(font_variant_east_asian, east_asian),
             font_variant_ligatures: unwrap_or_initial!(font_variant_ligatures, ligatures),
             font_variant_numeric: unwrap_or_initial!(font_variant_numeric, numeric),
+            font_variant_position: unwrap_or_initial!(font_variant_position, position),
         });
     }
 
@@ -2928,7 +2928,7 @@ pub mod font_variant {
             #[cfg(feature = "gecko")]
             const TOTAL_SUBPROPS: usize = 7;
             #[cfg(feature = "servo")]
-            const TOTAL_SUBPROPS: usize = 4;
+            const TOTAL_SUBPROPS: usize = 5;
             let mut nb_normals = 0;
             macro_rules! count_normal {
                 ($e: expr, $p: ident) => {
@@ -2946,7 +2946,6 @@ pub mod font_variant {
             count_normal!(font_variant_alternates);
             count_normal!(font_variant_numeric);
             count_normal!(font_variant_east_asian);
-            #[cfg(feature = "gecko")]
             count_normal!(font_variant_position);
             #[cfg(feature = "gecko")]
             if let Some(value) = self.font_variant_emoji {
@@ -2985,7 +2984,6 @@ pub mod font_variant {
             write!(font_variant_alternates);
             write!(font_variant_numeric);
             write!(font_variant_east_asian);
-            #[cfg(feature = "gecko")]
             write!(font_variant_position);
             #[cfg(feature = "gecko")]
             if let Some(v) = self.font_variant_emoji {

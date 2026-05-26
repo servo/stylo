@@ -265,6 +265,39 @@ pub struct ScaleComponent {
     pub is_2d: bool,
 }
 
+/// A skew transform component used by the Typed OM.
+///
+/// This corresponds to `CSSSkew` in the Typed OM specification. The `ax` and
+/// `ay` components are always present; omitted angles are represented as
+/// `0deg`.
+///
+/// Skew components are always two-dimensional.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct SkewComponent {
+    /// The x-axis skew angle.
+    pub ax: NumericValue,
+
+    /// The y-axis skew angle.
+    pub ay: NumericValue,
+}
+
+/// A skewX transform component used by the Typed OM.
+///
+/// This corresponds to `CSSSkewX` in the Typed OM specification. The value is
+/// always present; omitted angles are represented as `0deg`.
+///
+/// SkewX components are always two-dimensional.
+pub type SkewXComponent = NumericValue;
+
+/// A skewY transform component used by the Typed OM.
+///
+/// This corresponds to `CSSSkewY` in the Typed OM specification. The value is
+/// always present; omitted angles are represented as `0deg`.
+///
+/// SkewY components are always two-dimensional.
+pub type SkewYComponent = NumericValue;
+
 /// A single transform component used by the Typed OM.
 ///
 /// This corresponds to `CSSTransformComponent` in the Typed OM specification.
@@ -286,6 +319,21 @@ pub enum TransformComponent {
     ///
     /// This corresponds to `CSSScale`.
     Scale(ScaleComponent),
+
+    /// A skew transform component.
+    ///
+    /// This corresponds to `CSSSkew`.
+    Skew(SkewComponent),
+
+    /// A skewX transform component.
+    ///
+    /// This corresponds to `CSSSkewX`.
+    SkewX(SkewXComponent),
+
+    /// A skewY transform component.
+    ///
+    /// This corresponds to `CSSSkewY`.
+    SkewY(SkewYComponent),
 }
 
 /// A transform value used by the Typed OM.

@@ -6,8 +6,8 @@
 
 use crate::derives::*;
 use crate::typed_om::{
-    KeywordValue, NumericValue, RotateComponent, ScaleComponent, ToTyped, TransformComponent,
-    TranslateComponent, TypedValue,
+    KeywordValue, NumericValue, RotateComponent, ScaleComponent, SkewComponent, ToTyped,
+    TransformComponent, TranslateComponent, TypedValue,
 };
 use crate::values::computed::length::Length as ComputedLength;
 use crate::values::computed::length::LengthPercentage as ComputedLengthPercentage;
@@ -345,6 +345,12 @@ where
 
         // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-transform-function
         let component = match *self {
+            Skew(ref theta_x, ref theta_y) => TransformComponent::Skew(SkewComponent {
+                ax: theta_x.to_numeric_value().ok_or(())?,
+                ay: theta_y.to_numeric_value().ok_or(())?,
+            }),
+            SkewX(ref theta) => TransformComponent::SkewX(theta.to_numeric_value().ok_or(())?),
+            SkewY(ref theta) => TransformComponent::SkewY(theta.to_numeric_value().ok_or(())?),
             Translate(ref tx, ref ty) => TransformComponent::Translate(TranslateComponent {
                 x: tx.to_numeric_value().ok_or(())?,
                 y: ty.to_numeric_value().ok_or(())?,

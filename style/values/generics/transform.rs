@@ -5,7 +5,9 @@
 //! Generic types for CSS values that are related to transformations.
 
 use crate::derives::*;
-use crate::typed_om::{KeywordValue, ToTyped, TransformComponent, TypedValue};
+use crate::typed_om::{
+    KeywordValue, NumericValue, ToTyped, TransformComponent, TranslateComponent, TypedValue,
+};
 use crate::values::computed::length::Length as ComputedLength;
 use crate::values::computed::length::LengthPercentage as ComputedLengthPercentage;
 use crate::values::specified::angle::Angle as SpecifiedAngle;
@@ -334,10 +336,51 @@ impl<Angle, Number, Length, Integer, LengthPercentage> ToTransformComponent
 where
     Angle: Zero,
     Number: PartialEq,
-    LengthPercentage: Zero + ZeroNoPercent,
+    Length: ToTyped,
+    LengthPercentage: Zero + ToTyped + ZeroNoPercent,
 {
-    fn to_transform_component(&self, _dest: &mut ThinVec<TransformComponent>) -> Result<(), ()> {
-        Err(())
+    fn to_transform_component(&self, dest: &mut ThinVec<TransformComponent>) -> Result<(), ()> {
+        use self::TransformOperation::*;
+
+        // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-transform-function
+        let component = match *self {
+            Translate(ref tx, ref ty) => TransformComponent::Translate(TranslateComponent {
+                x: tx.to_numeric_value().ok_or(())?,
+                y: ty.to_numeric_value().ok_or(())?,
+                z: NumericValue::zero_px(),
+                is_2d: true,
+            }),
+            TranslateX(ref t) => TransformComponent::Translate(TranslateComponent {
+                x: t.to_numeric_value().ok_or(())?,
+                y: NumericValue::zero_px(),
+                z: NumericValue::zero_px(),
+                is_2d: true,
+            }),
+            TranslateY(ref t) => TransformComponent::Translate(TranslateComponent {
+                x: NumericValue::zero_px(),
+                y: t.to_numeric_value().ok_or(())?,
+                z: NumericValue::zero_px(),
+                is_2d: true,
+            }),
+            TranslateZ(ref t) => TransformComponent::Translate(TranslateComponent {
+                x: NumericValue::zero_px(),
+                y: NumericValue::zero_px(),
+                z: t.to_numeric_value().ok_or(())?,
+                is_2d: false,
+            }),
+            Translate3D(ref tx, ref ty, ref tz) => {
+                TransformComponent::Translate(TranslateComponent {
+                    x: tx.to_numeric_value().ok_or(())?,
+                    y: ty.to_numeric_value().ok_or(())?,
+                    z: tz.to_numeric_value().ok_or(())?,
+                    is_2d: false,
+                })
+            },
+            _ => return Err(()),
+        };
+
+        dest.push(component);
+        Ok(())
     }
 }
 

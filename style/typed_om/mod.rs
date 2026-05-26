@@ -189,6 +189,30 @@ impl One for NumericValue {
     }
 }
 
+/// A translate transform component used by the Typed OM.
+///
+/// This corresponds to `CSSTranslate` in the Typed OM specification. The `x`,
+/// `y`, and `z` components are always present; omitted offsets are represented
+/// as `0px`.
+///
+/// The `is_2d` flag indicates whether the component was reified from a 2D
+/// translate function.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct TranslateComponent {
+    /// The x-axis translation component.
+    pub x: NumericValue,
+
+    /// The y-axis translation component.
+    pub y: NumericValue,
+
+    /// The z-axis translation component.
+    pub z: NumericValue,
+
+    /// Whether this translate component is two-dimensional.
+    pub is_2d: bool,
+}
+
 /// A single transform component used by the Typed OM.
 ///
 /// This corresponds to `CSSTransformComponent` in the Typed OM specification.
@@ -196,10 +220,10 @@ impl One for NumericValue {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub enum TransformComponent {
-    /// Temporary marker to satisfy `#[repr(C)]`. This will be replaced by
-    /// concrete value kinds as transform component reification support
-    /// expands.
-    Placeholder(bool),
+    /// A translate transform component.
+    ///
+    /// This corresponds to `CSSTranslate`.
+    Translate(TranslateComponent),
 }
 
 /// A transform value used by the Typed OM.

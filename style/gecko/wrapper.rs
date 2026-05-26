@@ -2072,6 +2072,7 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             | NonTSPseudoClass::Seeking
             | NonTSPseudoClass::Buffering
             | NonTSPseudoClass::Stalled
+            | NonTSPseudoClass::PictureInPicture
             | NonTSPseudoClass::Muted => self.state().intersects(pseudo_class.state_flag()),
             NonTSPseudoClass::Paused => {
                 self.is_html_media_element() && self.state().intersects(ElementState::PAUSED)

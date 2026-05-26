@@ -6,8 +6,8 @@
 
 use crate::derives::*;
 use crate::typed_om::{
-    KeywordValue, NumericValue, RotateComponent, ScaleComponent, SkewComponent, ToTyped,
-    TransformComponent, TranslateComponent, TypedValue,
+    KeywordValue, NumericValue, PerspectiveComponent, PerspectiveValue, RotateComponent,
+    ScaleComponent, SkewComponent, ToTyped, TransformComponent, TranslateComponent, TypedValue,
 };
 use crate::values::computed::length::Length as ComputedLength;
 use crate::values::computed::length::LengthPercentage as ComputedLengthPercentage;
@@ -172,6 +172,7 @@ fn is_same<N: PartialEq>(x: &N, y: &N) -> bool {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(C, u8)]
 pub enum GenericPerspectiveFunction<L> {
@@ -449,6 +450,14 @@ where
                     z: az.to_numeric_value().ok_or(())?,
                     is_2d: false,
                 })
+            },
+            Perspective(ref p) => {
+                let length = match p.to_typed_value().ok_or(())? {
+                    TypedValue::Numeric(value) => PerspectiveValue::Numeric(value),
+                    TypedValue::Keyword(value) => PerspectiveValue::Keyword(value),
+                    _ => return Err(()),
+                };
+                TransformComponent::Perspective(PerspectiveComponent { length })
             },
             _ => return Err(()),
         };

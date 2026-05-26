@@ -298,6 +298,37 @@ pub type SkewXComponent = NumericValue;
 /// SkewY components are always two-dimensional.
 pub type SkewYComponent = NumericValue;
 
+/// A perspective value used by a perspective component.
+///
+/// This corresponds to the `CSSPerspectiveValue` union in the Typed OM
+/// specification.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub enum PerspectiveValue {
+    /// A numeric perspective value.
+    ///
+    /// This corresponds to `CSSNumericValue`.
+    Numeric(NumericValue),
+
+    /// A keyword perspective value.
+    ///
+    /// This corresponds to `CSSKeywordValue`.
+    Keyword(KeywordValue),
+}
+
+/// A perspective transform component used by the Typed OM.
+///
+/// This corresponds to `CSSPerspective` in the Typed OM specification. The
+/// `length` component is always present.
+///
+/// Perspective components are always three-dimensional.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct PerspectiveComponent {
+    /// The perspective length.
+    pub length: PerspectiveValue,
+}
+
 /// A single transform component used by the Typed OM.
 ///
 /// This corresponds to `CSSTransformComponent` in the Typed OM specification.
@@ -334,6 +365,11 @@ pub enum TransformComponent {
     ///
     /// This corresponds to `CSSSkewY`.
     SkewY(SkewYComponent),
+
+    /// A perspective transform component.
+    ///
+    /// This corresponds to `CSSPerspective`.
+    Perspective(PerspectiveComponent),
 }
 
 /// A transform value used by the Typed OM.

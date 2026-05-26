@@ -241,6 +241,30 @@ pub struct RotateComponent {
     pub is_2d: bool,
 }
 
+/// A scale transform component used by the Typed OM.
+///
+/// This corresponds to `CSSScale` in the Typed OM specification. The `x`, `y`,
+/// and `z` components are always present; omitted scale factors are
+/// represented as `1`.
+///
+/// The `is_2d` flag indicates whether the component was reified from a 2D
+/// scale function.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct ScaleComponent {
+    /// The x-axis scale factor.
+    pub x: NumericValue,
+
+    /// The y-axis scale factor.
+    pub y: NumericValue,
+
+    /// The z-axis scale factor.
+    pub z: NumericValue,
+
+    /// Whether this scale component is two-dimensional.
+    pub is_2d: bool,
+}
+
 /// A single transform component used by the Typed OM.
 ///
 /// This corresponds to `CSSTransformComponent` in the Typed OM specification.
@@ -257,6 +281,11 @@ pub enum TransformComponent {
     ///
     /// This corresponds to `CSSRotate`.
     Rotate(RotateComponent),
+
+    /// A scale transform component.
+    ///
+    /// This corresponds to `CSSScale`.
+    Scale(ScaleComponent),
 }
 
 /// A transform value used by the Typed OM.

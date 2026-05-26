@@ -6,8 +6,8 @@
 
 use crate::derives::*;
 use crate::typed_om::{
-    KeywordValue, NumericValue, RotateComponent, ToTyped, TransformComponent, TranslateComponent,
-    TypedValue,
+    KeywordValue, NumericValue, RotateComponent, ScaleComponent, ToTyped, TransformComponent,
+    TranslateComponent, TypedValue,
 };
 use crate::values::computed::length::Length as ComputedLength;
 use crate::values::computed::length::LengthPercentage as ComputedLengthPercentage;
@@ -377,6 +377,36 @@ where
                     is_2d: false,
                 })
             },
+            Scale(ref sx, ref sy) => TransformComponent::Scale(ScaleComponent {
+                x: sx.to_numeric_value().ok_or(())?,
+                y: sy.to_numeric_value().ok_or(())?,
+                z: NumericValue::one(),
+                is_2d: true,
+            }),
+            ScaleX(ref s) => TransformComponent::Scale(ScaleComponent {
+                x: s.to_numeric_value().ok_or(())?,
+                y: NumericValue::one(),
+                z: NumericValue::one(),
+                is_2d: true,
+            }),
+            ScaleY(ref s) => TransformComponent::Scale(ScaleComponent {
+                x: NumericValue::one(),
+                y: s.to_numeric_value().ok_or(())?,
+                z: NumericValue::one(),
+                is_2d: true,
+            }),
+            ScaleZ(ref s) => TransformComponent::Scale(ScaleComponent {
+                x: NumericValue::one(),
+                y: NumericValue::one(),
+                z: s.to_numeric_value().ok_or(())?,
+                is_2d: false,
+            }),
+            Scale3D(ref sx, ref sy, ref sz) => TransformComponent::Scale(ScaleComponent {
+                x: sx.to_numeric_value().ok_or(())?,
+                y: sy.to_numeric_value().ok_or(())?,
+                z: sz.to_numeric_value().ok_or(())?,
+                is_2d: false,
+            }),
             Rotate(ref theta) => TransformComponent::Rotate(RotateComponent {
                 angle: theta.to_numeric_value().ok_or(())?,
                 x: NumericValue::zero(),

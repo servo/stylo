@@ -6,6 +6,7 @@
 //!
 //! https://drafts.css-houdini.org/css-typed-om-1/
 
+use crate::{One, Zero};
 use app_units::Au;
 use servo_arc::Arc;
 use style_traits::CssString;
@@ -141,6 +142,72 @@ pub enum NumericValue {
     Sum(MathSum),
 }
 
+impl NumericValue {
+    /// Returns a zero pixel unit value.
+    #[inline]
+    pub fn zero_px() -> Self {
+        Self::Unit(UnitValue {
+            value: 0.0,
+            unit: CssString::from("px"),
+        })
+    }
+}
+
+impl Zero for NumericValue {
+    #[inline]
+    fn zero() -> Self {
+        Self::Unit(UnitValue {
+            value: 0.0,
+            unit: CssString::from("number"),
+        })
+    }
+
+    #[inline]
+    fn is_zero(&self) -> bool {
+        match *self {
+            Self::Unit(ref value) => value.value == 0.0,
+            _ => false,
+        }
+    }
+}
+
+impl One for NumericValue {
+    #[inline]
+    fn one() -> Self {
+        Self::Unit(UnitValue {
+            value: 1.0,
+            unit: CssString::from("number"),
+        })
+    }
+
+    #[inline]
+    fn is_one(&self) -> bool {
+        match *self {
+            Self::Unit(ref value) => value.value == 1.0,
+            _ => false,
+        }
+    }
+}
+
+/// A single transform component used by the Typed OM.
+///
+/// This corresponds to `CSSTransformComponent` in the Typed OM specification.
+/// Each variant represents one concrete transform component subclass.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub enum TransformComponent {
+    /// Temporary marker to satisfy `#[repr(C)]`. This will be replaced by
+    /// concrete value kinds as transform component reification support
+    /// expands.
+    Placeholder(bool),
+}
+
+/// A transform value used by the Typed OM.
+///
+/// This corresponds to `CSSTransformValue` in the Typed OM specification. It
+/// represents a `<transform-list>` as an ordered list of transform components.
+pub type TransformValue = ThinVec<TransformComponent>;
+
 /// A property-agnostic representation of a value, used by Typed OM.
 ///
 /// `TypedValue` is the internal counterpart of the various `CSSStyleValue`
@@ -167,6 +234,11 @@ pub enum TypedValue {
     /// This corresponds to the `CSSNumericValue` hierarchy in the Typed OM
     /// specification, including `CSSUnitValue` and `CSSMathSum`.
     Numeric(NumericValue),
+
+    /// A transform value such as `translate(10px, 20px)`.
+    ///
+    /// This corresponds to `CSSTransformValue` in the Typed OM specification.
+    Transform(TransformValue),
 }
 
 /// A list of property-agnostic values used by the Typed OM.
@@ -282,6 +354,17 @@ pub trait ToTyped {
         let mut dest = ThinVec::new();
         self.to_typed(&mut dest).ok()?;
         dest.into_iter().next()
+    }
+
+    /// Attempt to convert `self` into a [`NumericValue`].
+    ///
+    /// Returns `Some(NumericValue)` if the value reifies to a single
+    /// `TypedValue::Numeric` item. Returns `None` otherwise.
+    fn to_numeric_value(&self) -> Option<NumericValue> {
+        match self.to_typed_value()? {
+            TypedValue::Numeric(value) => Some(value),
+            _ => None,
+        }
     }
 
     /// Attempt to convert `self` into a [`TypedValueList`].

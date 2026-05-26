@@ -6,7 +6,8 @@
 
 use crate::derives::*;
 use crate::typed_om::{
-    KeywordValue, NumericValue, ToTyped, TransformComponent, TranslateComponent, TypedValue,
+    KeywordValue, NumericValue, RotateComponent, ToTyped, TransformComponent, TranslateComponent,
+    TypedValue,
 };
 use crate::values::computed::length::Length as ComputedLength;
 use crate::values::computed::length::LengthPercentage as ComputedLengthPercentage;
@@ -15,7 +16,7 @@ use crate::values::specified::length::Length as SpecifiedLength;
 use crate::values::specified::length::LengthPercentage as SpecifiedLengthPercentage;
 use crate::values::specified::number::Number as SpecifiedNumber;
 use crate::values::{computed, CSSFloat};
-use crate::{Zero, ZeroNoPercent};
+use crate::{One, Zero, ZeroNoPercent};
 use euclid::default::{Rect, Transform3D};
 use std::fmt::{self, Write};
 use std::ops::Neg;
@@ -334,8 +335,8 @@ pub trait ToTransformComponent {
 impl<Angle, Number, Length, Integer, LengthPercentage> ToTransformComponent
     for TransformOperation<Angle, Number, Length, Integer, LengthPercentage>
 where
-    Angle: Zero,
-    Number: PartialEq,
+    Angle: Zero + ToTyped,
+    Number: PartialEq + ToTyped,
     Length: ToTyped,
     LengthPercentage: Zero + ToTyped + ZeroNoPercent,
 {
@@ -373,6 +374,43 @@ where
                     x: tx.to_numeric_value().ok_or(())?,
                     y: ty.to_numeric_value().ok_or(())?,
                     z: tz.to_numeric_value().ok_or(())?,
+                    is_2d: false,
+                })
+            },
+            Rotate(ref theta) => TransformComponent::Rotate(RotateComponent {
+                angle: theta.to_numeric_value().ok_or(())?,
+                x: NumericValue::zero(),
+                y: NumericValue::zero(),
+                z: NumericValue::one(),
+                is_2d: true,
+            }),
+            RotateX(ref theta) => TransformComponent::Rotate(RotateComponent {
+                angle: theta.to_numeric_value().ok_or(())?,
+                x: NumericValue::one(),
+                y: NumericValue::zero(),
+                z: NumericValue::zero(),
+                is_2d: false,
+            }),
+            RotateY(ref theta) => TransformComponent::Rotate(RotateComponent {
+                angle: theta.to_numeric_value().ok_or(())?,
+                x: NumericValue::zero(),
+                y: NumericValue::one(),
+                z: NumericValue::zero(),
+                is_2d: false,
+            }),
+            RotateZ(ref theta) => TransformComponent::Rotate(RotateComponent {
+                angle: theta.to_numeric_value().ok_or(())?,
+                x: NumericValue::zero(),
+                y: NumericValue::zero(),
+                z: NumericValue::one(),
+                is_2d: false,
+            }),
+            Rotate3D(ref ax, ref ay, ref az, ref theta) => {
+                TransformComponent::Rotate(RotateComponent {
+                    angle: theta.to_numeric_value().ok_or(())?,
+                    x: ax.to_numeric_value().ok_or(())?,
+                    y: ay.to_numeric_value().ok_or(())?,
+                    z: az.to_numeric_value().ok_or(())?,
                     is_2d: false,
                 })
             },

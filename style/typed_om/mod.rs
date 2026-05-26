@@ -213,6 +213,34 @@ pub struct TranslateComponent {
     pub is_2d: bool,
 }
 
+/// A rotate transform component used by the Typed OM.
+///
+/// This corresponds to `CSSRotate` in the Typed OM specification. The `angle`,
+/// `x`, `y`, and `z` components are always present; omitted axis coordinates
+/// are represented using the implicit axis for the corresponding rotate
+/// function.
+///
+/// The `is_2d` flag indicates whether the component was reified from a 2D
+/// rotate function.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct RotateComponent {
+    /// The rotation angle.
+    pub angle: NumericValue,
+
+    /// The x-axis rotation coordinate.
+    pub x: NumericValue,
+
+    /// The y-axis rotation coordinate.
+    pub y: NumericValue,
+
+    /// The z-axis rotation coordinate.
+    pub z: NumericValue,
+
+    /// Whether this rotate component is two-dimensional.
+    pub is_2d: bool,
+}
+
 /// A single transform component used by the Typed OM.
 ///
 /// This corresponds to `CSSTransformComponent` in the Typed OM specification.
@@ -224,6 +252,11 @@ pub enum TransformComponent {
     ///
     /// This corresponds to `CSSTranslate`.
     Translate(TranslateComponent),
+
+    /// A rotate transform component.
+    ///
+    /// This corresponds to `CSSRotate`.
+    Rotate(RotateComponent),
 }
 
 /// A transform value used by the Typed OM.

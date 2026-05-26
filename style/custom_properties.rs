@@ -652,7 +652,6 @@ impl ComputedSubstitutionFunctions {
 
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem, Parse)]
 enum AttributeType {
-    Invalid,
     None,
     RawString,
     Type(SyntaxDescriptor),
@@ -1269,10 +1268,11 @@ fn parse_attr_type<'i, 't>(input: &mut Parser<'i, 't>) -> AttributeType {
                 Token::Ident(ref ident) => {
                     if ident.eq_ignore_ascii_case("raw-string") {
                         AttributeType::RawString
-                    } else if let Ok(unit) = AttrUnit::from_ident(ident) {
-                        AttributeType::Unit(unit)
                     } else {
-                        AttributeType::Invalid
+                        let unit = AttrUnit::from_ident(ident).map_err(|_| {
+                            input.new_custom_error(StyleParseErrorKind::UnspecifiedError)
+                        })?;
+                        AttributeType::Unit(unit)
                     }
                 },
                 Token::Delim('%') => AttributeType::Unit(AttrUnit::Percentage),
@@ -2832,7 +2832,6 @@ fn substitute_one_reference<'a>(
                             AttributeType::RawString | AttributeType::None => {
                                 simple_attr_subst(&attr)
                             },
-                            AttributeType::Invalid => None,
                         }
                     },
                 )

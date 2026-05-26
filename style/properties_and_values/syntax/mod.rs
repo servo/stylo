@@ -104,7 +104,7 @@ impl Descriptor {
     fn try_parse_multiplier<'i>(input: &mut CSSParser<'i, '_>) -> Option<Multiplier> {
         input
             .try_parse(|input| {
-                let next = input.next().map_err(|_| ())?;
+                let next = input.next_including_whitespace().map_err(|_| ())?;
                 match next {
                     Token::Delim('+') => Ok(Multiplier::Space),
                     Token::Delim('#') => Ok(Multiplier::Comma),
@@ -119,10 +119,10 @@ impl Descriptor {
     ) -> Result<ComponentName, ParseError> {
         if input.try_parse(|input| input.expect_delim('<')).is_ok() {
             let name = Self::parse_component_data_type_name(input)?;
-            input
-                .expect_delim('>')
-                .map_err(|_| ParseError::UnclosedDataTypeName)?;
-            Ok(ComponentName::DataType(name))
+            match input.next_including_whitespace() {
+                Ok(&Token::Delim('>')) => Ok(ComponentName::DataType(name)),
+                _ => Err(ParseError::UnclosedDataTypeName),
+            }
         } else {
             input.try_parse(|input| {
                 let name = CustomIdent::parse(input, &[]).map_err(|_| ParseError::InvalidName)?;
@@ -134,11 +134,11 @@ impl Descriptor {
     fn parse_component_data_type_name<'i>(
         input: &mut CSSParser<'i, '_>,
     ) -> Result<DataType, ParseError> {
-        input
-            .expect_ident()
-            .ok()
-            .and_then(|n| DataType::from_str(n))
-            .ok_or(ParseError::UnknownDataTypeName)
+        let ty = match input.next_including_whitespace() {
+            Ok(Token::Ident(name)) => DataType::from_str(name),
+            _ => None,
+        };
+        ty.ok_or(ParseError::UnknownDataTypeName)
     }
 
     /// Parse a syntax descriptor.

@@ -6,6 +6,8 @@
 //!
 //! https://drafts.css-houdini.org/css-typed-om-1/
 
+use crate::values::generics::transform::GenericMatrix3D;
+use crate::values::CSSFloat;
 use crate::{One, Zero};
 use app_units::Au;
 use servo_arc::Arc;
@@ -329,6 +331,26 @@ pub struct PerspectiveComponent {
     pub length: PerspectiveValue,
 }
 
+/// A matrix transform component used by the Typed OM.
+///
+/// This corresponds to `CSSMatrixComponent` in the Typed OM specification.
+///
+/// The `matrix` field always stores a full 4×4 matrix. Two-dimensional
+/// matrices are expanded to their equivalent 3D representation during
+/// reification.
+///
+/// The `is_2d` flag indicates whether the component was reified from a 2D
+/// matrix function.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MatrixComponent {
+    /// The 4×4 matrix.
+    pub matrix: GenericMatrix3D<CSSFloat>,
+
+    /// Whether this matrix component is two-dimensional.
+    pub is_2d: bool,
+}
+
 /// A single transform component used by the Typed OM.
 ///
 /// This corresponds to `CSSTransformComponent` in the Typed OM specification.
@@ -370,6 +392,11 @@ pub enum TransformComponent {
     ///
     /// This corresponds to `CSSPerspective`.
     Perspective(PerspectiveComponent),
+
+    /// A matrix transform component.
+    ///
+    /// This corresponds to `CSSMatrixComponent`.
+    Matrix(MatrixComponent),
 }
 
 /// A transform value used by the Typed OM.

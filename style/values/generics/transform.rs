@@ -6,11 +6,13 @@
 
 use crate::derives::*;
 use crate::typed_om::{
-    KeywordValue, NumericValue, PerspectiveComponent, PerspectiveValue, RotateComponent,
-    ScaleComponent, SkewComponent, ToTyped, TransformComponent, TranslateComponent, TypedValue,
+    KeywordValue, MatrixComponent, NumericValue, PerspectiveComponent, PerspectiveValue,
+    RotateComponent, ScaleComponent, SkewComponent, ToTyped, TransformComponent,
+    TranslateComponent, TypedValue,
 };
 use crate::values::computed::length::Length as ComputedLength;
 use crate::values::computed::length::LengthPercentage as ComputedLengthPercentage;
+use crate::values::computed::transform::Matrix3D as ComputedMatrix3D;
 use crate::values::specified::angle::Angle as SpecifiedAngle;
 use crate::values::specified::length::Length as SpecifiedLength;
 use crate::values::specified::length::LengthPercentage as SpecifiedLengthPercentage;
@@ -337,7 +339,7 @@ impl<Angle, Number, Length, Integer, LengthPercentage> ToTransformComponent
     for TransformOperation<Angle, Number, Length, Integer, LengthPercentage>
 where
     Angle: Zero + ToTyped,
-    Number: PartialEq + ToTyped,
+    Number: PartialEq + ToFloat + ToTyped,
     Length: ToTyped,
     LengthPercentage: Zero + ToTyped + ZeroNoPercent,
 {
@@ -346,6 +348,26 @@ where
 
         // https://drafts.css-houdini.org/css-typed-om-1/#reify-a-transform-function
         let component = match *self {
+            Matrix(ref m) => TransformComponent::Matrix(MatrixComponent {
+                #[cfg_attr(rustfmt, rustfmt_skip)]
+                matrix: ComputedMatrix3D {
+                    m11: m.a.to_f32()?, m12: m.b.to_f32()?, m13: 0.0, m14: 0.0,
+                    m21: m.c.to_f32()?, m22: m.d.to_f32()?, m23: 0.0, m24: 0.0,
+                    m31: 0.0, m32: 0.0, m33: 1.0, m34: 0.0,
+                    m41: m.e.to_f32()?, m42: m.f.to_f32()?, m43: 0.0, m44: 1.0,
+                },
+                is_2d: true,
+            }),
+            Matrix3D(ref m) => TransformComponent::Matrix(MatrixComponent {
+                #[cfg_attr(rustfmt, rustfmt_skip)]
+                matrix: ComputedMatrix3D {
+                    m11: m.m11.to_f32()?, m12: m.m12.to_f32()?, m13: m.m13.to_f32()?, m14: m.m14.to_f32()?,
+                    m21: m.m21.to_f32()?, m22: m.m22.to_f32()?, m23: m.m23.to_f32()?, m24: m.m24.to_f32()?,
+                    m31: m.m31.to_f32()?, m32: m.m32.to_f32()?, m33: m.m33.to_f32()?, m34: m.m34.to_f32()?,
+                    m41: m.m41.to_f32()?, m42: m.m42.to_f32()?, m43: m.m43.to_f32()?, m44: m.m44.to_f32()?,
+                },
+                is_2d: false,
+            }),
             Skew(ref theta_x, ref theta_y) => TransformComponent::Skew(SkewComponent {
                 ax: theta_x.to_numeric_value().ok_or(())?,
                 ay: theta_y.to_numeric_value().ok_or(())?,

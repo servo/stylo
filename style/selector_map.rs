@@ -46,7 +46,6 @@ pub type RelevantAttributes = thin_vec::ThinVec<LocalName>;
 /// these pseudo-class states.
 const RARE_PSEUDO_CLASS_STATES: ElementState = ElementState::from_bits_retain(
     ElementState::FULLSCREEN.bits()
-        | ElementState::PICTURE_IN_PICTURE.bits()
         | ElementState::VISITED_OR_UNVISITED.bits()
         | ElementState::URLTARGET.bits()
         | ElementState::INERT.bits()

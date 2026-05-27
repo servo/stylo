@@ -6,7 +6,10 @@
 //!
 //! https://drafts.css-houdini.org/css-typed-om-1/
 
+use crate::derives::*;
+use crate::values::computed::url::ComputedUrl;
 use crate::values::generics::transform::GenericMatrix3D;
+use crate::values::specified::url::SpecifiedUrl;
 use crate::values::CSSFloat;
 use crate::{One, Zero};
 use app_units::Au;
@@ -405,6 +408,28 @@ pub enum TransformComponent {
 /// represents a `<transform-list>` as an ordered list of transform components.
 pub type TransformValue = ThinVec<TransformComponent>;
 
+/// An image value used by the Typed OM.
+///
+/// This corresponds to `CSSImageValue` in the Typed OM specification.
+///
+/// `CSSImageValue` objects represent values for properties that take
+/// `<image>` values.
+#[derive(Clone, Debug, ToCss)]
+#[repr(C)]
+pub enum ImageValue {
+    /// A specified image URL value.
+    ///
+    /// Relative URLs are preserved and continue to resolve against the
+    /// originating stylesheet or document when later used.
+    Specified(SpecifiedUrl),
+
+    /// A computed image URL value.
+    ///
+    /// Computed URLs are already resolved according to normal CSS computed
+    /// value processing.
+    Computed(ComputedUrl),
+}
+
 /// A property-agnostic representation of a value, used by Typed OM.
 ///
 /// `TypedValue` is the internal counterpart of the various `CSSStyleValue`
@@ -436,6 +461,11 @@ pub enum TypedValue {
     ///
     /// This corresponds to `CSSTransformValue` in the Typed OM specification.
     Transform(TransformValue),
+
+    /// An image value.
+    ///
+    /// This corresponds to `CSSImageValue` in the Typed OM specification.
+    Image(ImageValue),
 }
 
 /// A list of property-agnostic values used by the Typed OM.

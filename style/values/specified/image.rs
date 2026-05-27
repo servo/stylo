@@ -11,6 +11,7 @@ use crate::color::mix::ColorInterpolationMethod;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::stylesheets::CorsMode;
+use crate::typed_om::{ImageValue, KeywordValue, ToTyped, TypedValue};
 use crate::values::generics::color::{ColorMixFlags, GenericLightDark};
 use crate::values::generics::image::{
     self as generic, Circle, Ellipse, GradientCompatMode, ShapeExtent,
@@ -31,8 +32,9 @@ use cssparser::{match_ignore_ascii_case, Delimiter, Parser, Token};
 use selectors::parser::SelectorParseErrorKind;
 use std::cmp::Ordering;
 use std::fmt::{self, Write};
-use style_traits::{CssType, CssWriter, KeywordsCollectFn, ParseError};
+use style_traits::{CssString, CssType, CssWriter, KeywordsCollectFn, ParseError};
 use style_traits::{SpecifiedValueInfo, StyleParseErrorKind, ToCss};
+use thin_vec::ThinVec;
 
 #[inline]
 fn gradient_color_interpolation_method_enabled() -> bool {
@@ -42,6 +44,22 @@ fn gradient_color_interpolation_method_enabled() -> bool {
 /// Specified values for an image according to CSS-IMAGES.
 /// <https://drafts.csswg.org/css-images/#image-values>
 pub type Image = generic::Image<Gradient, SpecifiedUrl, Color, Percentage, Resolution>;
+
+impl ToTyped for Image {
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        match *self {
+            Image::None => {
+                dest.push(TypedValue::Keyword(KeywordValue(CssString::from("none"))));
+                Ok(())
+            },
+            Image::Url(ref url) => {
+                dest.push(TypedValue::Image(ImageValue::Specified(url.clone())));
+                Ok(())
+            },
+            _ => Err(()),
+        }
+    }
+}
 
 // Images should remain small, see https://github.com/servo/servo/pull/18430
 size_of_test!(Image, 16);

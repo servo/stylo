@@ -1537,6 +1537,21 @@ impl LengthPercentage {
             AllowAnchorPositioningFunctions::No,
         )
     }
+
+    /// Computes this specified value without style context. This fails for calc and non-px units.
+    pub fn compute_without_context(&self) -> Option<computed::LengthPercentage> {
+        use crate::values::normalize;
+        match self {
+            Self::Length(ref length) => length
+                .to_computed_pixel_length_without_context()
+                .map(|v| computed::LengthPercentage::new_length(computed::Length::new(v)))
+                .ok(),
+            Self::Percentage(ref pc) => Some(computed::LengthPercentage::new_percent(
+                computed::Percentage(normalize(pc.get())),
+            )),
+            _ => None,
+        }
+    }
 }
 
 impl Zero for LengthPercentage {

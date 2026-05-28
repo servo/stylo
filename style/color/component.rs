@@ -22,7 +22,7 @@ use crate::{
     },
 };
 use cssparser::{color::OPAQUE, Parser, Token};
-use style_traits::{ParseError, ToCss};
+use style_traits::{ParseError, ToCss, StyleParseErrorKind};
 
 /// A single color component.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
@@ -97,6 +97,9 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
                 });
                 let mut node = CalcNode::parse(context, input, function, allow)?;
                 node.simplify_and_sort();
+                if node.unit().is_err() {
+                    return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                }
                 Ok(Self::Calc(Box::new(node)))
             },
             ref t => ValueType::try_from_token(t)

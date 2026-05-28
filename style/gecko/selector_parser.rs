@@ -227,6 +227,9 @@ impl NonTSPseudoClass {
         if matches!(*self, Self::Heading(..)) {
             return static_prefs::pref!("dom.headingoffset.enabled");
         }
+        if matches!(*self, Self::PictureInPicture) {
+            return static_prefs::pref!("dom.media-pip.enabled");
+        }
         if matches!(
             *self,
             Self::Playing

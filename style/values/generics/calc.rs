@@ -363,15 +363,12 @@ bitflags! {
         const TIME = 1 << 3;
         /// <resolution>
         const RESOLUTION = 1 << 4;
-        /// A component of a color (r, g, b, h, s, l, alpha, etc.)
-        const COLOR_COMPONENT = 1 << 5;
-
         /// <length-percentage>
         const LENGTH_PERCENTAGE = Self::LENGTH.bits() | Self::PERCENTAGE.bits();
         // NOTE: When you add to this, make sure to make Atan2 deal with these.
         /// Allow all units.
         const ALL = Self::LENGTH.bits() | Self::PERCENTAGE.bits() | Self::ANGLE.bits() |
-            Self::TIME.bits() | Self::RESOLUTION.bits() | Self::COLOR_COMPONENT.bits();
+            Self::TIME.bits() | Self::RESOLUTION.bits();
     }
 }
 
@@ -566,7 +563,8 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
     #[inline]
     pub fn is_product_distributive(&self) -> bool {
         match self {
-            Self::Leaf(l) => l.unit() != CalcUnits::COLOR_COMPONENT,
+            // If there's no value, we can't distribute the product.
+            Self::Leaf(l) => l.unitless_value().is_some(),
             Self::Sum(children) => children.iter().all(|c| c.is_product_distributive()),
             _ => false,
         }

@@ -383,17 +383,15 @@ impl NonCustomPropertyId {
             % if engine == "gecko":
                 unsafe { structs::nsCSSProps_gPropertyEnabled[self.0 as usize] }
             % else:
-                static PREFERENCES: std::sync::LazyLock<[bool; ${len(data.longhands) + len(data.shorthands) + len(data.all_aliases())}]> = std::sync::LazyLock::new(|| [
-                    % for property in data.longhands + data.shorthands + data.all_aliases():
-                        <% preference = getattr(property, "servo_pref") %>
-                        % if preference:
-                    static_prefs::pref!("${preference}"), \
-                        % else:
-                    true, \
-                        % endif %
-                    % endfor
-                    ]);
-                    PREFERENCES[self.0 as usize]
+                match self.0 {
+                % for (index, property) in enumerate(data.longhands + data.shorthands + data.all_aliases()):
+                    <% preference = getattr(property, "servo_pref") %>
+                    % if preference:
+                        ${index} => static_prefs::pref!("${preference}"),
+                    % endif %
+                % endfor
+                    _ => true,
+                }
             % endif
         };
 

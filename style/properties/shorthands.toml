@@ -408,6 +408,59 @@ sub_properties = ["border-top-left-radius", "border-top-right-radius", "border-b
 spec = "https://drafts.csswg.org/css-backgrounds/#border-radius"
 extra_prefixes = ["webkit"]
 
+[corner-shape]
+sub_properties = ["corner-top-left-shape", "corner-top-right-shape", "corner-bottom-right-shape", "corner-bottom-left-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+
+[corner-top-shape]
+sub_properties = ["corner-top-left-shape", "corner-top-right-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+kind = "two_properties"
+
+[corner-right-shape]
+sub_properties = ["corner-top-right-shape", "corner-bottom-right-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-right-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+kind = "two_properties"
+
+[corner-bottom-shape]
+sub_properties = ["corner-bottom-left-shape", "corner-bottom-right-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+kind = "two_properties"
+
+[corner-left-shape]
+sub_properties = ["corner-top-left-shape", "corner-bottom-left-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-left-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+kind = "two_properties"
+
+[corner-block-start-shape]
+sub_properties = ["corner-start-start-shape", "corner-start-end-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-start-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+kind = "two_properties"
+
+[corner-block-end-shape]
+sub_properties = ["corner-end-start-shape", "corner-end-end-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-end-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+kind = "two_properties"
+
+[corner-inline-start-shape]
+sub_properties = ["corner-start-start-shape", "corner-end-start-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-start-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+kind = "two_properties"
+
+[corner-inline-end-shape]
+sub_properties = ["corner-start-end-shape", "corner-end-end-shape"]
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-end-shape"
+gecko_pref = "layout.css.corner-shape.enabled"
+kind = "two_properties"
+
 [outline]
 sub_properties = ["outline-color", "outline-style", "outline-width"]
 spec = "https://drafts.csswg.org/css-ui/#propdef-outline"

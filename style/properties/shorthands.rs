@@ -231,6 +231,44 @@ pub mod border_radius {
     }
 }
 
+pub mod corner_shape {
+    pub use crate::properties::generated::shorthands::corner_shape::*;
+
+    use super::*;
+    use crate::values::generics::rect::Rect;
+    use crate::values::specified::CornerShape;
+
+    /// Parses 1-4 `<corner-shape-value>` tokens with the standard CSS 4-side
+    /// shorthand expansion (top, right, bottom, left).
+    pub fn parse_value<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        let rect = Rect::parse_with(context, input, CornerShape::parse)?;
+        Ok(expanded! {
+            corner_top_left_shape: rect.0,
+            corner_top_right_shape: rect.1,
+            corner_bottom_right_shape: rect.2,
+            corner_bottom_left_shape: rect.3,
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a> {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+        where
+            W: fmt::Write,
+        {
+            Rect::new(
+                self.corner_top_left_shape,
+                self.corner_top_right_shape,
+                self.corner_bottom_right_shape,
+                self.corner_bottom_left_shape,
+            )
+            .to_css(dest)
+        }
+    }
+}
+
 pub mod border_image {
     pub use crate::properties::generated::shorthands::border_image::*;
 

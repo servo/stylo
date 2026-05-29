@@ -749,7 +749,6 @@ pub struct PositionTryFallbacksList(
     pub crate::ArcSlice<PositionTryFallbacksItem>,
 );
 
-
 impl IsTreeScoped for PositionTryFallbacksList {
     fn is_tree_scoped(&self) -> bool {
         !self.is_none()

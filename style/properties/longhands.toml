@@ -3145,6 +3145,98 @@ logical_group = "border-radius"
 logical = true
 affects = "paint"
 
+[corner-top-left-shape]
+type = "CornerShape"
+initial = "computed::CornerShape::round()"
+initial_specified_value = "specified::CornerShape::round()"
+struct = "border"
+gecko_pref = "layout.css.corner-shape.enabled"
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-left-shape"
+gecko_ffi_name = "mCornerShape.top_left"
+logical_group = "corner-shape"
+affects = "paint"
+
+[corner-top-right-shape]
+type = "CornerShape"
+initial = "computed::CornerShape::round()"
+initial_specified_value = "specified::CornerShape::round()"
+struct = "border"
+gecko_pref = "layout.css.corner-shape.enabled"
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-right-shape"
+gecko_ffi_name = "mCornerShape.top_right"
+logical_group = "corner-shape"
+affects = "paint"
+
+[corner-bottom-right-shape]
+type = "CornerShape"
+initial = "computed::CornerShape::round()"
+initial_specified_value = "specified::CornerShape::round()"
+struct = "border"
+gecko_pref = "layout.css.corner-shape.enabled"
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-right-shape"
+gecko_ffi_name = "mCornerShape.bottom_right"
+logical_group = "corner-shape"
+affects = "paint"
+
+[corner-bottom-left-shape]
+type = "CornerShape"
+initial = "computed::CornerShape::round()"
+initial_specified_value = "specified::CornerShape::round()"
+struct = "border"
+gecko_pref = "layout.css.corner-shape.enabled"
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-left-shape"
+gecko_ffi_name = "mCornerShape.bottom_left"
+logical_group = "corner-shape"
+affects = "paint"
+
+[corner-start-start-shape]
+type = "CornerShape"
+initial = "computed::CornerShape::round()"
+initial_specified_value = "specified::CornerShape::round()"
+struct = "border"
+gecko_pref = "layout.css.corner-shape.enabled"
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-start-start-shape"
+gecko_ffi_name = "mCornerShape.start_start"
+logical_group = "corner-shape"
+logical = true
+affects = "paint"
+
+[corner-start-end-shape]
+type = "CornerShape"
+initial = "computed::CornerShape::round()"
+initial_specified_value = "specified::CornerShape::round()"
+struct = "border"
+gecko_pref = "layout.css.corner-shape.enabled"
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-start-end-shape"
+gecko_ffi_name = "mCornerShape.start_end"
+logical_group = "corner-shape"
+logical = true
+affects = "paint"
+
+[corner-end-start-shape]
+type = "CornerShape"
+initial = "computed::CornerShape::round()"
+initial_specified_value = "specified::CornerShape::round()"
+struct = "border"
+gecko_pref = "layout.css.corner-shape.enabled"
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-end-start-shape"
+gecko_ffi_name = "mCornerShape.end_start"
+logical_group = "corner-shape"
+logical = true
+affects = "paint"
+
+[corner-end-end-shape]
+type = "CornerShape"
+initial = "computed::CornerShape::round()"
+initial_specified_value = "specified::CornerShape::round()"
+struct = "border"
+gecko_pref = "layout.css.corner-shape.enabled"
+spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-end-end-shape"
+gecko_ffi_name = "mCornerShape.end_end"
+logical_group = "corner-shape"
+logical = true
+affects = "paint"
+
 [margin-top]
 type = "Margin"
 initial = "computed::Margin::zero()"

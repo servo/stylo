@@ -123,6 +123,13 @@ bitflags! {
 
         /// Whether grid-auto-flow is author-specified.
         const HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW = 1 << 23;
+
+        /// Whether this style has used font relative units. Note that this is different than the
+        /// FONT_METRICS bits, which don't include rem / em etc.
+        const USES_FONT_RELATIVE_UNITS = 1 << 24;
+
+        /// Whether this style depends on font relative units in container queries.
+        const USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES = 1 << 25;
     }
 }
 
@@ -160,6 +167,7 @@ impl ComputedValueFlags {
         Self::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES
             | Self::CONSIDERED_NONTRIVIAL_SCOPED_STYLE
             | Self::DEPENDS_ON_CONTAINER_STYLE_QUERY
+            | Self::USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES
     }
 
     /// Returns the flags that are always propagated to descendants.

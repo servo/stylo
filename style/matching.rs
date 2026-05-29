@@ -987,78 +987,71 @@ pub trait MatchMethods: TElement {
         let is_root = new_primary_style
             .flags
             .contains(ComputedValueFlags::IS_ROOT_ELEMENT_STYLE);
-        let is_container = !new_primary_style
-            .get_box()
-            .clone_container_type()
-            .is_normal();
-        if is_root || is_container {
-            let device = context.shared.stylist.device();
-            let old_style = old_styles.primary.as_ref();
-            let new_font_size = new_primary_style.get_font().clone_font_size();
-            let old_font_size = old_style.map(|s| s.get_font().clone_font_size());
 
+        let device = context.shared.stylist.device();
+        let new_font_size = new_primary_style.get_font().clone_font_size();
+        let new_container_type = new_primary_style.clone_container_type();
+        let is_container = !new_container_type.is_normal();
+
+        let old_style = old_styles.primary.as_ref();
+        let old_font_size = old_style.map(|s| s.get_font().clone_font_size());
+        let (old_line_height, new_line_height) = if is_root || is_container {
+            // TODO(emilio): Check for line height / other metric changes for all elements, not just
+            // the root and containers. This causes a speedometer regression tho, see bug 2024049.
             // For line-height, we want the fully resolved value, as `normal` also depends on other
             // font properties.
-            let new_line_height = device
-                .calc_line_height(
-                    &new_primary_style.get_font(),
-                    new_primary_style.writing_mode,
-                    None,
-                )
-                .0;
-            let old_line_height = old_style.map(|s| {
-                device
-                    .calc_line_height(&s.get_font(), s.writing_mode, None)
-                    .0
-            });
+            (
+                old_style.map(|s| {
+                    device
+                        .calc_line_height(&s.get_font(), s.writing_mode, None)
+                        .0
+                }),
+                Some(
+                    device
+                        .calc_line_height(
+                            &new_primary_style.get_font(),
+                            new_primary_style.writing_mode,
+                            None,
+                        )
+                        .0,
+                ),
+            )
+        } else {
+            (None, None)
+        };
+        let font_size_changed = old_font_size.is_none_or(|fs| fs != new_font_size);
+        let line_height_changed = old_line_height != new_line_height;
+        // Update root font-relative units. If any of these unit values changed
+        // since last time, ensure that we recascade the entire tree.
+        if is_root {
+            debug_assert!(self.owner_doc_matches_for_testing(device));
+            device.set_root_style(new_primary_style);
 
-            // Update root font-relative units. If any of these unit values changed
-            // since last time, ensure that we recascade the entire tree.
-            if is_root {
-                debug_assert!(self.owner_doc_matches_for_testing(device));
-                device.set_root_style(new_primary_style);
-
-                // Update root font size for rem units
-                if old_font_size != Some(new_font_size) {
-                    let size = new_font_size.computed_size();
-                    device.set_root_font_size(new_primary_style.effective_zoom.unzoom(size.px()));
-                    if device.used_root_font_size() {
-                        child_restyle_hint |= RestyleHint::recascade_subtree();
-                    }
-                }
-
-                // Update root line height for rlh units
-                if old_line_height != Some(new_line_height) {
-                    device.set_root_line_height(
-                        new_primary_style
-                            .effective_zoom
-                            .unzoom(new_line_height.px()),
-                    );
-                    if device.used_root_line_height() {
-                        child_restyle_hint |= RestyleHint::recascade_subtree();
-                    }
-                }
-
-                // Update root font metrics for rcap, rch, rex, ric units. Since querying
-                // font metrics can be an expensive call, they are only updated if these
-                // units are used in the document.
-                if device.used_root_font_metrics() && device.update_root_font_metrics() {
-                    child_restyle_hint |= RestyleHint::recascade_subtree();
-                }
+            // Update root font size for rem units
+            if font_size_changed {
+                let size = new_font_size.computed_size();
+                device.set_root_font_size(new_primary_style.effective_zoom.unzoom(size.px()));
             }
 
-            if is_container
-                && (old_font_size.is_some_and(|old| old != new_font_size)
-                    || old_line_height.is_some_and(|old| old != new_line_height))
-            {
-                // TODO(emilio): Maybe only do this if we were matched
-                // against relative font sizes?
-                // Also, maybe we should do this as well for font-family /
-                // etc changes (for ex/ch/ic units to work correctly)? We
-                // should probably do the optimization mentioned above if
-                // so.
-                child_restyle_hint |= RestyleHint::restyle_subtree();
+            // Update root line height for rlh units
+            if line_height_changed {
+                device.set_root_line_height(
+                    new_primary_style
+                        .effective_zoom
+                        .unzoom(new_line_height.unwrap().px()),
+                );
             }
+
+            // Update root font metrics for rcap, rch, rex, ric units. Since querying
+            // font metrics can be an expensive call, they are only updated if these
+            // units are used in the document.
+            if device.used_root_font_metrics() && device.update_root_font_metrics() {
+                child_restyle_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT;
+            }
+        }
+
+        if font_size_changed || line_height_changed {
+            child_restyle_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT;
         }
 
         if context.shared.stylist.quirks_mode() == QuirksMode::Quirks {
@@ -1091,7 +1084,6 @@ pub trait MatchMethods: TElement {
         };
 
         let old_container_type = old_primary_style.clone_container_type();
-        let new_container_type = new_primary_style.clone_container_type();
         if old_container_type != new_container_type && !new_container_type.is_size_container_type()
         {
             // Stopped being a size container. Re-evaluate container queries and units on all our descendants.

@@ -325,6 +325,10 @@ impl ContainerCondition {
                     invalidation_flags
                         .insert(ComputedValueFlags::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES);
                 }
+                if flags.contains(ComputedValueFlags::USES_FONT_RELATIVE_UNITS) {
+                    invalidation_flags
+                        .insert(ComputedValueFlags::USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES);
+                }
                 matches
             },
         )

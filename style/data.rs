@@ -369,12 +369,40 @@ fn needs_to_match_self(hint: RestyleHint, style: &ComputedValues) -> bool {
     if hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style() {
         return true;
     }
+    if hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT)
+        && style
+            .flags
+            .intersects(ComputedValueFlags::USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES)
+    {
+        return true;
+    }
     hint.intersects(
         RestyleHint::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES
             | RestyleHint::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER,
     ) && style
         .flags
-        .contains(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY)
+        .intersects(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY)
+}
+
+fn needs_to_recascade_self(hint: RestyleHint, style: &ComputedValues) -> bool {
+    if hint.intersects(RestyleHint::RECASCADE_SELF) {
+        return true;
+    }
+    if hint.intersects(RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE)
+        && style
+            .flags
+            .contains(ComputedValueFlags::INHERITS_RESET_STYLE)
+    {
+        return true;
+    }
+    if hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT)
+        && style
+            .flags
+            .contains(ComputedValueFlags::USES_FONT_RELATIVE_UNITS)
+    {
+        return true;
+    }
+    return false;
 }
 
 impl ElementData {
@@ -503,12 +531,7 @@ impl ElementData {
             ));
         }
 
-        let needs_to_recascade_self = hint.intersects(RestyleHint::RECASCADE_SELF)
-            || (hint.intersects(RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE)
-                && style
-                    .flags
-                    .contains(ComputedValueFlags::INHERITS_RESET_STYLE));
-        if needs_to_recascade_self {
+        if needs_to_recascade_self(hint, style) {
             return Some(RestyleKind::CascadeOnly);
         }
 
@@ -545,12 +568,7 @@ impl ElementData {
             ));
         }
 
-        let needs_to_recascade_self = hint.intersects(RestyleHint::RECASCADE_SELF)
-            || (hint.intersects(RestyleHint::RECASCADE_SELF_IF_INHERIT_RESET_STYLE)
-                && style
-                    .flags
-                    .contains(ComputedValueFlags::INHERITS_RESET_STYLE));
-        if needs_to_recascade_self {
+        if needs_to_recascade_self(hint, style) {
             return Some(RestyleKind::CascadeOnly);
         }
         return None;

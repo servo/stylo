@@ -742,6 +742,10 @@ impl NoCalcLength {
             metrics.ic_width_or_default(reference_font_size.used_size())
         }
 
+        context
+            .builder
+            .add_flags(ComputedValueFlags::USES_FONT_RELATIVE_UNITS);
+
         let reference_font_size = base_size.resolve(context);
         let length = self.value;
         match self.unit {

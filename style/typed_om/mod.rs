@@ -497,10 +497,16 @@ pub struct TypedValueList {
 ///   automatically reified as [`TypedValue::Keyword`], using the same
 ///   serialization logic as [`ToCss`].
 ///
-/// * Structs and data-carrying variants: By default, the derive attempts to
-///   call `.to_typed()` recursively on supported fields or variant payloads,
-///   producing [`TypedValue`]s when possible. This recursion can be disabled
-///   with `#[typed(skip_derive_fields)]`.
+/// * Bitflags structs: Structs annotated with
+///   `#[css(bitflags(single = "...", mixed = "...", overlapping_bits))]`
+///   are automatically reified as [`TypedValue::Keyword`] values when they
+///   can be represented as a single CSS keyword. Values that would serialize
+///   to multiple CSS keywords are treated as unsupported.
+///
+/// * Structs and data-carrying variants: Unless treated specially (such as
+///   bitflags structs), the derive attempts to call `.to_typed()` recursively
+///   on supported fields or variant payloads, producing [`TypedValue`]s when
+///   possible.
 ///
 /// * Other cases: If no automatic mapping is defined, or recursion is
 ///   explicitly disabled, the derived implementation falls back to the
@@ -511,6 +517,15 @@ pub struct TypedValueList {
 /// categories such as numeric, color, and transform types.
 ///
 /// Summary of derive attributes recognized by `#[derive(ToTyped)]`:
+///
+/// * `#[css(bitflags(single = "...", mixed = "...", overlapping_bits))]` on a
+///   struct generates keyword reification for CSS bitflags types. Values that
+///   can be represented as a single CSS keyword are reified as
+///   [`TypedValue::Keyword`]; values that would serialize to multiple CSS
+///   keywords are treated as unsupported and return `Err(())`.
+///
+///   `overlapping_bits` is supported for bitflags where one keyword subsumes
+///   other internal bits, such as `contain: size`.
 ///
 /// * `#[typed(skip_derive_fields)]` on the type disables recursion for
 ///   structs and data-carrying enum variants.

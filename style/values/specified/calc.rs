@@ -916,8 +916,11 @@ impl CalcNode {
                     Ok(Self::MinMax(arguments.into(), op))
                 },
                 MathFunction::Sin | MathFunction::Cos | MathFunction::Tan => {
-                    let node =
-                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::ANGLE))?;
+                    let node = Self::parse_argument(
+                        context,
+                        input,
+                        allowed.new_including(CalcUnits::ANGLE),
+                    )?;
                     Ok(match function {
                         MathFunction::Sin => Self::Sin(Box::new(node)),
                         MathFunction::Cos => Self::Cos(Box::new(node)),
@@ -926,8 +929,7 @@ impl CalcNode {
                     })
                 },
                 MathFunction::Asin | MathFunction::Acos | MathFunction::Atan => {
-                    let node =
-                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    let node = Self::parse_argument(context, input, allowed)?;
                     Ok(match function {
                         MathFunction::Asin => Self::Asin(Box::new(node)),
                         MathFunction::Acos => Self::Acos(Box::new(node)),
@@ -947,16 +949,13 @@ impl CalcNode {
                     Ok(Self::Atan2(Box::new(a), Box::new(b)))
                 },
                 MathFunction::Pow => {
-                    let a =
-                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    let a = Self::parse_argument(context, input, allowed)?;
                     input.expect_comma()?;
-                    let b =
-                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    let b = Self::parse_argument(context, input, allowed)?;
                     Ok(Self::Pow(Box::new(a), Box::new(b)))
                 },
                 MathFunction::Sqrt => {
-                    let a =
-                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    let a = Self::parse_argument(context, input, allowed)?;
                     Ok(Self::Sqrt(Box::new(a)))
                 },
                 MathFunction::Hypot => {
@@ -968,23 +967,17 @@ impl CalcNode {
                     Ok(Self::Hypot(arguments.into()))
                 },
                 MathFunction::Log => {
-                    let a =
-                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    let a = Self::parse_argument(context, input, allowed)?;
                     let b = input
                         .try_parse(|input| {
                             input.expect_comma()?;
-                            Self::parse_argument(
-                                context,
-                                input,
-                                AllowParse::new(CalcUnits::empty()),
-                            )
+                            Self::parse_argument(context, input, allowed)
                         })
                         .ok();
                     Ok(Self::Log(Box::new(a), b.map(Box::new).into()))
                 },
                 MathFunction::Exp => {
-                    let a =
-                        Self::parse_argument(context, input, AllowParse::new(CalcUnits::empty()))?;
+                    let a = Self::parse_argument(context, input, allowed)?;
                     Ok(Self::Exp(Box::new(a)))
                 },
                 MathFunction::Abs => {

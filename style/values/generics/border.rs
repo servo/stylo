@@ -298,7 +298,7 @@ impl<S: Clone> CornerShapeRect<S> {
             top_left: s.clone(),
             top_right: s.clone(),
             bottom_right: s.clone(),
-            bottom_left: s.clone(),
+            bottom_left: s,
         }
     }
 }

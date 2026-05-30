@@ -190,6 +190,7 @@ pub enum UserSelect {
     ToCss,
     ToResolvedValue,
     ToShmem,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum CursorKind {

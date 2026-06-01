@@ -1112,6 +1112,7 @@ bitflags! {
     ToShmem,
 )]
 #[repr(C, u8)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 /// Set of variant alternates
 pub enum VariantAlternates {
     /// Enables display of stylistic alternates
@@ -1151,12 +1152,23 @@ pub enum VariantAlternates {
 )]
 #[repr(transparent)]
 #[typed(todo_derive_fields)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 /// List of Variant Alternates
 pub struct FontVariantAlternates(
     #[css(if_empty = "normal", iterable)] crate::OwnedSlice<VariantAlternates>,
 );
 
 impl FontVariantAlternates {
+    /// Returns true if the list is empty.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Iterates over all alternates in the list.
+    pub fn iter(&self) -> impl Iterator<Item=&VariantAlternates> {
+        self.0.iter()
+    }
+
     /// Returns the length of all variant alternates.
     pub fn len(&self) -> usize {
         self.0.iter().fold(0, |acc, alternate| match *alternate {

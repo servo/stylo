@@ -354,10 +354,4 @@ impl<N, L> LineHeight<N, L> {
     pub fn normal() -> Self {
         LineHeight::Normal
     }
-
-    /// Returns whether the value is `normal`.
-    #[inline]
-    pub fn is_normal(&self) -> bool {
-        matches!(self, Self::Normal)
-    }
 }

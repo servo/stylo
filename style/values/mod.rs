@@ -546,6 +546,7 @@ impl<A: Debug, B: Debug> Debug for Either<A, B> {
     ToShmem,
 )]
 #[repr(C)]
+#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct CustomIdent(pub Atom);
 
 impl CustomIdent {

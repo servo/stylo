@@ -86,6 +86,9 @@ enabled_in = "ua"
 pref = "dom.select.customizable_select.enabled"
 argument = "AtomIdent"
 is_element_backed = true
+[checkmark]
+pref = "dom.select.customizable_select.enabled"
+is_tree_abiding = true
 
 # HTML5 Forms pseudo elements
 [-moz-number-spin-box]

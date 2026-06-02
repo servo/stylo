@@ -1252,15 +1252,6 @@ spec = "https://drafts.csswg.org/css2/visudet.html#propdef-line-height"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
-[link-parameters]
-type = "LinkParameters"
-initial = "computed::LinkParameters::none()"
-struct = "ui"
-animation_type = "discrete"
-spec = "https://drafts.csswg.org/css-link-params-1/#propdef-link-parameters"
-affects = "paint"
-gecko_pref = "layout.css.link-parameters.enabled"
-
 [list-style-image]
 type = "Image"
 initial = "computed::Image::None"

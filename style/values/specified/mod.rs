@@ -83,7 +83,6 @@ pub use self::number::{
 };
 pub use self::outline::OutlineStyle;
 pub use self::page::{PageName, PageOrientation, PageSize, PageSizeOrientation, PaperSize};
-pub use self::param::LinkParameters;
 pub use self::percentage::{NoCalcPercentage, NonNegativePercentage, Percentage};
 pub use self::position::{
     AnchorFunction, AnchorName, AnchorNameIdent, AspectRatio, GridAutoFlow, GridTemplateAreas,
@@ -144,7 +143,6 @@ pub mod motion;
 pub mod number;
 pub mod outline;
 pub mod page;
-pub mod param;
 pub mod percentage;
 pub mod position;
 pub mod ratio;

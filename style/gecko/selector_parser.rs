@@ -204,8 +204,8 @@ impl NonTSPseudoClass {
                 match *self {
                     $(NonTSPseudoClass::$name => check_flag!($flags),)*
                     NonTSPseudoClass::MozLocaleDir(_) => check_flag!(PSEUDO_CLASS_ENABLED_IN_UA_SHEETS_AND_CHROME),
+                    NonTSPseudoClass::Heading(_) => check_flag!(PSEUDO_CLASS_ENABLED_IN_UA_SHEETS),
                     NonTSPseudoClass::CustomState(_) |
-                    NonTSPseudoClass::Heading(_) |
                     NonTSPseudoClass::Lang(_) |
                     NonTSPseudoClass::ActiveViewTransitionType(_) |
                     NonTSPseudoClass::Dir(_) => false,

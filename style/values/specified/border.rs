@@ -87,8 +87,22 @@ pub type BorderImageSideWidth =
 pub type BorderImageSlice = GenericBorderImageSlice<NonNegativeNumberOrPercentage>;
 
 impl ToTyped for BorderImageSlice {
-    fn to_typed(&self, _dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        return Err(());
+    // Note: The specification does not currently define how border image slice
+    // should be reified into Typed OM. The current behavior follows existing
+    // WPT coverage (border-image-slice.html). Syncing spec with UA/WPT
+    // behavior tracked in https://github.com/w3c/csswg-drafts/issues/13907
+    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        if self.fill {
+            return Err(());
+        }
+
+        let offsets = &self.offsets;
+
+        if !offsets.all_sides_equal() {
+            return Err(());
+        }
+
+        offsets.0.to_typed(dest)
     }
 }
 

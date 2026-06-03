@@ -246,7 +246,6 @@ impl<L: ToCss + PartialEq> ToCss for GenericTextDecorationInset<L> {
     ToShmem,
     ToTyped,
 )]
-#[typed(todo_derive_fields)]
 pub struct GenericTextIndent<LengthPercentage> {
     /// The amount of indent to be applied to the inline-start of the first line.
     pub length: LengthPercentage,

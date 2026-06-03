@@ -4,8 +4,16 @@
 
 //! Computed types for CSS borders.
 
+use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::computed::length::NonNegativeLengthOrNumber;
 use crate::values::generics::rect::Rect;
+use thin_vec::ThinVec;
 
 /// A specified rectangle made of four `<length-or-number>` values.
 pub type NonNegativeLengthOrNumberRect = Rect<NonNegativeLengthOrNumber>;
+
+impl ToTyped for NonNegativeLengthOrNumberRect {
+    fn to_typed(&self, _dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        return Err(());
+    }
+}

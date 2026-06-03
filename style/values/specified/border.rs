@@ -6,6 +6,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::computed::border::BorderSideWidth as ComputedBorderSideWidth;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::border::{
@@ -21,6 +22,7 @@ use app_units::Au;
 use cssparser::Parser;
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ParseError, ToCss};
+use thin_vec::ThinVec;
 
 /// A specified value for a single side of a `border-style` property.
 ///
@@ -70,6 +72,12 @@ impl BorderStyle {
 
 /// A specified value for the `border-image-width` property.
 pub type BorderImageWidth = Rect<BorderImageSideWidth>;
+
+impl ToTyped for BorderImageWidth {
+    fn to_typed(&self, _dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        return Err(());
+    }
+}
 
 /// A specified value for a single side of a `border-image-width` property.
 pub type BorderImageSideWidth =

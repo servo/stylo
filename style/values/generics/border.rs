@@ -60,10 +60,8 @@ pub use self::GenericBorderImageSideWidth as BorderImageSideWidth;
     ToCss,
     ToResolvedValue,
     ToShmem,
-    ToTyped,
 )]
 #[repr(C)]
-#[typed(todo_derive_fields)]
 pub struct GenericBorderImageSlice<NumberOrPercentage> {
     /// The offsets.
     #[css(field_bound)]

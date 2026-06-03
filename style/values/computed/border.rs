@@ -108,6 +108,12 @@ pub type BorderImageSideWidth =
 /// A computed value for the `border-image-slice` property.
 pub type BorderImageSlice = GenericBorderImageSlice<NonNegativeNumberOrPercentage>;
 
+impl ToTyped for BorderImageSlice {
+    fn to_typed(&self, _dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        return Err(());
+    }
+}
+
 /// A computed value for the `border-radius` property.
 pub type BorderRadius = GenericBorderRadius<NonNegativeLengthPercentage>;
 

@@ -48,6 +48,15 @@ where
         Rect::new(v.clone(), v.clone(), v.clone(), v)
     }
 
+    /// Returns whether all four sides have the same value.
+    #[inline]
+    pub fn all_sides_equal(&self) -> bool
+    where
+        T: PartialEq,
+    {
+        self.0 == self.1 && self.1 == self.2 && self.2 == self.3
+    }
+
     /// Parses a new `Rect<T>` value with the given parse function.
     pub fn parse_with<'i, 't, Parse>(
         context: &ParserContext,

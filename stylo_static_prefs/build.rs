@@ -17,7 +17,7 @@ struct IntegerPreference {
 }
 
 fn main() -> Result<(), std::io::Error> {
-    println!("cargo::rerun-if-changed=preferences.rs");
+    println!("cargo::rerun-if-changed=preferences.toml");
     generate_code(parse_preferences()?)
 }
 

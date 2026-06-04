@@ -1153,12 +1153,14 @@ impl Length {
                     .map_err(|()| location.new_unexpected_token_error(token.clone()))
             },
             Token::Number { value, .. } if num_context.is_ok(context.parsing_mode, value) => {
-                if value != 0.
-                    && !context.parsing_mode.allows_unitless_lengths()
-                    && !allow_quirks.allowed(context.quirks_mode)
-                {
+                let allowed = context.parsing_mode.allows_unitless_lengths()
+                    || allow_quirks.allowed(context.quirks_mode)
+                    || (value == 0. && context.parsing_mode.allows_unitless_zero_lengths());
+
+                if !allowed {
                     return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
+
                 Ok(Self::new(NoCalcLength::from_px(value)))
             },
             Token::Function(ref name) => {
@@ -1423,14 +1425,15 @@ impl LengthPercentage {
                 )));
             },
             Token::Number { value, .. } if num_context.is_ok(context.parsing_mode, value) => {
-                if value != 0.
-                    && !context.parsing_mode.allows_unitless_lengths()
-                    && !allow_quirks.allowed(context.quirks_mode)
-                {
-                    return Err(location.new_unexpected_token_error(token.clone()));
-                } else {
-                    return Ok(LengthPercentage::Length(NoCalcLength::from_px(value)));
+                let allowed = context.parsing_mode.allows_unitless_lengths()
+                    || allow_quirks.allowed(context.quirks_mode)
+                    || (value == 0. && context.parsing_mode.allows_unitless_zero_lengths());
+
+                if !allowed {
+                    return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
+
+                Ok(LengthPercentage::Length(NoCalcLength::from_px(value)))
             },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;

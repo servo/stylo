@@ -259,6 +259,8 @@ bitflags! {
         /// independent.
         /// <https://drafts.css-houdini.org/css-properties-values-api-1/#ref-for-computationally-independent%E2%91%A0>
         const DISALLOW_COMPUTATIONALLY_DEPENDENT = 1 << 2;
+        /// In Typed OM; unitless zero must not be interpreted as a length.
+        const DISALLOW_UNITLESS_ZERO_LENGTH = 1 << 3;
     }
 }
 
@@ -279,6 +281,12 @@ impl ParsingMode {
     #[inline]
     pub fn allows_computational_dependence(&self) -> bool {
         !self.intersects(ParsingMode::DISALLOW_COMPUTATIONALLY_DEPENDENT)
+    }
+
+    /// Whether the parsing mode allows unitless zero lengths to be interpreted as px.
+    #[inline]
+    pub fn allows_unitless_zero_lengths(&self) -> bool {
+        !self.intersects(ParsingMode::DISALLOW_UNITLESS_ZERO_LENGTH)
     }
 }
 

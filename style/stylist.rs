@@ -13,7 +13,9 @@ use crate::custom_properties::ComputedCustomProperties;
 use crate::custom_properties::{parse_name, SpecifiedValue};
 use crate::derives::*;
 use crate::device::Device;
-use crate::dom::{TElement, TShadowRoot};
+use crate::dom::TElement;
+#[cfg(feature = "gecko")]
+use crate::dom::TShadowRoot;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{ServoStyleSetSizes, StyleRuleInclusion};
 use crate::invalidation::element::invalidation_map::{

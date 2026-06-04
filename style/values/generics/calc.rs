@@ -574,9 +574,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
     pub fn unit(&self) -> Result<CalcUnits, ()> {
         Ok(match self {
             CalcNode::Leaf(l) => l.unit(),
-            CalcNode::Negate(child) | CalcNode::Invert(child) | CalcNode::Abs(child) => {
-                child.unit()?
-            },
+            CalcNode::Negate(child) | CalcNode::Abs(child) => child.unit()?,
             CalcNode::Sum(children) => {
                 let mut unit = children.first().unwrap().unit()?;
                 for child in children.iter().skip(1) {
@@ -692,7 +690,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
                 CalcUnits::empty()
             },
-            CalcNode::Sqrt(ref c) | CalcNode::Exp(ref c) => {
+            CalcNode::Invert(ref c) | CalcNode::Sqrt(ref c) | CalcNode::Exp(ref c) => {
                 let child_unit = c.unit()?;
                 if !child_unit.is_empty() {
                     return Err(());

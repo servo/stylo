@@ -161,7 +161,6 @@ impl<T: Parse> Parse for FontSettings<T> {
 #[derive(
     Clone,
     Copy,
-    Debug,
     Eq,
     MallocSizeOf,
     PartialEq,
@@ -173,6 +172,20 @@ impl<T: Parse> Parse for FontSettings<T> {
 )]
 #[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 pub struct FontTag(pub u32);
+
+impl fmt::Debug for FontTag {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let tag_bytes = self.0.to_be_bytes();
+
+        let mut tuple = f.debug_tuple("FontTag");
+        if let Ok(utf8_tag) = str::from_utf8(&tag_bytes) {
+            tuple.field(&utf8_tag);
+        } else {
+            tuple.field(&tag_bytes);
+        };
+        tuple.finish()
+    }
+}
 
 impl ToCss for FontTag {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result

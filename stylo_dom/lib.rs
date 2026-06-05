@@ -2,12 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
+//! DOM types to be shared between Rust and C++.
+
 use bitflags::bitflags;
 use malloc_size_of::malloc_size_of_is_0;
 
-pub const HEADING_LEVEL_OFFSET: usize = 52;
+pub const HEADING_LEVEL_OFFSET: usize = 57;
 
-// DOM types to be shared between Rust and C++.
 bitflags! {
     /// Event-based element states.
     #[repr(C)]
@@ -143,10 +144,24 @@ bitflags! {
         const ACTIVE_VIEW_TRANSITION = 1u64 << 50;
         /// For :-moz-suppress-for-print-selection.
         const SUPPRESS_FOR_PRINT_SELECTION = 1u64 << 51;
+        /// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-paused
+        const PAUSED = 1u64 << 52;
+        /// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-seeking
+        const SEEKING = 1u64 << 53;
+        /// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-buffering
+        const BUFFERING = 1u64 << 54;
+        /// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-stalled
+        const STALLED = 1u64 << 55;
+        /// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-muted
+        const MUTED = 1u64 << 56;
+        /// This element is fullscreen and was requested to have keyboard lock.
+        const FULLSCREEN_KEYBOARD_LOCK = 1u64 << 57;
         /// https://drafts.csswg.org/selectors-5/#headings
         /// These 4 bits are used to pack the elements heading level into the element state
         /// Heading levels can be from 1-9 so 4 bits allows us to express the full range.
         const HEADING_LEVEL_BITS = 0b1111u64 << HEADING_LEVEL_OFFSET;
+        /// https://w3c.github.io/picture-in-picture/#css-pseudo-class
+        const PICTURE_IN_PICTURE = 1u64 << 61;
 
         /// Some convenience unions.
         const DIR_STATES = Self::LTR.bits() | Self::RTL.bits();

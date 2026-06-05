@@ -962,6 +962,40 @@ pub trait MatchMethods: TElement {
         }
     }
 
+    /// Rather than comparing the resolved line-height, which can be expensive to compute
+    /// as it involves locking and font metrics access, we consider that line-height may have
+    /// changed if the font-size or line-height property itself has changed, or if the value
+    /// is 'normal' and one of the properties that affects font selection (family, style,
+    /// weight, stretch) has changed.
+    fn line_height_likely_changed(
+        old_style: Option<&Arc<ComputedValues>>,
+        new_style: &Arc<ComputedValues>,
+    ) -> bool {
+        let old_line_height = old_style.map(|s| s.get_font().clone_line_height());
+        let new_line_height = new_style.get_font().clone_line_height();
+        // Return true if the old value was missing, or if the computed values are different.
+        if old_line_height.is_none_or(|lh| lh != new_line_height) {
+            return true;
+        }
+        // If the value isn't `normal`, it doesn't depend on font metrics: return false.
+        if !new_line_height.is_normal() {
+            return false;
+        }
+        // Check the font-selection properties, which could affect metrics used to resolve
+        // `normal` line-height.
+        macro_rules! font_property_changed {
+            ($getter: ident) => {
+                old_style
+                    .map(|s| s.get_font().$getter())
+                    .is_none_or(|v| v != new_style.get_font().$getter())
+            };
+        }
+        font_property_changed!(clone_font_family)
+            || font_property_changed!(clone_font_style)
+            || font_property_changed!(clone_font_weight)
+            || font_property_changed!(clone_font_stretch)
+    }
+
     /// Updates the styles with the new ones, diffs them, and stores the restyle
     /// damage.
     fn finish_restyle(
@@ -991,36 +1025,14 @@ pub trait MatchMethods: TElement {
         let device = context.shared.stylist.device();
         let new_font_size = new_primary_style.get_font().clone_font_size();
         let new_container_type = new_primary_style.clone_container_type();
-        let is_container = !new_container_type.is_normal();
 
         let old_style = old_styles.primary.as_ref();
         let old_font_size = old_style.map(|s| s.get_font().clone_font_size());
-        let (old_line_height, new_line_height) = if is_root || is_container {
-            // TODO(emilio): Check for line height / other metric changes for all elements, not just
-            // the root and containers. This causes a speedometer regression tho, see bug 2024049.
-            // For line-height, we want the fully resolved value, as `normal` also depends on other
-            // font properties.
-            (
-                old_style.map(|s| {
-                    device
-                        .calc_line_height(&s.get_font(), s.writing_mode, None)
-                        .0
-                }),
-                Some(
-                    device
-                        .calc_line_height(
-                            &new_primary_style.get_font(),
-                            new_primary_style.writing_mode,
-                            None,
-                        )
-                        .0,
-                ),
-            )
-        } else {
-            (None, None)
-        };
         let font_size_changed = old_font_size.is_none_or(|fs| fs != new_font_size);
-        let line_height_changed = old_line_height != new_line_height;
+
+        let line_height_likely_changed =
+            font_size_changed || Self::line_height_likely_changed(old_style, new_primary_style);
+
         // Update root font-relative units. If any of these unit values changed
         // since last time, ensure that we recascade the entire tree.
         if is_root {
@@ -1034,11 +1046,18 @@ pub trait MatchMethods: TElement {
             }
 
             // Update root line height for rlh units
-            if line_height_changed {
+            if line_height_likely_changed {
+                let new_line_height = device
+                    .calc_line_height(
+                        &new_primary_style.get_font(),
+                        new_primary_style.writing_mode,
+                        None,
+                    )
+                    .0;
                 device.set_root_line_height(
                     new_primary_style
                         .effective_zoom
-                        .unzoom(new_line_height.unwrap().px()),
+                        .unzoom(new_line_height.px()),
                 );
             }
 
@@ -1050,7 +1069,7 @@ pub trait MatchMethods: TElement {
             }
         }
 
-        if font_size_changed || line_height_changed {
+        if font_size_changed || line_height_likely_changed {
             child_restyle_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT;
         }
 

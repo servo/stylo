@@ -557,7 +557,7 @@ impl ToTyped for Display {
         }
 
         let keyword = self.to_css_cssstring();
-        debug_assert!(!keyword.as_ref().contains(&b' '));
+        debug_assert!(!AsRef::<[u8]>::as_ref(&keyword).contains(&b' '));
 
         dest.push(TypedValue::Keyword(KeywordValue(keyword)));
         return Ok(());

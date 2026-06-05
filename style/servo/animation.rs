@@ -707,7 +707,8 @@ impl Animation {
         self.current_direction = old_direction;
 
         if self.delay != old_delay {
-            // Shift by the delay delta:
+            // `started_at` incorporates the delay, so changing the delay necessarily changes `started_at`.
+            // Note: `started_at` may actually be in the future.
             self.started_at = old_started_at + (self.delay - old_delay);
 
             match old_state {

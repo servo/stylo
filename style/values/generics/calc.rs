@@ -7,7 +7,7 @@
 //! [calc]: https://drafts.csswg.org/css-values/#calc-notation
 
 use crate::derives::*;
-use crate::typed_om::{NumericValue, ToTyped, TypedValue};
+use crate::typed_om::{MathValue, NumericValue, ToTyped, TypedValue};
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
 use crate::values::generics::Optional;
@@ -2450,16 +2450,18 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         values.push(inner);
                     }
                 }
-                dest.push(TypedValue::Numeric(NumericValue::Sum(values)));
+                dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Sum(
+                    values,
+                ))));
                 Ok(())
             },
             Self::Leaf(ref l) => match l.to_typed_value() {
                 Some(TypedValue::Numeric(inner)) => {
                     match level {
                         ArgumentLevel::CalculationRoot => {
-                            dest.push(TypedValue::Numeric(NumericValue::Sum(ThinVec::from([
-                                inner,
-                            ]))));
+                            dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Sum(
+                                ThinVec::from([inner]),
+                            ))));
                         },
                         ArgumentLevel::ArgumentRoot | ArgumentLevel::Nested => {
                             dest.push(TypedValue::Numeric(inner));

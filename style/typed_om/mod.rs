@@ -119,6 +119,19 @@ pub struct UnitValue {
 /// a `NumericValue`, allowing nested sums if needed.
 pub type MathSum = ThinVec<NumericValue>;
 
+/// A math expression used by the Typed OM.
+///
+/// This corresponds to `CSSMathValue` and its subclasses in the Typed OM
+/// specification.
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub enum MathValue {
+    /// A sum of numeric values.
+    ///
+    /// This corresponds to `CSSMathSum`.
+    Sum(MathSum),
+}
+
 /// A numeric value used by the Typed OM.
 ///
 /// This corresponds to `CSSNumericValue` and its subclasses in the Typed OM
@@ -136,10 +149,10 @@ pub enum NumericValue {
     /// This corresponds to `CSSUnitValue`.
     Unit(UnitValue),
 
-    /// A sum of numeric values.
+    /// A math expression.
     ///
-    /// This corresponds to `CSSMathSum`.
-    Sum(MathSum),
+    /// This corresponds to `CSSMathValue` and its subclasses.
+    Math(MathValue),
 }
 
 impl NumericValue {

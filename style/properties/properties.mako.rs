@@ -384,30 +384,15 @@ impl NonCustomPropertyId {
             % if engine == "gecko":
                 unsafe { structs::nsCSSProps_gPropertyEnabled[self.0 as usize] }
             % else:
-                static PREF_NAME: [Option<&str>; ${
-                    len(data.longhands) + len(data.shorthands) + len(data.all_aliases())
-                }] = [
-                    % for property in data.longhands + data.shorthands + data.all_aliases():
-                        <%
-                            pref = getattr(property, "servo_pref")
-                        %>
-                        % if pref:
-                            {
-                                const_assert!(!static_prefs::default_value!("${pref}"));
-                                Some("${pref}")
-                            },
-                        % else:
-                            None,
-                        % endif
-                    % endfor
-                ];
-                let pref = match PREF_NAME[self.0 as usize] {
-                    None => return true,
-                    Some(pref) => pref,
-                };
-
-                // The assertions above guarantee that the pref defaults to false.
-                static_prefs::Preference::get(pref, false)
+                match self.0 {
+                % for (index, property) in enumerate(data.longhands + data.shorthands + data.all_aliases()):
+                    <% preference = getattr(property, "servo_pref") %>
+                    % if preference:
+                        ${index} => static_prefs::pref!("${preference}"),
+                    % endif %
+                % endfor
+                    _ => true,
+                }
             % endif
         };
 

@@ -117,12 +117,7 @@ pub struct UnitValue {
 /// This corresponds to `CSSMathSum` in the Typed OM specification. A sum
 /// value represents an expression such as `10px + 2em`. Each entry is itself
 /// a `NumericValue`, allowing nested sums if needed.
-#[derive(Clone, Debug)]
-#[repr(C)]
-pub struct MathSum {
-    /// The list of numeric terms that make up the sum.
-    pub values: ThinVec<NumericValue>,
-}
+pub type MathSum = ThinVec<NumericValue>;
 
 /// A numeric value used by the Typed OM.
 ///

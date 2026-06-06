@@ -485,6 +485,10 @@ spec = "https://drafts.csswg.org/css-text-decor/#propdef-text-decoration"
 sub_properties = [
   "font-style",
   "font-variant-caps",
+  "font-variant-east-asian",
+  "font-variant-ligatures",
+  "font-variant-numeric",
+  "font-variant-position",
   "font-weight",
   "font-stretch",
   "font-size",
@@ -492,25 +496,21 @@ sub_properties = [
   "font-family",
   "font-optical-sizing",
   "font-variation-settings",
-  "font-kerning"
+  "font-kerning",
+  "font-feature-settings",
 ]
 extra_gecko_sub_properties = [
   "font-size-adjust",
   "font-variant-alternates",
-  "font-variant-east-asian",
   "font-variant-emoji",
-  "font-variant-ligatures",
-  "font-variant-numeric",
-  "font-variant-position",
-  "font-language-override",
-  "font-feature-settings"
+  "font-language-override"
 ]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font"
 derive_value_info = false
 
 [font-variant]
-sub_properties = ["font-variant-caps"]
-extra_gecko_sub_properties = ["font-variant-alternates", "font-variant-east-asian", "font-variant-emoji", "font-variant-ligatures", "font-variant-numeric", "font-variant-position"]
+sub_properties = ["font-variant-caps", "font-variant-east-asian", "font-variant-ligatures", "font-variant-numeric", "font-variant-position"]
+extra_gecko_sub_properties = ["font-variant-alternates", "font-variant-emoji"]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font-variant"
 
 [font-synthesis]

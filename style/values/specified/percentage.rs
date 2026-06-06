@@ -38,7 +38,7 @@ impl ToCss for NoCalcPercentage {
 
 impl ToTyped for NoCalcPercentage {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        reify_percentage(self.0, /* was_calc = */ false, dest)
+        reify_percentage(self.0, dest)
     }
 }
 

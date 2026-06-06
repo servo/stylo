@@ -3601,7 +3601,6 @@ pub mod animation {
     }
 }
 
-#[cfg(feature = "gecko")]
 pub mod mask {
     pub use crate::properties::generated::shorthands::mask::*;
 
@@ -3628,12 +3627,15 @@ pub mod mask {
                 mask_origin::single_value::SpecifiedValue::BorderBox => {
                     mask_clip::single_value::SpecifiedValue::BorderBox
                 },
+                #[cfg(feature = "gecko")]
                 mask_origin::single_value::SpecifiedValue::FillBox => {
                     mask_clip::single_value::SpecifiedValue::FillBox
                 },
+                #[cfg(feature = "gecko")]
                 mask_origin::single_value::SpecifiedValue::StrokeBox => {
                     mask_clip::single_value::SpecifiedValue::StrokeBox
                 },
+                #[cfg(feature = "gecko")]
                 mask_origin::single_value::SpecifiedValue::ViewBox => {
                     mask_clip::single_value::SpecifiedValue::ViewBox
                 },
@@ -3860,8 +3862,18 @@ pub mod mask {
                     writer.item(repeat)?;
                 }
 
-                if has_origin || (has_clip && *clip != Clip::NoClip) {
-                    writer.item(origin)?;
+                #[cfg(feature = "gecko")]
+                {
+                    if has_origin || (has_clip && *clip != Clip::NoClip) {
+                        writer.item(origin)?;
+                    }
+                }
+
+                #[cfg(feature = "servo")]
+                {
+                    if has_origin || has_clip {
+                        writer.item(origin)?;
+                    }
                 }
 
                 if has_clip && *clip != From::from(*origin) {
@@ -3882,7 +3894,6 @@ pub mod mask {
     }
 }
 
-#[cfg(feature = "gecko")]
 pub mod mask_position {
     pub use crate::properties::generated::shorthands::mask_position::*;
 

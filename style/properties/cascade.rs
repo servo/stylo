@@ -232,10 +232,10 @@ pub enum CascadeMode<'a, 'b> {
     },
 }
 
-fn iter_declarations<'builder, 'decls: 'builder>(
+fn iter_declarations<'custom_builder, 'decls: 'custom_builder, 'builder>(
     iter: impl Iterator<Item = (&'decls PropertyDeclaration, CascadePriority)>,
     declarations: &mut Declarations<'decls>,
-    mut custom_builder: Option<&mut CustomPropertiesBuilder<'builder, 'decls>>,
+    mut custom_builder: Option<&mut CustomPropertiesBuilder<'custom_builder, 'builder>>,
     attribute_tracker: &mut AttributeTracker,
 ) {
     for (declaration, priority) in iter {
@@ -257,32 +257,31 @@ fn iter_declarations<'builder, 'decls: 'builder>(
 
 /// NOTE: This function expects the declaration with more priority to appear
 /// first.
-pub fn apply_declarations<'a, E, I>(
-    stylist: &'a Stylist,
-    pseudo: Option<&'a PseudoElement>,
+pub fn apply_declarations<'decls, E, I>(
+    stylist: &Stylist,
+    pseudo: Option<&PseudoElement>,
     rules: &StrongRuleNode,
     guards: &StylesheetGuards,
     iter: I,
-    parent_style: Option<&'a ComputedValues>,
+    parent_style: Option<&ComputedValues>,
     layout_parent_style: Option<&ComputedValues>,
-    first_line_reparenting: FirstLineReparenting<'a>,
-    try_tactic: &'a PositionTryFallbacksTryTactic,
+    first_line_reparenting: FirstLineReparenting<'_>,
+    try_tactic: &PositionTryFallbacksTryTactic,
     cascade_mode: CascadeMode,
     cascade_input_flags: ComputedValueFlags,
     included_cascade_flags: RuleCascadeFlags,
-    rule_cache: Option<&'a RuleCache>,
-    rule_cache_conditions: &'a mut RuleCacheConditions,
+    rule_cache: Option<&RuleCache>,
+    rule_cache_conditions: &mut RuleCacheConditions,
     element: Option<E>,
 ) -> Arc<ComputedValues>
 where
-    E: TElement + 'a,
-    I: Iterator<Item = (&'a PropertyDeclaration, CascadePriority)>,
+    E: TElement,
+    I: Iterator<Item = (&'decls PropertyDeclaration, CascadePriority)>,
 {
     debug_assert!(layout_parent_style.is_none() || parent_style.is_some());
     let device = stylist.device();
     let inherited_style = parent_style.unwrap_or(device.default_computed_values());
     let is_root_element = pseudo.is_none() && element.map_or(false, |e| e.is_root());
-
     let container_size_query =
         ContainerSizeQuery::for_option_element(element, Some(inherited_style), pseudo.is_some());
 

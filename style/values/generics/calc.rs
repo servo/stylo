@@ -2447,24 +2447,8 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         dest: &mut ThinVec<TypedValue>,
         level: ArgumentLevel,
     ) -> Result<(), ()> {
-        // XXX Only supporting Sum and Leaf for now
+        // XXX Only supporting Leaf and Sum for now
         match *self {
-            Self::Sum(ref children) => {
-                let mut values = ThinVec::new();
-                for child in &**children {
-                    let nested = CalcNodeWithLevel {
-                        node: child,
-                        level: ArgumentLevel::Nested,
-                    };
-                    if let Some(TypedValue::Numeric(inner)) = nested.to_typed_value() {
-                        values.push(inner);
-                    }
-                }
-                dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Sum(
-                    values,
-                ))));
-                Ok(())
-            },
             Self::Leaf(ref l) => match l.to_typed_value() {
                 Some(TypedValue::Numeric(inner)) => {
                     match level {
@@ -2480,6 +2464,22 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     Ok(())
                 },
                 _ => Err(()),
+            },
+            Self::Sum(ref children) => {
+                let mut values = ThinVec::new();
+                for child in &**children {
+                    let nested = CalcNodeWithLevel {
+                        node: child,
+                        level: ArgumentLevel::Nested,
+                    };
+                    if let Some(TypedValue::Numeric(inner)) = nested.to_typed_value() {
+                        values.push(inner);
+                    }
+                }
+                dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Sum(
+                    values,
+                ))));
+                Ok(())
             },
             _ => Err(()),
         }

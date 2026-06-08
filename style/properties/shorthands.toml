@@ -350,6 +350,7 @@ spec = "https://drafts.csswg.org/css-anchor-position-1/#position-try-prop"
 gecko_pref = "layout.css.anchor-positioning.enabled"
 
 [marker]
+engine = "gecko"
 sub_properties = ["marker-start", "marker-end", "marker-mid"]
 spec = "https://svgwg.org/svg2-draft/painting.html#MarkerShorthand"
 

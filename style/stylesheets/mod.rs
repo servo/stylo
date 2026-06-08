@@ -638,6 +638,14 @@ impl CssRuleTypes {
     pub const IMPORTANT_FORBIDDEN: Self =
         Self(CssRuleType::PositionTry.bit() | CssRuleType::Keyframe.bit());
 
+    /// Rules without element context.
+    pub const WITHOUT_ELEMENT_CONTEXT: Self = Self(
+        CssRuleType::CounterStyle.bit()
+            | CssRuleType::FontFace.bit()
+            | CssRuleType::FontFeatureValues.bit()
+            | CssRuleType::Page.bit(),
+    );
+
     /// Returns whether the rule is in the current set.
     #[inline]
     pub fn contains(self, ty: CssRuleType) -> bool {

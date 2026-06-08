@@ -18,6 +18,7 @@ use crate::values::computed;
 use cssparser::{Delimiter, Parser};
 use cssparser::{ParserInput, Token};
 use selectors::kleene_value::KleeneValue;
+use style_traits::ParsingMode;
 
 /// A type that encapsulates a media query list.
 #[derive(Clone, MallocSizeOf, ToCss, ToShmem)]
@@ -36,37 +37,40 @@ impl MediaList {
     /// "not all", see:
     ///
     /// <https://drafts.csswg.org/mediaqueries/#error-handling>
-    pub fn parse(context: &ParserContext, input: &mut Parser) -> Self {
-        if input.is_exhausted() {
-            return Self::empty();
-        }
-
-        let mut media_queries = vec![];
-        loop {
-            let start_position = input.position();
-            match input.parse_until_before(Delimiter::Comma, |i| MediaQuery::parse(context, i)) {
-                Ok(mq) => {
-                    media_queries.push(mq);
-                },
-                Err(err) => {
-                    media_queries.push(MediaQuery::never_matching());
-                    let location = err.location;
-                    let error = ContextualParseError::InvalidMediaRule(
-                        input.slice_from(start_position),
-                        err,
-                    );
-                    context.log_css_error(location, error);
-                },
+    pub fn parse(context: &mut ParserContext, input: &mut Parser) -> Self {
+        context.with_parsing_mode(ParsingMode::MEDIA_QUERY_CONDITION, |context| {
+            if input.is_exhausted() {
+                return Self::empty();
             }
 
-            match input.next() {
-                Ok(&Token::Comma) => {},
-                Ok(_) => unreachable!(),
-                Err(_) => break,
-            }
-        }
+            let mut media_queries = vec![];
+            loop {
+                let start_position = input.position();
+                match input.parse_until_before(Delimiter::Comma, |i| MediaQuery::parse(context, i))
+                {
+                    Ok(mq) => {
+                        media_queries.push(mq);
+                    },
+                    Err(err) => {
+                        media_queries.push(MediaQuery::never_matching());
+                        let location = err.location;
+                        let error = ContextualParseError::InvalidMediaRule(
+                            input.slice_from(start_position),
+                            err,
+                        );
+                        context.log_css_error(location, error);
+                    },
+                }
 
-        MediaList { media_queries }
+                match input.next() {
+                    Ok(&Token::Comma) => {},
+                    Ok(_) => unreachable!(),
+                    Err(_) => break,
+                }
+            }
+
+            MediaList { media_queries }
+        })
     }
 
     /// Create an empty MediaList.

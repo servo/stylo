@@ -1040,6 +1040,10 @@ impl CalcNode {
                         return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                     }
 
+                    if !context.has_element_context() {
+                        return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    }
+
                     // Tree-counting functions have no arguments
                     input.expect_exhausted()?;
 

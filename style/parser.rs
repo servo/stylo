@@ -130,6 +130,15 @@ impl<'a> ParserContext<'a> {
         r
     }
 
+    /// Temporarily adds a parsing mode flag and executes the callback, returning its result.
+    pub fn with_parsing_mode<R>(&mut self, mode: ParsingMode, cb: impl FnOnce(&Self) -> R) -> R {
+        let old = self.parsing_mode;
+        self.parsing_mode |= mode;
+        let r = cb(self);
+        self.parsing_mode = old;
+        r
+    }
+
     /// Whether we're in a @page rule.
     #[inline]
     pub fn in_page_rule(&self) -> bool {
@@ -143,6 +152,27 @@ impl<'a> ParserContext<'a> {
             .nesting_context
             .rule_types
             .intersects(CssRuleTypes::IMPORTANT_FORBIDDEN)
+    }
+
+    /// Returns whether we can parse element-dependent values.
+    #[inline]
+    pub fn has_element_context(&self) -> bool {
+        if self
+            .nesting_context
+            .rule_types
+            .intersects(CssRuleTypes::WITHOUT_ELEMENT_CONTEXT)
+        {
+            return false;
+        }
+
+        if self
+            .parsing_mode
+            .intersects(ParsingMode::MEDIA_QUERY_CONDITION)
+        {
+            return false;
+        }
+
+        true
     }
 
     /// Get the rule type, which assumes that one is available.

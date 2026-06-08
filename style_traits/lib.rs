@@ -261,6 +261,9 @@ bitflags! {
         const DISALLOW_COMPUTATIONALLY_DEPENDENT = 1 << 2;
         /// In Typed OM; unitless zero must not be interpreted as a length.
         const DISALLOW_UNITLESS_ZERO_LENGTH = 1 << 3;
+        /// Media query conditions in the preludes for @media, @custom-media, and @import.
+        /// <https://drafts.csswg.org/mediaqueries/>
+        const MEDIA_QUERY_CONDITION = 1 << 4;
     }
 }
 

@@ -357,7 +357,7 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
 
                 let (layer, supports) = ImportRule::parse_layer_and_supports(input, &mut self.context);
 
-                let media = MediaList::parse(&self.context, input);
+                let media = MediaList::parse(&mut self.context, input);
                 let media = Arc::new(self.shared_lock.wrap(media));
 
                 return Ok(AtRulePrelude::Import(url, media, supports, layer));
@@ -708,7 +708,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
     ) -> Result<Self::Prelude, ParseError<'i>> {
         Ok(match_ignore_ascii_case! { &*name,
             "media" => {
-                let media_queries = MediaList::parse(&self.context, input);
+                let media_queries = MediaList::parse(&mut self.context, input);
                 let arc = Arc::new(self.shared_lock.wrap(media_queries));
                 AtRulePrelude::Media(arc)
             },
@@ -800,7 +800,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 let name = DashedIdent::parse(&self.context, input)?;
                 let condition = input.try_parse(CustomMediaCondition::parse_keyword).unwrap_or_else(|_| {
                     CustomMediaCondition::MediaList(Arc::new(self.shared_lock.wrap(
-                        MediaList::parse(&self.context, input)
+                        MediaList::parse(&mut self.context, input)
                     )))
                 });
                 AtRulePrelude::CustomMedia(name, condition)

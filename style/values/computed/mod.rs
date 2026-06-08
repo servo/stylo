@@ -460,14 +460,15 @@ impl<'a> Context<'a> {
             .au_viewport_size_for_viewport_unit_resolution(variant)
     }
 
-    /// Returns the number of siblings (including the element itself), and marks
-    /// the style as depending on sibling-count().
+    /// Returns the number of siblings of the element that matches the declaration
+    /// (including the element itself), using the captured sibling information from
+    /// `self.tree_counting_info`. Also marks the style as depending on sibling-count().
     pub fn query_sibling_count(&self) -> u32 {
         self.builder
             .add_flags(ComputedValueFlags::USES_SIBLING_COUNT);
 
         if let Some(info) = &self.tree_counting_info {
-            info.borrow_mut().resolve().sibling_count
+            info.borrow_mut().resolve(self).sibling_count
         } else {
             debug_assert!(
                 false,
@@ -477,15 +478,16 @@ impl<'a> Context<'a> {
         }
     }
 
-    /// Returns the 1-based index of the element among its siblings, and marks
-    /// the style as depending on sibling-index().
+    /// Returns the 1-based index of the element that matches the declaration amongst its
+    /// siblings, using the captured sibling information from `self.tree_counting_info`.
+    /// Also marks the style as depending on sibling-index().
     pub fn query_sibling_index(&self) -> u32 {
         self.builder
             .add_flags(ComputedValueFlags::USES_SIBLING_INDEX);
         self.rule_cache_conditions.borrow_mut().set_uncacheable();
 
         if let Some(info) = &self.tree_counting_info {
-            info.borrow_mut().resolve().sibling_index
+            info.borrow_mut().resolve(self).sibling_index
         } else {
             debug_assert!(
                 false,

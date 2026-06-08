@@ -272,8 +272,9 @@ impl CascadeLevel {
         self.origin() == CascadeOrigin::Author
     }
 
+    /// Returns the shadow tree order.
     #[inline]
-    fn shadow_order(self) -> ShadowCascadeOrder {
+    pub fn shadow_order(self) -> ShadowCascadeOrder {
         let neg = self.intersects(Self::CASCADE_ORDER_SIGN);
         let abs = (self & Self::CASCADE_ORDER_BITS).bits() >> Self::CASCADE_ORDER_SHIFT;
         ShadowCascadeOrder(if neg { -(abs as i8) } else { abs as i8 })
@@ -357,6 +358,12 @@ impl ShadowCascadeOrder {
     #[inline]
     pub fn for_innermost_containing_tree() -> Self {
         Self(1)
+    }
+
+    /// Returns true if the level is in the same or a containing shadow tree.
+    #[inline]
+    pub fn is_in_same_or_containing_tree(&self) -> bool {
+        self.0 > 0
     }
 
     /// Decrement the level, moving inwards. We should only move inwards if

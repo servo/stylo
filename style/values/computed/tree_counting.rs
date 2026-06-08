@@ -6,6 +6,7 @@
 //! https://drafts.csswg.org/css-values-5/#tree-counting
 
 use crate::dom::TElement;
+use crate::values::computed::Context;
 
 /// Holds the resolved sibling-index() and sibling-count() values for an element.
 #[derive(Clone, Copy, Debug)]
@@ -47,7 +48,24 @@ impl<'a> TreeCountingInfo<'a> {
     }
 
     /// Resolves and caches the result, returning it.
-    pub fn resolve(&mut self) -> TreeCountingResult {
+    pub fn resolve(&mut self, context: &Context) -> TreeCountingResult {
+        // https://drafts.csswg.org/css-values-5/#tree-counting
+        // > A tree-counting function is a type of loosely-matched tree-scoped reference.
+        //
+        // As a loosely-matched reference, the tree-counting function can only match if
+        // the declaration is in the same or descendant shadow tree of the element. It
+        // does not match if the declaration is in a containing tree, so it must return 0.
+        if context
+            .current_scope()
+            .shadow_order()
+            .is_in_same_or_containing_tree()
+        {
+            return TreeCountingResult {
+                sibling_count: 0,
+                sibling_index: 0,
+            };
+        }
+
         match self {
             TreeCountingInfo::NotEvaluated(lookup) => {
                 let info = lookup();

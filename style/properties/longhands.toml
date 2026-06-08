@@ -2349,6 +2349,7 @@ affects = "layout"
 type = "Image"
 initial = "computed::Image::None"
 struct = "svg"
+servo_pref = "layout.unimplemented"
 parse_method = "parse_with_cors_anonymous"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-image"
 vector = {}
@@ -2360,6 +2361,7 @@ affects = "paint"
 type = "position::HorizontalPosition"
 initial = "computed::LengthPercentage::zero_percent()"
 struct = "svg"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-position"
 vector = { animation_type = "repeatable_list" }
@@ -2369,6 +2371,7 @@ affects = "paint"
 type = "position::VerticalPosition"
 initial = "computed::LengthPercentage::zero_percent()"
 struct = "svg"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-position"
 vector = { animation_type = "repeatable_list" }
@@ -2378,6 +2381,7 @@ affects = "paint"
 type = "BackgroundRepeat"
 initial = "computed::BackgroundRepeat::repeat()"
 struct = "svg"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["webkit"]
 animation_type = "discrete"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-repeat"
@@ -2388,6 +2392,7 @@ affects = "paint"
 type = "background::BackgroundSize"
 initial = "computed::BackgroundSize::auto()"
 struct = "svg"
+servo_pref = "layout.unimplemented"
 extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-size"
 vector = { animation_type = "repeatable_list" }
@@ -2721,6 +2726,7 @@ affects = "paint"
 type = "TextOverflow"
 initial = "computed::TextOverflow::get_initial_value()"
 struct = "text"
+servo_pref = "layout.unimplemented"
 animation_type = "discrete"
 boxed = true
 spec = "https://drafts.csswg.org/css-ui/#propdef-text-overflow"
@@ -4007,6 +4013,7 @@ keyword = { values = ["fill", "contain", "cover", "none", "scale-down"] }
 
 [mask-type]
 struct = "svg"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-type"
 animation_type = "discrete"
 affects = "paint"
@@ -4014,6 +4021,7 @@ keyword = { values = ["luminance", "alpha"] }
 
 [mask-mode]
 struct = "svg"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-mode"
 animation_type = "discrete"
 affects = "paint"
@@ -4025,6 +4033,7 @@ type = "BackgroundClip"
 initial = "computed::BackgroundClip::BorderBox"
 parse_method = "parse_for_mask"
 struct = "svg"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-clip"
 animation_type = "discrete"
 affects = "paint"
@@ -4033,6 +4042,7 @@ extra_prefixes = ["webkit"]
 
 [mask-origin]
 struct = "svg"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-origin"
 animation_type = "discrete"
 affects = "paint"
@@ -4042,6 +4052,7 @@ keyword = { values = ["border-box", "content-box", "padding-box"], extra_gecko_v
 
 [mask-composite]
 struct = "svg"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-composite"
 animation_type = "discrete"
 affects = "paint"
@@ -4172,6 +4183,7 @@ keyword = { values = ["normal", "multiply", "screen", "overlay", "darken", "ligh
 type = "DominantBaseline"
 initial = "computed::DominantBaseline::Auto"
 struct = "inherited_box"
+engine = "gecko"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-inline-3/#dominant-baseline-property"
 affects = "layout"

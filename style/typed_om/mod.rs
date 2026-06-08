@@ -119,6 +119,13 @@ pub struct UnitValue {
 /// a `NumericValue`, allowing nested sums if needed.
 pub type MathSum = ThinVec<NumericValue>;
 
+/// A minimum expression over numeric values.
+///
+/// This corresponds to `CSSMathMin` in the Typed OM specification. A minimum
+/// expression represents constructs such as `min(10px, 20%)`. Each entry is
+/// itself a `NumericValue`, allowing nested math expressions if needed.
+pub type MathMin = ThinVec<NumericValue>;
+
 /// A math expression used by the Typed OM.
 ///
 /// This corresponds to `CSSMathValue` and its subclasses in the Typed OM
@@ -130,6 +137,11 @@ pub enum MathValue {
     ///
     /// This corresponds to `CSSMathSum`.
     Sum(MathSum),
+
+    /// A minimum expression over numeric values.
+    ///
+    /// This corresponds to `CSSMathMin`.
+    Min(MathMin),
 }
 
 /// A numeric value used by the Typed OM.

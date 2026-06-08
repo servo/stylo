@@ -123,6 +123,12 @@ impl SumValue {
                 // Step 4.
                 Ok(SumValue(values))
             },
+
+            // CSSMathMin
+            NumericValue::Math(MathValue::Min(_math_min)) => {
+                // TODO: Implement me!
+                Err(())
+            },
         }
     }
 

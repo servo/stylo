@@ -129,6 +129,12 @@ impl SumValue {
                 // TODO: Implement me!
                 Err(())
             },
+
+            // CSSMathMax
+            NumericValue::Math(MathValue::Max(_math_max)) => {
+                // TODO: Implement me!
+                Err(())
+            },
         }
     }
 

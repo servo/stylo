@@ -126,6 +126,13 @@ pub type MathSum = ThinVec<NumericValue>;
 /// itself a `NumericValue`, allowing nested math expressions if needed.
 pub type MathMin = ThinVec<NumericValue>;
 
+/// A maximum expression over numeric values.
+///
+/// This corresponds to `CSSMathMax` in the Typed OM specification. A maximum
+/// expression represents constructs such as `max(10px, 20%)`. Each entry is
+/// itself a `NumericValue`, allowing nested math expressions if needed.
+pub type MathMax = ThinVec<NumericValue>;
+
 /// A math expression used by the Typed OM.
 ///
 /// This corresponds to `CSSMathValue` and its subclasses in the Typed OM
@@ -142,6 +149,11 @@ pub enum MathValue {
     ///
     /// This corresponds to `CSSMathMin`.
     Min(MathMin),
+
+    /// A maximum expression over numeric values.
+    ///
+    /// This corresponds to `CSSMathMax`.
+    Max(MathMax),
 }
 
 /// A numeric value used by the Typed OM.

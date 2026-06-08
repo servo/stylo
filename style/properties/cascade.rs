@@ -33,6 +33,7 @@ use crate::values::specified::length::FontBaseSize;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
 use crate::values::{computed, specified};
 use rustc_hash::FxHashMap;
+use selectors::matching::ElementSelectorFlags;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::borrow::Cow;
@@ -427,6 +428,21 @@ where
         // from being wasted effort, it will be wrong, since context.rule_cache_conditions won't be
         // set appropriately if we didn't compute those reset properties.)
         context.rule_cache_conditions.borrow_mut().set_uncacheable();
+    }
+
+    if context
+        .builder
+        .flags()
+        .intersects(ComputedValueFlags::tree_counting_function_flags())
+    {
+        if let Some(el) = element {
+            el.apply_selector_flags(ElementSelectorFlags::MAY_HAVE_TREE_COUNTING_FUNCTION);
+        } else {
+            debug_assert!(
+                false,
+                "Tree counting function flag applied without an element?"
+            );
+        }
     }
 
     context.builder.build()

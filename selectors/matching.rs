@@ -84,6 +84,10 @@ bitflags! {
         const RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR_SIBLING =
             Self::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING.bits() |
             Self::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR.bits();
+
+        /// A child of this element may be using sibling-index() or sibling-count(),
+        /// and must be recascaded if other children are added or removed.
+        const MAY_HAVE_TREE_COUNTING_FUNCTION = 1 << 11;
     }
 }
 
@@ -103,7 +107,8 @@ impl ElementSelectorFlags {
             | ElementSelectorFlags::HAS_SLOW_SELECTOR_LATER_SIBLINGS
             | ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH
             | ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH_OF
-            | ElementSelectorFlags::HAS_EDGE_CHILD_SELECTOR)
+            | ElementSelectorFlags::HAS_EDGE_CHILD_SELECTOR
+            | ElementSelectorFlags::MAY_HAVE_TREE_COUNTING_FUNCTION)
     }
 }
 

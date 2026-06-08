@@ -176,6 +176,12 @@ impl ComputedValueFlags {
             | Self::USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES
     }
 
+    /// Flags corresponding to usage of tree-counting functions.
+    #[inline]
+    pub fn tree_counting_function_flags() -> Self {
+        Self::USES_SIBLING_COUNT | Self::USES_SIBLING_INDEX
+    }
+
     /// Returns the flags that are always propagated to descendants.
     ///
     /// See StyleAdjuster::set_bits and StyleBuilder.

@@ -29,6 +29,7 @@ use euclid::default::Size2D;
 #[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
 use selectors::kleene_value::KleeneValue;
+use selectors::matching::ElementSelectorFlags;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
 use style_traits::arc_slice::ArcSlice;
@@ -331,6 +332,13 @@ impl ContainerCondition {
                 if flags.contains(ComputedValueFlags::USES_FONT_RELATIVE_UNITS) {
                     invalidation_flags
                         .insert(ComputedValueFlags::USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES);
+                }
+                if flags.intersects(ComputedValueFlags::tree_counting_function_flags()) {
+                    // Container query usage of sibling-index() and sibling-count() requires
+                    // redoing selector matches on sibling changes. Although this is not itself
+                    // a selector, the HAS_SLOW_SELECTOR flag is reused here because it has the
+                    // required invalidation behavior.
+                    container.apply_selector_flags(ElementSelectorFlags::HAS_SLOW_SELECTOR);
                 }
                 matches
             },

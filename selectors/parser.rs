@@ -1210,7 +1210,7 @@ impl<Impl: SelectorImpl> Selector<Impl> {
             specificity: &mut Specificity,
             flags: &mut SelectorFlags,
             forbidden_flags: SelectorFlags,
-        ) -> Vec<RelativeSelector<Impl>> {
+        ) -> Box<[RelativeSelector<Impl>]> {
             let mut any = false;
 
             let result = orig
@@ -1336,9 +1336,7 @@ impl<Impl: SelectorImpl> Selector<Impl> {
                     &mut specificity,
                     &mut flags,
                     forbidden_flags,
-                )
-                .into_boxed_slice()),
-
+                )),
                 Host(Some(ref selector)) => Host(Some(replace_parent_on_selector(
                     selector,
                     parent,

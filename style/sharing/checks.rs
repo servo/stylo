@@ -11,6 +11,7 @@ use crate::context::SharedStyleContext;
 use crate::dom::{TElement, TShadowRoot};
 use crate::properties::ComputedValues;
 use crate::sharing::{StyleSharingCandidate, StyleSharingTarget};
+use crate::values::specified::TreeCountingFunction;
 use selectors::matching::SelectorCaches;
 
 /// Determines whether a target and a candidate have compatible parents for
@@ -178,6 +179,31 @@ where
             return false;
         }
     }
+    true
+}
+
+/// Whether two elements have compatible tree-counting functions.
+pub fn have_shareable_tree_counting_functions<E>(
+    target: &StyleSharingTarget<E>,
+    candidate: &StyleSharingCandidate<E>,
+) -> bool
+where
+    E: TElement,
+{
+    let borrowed_data = candidate.element.borrow_data().unwrap();
+    let styles = &borrowed_data.styles;
+
+    if styles.uses_tree_counting_function(TreeCountingFunction::SiblingIndex) {
+        // Two elements with the same parent will always have a different index
+        return false;
+    }
+
+    if styles.uses_tree_counting_function(TreeCountingFunction::SiblingCount)
+        && target.parent_element() != candidate.parent_element()
+    {
+        return false;
+    }
+
     true
 }
 

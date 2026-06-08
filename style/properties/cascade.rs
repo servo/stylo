@@ -27,6 +27,7 @@ use crate::style_adjuster::StyleAdjuster;
 use crate::stylesheets::container_rule::ContainerSizeQuery;
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::Stylist;
+use crate::values::computed::tree_counting::TreeCountingInfo;
 #[cfg(feature = "gecko")]
 use crate::values::specified::length::FontBaseSize;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
@@ -282,6 +283,8 @@ where
     let device = stylist.device();
     let inherited_style = parent_style.unwrap_or(device.default_computed_values());
     let is_root_element = pseudo.is_none() && element.map_or(false, |e| e.is_root());
+    let tree_counting_info = element.and_then(|e| TreeCountingInfo::for_element(e));
+
     let container_size_query =
         ContainerSizeQuery::for_option_element(element, Some(inherited_style), pseudo.is_some());
 
@@ -301,6 +304,7 @@ where
         rule_cache_conditions,
         container_size_query,
         included_cascade_flags,
+        tree_counting_info,
     );
 
     context.style().add_flags(cascade_input_flags);
@@ -1189,7 +1193,9 @@ impl<'b> Cascade<'b> {
             | ComputedValueFlags::USES_CONTAINER_UNITS
             | ComputedValueFlags::USES_VIEWPORT_UNITS
             | ComputedValueFlags::USES_FONT_RELATIVE_UNITS
-            | ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY;
+            | ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY
+            | ComputedValueFlags::USES_SIBLING_COUNT
+            | ComputedValueFlags::USES_SIBLING_INDEX;
         context.builder.add_flags(style.flags & bits_to_copy);
 
         true

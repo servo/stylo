@@ -12,6 +12,7 @@ use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::properties::ComputedValues;
 use crate::selector_parser::{PseudoElement, RestyleDamage, EAGER_PSEUDO_COUNT};
 use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles, ResolvedStyle};
+use crate::values::specified::TreeCountingFunction;
 #[cfg(feature = "gecko")]
 use malloc_size_of::MallocSizeOfOps;
 use selectors::matching::SelectorCaches;
@@ -218,6 +219,34 @@ impl ElementStyles {
                 pseudo_style.each_cached_lazy_pseudo(|style| {
                     usage = std::cmp::max(usage, usage_from_flags(style.flags));
                 });
+            }
+        }
+
+        usage
+    }
+
+    /// Whether this element uses sibling-count() or sibling-index().
+    pub fn uses_tree_counting_function(&self, t: TreeCountingFunction) -> bool {
+        let usage_from_flags = |flags: ComputedValueFlags| -> bool {
+            if t == TreeCountingFunction::SiblingCount
+                && flags.intersects(ComputedValueFlags::USES_SIBLING_COUNT)
+            {
+                return true;
+            }
+            if t == TreeCountingFunction::SiblingIndex
+                && flags.intersects(ComputedValueFlags::USES_SIBLING_INDEX)
+            {
+                return true;
+            }
+            false
+        };
+
+        let primary = self.primary();
+        let mut usage = usage_from_flags(primary.flags);
+
+        for pseudo_style in self.pseudos.as_array() {
+            if let Some(ref pseudo_style) = pseudo_style {
+                usage |= usage_from_flags(pseudo_style.flags);
             }
         }
 

@@ -869,6 +869,11 @@ impl<E: TElement> StyleSharingCache<E> {
             return None;
         }
 
+        if !checks::have_shareable_tree_counting_functions(target, candidate) {
+            trace!("Miss: Tree counting functions");
+            return None;
+        }
+
         if !checks::revalidate(target, candidate, shared, bloom, selector_caches) {
             trace!("Miss: Revalidation");
             return None;
@@ -911,15 +916,19 @@ impl<E: TElement> StyleSharingCache<E> {
             if !candidate.parent_style_identity().eq(inherited) {
                 return None;
             }
-            if !checks::have_same_referenced_attrs(&StyleSharingTarget::new(target), candidate) {
-                return None;
-            }
             let data = candidate.element.borrow_data().unwrap();
             let style = data.styles.primary();
             if style.rules.as_ref() != Some(&inputs.rules.as_ref().unwrap()) {
                 return None;
             }
             if style.visited_rules() != inputs.visited_rules.as_ref() {
+                return None;
+            }
+            let sharing_target = StyleSharingTarget::new(target);
+            if !checks::have_same_referenced_attrs(&sharing_target, candidate) {
+                return None;
+            }
+            if !checks::have_shareable_tree_counting_functions(&sharing_target, candidate) {
                 return None;
             }
             // NOTE(emilio): We only need to check name / namespace because we

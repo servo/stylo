@@ -1022,6 +1022,7 @@ impl PropertyDeclarationBlock {
             &mut rule_cache_conditions,
             ContainerSizeQuery::none(),
             RuleCascadeFlags::empty(),
+            None,
         );
 
         if let Some(cv) = computed_values {

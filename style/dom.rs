@@ -827,6 +827,34 @@ pub trait TElement:
         cur
     }
 
+    /// Returns the sibling-index() and sibling-count() for this element in a single pass.
+    /// Returns (1, 1) for elements without a parent.
+    ///
+    // TODO(Bug 2045138) - This should use caching similar to the NthIndexCache. Currently,
+    // this performs a full traversal of the requested element's siblings. In the worst case
+    // where all siblings use a tree-counting function, this results in quadratic behavior.
+    fn tree_counting_info(&self) -> (u32, u32) {
+        let target = self.ultimate_originating_element();
+        let Some(parent) = target.as_node().parent_node() else {
+            return (1, 1);
+        };
+
+        let mut curr = parent.first_child();
+        let mut index = 0u32;
+        let mut count = 0u32;
+        while let Some(node) = curr {
+            if let Some(element) = node.as_element() {
+                count += 1;
+                if element == target {
+                    index = count;
+                }
+            }
+            curr = node.next_sibling();
+        }
+        debug_assert!(index != 0, "Element was not a child of its parent?");
+        (index, count)
+    }
+
     /// Executes the callback for each applicable style rule data which isn't
     /// the main document's data (which stores UA / author rules).
     ///

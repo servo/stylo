@@ -123,6 +123,7 @@ pub use self::text::{
 pub use self::time::Time;
 pub use self::transform::{Rotate, Scale, Transform, TransformBox, TransformOperation};
 pub use self::transform::{TransformOrigin, TransformStyle, Translate};
+pub use self::tree_counting::TreeCountingInfo;
 #[cfg(feature = "gecko")]
 pub use self::ui::CursorImage;
 pub use self::ui::{
@@ -168,6 +169,7 @@ pub mod table;
 pub mod text;
 pub mod time;
 pub mod transform;
+pub mod tree_counting;
 pub mod ui;
 pub mod url;
 
@@ -230,6 +232,10 @@ pub struct Context<'a> {
 
     /// Container size query for this context.
     container_size_query: RefCell<ContainerSizeQuery<'a>>,
+
+    /// Tree counting data for the element being styled, used to resolve
+    /// tree-counting functions like `sibling-index()` and `sibling-count()`.
+    tree_counting_info: Option<RefCell<TreeCountingInfo<'a>>>,
 }
 
 impl<'a> Context<'a> {
@@ -260,6 +266,7 @@ impl<'a> Context<'a> {
             scope: CascadeLevel::same_tree_author_normal(),
             included_cascade_flags: RuleCascadeFlags::empty(),
             container_size_query: RefCell::new(ContainerSizeQuery::none()),
+            tree_counting_info: None,
         };
         f(&context)
     }
@@ -271,6 +278,7 @@ impl<'a> Context<'a> {
         stylist: Option<&Stylist>,
         container_info_and_style: Option<(ContainerInfo, Arc<ComputedValues>)>,
         container_size_query: ContainerSizeQuery,
+        tree_counting_info: Option<TreeCountingInfo>,
         f: F,
     ) -> R
     where
@@ -298,6 +306,7 @@ impl<'a> Context<'a> {
             scope: CascadeLevel::same_tree_author_normal(),
             included_cascade_flags: RuleCascadeFlags::empty(),
             container_size_query: RefCell::new(container_size_query),
+            tree_counting_info: tree_counting_info.map(RefCell::new),
         };
 
         f(&context)
@@ -310,6 +319,7 @@ impl<'a> Context<'a> {
         rule_cache_conditions: &'a mut RuleCacheConditions,
         container_size_query: ContainerSizeQuery<'a>,
         mut included_cascade_flags: RuleCascadeFlags,
+        tree_counting_info: Option<TreeCountingInfo<'a>>,
     ) -> Self {
         if builder
             .flags()
@@ -330,6 +340,7 @@ impl<'a> Context<'a> {
             scope: CascadeLevel::same_tree_author_normal(),
             included_cascade_flags,
             container_size_query: RefCell::new(container_size_query),
+            tree_counting_info: tree_counting_info.map(RefCell::new),
         }
     }
 
@@ -339,6 +350,7 @@ impl<'a> Context<'a> {
         quirks_mode: QuirksMode,
         rule_cache_conditions: &'a mut RuleCacheConditions,
         container_size_query: ContainerSizeQuery<'a>,
+        tree_counting_info: Option<TreeCountingInfo<'a>>,
     ) -> Self {
         Self {
             builder,
@@ -353,6 +365,7 @@ impl<'a> Context<'a> {
             scope: CascadeLevel::same_tree_author_normal(),
             included_cascade_flags: RuleCascadeFlags::empty(),
             container_size_query: RefCell::new(container_size_query),
+            tree_counting_info: tree_counting_info.map(RefCell::new),
         }
     }
 
@@ -377,6 +390,7 @@ impl<'a> Context<'a> {
             scope: CascadeLevel::same_tree_author_normal(),
             included_cascade_flags: RuleCascadeFlags::empty(),
             container_size_query: RefCell::new(ContainerSizeQuery::none()),
+            tree_counting_info: None,
         }
     }
 
@@ -444,6 +458,41 @@ impl<'a> Context<'a> {
         self.builder
             .device
             .au_viewport_size_for_viewport_unit_resolution(variant)
+    }
+
+    /// Returns the number of siblings (including the element itself), and marks
+    /// the style as depending on sibling-count().
+    pub fn query_sibling_count(&self) -> u32 {
+        self.builder
+            .add_flags(ComputedValueFlags::USES_SIBLING_COUNT);
+
+        if let Some(info) = &self.tree_counting_info {
+            info.borrow_mut().resolve().sibling_count
+        } else {
+            debug_assert!(
+                false,
+                "Element context should be available if sibling-count() successfully parsed"
+            );
+            1u32
+        }
+    }
+
+    /// Returns the 1-based index of the element among its siblings, and marks
+    /// the style as depending on sibling-index().
+    pub fn query_sibling_index(&self) -> u32 {
+        self.builder
+            .add_flags(ComputedValueFlags::USES_SIBLING_INDEX);
+        self.rule_cache_conditions.borrow_mut().set_uncacheable();
+
+        if let Some(info) = &self.tree_counting_info {
+            info.borrow_mut().resolve().sibling_index
+        } else {
+            debug_assert!(
+                false,
+                "Element context should be available if sibling-index() successfully parsed"
+            );
+            1u32
+        }
     }
 
     /// Whether we're in a media or container query.

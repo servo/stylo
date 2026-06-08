@@ -530,6 +530,12 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped {
             1.0
         }))
     }
+
+    /// Whether this leaf node should serialize with a `calc()` wrapper
+    /// if this node is the root of the calculation tree.
+    fn should_serialize_with_root_calc_wrapper(&self) -> bool {
+        true
+    }
 }
 
 /// The level of any argument being serialized in `to_css_impl`.
@@ -2171,7 +2177,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
     where
         W: Write,
     {
-        let write_closing_paren = match *self {
+        let write_closing_paren = match self {
             Self::MinMax(_, op) => {
                 dest.write_str(match op {
                     MinMaxOp::Max => "max(",
@@ -2286,10 +2292,14 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     true
                 },
             },
-            Self::Leaf(_) => match level {
+            Self::Leaf(leaf) => match level {
                 ArgumentLevel::CalculationRoot => {
-                    dest.write_str("calc(")?;
-                    true
+                    if leaf.should_serialize_with_root_calc_wrapper() {
+                        dest.write_str("calc(")?;
+                        true
+                    } else {
+                        false
+                    }
                 },
                 ArgumentLevel::ArgumentRoot | ArgumentLevel::Nested => false,
             },

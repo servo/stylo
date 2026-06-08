@@ -163,7 +163,7 @@ fn derive_variant_arm(variant: &VariantInfo, generics: &mut Option<WhereClause>)
         quote! {
             std::fmt::Write::write_str(dest, #keyword)
         }
-    } else if !bindings.is_empty() {
+    } else if !bindings.is_empty() || variant_attrs.function.is_some() {
         derive_variant_fields_expr(bindings, generics, separator)
     } else {
         quote! {

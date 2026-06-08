@@ -834,6 +834,9 @@ impl specified::CalcLengthPercentage {
                 ComputedLeaf::Resolution(specified::Resolution::new(r).to_computed_value(context))
             },
             Leaf::ColorComponent(..) => unreachable!("Shouldn't have parsed"),
+            Leaf::TreeCountingFunction(t) => {
+                ComputedLeaf::Number(t.to_computed_value(context) as f32)
+            },
         });
 
         LengthPercentage::new_calc(node, self.0.clamping_mode)

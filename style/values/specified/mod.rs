@@ -111,6 +111,7 @@ pub use self::text::{
 pub use self::time::{NoCalcTime, Time};
 pub use self::transform::{Rotate, Scale, Transform};
 pub use self::transform::{TransformBox, TransformOrigin, TransformStyle, Translate};
+pub use self::tree_counting::TreeCountingFunction;
 #[cfg(feature = "gecko")]
 pub use self::ui::CursorImage;
 pub use self::ui::{
@@ -157,6 +158,7 @@ pub mod table;
 pub mod text;
 pub mod time;
 pub mod transform;
+pub mod tree_counting;
 pub mod ui;
 pub mod url;
 

@@ -130,6 +130,12 @@ bitflags! {
 
         /// Whether this style depends on font relative units in container queries.
         const USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES = 1 << 25;
+
+        /// Whether this style uses `sibling-count()`.
+        const USES_SIBLING_COUNT = 1 << 26;
+
+        /// Whether this style uses `sibling-index()`.
+        const USES_SIBLING_INDEX = 1 << 27;
     }
 }
 

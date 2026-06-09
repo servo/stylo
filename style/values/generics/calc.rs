@@ -2447,7 +2447,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         dest: &mut ThinVec<TypedValue>,
         level: ArgumentLevel,
     ) -> Result<(), ()> {
-        // Note: Only supporting Leaf, Sum, MinMax and Clamp for now
+        // Note: Only supporting Leaf, Negate, Sum, MinMax and Clamp for now
         match *self {
             Self::Leaf(ref l) => match l.to_typed_value() {
                 Some(TypedValue::Numeric(inner)) => {
@@ -2465,12 +2465,66 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 },
                 _ => Err(()),
             },
+            Self::Negate(_) => {
+                // We never generate a [`Negate`] node as the root of a calculation, only inside
+                // [`Sum`] nodes as a child. Because negate nodes are handled by the [`Sum`] node
+                // directly (see below), this node will never be reified.
+                debug_assert!(
+                    false,
+                    "We never reify Negate nodes as they are handled inside Sum nodes."
+                );
+
+                Err(())
+            },
             Self::Sum(ref children) => {
                 let mut values = ThinVec::new();
+                let mut first = true;
 
                 for child in &**children {
-                    if let Some(inner) = CalcNodeWithLevel::nested(child).to_numeric_value() {
-                        values.push(inner);
+                    if !first {
+                        match child {
+                            Self::Leaf(l) => {
+                                if let Ok(true) = l.is_negative() {
+                                    let mut negated = l.clone();
+
+                                    // We can unwrap here, because we already
+                                    // checked if the value inside is negative.
+                                    negated.map(std::ops::Neg::neg).unwrap();
+
+                                    if let Some(inner) = negated.to_numeric_value() {
+                                        values.push(NumericValue::Math(MathValue::Negate(
+                                            Box::new(inner),
+                                        )));
+                                    }
+                                } else {
+                                    if let Some(inner) = l.to_numeric_value() {
+                                        values.push(inner);
+                                    }
+                                }
+                            },
+                            Self::Negate(n) => {
+                                if let Some(inner) =
+                                    CalcNodeWithLevel::nested(n.as_ref()).to_numeric_value()
+                                {
+                                    values.push(NumericValue::Math(MathValue::Negate(Box::new(
+                                        inner,
+                                    ))));
+                                }
+                            },
+                            _ => {
+                                if let Some(inner) =
+                                    CalcNodeWithLevel::nested(child).to_numeric_value()
+                                {
+                                    values.push(inner);
+                                }
+                            },
+                        }
+                    } else {
+                        first = false;
+
+                        if let Some(inner) = CalcNodeWithLevel::nested(child).to_numeric_value() {
+                            values.push(inner);
+                        }
                     }
                 }
 

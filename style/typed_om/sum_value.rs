@@ -124,6 +124,12 @@ impl SumValue {
                 Ok(SumValue(values))
             },
 
+            // CSSMathNegate
+            NumericValue::Math(MathValue::Negate(_math_negate)) => {
+                // TODO: Implement me!
+                Err(())
+            },
+
             // CSSMathMin
             NumericValue::Math(MathValue::Min(_math_min)) => {
                 // TODO: Implement me!

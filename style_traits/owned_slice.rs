@@ -24,7 +24,7 @@ use to_shmem::{SharedMemoryBuilder, ToShmem};
 ///
 /// We could rely on the struct layout of `Box<[T]>` per:
 ///
-///   https://github.com/rust-lang/unsafe-code-guidelines/blob/master/reference/src/layout/pointers.md
+///   https://github.com/rust-lang/unsafe-code-guidelines/blob/c138499c1de03b908dfe719a41193c84f8146883/reference/src/layout/pointers.md
 ///
 /// But handling fat pointers with cbindgen both in structs and argument
 /// positions more generally is a bit tricky.

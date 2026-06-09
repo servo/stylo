@@ -71,6 +71,7 @@ pub mod dom;
 pub mod specified_value_info;
 #[macro_use]
 pub mod values;
+pub mod owned_array;
 pub mod owned_slice;
 pub mod owned_str;
 

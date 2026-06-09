@@ -159,6 +159,7 @@ pub type Namespace = crate::values::GenericAtomIdent<web_atoms::NamespaceStaticS
 pub type Prefix = crate::values::GenericAtomIdent<web_atoms::PrefixStaticSet>;
 
 pub use style_traits::arc_slice::ArcSlice;
+pub use style_traits::owned_array::OwnedArray;
 pub use style_traits::owned_slice::OwnedSlice;
 pub use style_traits::owned_str::OwnedStr;
 

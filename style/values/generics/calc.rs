@@ -2476,6 +2476,10 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 Err(())
             },
+            Self::Invert(_) => {
+                // TODO: Implement me! (once we have a test))
+                Err(())
+            },
             Self::Sum(ref children) => {
                 let mut values = ThinVec::new();
                 let mut first = true;

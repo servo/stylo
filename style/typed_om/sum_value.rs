@@ -130,6 +130,12 @@ impl SumValue {
                 Err(())
             },
 
+            // CSSMathInvert
+            NumericValue::Math(MathValue::Invert(_math_invert)) => {
+                // TODO: Implement me!
+                Err(())
+            },
+
             // CSSMathMin
             NumericValue::Math(MathValue::Min(_math_min)) => {
                 // TODO: Implement me!

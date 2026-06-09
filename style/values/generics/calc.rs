@@ -2447,7 +2447,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         dest: &mut ThinVec<TypedValue>,
         level: ArgumentLevel,
     ) -> Result<(), ()> {
-        // XXX Only supporting Leaf, Sum and MinMax for now
+        // Note: Only supporting Leaf, Sum, MinMax and Clamp for now
         match *self {
             Self::Leaf(ref l) => match l.to_typed_value() {
                 Some(TypedValue::Numeric(inner)) => {
@@ -2495,6 +2495,29 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 };
 
                 dest.push(TypedValue::Numeric(NumericValue::Math(math_value)));
+                Ok(())
+            },
+            Self::Clamp {
+                ref min,
+                ref center,
+                ref max,
+            } => {
+                let Some(lower) = CalcNodeWithLevel::argument_root(min).to_numeric_value() else {
+                    return Err(());
+                };
+
+                let Some(value) = CalcNodeWithLevel::argument_root(center).to_numeric_value()
+                else {
+                    return Err(());
+                };
+
+                let Some(upper) = CalcNodeWithLevel::argument_root(max).to_numeric_value() else {
+                    return Err(());
+                };
+
+                dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Clamp(
+                    [lower, value, upper].into(),
+                ))));
                 Ok(())
             },
             _ => Err(()),

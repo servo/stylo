@@ -135,6 +135,12 @@ impl SumValue {
                 // TODO: Implement me!
                 Err(())
             },
+
+            // CSSMathClamp
+            NumericValue::Math(MathValue::Clamp(_math_clamp)) => {
+                // TODO: Implement me!
+                Err(())
+            },
         }
     }
 

@@ -48,7 +48,7 @@ pub use self::animation::{
     AnimationRangeStart, AnimationTimeline, ScrollAxis, TimelineName, TransitionBehavior,
     TransitionProperty, ViewTimelineInset, ViewTransitionClass, ViewTransitionName,
 };
-pub use self::background::{BackgroundRepeat, BackgroundSize};
+pub use self::background::{BackgroundClip, BackgroundRepeat, BackgroundSize};
 pub use self::basic_shape::FillRule;
 pub use self::border::{
     BorderCornerRadius, BorderImageRepeat, BorderImageSideWidth, BorderImageSlice,

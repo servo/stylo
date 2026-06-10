@@ -959,7 +959,9 @@ fn static_assert() {
         I: IntoIterator<Item=longhands::${ident}::computed_value::single_value::T>,
         I::IntoIter: ExactSizeIterator,
     {
+        % if keyword:
         use crate::properties::longhands::${ident}::single_value::computed_value::T as Keyword;
+        % endif
         use crate::gecko_bindings::structs::nsStyleImageLayers_LayerType as LayerType;
 
         let v = v.into_iter();
@@ -972,12 +974,17 @@ fn static_assert() {
         self.${layer_field_name}.${field_name}Count = v.len() as u32;
         for (servo, geckolayer) in v.zip(self.${layer_field_name}.mLayers.iter_mut()) {
             geckolayer.${field_name} = {
+                % if keyword:
                 match servo {
                     % for value in keyword.values_for("gecko"):
                     Keyword::${to_camel_case(value)} =>
                         structs::${keyword.gecko_constant(value)} ${keyword.maybe_cast('u8')},
                     % endfor
                 }
+                % else:
+                // The Gecko field stores the computed value directly.
+                servo
+                % endif
             };
         }
     }
@@ -985,11 +992,14 @@ fn static_assert() {
     ${impl_fallback_eq(ident)}
 
     pub fn clone_${ident}(&self) -> longhands::${ident}::computed_value::T {
+        % if keyword:
         use crate::properties::longhands::${ident}::single_value::computed_value::T as Keyword;
+        % endif
         longhands::${ident}::computed_value::List(
             self.${layer_field_name}.mLayers.iter()
                 .take(self.${layer_field_name}.${field_name}Count as usize)
                 .map(|ref layer| {
+                    % if keyword:
                     match layer.${field_name} {
                         % for value in longhand.keyword.values_for("gecko"):
                         structs::${keyword.gecko_constant(value)}
@@ -999,6 +1009,9 @@ fn static_assert() {
                         _ => panic!("Found unexpected value in style struct for ${ident} property"),
                         % endif
                     }
+                    % else:
+                    layer.${field_name}
+                    % endif
                 }).collect()
         )
     }

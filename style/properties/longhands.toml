@@ -3616,6 +3616,9 @@ vector = {}
 keyword = { values = ["scroll", "fixed"], extra_gecko_values = ["local"], gecko_enum_prefix = "StyleImageLayerAttachment" }
 
 [background-clip]
+type = "BackgroundClip"
+initial = "computed::BackgroundClip::BorderBox"
+parse_method = "parse_for_background"
 struct = "background"
 spec = "https://drafts.csswg.org/css-backgrounds/#the-background-clip"
 animation_type = "discrete"
@@ -3623,7 +3626,6 @@ affects = "paint"
 extra_prefixes = ["webkit"]
 servo_restyle_damage = "repaint"
 vector = {}
-keyword = { values = ["border-box", "padding-box", "content-box"], extra_gecko_values = ["text"], gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
 
 [background-origin]
 struct = "background"
@@ -4048,6 +4050,9 @@ vector = {}
 keyword = { values = ["match-source", "alpha", "luminance"] }
 
 [mask-clip]
+type = "BackgroundClip"
+initial = "computed::BackgroundClip::BorderBox"
+parse_method = "parse_for_mask"
 struct = "svg"
 servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-clip"
@@ -4055,7 +4060,6 @@ animation_type = "discrete"
 affects = "paint"
 vector = {}
 extra_prefixes = ["webkit"]
-keyword = { values = ["border-box", "content-box", "padding-box"], extra_gecko_values = ["fill-box", "stroke-box", "view-box", "no-clip"], gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
 
 [mask-origin]
 struct = "svg"

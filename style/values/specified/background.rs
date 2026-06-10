@@ -14,7 +14,7 @@ use crate::values::specified::length::{
 use cssparser::{match_ignore_ascii_case, Parser};
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Write};
-use style_traits::{CssString, CssWriter, ParseError, ToCss};
+use style_traits::{CssString, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;
 
 /// A specified value for the `background-size` property.
@@ -166,5 +166,106 @@ impl Parse for BackgroundRepeat {
 
         let vertical = input.try_parse(BackgroundRepeatKeyword::parse).ok();
         Ok(BackgroundRepeat(horizontal, vertical.unwrap_or(horizontal)))
+    }
+}
+
+fn background_clip_border_area_enabled(context: &ParserContext) -> bool {
+    context.chrome_rules_enabled()
+        || static_prefs::pref!("layout.css.background-clip.border-area.enabled")
+}
+
+/// The specified value of the `background-clip` and `mask-clip` properties.
+///
+/// This is the union of the keywords both properties accept; each property restricts the set it
+/// actually allows during parsing (see `valid_for_background` / `valid_for_mask`).
+///
+/// https://drafts.csswg.org/css-backgrounds-4/#background-clip
+/// https://drafts.fxtf.org/css-masking-1/#propdef-mask-clip
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum BackgroundClip {
+    BorderBox,
+    PaddingBox,
+    ContentBox,
+    // TODO(emilio): We should expose the svg values in SpecifiedValueInfo or so but only for
+    // mask-clip... Maybe we need a newtype thing, or to rejigger the painting code / storage
+    // further.
+    #[value_info(skip)]
+    FillBox,
+    #[value_info(skip)]
+    StrokeBox,
+    #[value_info(skip)]
+    ViewBox,
+    #[value_info(skip)]
+    NoClip,
+    // TODO: text and border-area are supposed to combine in backgrounds-4...
+    Text,
+    #[parse(condition = "background_clip_border_area_enabled")]
+    #[value_info(skip)]
+    BorderArea,
+}
+
+bitflags! {
+    /// Whether a value is valid for background-clip, mask-clip, or both.
+    #[derive(Clone, Copy)]
+    struct ClipValidity: u8 {
+        const BACKGROUND = 1 << 0;
+        const MASK = 1 << 1;
+        const BOTH = Self::BACKGROUND.bits() | Self::MASK.bits();
+    }
+}
+
+impl BackgroundClip {
+    fn validity(&self) -> ClipValidity {
+        match *self {
+            Self::BorderBox => ClipValidity::BOTH,
+            Self::PaddingBox => ClipValidity::BOTH,
+            Self::ContentBox => ClipValidity::BOTH,
+            Self::FillBox => ClipValidity::MASK,
+            Self::StrokeBox => ClipValidity::MASK,
+            Self::ViewBox => ClipValidity::MASK,
+            Self::NoClip => ClipValidity::MASK,
+            Self::Text => ClipValidity::BACKGROUND,
+            Self::BorderArea => ClipValidity::BACKGROUND,
+        }
+    }
+
+    /// Parse the value of the `background-clip` property.
+    pub fn parse_for_background<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        let clip = Self::parse(context, input)?;
+        if !clip.validity().intersects(ClipValidity::BACKGROUND) {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+        Ok(clip)
+    }
+
+    /// Parse the value of the `mask-clip` property.
+    pub fn parse_for_mask<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self, ParseError<'i>> {
+        let clip = Self::parse(context, input)?;
+        if !clip.validity().intersects(ClipValidity::MASK) {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+        Ok(clip)
     }
 }

@@ -8,7 +8,7 @@ use crate::applicable_declarations::{
     ApplicableDeclarationBlock, ApplicableDeclarationList, CascadePriority, ScopeProximity,
 };
 use crate::computed_value_flags::ComputedValueFlags;
-use crate::context::{CascadeInputs, QuirksMode};
+use crate::context::{CascadeInputs, QuirksMode, TreeCountingCaches};
 use crate::custom_properties::ComputedCustomProperties;
 use crate::custom_properties::{parse_name, SpecifiedValue};
 use crate::derives::*;
@@ -929,9 +929,11 @@ impl Stylist {
         {
             let mut seen_names = PrecomputedHashSet::default();
             let mut rule_cache_conditions = RuleCacheConditions::default();
+            let mut tree_counting_caches = TreeCountingCaches::default();
             let context = computed::Context::new_for_initial_at_property_value(
                 self,
                 &mut rule_cache_conditions,
+                &mut tree_counting_caches,
             );
 
             for (k, v) in self.custom_property_script_registry().properties().iter() {
@@ -1374,6 +1376,7 @@ impl Stylist {
             &PositionTryFallbacksTryTactic::default(),
             /* rule_cache = */ None,
             &mut RuleCacheConditions::default(),
+            &mut TreeCountingCaches::default(),
         )
     }
 
@@ -1456,6 +1459,7 @@ impl Stylist {
                     &name_and_try_tactic.try_tactic,
                     /* rule_cache = */ None,
                     &mut RuleCacheConditions::default(),
+                    &mut TreeCountingCaches::default(),
                 ))
             },
         )
@@ -1485,6 +1489,7 @@ impl Stylist {
         try_tactic: &PositionTryFallbacksTryTactic,
         rule_cache: Option<&RuleCache>,
         rule_cache_conditions: &mut RuleCacheConditions,
+        tree_counting_caches: &mut TreeCountingCaches,
     ) -> Arc<ComputedValues>
     where
         E: TElement,
@@ -1529,6 +1534,7 @@ impl Stylist {
             rule_cache,
             rule_cache_conditions,
             element,
+            tree_counting_caches,
         )
     }
 
@@ -2024,6 +2030,7 @@ impl Stylist {
             /* rule_cache = */ None,
             &mut Default::default(),
             /* element = */ None,
+            &mut TreeCountingCaches::default(),
         )
     }
 

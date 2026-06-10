@@ -20,7 +20,6 @@ use crate::shared_lock::{
 };
 use crate::stylesheets::{CssRules, CustomMediaEvaluator};
 use crate::stylist::Stylist;
-use crate::values::computed::tree_counting::TreeCountingInfo;
 use crate::values::computed::{CSSPixelLength, ContainerType, Context, Ratio};
 use crate::values::specified::ContainerName;
 use app_units::Au;
@@ -308,14 +307,13 @@ impl ContainerCondition {
         let size_query_container_lookup = ContainerSizeQuery::for_element(
             container, /* known_parent_style = */ None, /* is_pseudo = */ false,
         );
-        let tree_counting_info = TreeCountingInfo::for_element(container);
         let mut attribute_tracker = AttributeTracker::new(&container);
         Context::for_container_query_evaluation(
             stylist.device(),
             Some(stylist),
             Some(info),
             size_query_container_lookup,
-            tree_counting_info,
+            &container,
             |context| {
                 let matches = condition.matches(
                     context,

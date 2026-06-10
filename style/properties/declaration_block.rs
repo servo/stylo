@@ -12,10 +12,10 @@ use super::{
     PropertyId, ShorthandId, SourcePropertyDeclaration, SourcePropertyDeclarationDrain,
     SubpropertiesVec,
 };
-use crate::context::QuirksMode;
+use crate::context::{QuirksMode, TreeCountingCaches};
 use crate::custom_properties;
 use crate::derives::*;
-use crate::dom::AttributeTracker;
+use crate::dom::{AttributeTracker, DummyElementContext};
 use crate::error_reporting::{ContextualParseError, ParseErrorReporter};
 use crate::parser::ParserContext;
 use crate::properties::{
@@ -1009,6 +1009,7 @@ impl PropertyDeclarationBlock {
         };
 
         let mut rule_cache_conditions = RuleCacheConditions::default();
+        let mut tree_counting_caches = TreeCountingCaches::default();
         let mut context = Context::new(
             StyleBuilder::new(
                 stylist.device(),
@@ -1022,7 +1023,8 @@ impl PropertyDeclarationBlock {
             &mut rule_cache_conditions,
             ContainerSizeQuery::none(),
             RuleCascadeFlags::empty(),
-            None,
+            &DummyElementContext {},
+            &mut tree_counting_caches,
         );
 
         if let Some(cv) = computed_values {

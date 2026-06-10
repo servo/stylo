@@ -359,6 +359,7 @@ where
             /* try_tactic = */ &Default::default(),
             Some(&self.context.thread_local.rule_cache),
             &mut conditions,
+            &mut self.context.thread_local.tree_counting_caches,
         );
 
         self.context.thread_local.rule_cache.insert_if_possible(

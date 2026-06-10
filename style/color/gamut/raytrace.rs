@@ -167,8 +167,6 @@ impl AbsoluteColor {
     /// `end` is the gamut mapped color, on the cubical gamut surface)
     /// <https://drafts.csswg.org/css-color-4/#GMA-Raytrace>
     fn cast_ray(start: &ColorComponents, end: &ColorComponents) -> Option<ColorComponents> {
-        const MAGIC_EPSILON: f32 = 1.0e-12;
-
         // 1. let `bmin` and `bmax` be 3-element arrays with the gamut’s lower
         //    and upper bounds, respectively [^6]
         // NOTE: assuming these are always tied to RGB bounds [0.0, 1.0]
@@ -202,12 +200,18 @@ impl AbsoluteColor {
             // 5.4. let `direction[i]` be `d`
             direction[i] = d;
 
-            // 5.5. if abs(d) > MAGIC_EPSILON:
+            // 5.5. if abs(d) > MIN_THRESHOLD:
             // NOTE the 2026-02-27 spec is incorrect; it uses less-than -- should be greater-than.
             //      Reference impls colorjs.io and ColorAide both use greater-than.
             //      Issue reported to CSS Color 4 team; yet to be fixed in working draft ATOW.
             //      See <https://github.com/w3c/csswg-drafts/issues/10579#issuecomment-4122988782>
-            if d.abs() > MAGIC_EPSILON {
+            // NOTE the spec and reference implementations all assume f64 precision, where
+            //      MIN_THRESHOLD is 1e-12 currently in the spec. This is too precise for f32.
+            //      Testing by working group members revealed the issue, and recommended
+            //      loosening the precision to accommodate f32 properly by using 1e-6.
+            //      See <https://github.com/w3c/csswg-drafts/issues/10579#issuecomment-4666657910>.
+            const MIN_THRESHOLD: f32 = 1e-6;
+            if d.abs() > MIN_THRESHOLD {
                 // 5.5.1. let `inv_d` be `1 / d`
                 let inv_d = 1.0 / d;
 

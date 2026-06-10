@@ -559,8 +559,6 @@ impl StrongRuleNode {
         source: StyleSource,
         cascade_priority: CascadePriority,
     ) -> StrongRuleNode {
-        use parking_lot::RwLockUpgradableReadGuard;
-
         debug_assert!(
             self.p.cascade_priority <= cascade_priority,
             "Should be ordered (instead {:?} > {:?}), from {:?} and {:?}",
@@ -571,12 +569,14 @@ impl StrongRuleNode {
         );
 
         let key = ChildKey(cascade_priority, source.key());
-        let children = self.p.children.upgradable_read();
-        if let Some(child) = children.get(&key, |node| node.p.key()) {
-            // Sound to call because we read-locked the parent's children.
-            return unsafe { child.upgrade() };
+        {
+            let children = self.p.children.read();
+            if let Some(child) = children.get(&key, |node| node.p.key()) {
+                // Sound to call because we read-locked the parent's children.
+                return unsafe { child.upgrade() };
+            }
         }
-        let mut children = RwLockUpgradableReadGuard::upgrade(children);
+        let mut children = self.p.children.write();
         match children.entry(key, |node| node.p.key()) {
             Entry::Occupied(child) => {
                 // Sound to call because we write-locked the parent's children.

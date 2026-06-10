@@ -269,10 +269,10 @@ where
     if l == r {
         return true;
     }
-    match (
-        l.and_then(|s| s.style_data()),
-        r.and_then(|s| s.style_data()),
-    ) {
+    let (Some(l), Some(r)) = (l, r) else {
+        return false;
+    };
+    match (l.style_data(), r.style_data()) {
         (Some(l), Some(r)) => std::ptr::eq(l, r),
         (None, None) => true,
         _ => false,

@@ -315,9 +315,9 @@ where
     let mut cascade = Cascade::new(first_line_reparenting, try_tactic, ignore_colors);
     let mut declarations = Default::default();
     let mut shorthand_cache = ShorthandsWithPropertyReferencesCache::default();
-    let attribute_provider = element.map(|e| e.ultimate_originating_element());
-    let mut attribute_tracker = match &attribute_provider {
-        Some(provider) => AttributeTracker::new(provider),
+    let element_context = element.map(|e| e.ultimate_originating_element());
+    let mut attribute_tracker = match &element_context {
+        Some(context) => AttributeTracker::new(context),
         None => AttributeTracker::new_dummy(),
     };
 

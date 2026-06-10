@@ -415,7 +415,7 @@ pub trait TElement:
     + Copy
     + Clone
     + SelectorsElement<Impl = SelectorImpl>
-    + AttributeProvider
+    + ElementContext
 {
     /// The concrete node type.
     type ConcreteNode: TNode<ConcreteElement = Self>;
@@ -1014,36 +1014,36 @@ pub trait TElement:
     }
 }
 
-/// The attribute provider trait
-pub trait AttributeProvider {
-    /// Return the value of the given custom attibute if it exists.
+/// Provides element-level context needed during style computation.
+pub trait ElementContext {
+    /// Return the value of the given custom attribute if it exists.
     fn get_attr(&self, attr: &LocalName, namespace: &Namespace) -> Option<String>;
 }
 
 /// A set of the attributes used to compute a style that uses `attr()`
 pub type AttributeReferences = Option<Box<PrecomputedHashMap<LocalName, SmallVec<[Namespace; 1]>>>>;
 
-/// A data structure to keep track of the names queried from a provider.
+/// A data structure to keep track of the names queried from an element.
 pub struct AttributeTracker<'a> {
     /// The element that queries for attributes.
-    pub provider: &'a dyn AttributeProvider,
+    pub context: &'a dyn ElementContext,
     /// The set of attributes we have queried.
     pub references: AttributeReferences,
 }
 
 impl<'a> AttributeTracker<'a> {
     /// Construct a new attribute tracker trivially.
-    pub fn new(provider: &'a dyn AttributeProvider) -> Self {
+    pub fn new(context: &'a dyn ElementContext) -> Self {
         Self {
-            provider,
+            context,
             references: None,
         }
     }
 
-    /// Consstruct a new dummy attribute tracker
+    /// Construct a new dummy attribute tracker
     pub fn new_dummy() -> Self {
         Self {
-            provider: &DummyAttributeProvider {},
+            context: &DummyElementContext {},
             references: None,
         }
     }
@@ -1065,15 +1065,15 @@ impl<'a> AttributeTracker<'a> {
             .entry(name.clone())
             .or_default()
             .push(namespace.clone());
-        self.provider.get_attr(name, namespace)
+        self.context.get_attr(name, namespace)
     }
 }
 
-/// A dummy AttributeProvider that returns none to any attribute query.
+/// A dummy ElementContext that returns none to any attribute query.
 #[derive(Clone, Debug, PartialEq)]
-struct DummyAttributeProvider;
+struct DummyElementContext;
 
-impl AttributeProvider for DummyAttributeProvider {
+impl ElementContext for DummyElementContext {
     fn get_attr(&self, _attr: &LocalName, _namespace: &Namespace) -> Option<String> {
         None
     }

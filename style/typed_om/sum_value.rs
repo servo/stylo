@@ -11,6 +11,21 @@ use style_traits::CssString;
 
 type UnitMap = HashMap<String, i32>;
 
+// <https://drafts.css-houdini.org/css-typed-om-1/#product-of-two-unit-maps>
+fn product_of_two_unit_maps(s: &UnitMap, other: &UnitMap) -> UnitMap {
+    // Step 1.
+    let mut result = s.clone();
+
+    // Step 2.
+    for (unit, power) in other {
+        // Step 2.1 & 2.2.
+        *result.entry(unit.clone()).or_insert(0) += power;
+    }
+
+    // Step 3.
+    result
+}
+
 /// <https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-sum-value>
 #[derive(Clone, Debug)]
 struct SumValueItem {
@@ -121,13 +136,48 @@ impl SumValue {
                 // [2] https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-add-two-types
 
                 // Step 4.
-                Ok(SumValue(values))
+                Ok(Self(values))
             },
 
             // CSSMathProduct
-            NumericValue::Math(MathValue::Product(_math_product)) => {
-                // TODO: Implement me!
-                Err(())
+            NumericValue::Math(MathValue::Product(math_product)) => {
+                // Step 1.
+                let mut values = vec![SumValueItem {
+                    value: 1.0,
+                    unit_map: Default::default(),
+                }];
+
+                // Step 2.
+                for item in math_product {
+                    // Step 2.1 & 2.2.
+                    let new_values = SumValue::try_from_numeric_value(item)?;
+
+                    let mut temp = Vec::new();
+
+                    // Step 2.3.
+                    for item1 in &values {
+                        // Step 2.3.1.
+                        for item2 in &new_values.0 {
+                            // Step 2.3.1.1.
+                            let mut unit_map =
+                                product_of_two_unit_maps(&item1.unit_map, &item2.unit_map);
+                            unit_map.retain(|_, power| *power != 0);
+                            let item = SumValueItem {
+                                value: item1.value * item2.value,
+                                unit_map,
+                            };
+
+                            // Step 2.3.1.2.
+                            temp.push(item);
+                        }
+                    }
+
+                    // Step 2.4.
+                    values = temp;
+                }
+
+                // Step 3.
+                Ok(Self(values))
             },
 
             // CSSMathNegate

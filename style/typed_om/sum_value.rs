@@ -281,9 +281,45 @@ impl SumValue {
             },
 
             // CSSMathClamp
-            NumericValue::Math(MathValue::Clamp(_math_clamp)) => {
-                // TODO: Implement me!
-                Err(())
+            //
+            // TODO: The spec currently does not define "create a sum value"
+            // for CSSMathClamp. The implementation below follows WPT and
+            // existing browser implementations. Proposed spec steps:
+            //
+            // 1. Let args be lower, value, and upper, each replaced by the
+            //    result of creating a sum value from the corresponding
+            //    internal slot.
+            //
+            // 2. If any item of args is failure, or has a length greater than
+            //    one, return failure.
+            //
+            // 3. If not all of the unit maps among the items of args are
+            //    identical, return failure.
+            //
+            // 4. Clamp value's sole item's value between lower's and upper's
+            //    sole item's values, and return value.
+            NumericValue::Math(MathValue::Clamp(math_clamp)) => {
+                // Step 1 & 2.
+                let lower = SumValue::try_from_numeric_value(&math_clamp[0])?;
+                let value = SumValue::try_from_numeric_value(&math_clamp[1])?;
+                let upper = SumValue::try_from_numeric_value(&math_clamp[2])?;
+
+                if lower.0.len() > 1 || value.0.len() > 1 || upper.0.len() > 1 {
+                    return Err(());
+                }
+
+                // Step 3.
+                if lower.0[0].unit_map != value.0[0].unit_map
+                    || lower.0[0].unit_map != upper.0[0].unit_map
+                {
+                    return Err(());
+                }
+
+                // Step 4.
+                let mut value = value.0.into_iter().next().unwrap();
+                value.value = value.value.max(lower.0[0].value).min(upper.0[0].value);
+
+                Ok(Self(vec![value]))
             },
         }
     }

@@ -181,9 +181,17 @@ impl SumValue {
             },
 
             // CSSMathNegate
-            NumericValue::Math(MathValue::Negate(_math_negate)) => {
-                // TODO: Implement me!
-                Err(())
+            NumericValue::Math(MathValue::Negate(math_negate)) => {
+                // Step 1 & 2.
+                let mut values = SumValue::try_from_numeric_value(math_negate)?.0;
+
+                // Step 3.
+                for item in &mut values {
+                    item.value = -item.value;
+                }
+
+                // Step 4.
+                Ok(Self(values))
             },
 
             // CSSMathInvert

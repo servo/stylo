@@ -119,6 +119,13 @@ pub struct UnitValue {
 /// a `NumericValue`, allowing nested sums if needed.
 pub type MathSum = ThinVec<NumericValue>;
 
+/// A product of numeric values.
+///
+/// This corresponds to `CSSMathProduct` in the Typed OM specification. A
+/// product value represents an expression such as `10px * 2`. Each entry is
+/// itself a `NumericValue`, allowing nested math expressions if needed.
+pub type MathProduct = ThinVec<NumericValue>;
+
 /// A negated numeric value.
 ///
 /// This corresponds to `CSSMathNegate` in the Typed OM specification. A negate
@@ -166,6 +173,11 @@ pub enum MathValue {
     ///
     /// This corresponds to `CSSMathSum`.
     Sum(MathSum),
+
+    /// A product of numeric values.
+    ///
+    /// This corresponds to `CSSMathProduct`.
+    Product(MathProduct),
 
     /// A negated numeric value.
     ///

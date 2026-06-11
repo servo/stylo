@@ -2447,8 +2447,9 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         dest: &mut ThinVec<TypedValue>,
         level: ArgumentLevel,
     ) -> Result<(), ()> {
-        // Note: Only supporting Leaf, Negate, Sum, Product, MinMax and Clamp
-        // for now
+        // Note: Naturally, only nodes that can be reified into CSSUnitValue
+        // and CSSMathValue objects are supported here:
+        // Leaf, Negate, Invert, Sum, Product, MinMax, and Clamp.
         match *self {
             Self::Leaf(ref l) => match l.to_typed_value() {
                 Some(TypedValue::Numeric(inner)) => {
@@ -2477,9 +2478,15 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 Err(())
             },
-            Self::Invert(_) => {
-                // TODO: Implement me! (once we have a test))
-                Err(())
+            Self::Invert(ref value) => {
+                let Some(inner) = CalcNodeWithLevel::nested(value).to_numeric_value() else {
+                    return Err(());
+                };
+
+                dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Invert(
+                    Box::new(inner),
+                ))));
+                Ok(())
             },
             Self::Sum(ref children) => {
                 let mut values = ThinVec::new();
@@ -2540,10 +2547,34 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             },
             Self::Product(ref children) => {
                 let mut values = ThinVec::new();
+                let mut first = true;
 
                 for child in &**children {
-                    if let Some(inner) = CalcNodeWithLevel::nested(child).to_numeric_value() {
-                        values.push(inner);
+                    if !first {
+                        match child {
+                            Self::Invert(n) => {
+                                if let Some(inner) =
+                                    CalcNodeWithLevel::nested(n.as_ref()).to_numeric_value()
+                                {
+                                    values.push(NumericValue::Math(MathValue::Invert(Box::new(
+                                        inner,
+                                    ))));
+                                }
+                            },
+                            _ => {
+                                if let Some(inner) =
+                                    CalcNodeWithLevel::nested(child).to_numeric_value()
+                                {
+                                    values.push(inner);
+                                }
+                            },
+                        }
+                    } else {
+                        first = false;
+
+                        if let Some(inner) = CalcNodeWithLevel::nested(child).to_numeric_value() {
+                            values.push(inner);
+                        }
                     }
                 }
 

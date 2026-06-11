@@ -379,7 +379,9 @@ where
         let rule_hash_target = self.rule_hash_target;
         let cascade_level = CascadeLevel::author_normal(shadow_cascade_order);
         self.in_shadow_tree(rule_hash_target, |collector| {
-            if let Some(host_rules) = cascade_data.featureless_host_rules(&collector.pseudo_elements) {
+            if let Some(host_rules) =
+                cascade_data.featureless_host_rules(&collector.pseudo_elements)
+            {
                 debug_assert!(!collector.context.featureless(), "How?");
                 collector.context.featureless = true;
                 collector.collect_rules_in_map(host_rules, cascade_level, cascade_data);

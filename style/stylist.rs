@@ -3878,7 +3878,7 @@ impl CascadeData {
             }
 
             debug_assert!(!pseudo_elements
-                    .iter()
+                .iter()
                 .any(|p| p.is_precomputed() || p.is_unknown_webkit_pseudo_element()));
 
             let selector = match ancestor_selectors {

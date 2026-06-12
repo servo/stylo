@@ -112,6 +112,22 @@ pub struct UnitValue {
     pub unit: CssString,
 }
 
+impl UnitValue {
+    /// Returns the unit as a string slice.
+    #[inline]
+    pub fn unit_str(&self) -> &str {
+        #[cfg(feature = "gecko")]
+        unsafe {
+            self.unit.as_str_unchecked()
+        }
+
+        #[cfg(feature = "servo")]
+        {
+            &self.unit
+        }
+    }
+}
+
 /// A sum of numeric values.
 ///
 /// This corresponds to `CSSMathSum` in the Typed OM specification. A sum

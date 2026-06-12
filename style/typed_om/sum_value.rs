@@ -76,14 +76,14 @@ impl SumValue {
             NumericValue::Unit(unit_value) => {
                 // Step 1.
                 let mut value = unit_value.value;
-                let mut unit = unit_value.unit.to_string();
+                let mut unit = unit_value.unit_str();
 
                 // Step2.
-                let numeric = NoCalcNumeric::parse_unit_value(value, unit.as_str())?;
+                let numeric = NoCalcNumeric::parse_unit_value(value, unit)?;
                 if let Some(canonical_unit) = numeric.canonical_unit() {
                     let canonical = numeric.to(canonical_unit)?;
                     value = canonical.unitless_value();
-                    unit = canonical.unit().to_string();
+                    unit = canonical.unit();
                 }
 
                 // Step 3.
@@ -97,7 +97,7 @@ impl SumValue {
                 // Step 4.
                 Ok(Self(vec![SumValueItem {
                     value,
-                    unit_map: [(unit, 1)].into_iter().collect::<UnitMap>(),
+                    unit_map: [(unit.to_owned(), 1)].into_iter().collect::<UnitMap>(),
                 }]))
             },
 
@@ -336,8 +336,7 @@ impl SumValue {
         let item = sole_item.to_unit_value()?;
 
         let item = {
-            let numeric =
-                NoCalcNumeric::parse_unit_value(item.value, item.unit.to_string().as_str())?;
+            let numeric = NoCalcNumeric::parse_unit_value(item.value, item.unit_str())?;
             let converted = numeric.to(unit)?;
 
             UnitValue {

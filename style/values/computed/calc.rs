@@ -6,7 +6,9 @@
 
 use super::{Angle, Length, Number, Percentage, Resolution, Time};
 use crate::derives::*;
-use crate::values::generics::calc::{self, CalcUnits, PositivePercentageBasis};
+use crate::values::generics::calc::{
+    self, CalcUnits, PositivePercentageBasis, SimplificationResult,
+};
 use crate::Zero;
 use debug_unreachable::debug_unreachable;
 use serde::{Deserialize, Serialize};
@@ -272,7 +274,9 @@ impl calc::CalcNodeLeaf for ComputedLeaf {
         })
     }
 
-    fn simplify(&mut self) {}
+    fn simplify(&mut self) -> SimplificationResult {
+        return SimplificationResult::Unchanged;
+    }
 
     fn sort_key(&self) -> calc::SortKey {
         match *self {

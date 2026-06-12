@@ -17,7 +17,7 @@ use crate::{
         animated::ToAnimatedValue,
         computed,
         generics::calc::CalcUnits,
-        specified::calc::{AllowParse, CalcNode, Leaf},
+        specified::calc::{CalcNode, CalcParseFlags, Leaf},
         specified::NoCalcNumber,
     },
 };
@@ -90,9 +90,9 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
             },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
-                let mut allow = AllowParse::new(ValueType::units());
-                allow.color_components = rcs_enabled() && allow_channel_keyword;
-                let mut node = CalcNode::parse(context, input, function, allow)?;
+                let mut flags = CalcParseFlags::new(ValueType::units());
+                flags.color_components = rcs_enabled() && allow_channel_keyword;
+                let mut node = CalcNode::parse(context, input, function, flags)?;
                 node.simplify_and_sort();
                 if node.unit().is_err() {
                     return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));

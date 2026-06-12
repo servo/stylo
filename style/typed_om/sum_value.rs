@@ -326,7 +326,7 @@ impl SumValue {
 
     /// Step 3 of:
     /// https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-to
-    pub fn resolve_to_unit(&self, unit: &str) -> Result<UnitValue, ()> {
+    pub fn to_unit(&self, unit: &str) -> Result<UnitValue, ()> {
         if self.0.len() != 1 {
             return Err(());
         }

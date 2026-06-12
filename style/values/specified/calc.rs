@@ -28,12 +28,16 @@ use cssparser::{match_ignore_ascii_case, CowRcStr, Parser, Token};
 use debug_unreachable::debug_unreachable;
 use smallvec::SmallVec;
 use std::cmp;
+use std::convert::AsRef;
+use strum::{EnumIter, IntoEnumIterator};
+use strum_macros::AsRefStr;
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{ParseError, SpecifiedValueInfo, StyleParseErrorKind};
 use thin_vec::ThinVec;
 
 /// The name of the mathematical function that we're parsing.
-#[derive(Clone, Copy, Debug, Parse)]
+#[derive(AsRefStr, Clone, Copy, Debug, EnumIter, Parse)]
+#[strum(serialize_all = "lowercase")]
 pub enum MathFunction {
     /// `calc()`: https://drafts.csswg.org/css-values-4/#funcdef-calc
     Calc,
@@ -81,6 +85,13 @@ pub enum MathFunction {
     SiblingCount,
     /// `sibling-index()`: https://drafts.csswg.org/css-values-5/#funcdef-sibling-index
     SiblingIndex,
+}
+
+impl MathFunction {
+    /// Returns an iterator for the enum variants
+    pub fn variants() -> MathFunctionIter {
+        return MathFunction::iter();
+    }
 }
 
 /// A leaf node inside a `Calc` expression's AST.

@@ -46,10 +46,10 @@ impl AngleUnit {
     #[inline]
     pub fn from_str(unit: &str) -> Result<Self, ()> {
         Ok(match_ignore_ascii_case! { unit,
-            "deg" => AngleUnit::Deg,
-            "grad" => AngleUnit::Grad,
-            "turn" => AngleUnit::Turn,
-            "rad" => AngleUnit::Rad,
+            "deg" => Self::Deg,
+            "grad" => Self::Grad,
+            "turn" => Self::Turn,
+            "rad" => Self::Rad,
              _ => return Err(())
         })
     }

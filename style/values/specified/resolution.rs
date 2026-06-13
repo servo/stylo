@@ -32,6 +32,18 @@ pub enum ResolutionUnit {
 }
 
 impl ResolutionUnit {
+    /// Returns the resolution unit for the given string.
+    #[inline]
+    pub fn from_str(unit: &str) -> Result<Self, ()> {
+        Ok(match_ignore_ascii_case! { &unit,
+            "dpi" => Self::Dpi,
+            "dppx" => Self::Dppx,
+            "dpcm" => Self::Dpcm,
+            "x" => Self::X,
+            _ => return Err(())
+        })
+    }
+
     /// Returns this unit as a string.
     #[inline]
     pub fn as_str(self) -> &'static str {
@@ -96,13 +108,7 @@ impl NoCalcResolution {
 
     /// Parse a resolution given a value and unit.
     pub fn parse_dimension(value: CSSFloat, unit: &str) -> Result<Self, ()> {
-        let unit = match_ignore_ascii_case! { &unit,
-            "dpi" => ResolutionUnit::Dpi,
-            "dppx" => ResolutionUnit::Dppx,
-            "dpcm" => ResolutionUnit::Dpcm,
-            "x" => ResolutionUnit::X,
-            _ => return Err(())
-        };
+        let unit = ResolutionUnit::from_str(unit)?;
         Ok(Self::new(unit, value))
     }
 }

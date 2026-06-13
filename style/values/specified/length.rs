@@ -127,6 +127,12 @@ pub enum LengthUnit {
 impl LengthUnit {
     /// Returns the length unit for the given string.
     #[inline]
+    pub fn from_str(unit: &str) -> Result<Self, ()> {
+        Self::from_str_with_flags(ParsingMode::DEFAULT, /* in_page_rule = */ false, unit)
+    }
+
+    /// Returns the length unit for the given flags and string.
+    #[inline]
     pub fn from_str_with_flags(
         parsing_mode: ParsingMode,
         in_page_rule: bool,

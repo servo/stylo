@@ -19,6 +19,7 @@ use thin_vec::ThinVec;
 
 pub mod numeric;
 pub mod numeric_declaration;
+pub mod numeric_type;
 pub mod sum_value;
 
 /// A single segment of an unparsed Typed OM value.

@@ -212,6 +212,23 @@ impl Parse for GridLine<specified::Integer> {
     }
 }
 
+/// The unit of a `<frequency>` value.
+pub struct FlexUnit;
+
+impl FlexUnit {
+    /// Returns whether the given string is the flex unit.
+    #[inline]
+    pub fn matches(unit: &str) -> bool {
+        unit.eq_ignore_ascii_case("fr")
+    }
+
+    /// Returns the flex unit name as a string.
+    #[inline]
+    pub fn name() -> &'static str {
+        "fr"
+    }
+}
+
 /// A CSS `<flex>` value.
 ///
 /// https://drafts.csswg.org/css-grid-2/#typedef-flex
@@ -237,7 +254,7 @@ impl ToCss for Flex {
         W: Write,
     {
         self.0.to_css(dest)?;
-        dest.write_str("fr")
+        dest.write_str(FlexUnit::name())
     }
 }
 

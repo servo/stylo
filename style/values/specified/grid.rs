@@ -7,7 +7,9 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use crate::values::generics::grid::{Flex, GridTemplateComponent, ImplicitGridTracks, RepeatCount};
+use crate::values::generics::grid::{
+    Flex, FlexUnit, GridTemplateComponent, ImplicitGridTracks, RepeatCount,
+};
 use crate::values::generics::grid::{LineNameList, LineNameListValue, NameRepeat, TrackBreadth};
 use crate::values::generics::grid::{TrackList, TrackListValue, TrackRepeat, TrackSize};
 use crate::values::specified::{Integer, LengthPercentage};
@@ -23,7 +25,7 @@ impl Flex {
         match *input.next()? {
             Token::Dimension {
                 value, ref unit, ..
-            } if unit.eq_ignore_ascii_case("fr") && value.is_sign_positive() => Ok(Self(value)),
+            } if FlexUnit::matches(unit) && value.is_sign_positive() => Ok(Self(value)),
             ref t => Err(location.new_unexpected_token_error(t.clone())),
         }
     }

@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-//! Typed OM Numeric Values.
+//! Typed OM Numeric Value.
 
 use crate::derives::*;
 use crate::values::specified::{

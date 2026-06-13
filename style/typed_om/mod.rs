@@ -17,8 +17,8 @@ use servo_arc::Arc;
 use style_traits::CssString;
 use thin_vec::ThinVec;
 
+pub mod numeric;
 pub mod numeric_declaration;
-pub mod numeric_values;
 pub mod sum_value;
 
 /// A single segment of an unparsed Typed OM value.

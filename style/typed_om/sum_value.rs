@@ -4,7 +4,7 @@
 
 //! Typed OM Sum Value.
 
-use crate::typed_om::numeric_values::NoCalcNumeric;
+use crate::typed_om::numeric::NoCalcNumeric;
 use crate::typed_om::{MathSum, MathValue, NumericValue, UnitValue};
 use itertools::Itertools;
 use std::collections::HashMap;

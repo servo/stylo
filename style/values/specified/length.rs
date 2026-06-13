@@ -125,6 +125,73 @@ pub enum LengthUnit {
 }
 
 impl LengthUnit {
+    /// Returns the length unit for the given string.
+    #[inline]
+    pub fn from_str_with_flags(
+        parsing_mode: ParsingMode,
+        in_page_rule: bool,
+        unit: &str,
+    ) -> Result<Self, ()> {
+        let allows_computational_dependence = parsing_mode.allows_computational_dependence();
+
+        Ok(match_ignore_ascii_case! { unit,
+            "px" => Self::Px,
+            "in" => Self::In,
+            "cm" => Self::Cm,
+            "mm" => Self::Mm,
+            "q" => Self::Q,
+            "pt" => Self::Pt,
+            "pc" => Self::Pc,
+            // font-relative
+            "em" if allows_computational_dependence => Self::Em,
+            "ex" if allows_computational_dependence => Self::Ex,
+            "rex" if allows_computational_dependence => Self::Rex,
+            "ch" if allows_computational_dependence => Self::Ch,
+            "rch" if allows_computational_dependence => Self::Rch,
+            "cap" if allows_computational_dependence => Self::Cap,
+            "rcap" if allows_computational_dependence => Self::Rcap,
+            "ic" if allows_computational_dependence => Self::Ic,
+            "ric" if allows_computational_dependence => Self::Ric,
+            "rem" if allows_computational_dependence => Self::Rem,
+            "lh" if allows_computational_dependence => Self::Lh,
+            "rlh" if allows_computational_dependence => Self::Rlh,
+            // viewport percentages
+            "vw" if !in_page_rule => Self::Vw,
+            "svw" if !in_page_rule => Self::Svw,
+            "lvw" if !in_page_rule => Self::Lvw,
+            "dvw" if !in_page_rule => Self::Dvw,
+            "vh" if !in_page_rule => Self::Vh,
+            "svh" if !in_page_rule => Self::Svh,
+            "lvh" if !in_page_rule => Self::Lvh,
+            "dvh" if !in_page_rule => Self::Dvh,
+            "vmin" if !in_page_rule => Self::Vmin,
+            "svmin" if !in_page_rule => Self::Svmin,
+            "lvmin" if !in_page_rule => Self::Lvmin,
+            "dvmin" if !in_page_rule => Self::Dvmin,
+            "vmax" if !in_page_rule => Self::Vmax,
+            "svmax" if !in_page_rule => Self::Svmax,
+            "lvmax" if !in_page_rule => Self::Lvmax,
+            "dvmax" if !in_page_rule => Self::Dvmax,
+            "vb" if !in_page_rule => Self::Vb,
+            "svb" if !in_page_rule => Self::Svb,
+            "lvb" if !in_page_rule => Self::Lvb,
+            "dvb" if !in_page_rule => Self::Dvb,
+            "vi" if !in_page_rule => Self::Vi,
+            "svi" if !in_page_rule => Self::Svi,
+            "lvi" if !in_page_rule => Self::Lvi,
+            "dvi" if !in_page_rule => Self::Dvi,
+            // Container query lengths. Inherit the limitation from viewport units since
+            // we may fall back to them.
+            "cqw" if !in_page_rule && cfg!(feature = "gecko") => Self::Cqw,
+            "cqh" if !in_page_rule && cfg!(feature = "gecko") => Self::Cqh,
+            "cqi" if !in_page_rule && cfg!(feature = "gecko") => Self::Cqi,
+            "cqb" if !in_page_rule && cfg!(feature = "gecko") => Self::Cqb,
+            "cqmin" if !in_page_rule && cfg!(feature = "gecko") => Self::Cqmin,
+            "cqmax" if !in_page_rule && cfg!(feature = "gecko") => Self::Cqmax,
+            _ => return Err(()),
+        })
+    }
+
     /// Returns this unit as a string.
     #[inline]
     pub fn as_str(self) -> &'static str {
@@ -496,64 +563,7 @@ impl NoCalcLength {
         value: CSSFloat,
         unit: &str,
     ) -> Result<Self, ()> {
-        let allows_computational_dependence = parsing_mode.allows_computational_dependence();
-
-        let length_unit = match_ignore_ascii_case! { unit,
-            "px" => LengthUnit::Px,
-            "in" => LengthUnit::In,
-            "cm" => LengthUnit::Cm,
-            "mm" => LengthUnit::Mm,
-            "q" => LengthUnit::Q,
-            "pt" => LengthUnit::Pt,
-            "pc" => LengthUnit::Pc,
-            // font-relative
-            "em" if allows_computational_dependence => LengthUnit::Em,
-            "ex" if allows_computational_dependence => LengthUnit::Ex,
-            "rex" if allows_computational_dependence => LengthUnit::Rex,
-            "ch" if allows_computational_dependence => LengthUnit::Ch,
-            "rch" if allows_computational_dependence => LengthUnit::Rch,
-            "cap" if allows_computational_dependence => LengthUnit::Cap,
-            "rcap" if allows_computational_dependence => LengthUnit::Rcap,
-            "ic" if allows_computational_dependence => LengthUnit::Ic,
-            "ric" if allows_computational_dependence => LengthUnit::Ric,
-            "rem" if allows_computational_dependence => LengthUnit::Rem,
-            "lh" if allows_computational_dependence => LengthUnit::Lh,
-            "rlh" if allows_computational_dependence => LengthUnit::Rlh,
-            // viewport percentages
-            "vw" if !in_page_rule => LengthUnit::Vw,
-            "svw" if !in_page_rule => LengthUnit::Svw,
-            "lvw" if !in_page_rule => LengthUnit::Lvw,
-            "dvw" if !in_page_rule => LengthUnit::Dvw,
-            "vh" if !in_page_rule => LengthUnit::Vh,
-            "svh" if !in_page_rule => LengthUnit::Svh,
-            "lvh" if !in_page_rule => LengthUnit::Lvh,
-            "dvh" if !in_page_rule => LengthUnit::Dvh,
-            "vmin" if !in_page_rule => LengthUnit::Vmin,
-            "svmin" if !in_page_rule => LengthUnit::Svmin,
-            "lvmin" if !in_page_rule => LengthUnit::Lvmin,
-            "dvmin" if !in_page_rule => LengthUnit::Dvmin,
-            "vmax" if !in_page_rule => LengthUnit::Vmax,
-            "svmax" if !in_page_rule => LengthUnit::Svmax,
-            "lvmax" if !in_page_rule => LengthUnit::Lvmax,
-            "dvmax" if !in_page_rule => LengthUnit::Dvmax,
-            "vb" if !in_page_rule => LengthUnit::Vb,
-            "svb" if !in_page_rule => LengthUnit::Svb,
-            "lvb" if !in_page_rule => LengthUnit::Lvb,
-            "dvb" if !in_page_rule => LengthUnit::Dvb,
-            "vi" if !in_page_rule => LengthUnit::Vi,
-            "svi" if !in_page_rule => LengthUnit::Svi,
-            "lvi" if !in_page_rule => LengthUnit::Lvi,
-            "dvi" if !in_page_rule => LengthUnit::Dvi,
-            // Container query lengths. Inherit the limitation from viewport units since
-            // we may fall back to them.
-            "cqw" if !in_page_rule && cfg!(feature = "gecko") => LengthUnit::Cqw,
-            "cqh" if !in_page_rule && cfg!(feature = "gecko") => LengthUnit::Cqh,
-            "cqi" if !in_page_rule && cfg!(feature = "gecko") => LengthUnit::Cqi,
-            "cqb" if !in_page_rule && cfg!(feature = "gecko") => LengthUnit::Cqb,
-            "cqmin" if !in_page_rule && cfg!(feature = "gecko") => LengthUnit::Cqmin,
-            "cqmax" if !in_page_rule && cfg!(feature = "gecko") => LengthUnit::Cqmax,
-            _ => return Err(()),
-        };
+        let length_unit = LengthUnit::from_str_with_flags(parsing_mode, in_page_rule, unit)?;
         Ok(Self::new(length_unit, value))
     }
 

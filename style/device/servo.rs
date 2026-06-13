@@ -12,7 +12,7 @@ use crate::logical_geometry::WritingMode;
 use crate::media_queries::MediaType;
 use crate::properties::style_structs::Font;
 use crate::properties::ComputedValues;
-use crate::queries::values::PrefersColorScheme;
+use crate::queries::values::{PointerCapabilities, PrefersColorScheme};
 use crate::values::computed::font::GenericFontFamily;
 use crate::values::computed::{CSSPixelLength, Length, LineHeight, NonNegativeLength};
 use crate::values::specified::color::{ColorSchemeFlags, ForcedColors, SystemColor};
@@ -66,6 +66,10 @@ pub(super) struct ExtraDeviceData {
     /// Whether the user prefers light mode or dark mode
     #[ignore_malloc_size_of = "Pure stack type"]
     prefers_color_scheme: PrefersColorScheme,
+    /// The capabilities of the primary pointing device (for the `pointer` and
+    /// `hover` media features).
+    #[ignore_malloc_size_of = "Pure stack type"]
+    pointer_capabilities: PointerCapabilities,
     /// An implementation of a trait which implements support for querying font metrics.
     #[ignore_malloc_size_of = "Owned by embedder"]
     font_metrics_provider: Box<dyn FontMetricsProvider>,
@@ -108,6 +112,10 @@ impl Device {
                 device_pixel_ratio,
                 quirks_mode,
                 prefers_color_scheme,
+                // Default to a desktop-class input: a precise pointer that can
+                // hover. Embedders on touch-first devices override this via
+                // `set_pointer_capabilities`.
+                pointer_capabilities: PointerCapabilities::FINE | PointerCapabilities::HOVER,
                 font_metrics_provider,
             },
         }
@@ -281,6 +289,28 @@ impl Device {
     /// Returns the color scheme of this [`Device`].
     pub fn color_scheme(&self) -> PrefersColorScheme {
         self.extra.prefers_color_scheme
+    }
+
+    /// Set the [`PointerCapabilities`] of the primary pointing device, used to
+    /// evaluate the `pointer` and `hover` media features.
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you
+    /// must call `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_pointer_capabilities(&mut self, capabilities: PointerCapabilities) {
+        self.extra.pointer_capabilities = capabilities;
+    }
+
+    /// The capabilities of the primary pointing device (`pointer` / `hover`).
+    pub fn pointer_capabilities(&self) -> PointerCapabilities {
+        self.extra.pointer_capabilities
+    }
+
+    /// The union of the capabilities of all pointing devices (`any-pointer` /
+    /// `any-hover`). Servo models a single pointer, so this matches the
+    /// primary device.
+    pub fn any_pointer_capabilities(&self) -> PointerCapabilities {
+        self.extra.pointer_capabilities
     }
 
     pub(crate) fn is_dark_color_scheme(&self, _: ColorSchemeFlags) -> bool {

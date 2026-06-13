@@ -44,3 +44,19 @@ pub enum PrefersColorScheme {
     Light,
     Dark,
 }
+
+/// The capabilities of the primary (or any) input pointer, used to evaluate
+/// the `pointer`, `any-pointer`, `hover` and `any-hover` media features.
+/// https://drafts.csswg.org/mediaqueries-4/#mf-interaction
+#[derive(Clone, Copy, Debug, PartialEq, Eq, ToShmem)]
+pub struct PointerCapabilities(u8);
+bitflags! {
+    impl PointerCapabilities: u8 {
+        /// The pointer is imprecise (e.g. a touchscreen).
+        const COARSE = 1 << 0;
+        /// The pointer is precise (e.g. a mouse or trackpad).
+        const FINE = 1 << 1;
+        /// The pointer can hover (e.g. a mouse, but not a touchscreen).
+        const HOVER = 1 << 2;
+    }
+}

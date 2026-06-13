@@ -20,6 +20,8 @@ animationcancel
 animationend
 animationiteration
 animationstart
+any-hover
+any-pointer
 aspect-ratio
 beforeinput
 beforetoggle
@@ -69,6 +71,7 @@ hairline
 hashchange
 height
 hidden
+hover
 icecandidate
 iceconnectionstatechange
 icegatheringstatechange
@@ -111,6 +114,7 @@ password
 pause
 play
 playing
+pointer
 popstate
 postershown
 prefers-color-scheme

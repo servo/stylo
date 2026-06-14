@@ -13,7 +13,7 @@ use crate::values::specified::resolution::ResolutionUnit;
 use crate::values::specified::time::TimeUnit;
 
 /// https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-base-type
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 #[repr(u8)]
 pub enum NumericBaseType {
     /// A `<length>` unit.
@@ -42,6 +42,25 @@ pub enum NumericBaseType {
 pub const NUMERIC_BASE_TYPE_COUNT: usize = 7;
 
 const_assert!(NumericBaseType::Percent as usize + 1 == NUMERIC_BASE_TYPE_COUNT);
+
+/// Every numeric base type in enum-declaration order.
+pub const ALL_NUMERIC_BASE_TYPES: [NumericBaseType; NUMERIC_BASE_TYPE_COUNT] = [
+    NumericBaseType::Length,
+    NumericBaseType::Angle,
+    NumericBaseType::Time,
+    NumericBaseType::Frequency,
+    NumericBaseType::Resolution,
+    NumericBaseType::Flex,
+    NumericBaseType::Percent,
+];
+
+const _ASSERT_ALL_NUMERIC_BASE_TYPES_ORDER: () = {
+    let mut i = 0;
+    while i < NUMERIC_BASE_TYPE_COUNT {
+        assert!(ALL_NUMERIC_BASE_TYPES[i] as u8 == i as u8);
+        i += 1;
+    }
+};
 
 /// https://drafts.css-houdini.org/css-typed-om-1/#numeric-typing
 #[derive(Clone, Debug)]

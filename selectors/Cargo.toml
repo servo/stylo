@@ -16,17 +16,18 @@ name = "selectors"
 path = "lib.rs"
 
 [features]
-default = ["fast_parse"]
+default = ["fast_parse", "fast_match_attr"]
 bench = []
 to_shmem = ["dep:to_shmem", "dep:to_shmem_derive"]
 fast_parse = ["cssparser/default"]
+fast_match_attr = ["dep:phf", "dep:phf_codegen"]
 
 [dependencies]
 bitflags = "2"
 cssparser = { version = "0.37", default-features = false }
 rustc-hash = "2.1.1"
 log = "0.4"
-phf = "0.13"
+phf = { version = "0.13", optional = true }
 precomputed-hash = "0.1"
 servo_arc = { version = "0.4", path = "../servo_arc" }
 smallvec = "1.0"
@@ -35,4 +36,4 @@ to_shmem_derive = { version = "0.1", path = "../to_shmem_derive", optional = tru
 new_debug_unreachable = "1"
 
 [build-dependencies]
-phf_codegen = "0.13"
+phf_codegen = { version = "0.13", optional = true }

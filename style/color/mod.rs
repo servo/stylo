@@ -542,7 +542,7 @@ impl AbsoluteColor {
         &self,
         channel_keyword: ChannelKeyword,
     ) -> Result<Option<f32>, ()> {
-        if channel_keyword == ChannelKeyword::Alpha {
+        if channel_keyword == ChannelKeyword::ALPHA {
             return Ok(self.alpha());
         }
 

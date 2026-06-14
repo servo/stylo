@@ -16,12 +16,14 @@ name = "selectors"
 path = "lib.rs"
 
 [features]
+default = ["fast_parse"]
 bench = []
 to_shmem = ["dep:to_shmem", "dep:to_shmem_derive"]
+fast_parse = ["cssparser/default"]
 
 [dependencies]
 bitflags = "2"
-cssparser = "0.37"
+cssparser = { version = "0.37", default-features = false }
 rustc-hash = "2.1.1"
 log = "0.4"
 phf = "0.13"

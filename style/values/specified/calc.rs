@@ -251,8 +251,8 @@ bitflags! {
 pub struct CalcParseFlags {
     /// Units allowed to be parsed.
     units: CalcUnits,
-    /// Which relative color components, if any, are allowed.
-    pub color_components: ChannelKeyword,
+    /// Whether relative color components are allowed.
+    pub color_components: bool,
     /// Additional functions allowed to be parsed in this context.
     additional_functions: AdditionalFunctions,
     /// Whether or not in place operations should be performed. Normally, we aggressive
@@ -265,7 +265,7 @@ impl CalcParseFlags {
     pub fn new(units: CalcUnits) -> Self {
         Self {
             units,
-            color_components: ChannelKeyword::empty(),
+            color_components: false,
             additional_functions: AdditionalFunctions::empty(),
             in_place_operations: CalcNodeParseInPlaceOperations::Yes,
         }
@@ -693,7 +693,7 @@ fn parse_anchor_function_fallback<'i, 't>(
         input,
         CalcParseFlags {
             units: CalcUnits::LENGTH_PERCENTAGE,
-            color_components: ChannelKeyword::empty(),
+            color_components: false,
             additional_functions,
             in_place_operations: CalcNodeParseInPlaceOperations::Yes,
         },
@@ -852,9 +852,16 @@ impl CalcNode {
                     "-infinity" => Leaf::Number(NoCalcNumber::new(f32::NEG_INFINITY)),
                     "nan" => Leaf::Number(NoCalcNumber::new(f32::NAN)),
                     _ => {
-                        match ChannelKeyword::from_ident(&ident) {
-                            Ok(channel_keyword) if flag.color_components.contains(channel_keyword) => Leaf::ColorComponent(channel_keyword),
-                            _ => return Err(location.new_unexpected_token_error(Token::Ident(ident.clone()))),
+                        if !flags.color_components {
+                            return Err(
+                                location.new_unexpected_token_error(Token::Ident(ident.clone()))
+                            );
+                        }
+                        if let Ok(channel_keyword) = ChannelKeyword::from_ident(&ident) {
+                            Leaf::ColorComponent(channel_keyword)
+                        } else {
+                            return Err(location
+                                .new_unexpected_token_error(Token::Ident(ident.clone())));
                         }
                     },
                 };
@@ -1411,7 +1418,7 @@ impl CalcNode {
         } else {
             CalcParseFlags {
                 units: CalcUnits::LENGTH_PERCENTAGE,
-                color_components: ChannelKeyword::empty(),
+                color_components: false,
                 additional_functions: match allow_anchor {
                     AllowAnchorPositioningFunctions::No => unreachable!(),
                     AllowAnchorPositioningFunctions::AllowAnchorSize => {

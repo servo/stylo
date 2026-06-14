@@ -74,7 +74,7 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
         allow_none: bool,
-        allowed_channel_keywords: ChannelKeyword,
+        allow_channel_keyword: bool,
     ) -> Result<Self, ParseError<'i>> {
         let location = input.current_source_location();
 
@@ -82,20 +82,16 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
             Token::Ident(ref value) if allow_none && value.eq_ignore_ascii_case("none") => {
                 Ok(ColorComponent::None)
             },
-            ref t @ Token::Ident(ref ident) => Ok(match ChannelKeyword::from_ident(ident) {
-                Ok(channel_keyword) if allowed_channel_keywords.contains(channel_keyword) => {
-                    ColorComponent::ChannelKeyword(channel_keyword)
-                },
-                _ => return Err(location.new_unexpected_token_error(t.clone())),
-            }),
+            ref t @ Token::Ident(ref ident) if allow_channel_keyword => {
+                let Ok(channel_keyword) = ChannelKeyword::from_ident(ident) else {
+                    return Err(location.new_unexpected_token_error(t.clone()));
+                };
+                Ok(ColorComponent::ChannelKeyword(channel_keyword))
+            },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
                 let mut flags = CalcParseFlags::new(ValueType::units());
-                flags.color_components = if rcs_enabled() {
-                    allowed_channel_keywords
-                } else {
-                    ChannelKeyword::empty()
-                };
+                flags.color_components = rcs_enabled() && allow_channel_keyword;
                 let mut node = CalcNode::parse(context, input, function, flags)?;
                 node.simplify_and_sort();
                 if node.unit().is_err() {

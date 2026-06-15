@@ -6,7 +6,7 @@
 
 use crate::derives::*;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
-use crate::queries::values::PrefersColorScheme;
+use crate::queries::values::{Orientation, PrefersColorScheme};
 use crate::values::computed::{CSSPixelLength, Context, Ratio, Resolution};
 use std::fmt::Debug;
 
@@ -32,6 +32,11 @@ fn eval_device_height(context: &Context) -> CSSPixelLength {
     let device = context.device();
     let scaled = device.device_size() / device.device_pixel_ratio();
     CSSPixelLength::new(scaled.height)
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#orientation
+fn eval_orientation(context: &Context, value: Option<Orientation>) -> bool {
+    Orientation::eval(context.device().au_viewport_size(), value)
 }
 
 #[derive(Clone, Copy, Debug, FromPrimitive, Parse, ToCss)]
@@ -155,7 +160,7 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 14] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -166,6 +171,12 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 14] = [
         atom!("height"),
         AllowsRanges::Yes,
         Evaluator::Length(eval_height),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("orientation"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_orientation, Orientation),
         FeatureFlags::empty(),
     ),
     feature!(

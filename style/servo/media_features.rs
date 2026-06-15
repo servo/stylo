@@ -15,6 +15,11 @@ fn eval_width(context: &Context) -> CSSPixelLength {
     CSSPixelLength::new(context.device().au_viewport_size().width.to_f32_px())
 }
 
+/// https://drafts.csswg.org/mediaqueries-4/#height
+fn eval_height(context: &Context) -> CSSPixelLength {
+    CSSPixelLength::new(context.device().au_viewport_size().height.to_f32_px())
+}
+
 /// https://drafts.csswg.org/mediaqueries-4/#device-width
 fn eval_device_width(context: &Context) -> CSSPixelLength {
     let device = context.device();
@@ -150,11 +155,17 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 13] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 14] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
         Evaluator::Length(eval_width),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("height"),
+        AllowsRanges::Yes,
+        Evaluator::Length(eval_height),
         FeatureFlags::empty(),
     ),
     feature!(

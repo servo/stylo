@@ -88,6 +88,11 @@ pub enum ColorFunction<OriginColor> {
         ColorComponent<NumberOrPercentageComponent>, // alpha
         ColorSpace,
     ),
+    /// <https://drafts.csswg.org/css-color-5/#relative-alpha>
+    Alpha(
+        OriginColor,                                 // origin
+        ColorComponent<NumberOrPercentageComponent>, // alpha
+    ),
 }
 
 impl ColorFunction<AbsoluteColor> {
@@ -355,6 +360,9 @@ impl ColorFunction<AbsoluteColor> {
                     alpha!(alpha, origin_color.as_ref()),
                 )
             },
+            ColorFunction::Alpha(origin_color, alpha) => {
+                origin_color.with_alpha(alpha!(alpha, Some(origin_color)))
+            },
         })
     }
 }
@@ -371,6 +379,7 @@ impl ColorFunction<SpecifiedColor> {
             | Self::Oklab(origin_color, ..)
             | Self::Oklch(origin_color, ..)
             | Self::Color(origin_color, ..) => origin_color.is_some(),
+            Self::Alpha(..) => true,
         }
     }
 
@@ -427,6 +436,7 @@ impl<Color> ColorFunction<Color> {
                 alpha.clone(),
                 color_space.clone(),
             ),
+            ColorFunction::Alpha(o, alpha) => ColorFunction::Alpha(f(o)?.into(), alpha.clone()),
         })
     }
 }
@@ -457,45 +467,51 @@ impl<C: style_traits::ToCss> style_traits::ToCss for ColorFunction<C> {
     where
         W: std::fmt::Write,
     {
-        let (origin_color, alpha) = match self {
+        let (origin_color, alpha, trailing_space) = match self {
             Self::Rgb(origin_color, _, _, _, alpha) => {
                 dest.write_str("rgb(")?;
-                (origin_color, alpha)
+                (origin_color.as_ref(), alpha, true)
             },
             Self::Hsl(origin_color, _, _, _, alpha) => {
                 dest.write_str("hsl(")?;
-                (origin_color, alpha)
+                (origin_color.as_ref(), alpha, true)
             },
             Self::Hwb(origin_color, _, _, _, alpha) => {
                 dest.write_str("hwb(")?;
-                (origin_color, alpha)
+                (origin_color.as_ref(), alpha, true)
             },
             Self::Lab(origin_color, _, _, _, alpha) => {
                 dest.write_str("lab(")?;
-                (origin_color, alpha)
+                (origin_color.as_ref(), alpha, true)
             },
             Self::Lch(origin_color, _, _, _, alpha) => {
                 dest.write_str("lch(")?;
-                (origin_color, alpha)
+                (origin_color.as_ref(), alpha, true)
             },
             Self::Oklab(origin_color, _, _, _, alpha) => {
                 dest.write_str("oklab(")?;
-                (origin_color, alpha)
+                (origin_color.as_ref(), alpha, true)
             },
             Self::Oklch(origin_color, _, _, _, alpha) => {
                 dest.write_str("oklch(")?;
-                (origin_color, alpha)
+                (origin_color.as_ref(), alpha, true)
             },
             Self::Color(origin_color, _, _, _, alpha, _) => {
                 dest.write_str("color(")?;
-                (origin_color, alpha)
+                (origin_color.as_ref(), alpha, true)
+            },
+            Self::Alpha(origin_color, alpha) => {
+                dest.write_str("alpha(")?;
+                (Some(origin_color), alpha, false)
             },
         };
 
-        if let Optional::Some(origin_color) = origin_color {
+        if let Some(origin_color) = origin_color {
             dest.write_str("from ")?;
             origin_color.to_css(dest)?;
-            dest.write_str(" ")?;
+            if trailing_space {
+                dest.write_str(" ")?;
+            }
         }
 
         let is_opaque = if let ColorComponent::Value(value) = *alpha {
@@ -560,6 +576,9 @@ impl<C: style_traits::ToCss> style_traits::ToCss for ColorFunction<C> {
                 color_space.to_css(dest)?;
                 dest.write_str(" ")?;
                 serialize_components!(c0, c1, c2);
+                serialize_alpha!(alpha);
+            },
+            Self::Alpha(_, alpha) => {
                 serialize_alpha!(alpha);
             },
         }

@@ -449,6 +449,16 @@ impl AbsoluteColor {
         }
     }
 
+    /// Returns a copy of this color with a modified alpha value.
+    pub fn with_alpha(&self, alpha: impl Into<ComponentDetails>) -> Self {
+        let mut result = *self;
+        let alpha_details = alpha.into();
+        result.alpha = alpha_details.value;
+        result.flags.set(ColorFlags::ALPHA_IS_NONE, alpha_details.is_none);
+        result.flags.remove(ColorFlags::IS_LEGACY_SRGB);
+        result
+    }
+
     /// Convert this color into the sRGB color space and set it to the legacy
     /// syntax.
     #[inline]

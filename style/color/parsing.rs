@@ -236,6 +236,13 @@ fn parse_color_function<'i, 't>(
         "oklab" => parse_lab_like(context, arguments, origin_color, ColorFunction::Oklab),
         "oklch" => parse_lch_like(context, arguments, origin_color, ColorFunction::Oklch),
         "color" => parse_color_with_color_space(context, arguments, origin_color),
+        "alpha" if static_prefs::pref!("layout.css.alpha-color-function.enabled") => {
+            parse_relative_alpha(
+                context,
+                arguments,
+                origin_color.ok_or_else(|| arguments.new_custom_error(StyleParseErrorKind::UnspecifiedError))?
+            )
+        },
         _ => return Err(arguments.new_unexpected_token_error(Token::Ident(name))),
     }?;
     arguments.expect_exhausted()?;
@@ -485,6 +492,17 @@ fn parse_color_with_color_space<'i, 't>(
         alpha,
         color_space.into(),
     ))
+}
+
+/// Parse the alpha() function.
+#[inline]
+fn parse_relative_alpha<'i, 't>(
+    context: &ParserContext,
+    arguments: &mut Parser<'i, 't>,
+    origin_color: SpecifiedColor,
+) -> Result<ColorFunction<SpecifiedColor>, ParseError<'i>> {
+    let alpha = parse_modern_alpha(context, arguments, ChannelKeyword::ALPHA)?;
+    Ok(ColorFunction::Alpha(origin_color.into(), alpha))
 }
 
 /// Either a percentage or a number.

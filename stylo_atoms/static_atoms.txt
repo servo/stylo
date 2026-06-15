@@ -49,9 +49,7 @@ datachannel
 date
 datetime-local
 dir
-device-height
 device-pixel-ratio
-device-width
 durationchange
 email
 emptied

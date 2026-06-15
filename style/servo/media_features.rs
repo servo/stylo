@@ -165,19 +165,19 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
         atom!("width"),
         AllowsRanges::Yes,
         Evaluator::Length(eval_width),
-        FeatureFlags::empty(),
+        FeatureFlags::VIEWPORT_DEPENDENT,
     ),
     feature!(
         atom!("height"),
         AllowsRanges::Yes,
         Evaluator::Length(eval_height),
-        FeatureFlags::empty(),
+        FeatureFlags::VIEWPORT_DEPENDENT,
     ),
     feature!(
         atom!("orientation"),
         AllowsRanges::No,
         keyword_evaluator!(eval_orientation, Orientation),
-        FeatureFlags::empty(),
+        FeatureFlags::VIEWPORT_DEPENDENT,
     ),
     feature!(
         atom!("pointer"),

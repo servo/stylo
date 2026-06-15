@@ -162,4 +162,12 @@ impl NumericType {
 
         Err(())
     }
+
+    /// Creates a numeric type from a previously validated unit string.
+    pub fn from_unit_unchecked(unit: &str) -> Self {
+        let result = Self::try_from_unit(unit);
+        debug_assert!(result.is_ok(), "Expected a valid unit, got {unit:?}");
+
+        result.unwrap_or(Self::number())
+    }
 }

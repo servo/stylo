@@ -5,7 +5,7 @@
 //! Computed angles.
 
 use crate::derives::*;
-use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
+use crate::typed_om::{NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::CSSFloat;
 use crate::Zero;
@@ -47,6 +47,7 @@ impl ToCss for Angle {
 impl ToTyped for Angle {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            numeric_type: NumericType::angle(),
             value: self.degrees(),
             unit: CssString::from("deg"),
         })));

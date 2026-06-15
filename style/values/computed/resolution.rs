@@ -7,7 +7,7 @@
 //! https://drafts.csswg.org/css-values/#resolution
 
 use crate::derives::*;
-use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
+use crate::typed_om::{NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::CSSFloat;
 use std::{
     fmt::{self, Write},
@@ -61,6 +61,7 @@ impl ToCss for Resolution {
 impl ToTyped for Resolution {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            numeric_type: NumericType::resolution(),
             value: self.dppx(),
             unit: CssString::from("dppx"),
         })));

@@ -10,7 +10,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use crate::typed_om::{KeywordValue, NumericValue, ToTyped, TypedValue, UnitValue};
+use crate::typed_om::{KeywordValue, NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::position::IsTreeScoped;
 use crate::Atom;
@@ -453,6 +453,7 @@ where
 /// Reify a percentage.
 pub fn reify_percentage(value: CSSFloat, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
     let numeric_value = NumericValue::Unit(UnitValue {
+        numeric_type: NumericType::percent(),
         value: value * 100.,
         unit: CssString::from("percent"),
     });

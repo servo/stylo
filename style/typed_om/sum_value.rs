@@ -5,6 +5,7 @@
 //! Typed OM Sum Value.
 
 use crate::typed_om::numeric::NoCalcNumeric;
+use crate::typed_om::numeric_type::NumericType;
 use crate::typed_om::{MathSum, MathValue, NumericValue, UnitValue};
 use itertools::Itertools;
 use std::collections::HashMap;
@@ -46,6 +47,7 @@ impl SumValueItem {
         // Step 2.
         if self.unit_map.is_empty() {
             return Ok(UnitValue {
+                numeric_type: NumericType::number(),
                 value: self.value,
                 unit: CssString::from("number"),
             });
@@ -59,6 +61,7 @@ impl SumValueItem {
 
         // Step 4.
         Ok(UnitValue {
+            numeric_type: NumericType::from_unit_unchecked(unit),
             value: self.value,
             unit: CssString::from(unit),
         })
@@ -330,6 +333,8 @@ impl SumValue {
     /// Step 3 of:
     /// https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-to
     pub fn to_unit(&self, unit: &str) -> Result<UnitValue, ()> {
+        debug_assert!(NumericType::try_from_unit(unit).is_ok());
+
         if self.0.len() != 1 {
             return Err(());
         }
@@ -343,6 +348,7 @@ impl SumValue {
             let converted = numeric.to(unit)?;
 
             UnitValue {
+                numeric_type: NumericType::from_unit_unchecked(converted.unit()),
                 value: converted.unitless_value(),
                 unit: CssString::from(converted.unit()),
             }
@@ -354,6 +360,10 @@ impl SumValue {
     /// Step 3-6 of:
     /// https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-tosum
     pub fn to_units(&self, units: &[&str]) -> Result<MathSum, ()> {
+        debug_assert!(units
+            .iter()
+            .all(|unit| NumericType::try_from_unit(unit).is_ok()));
+
         // Step 3.
         let mut values = self
             .0
@@ -373,6 +383,7 @@ impl SumValue {
         for unit in units {
             // Step 5.1.
             let mut temp = UnitValue {
+                numeric_type: NumericType::from_unit_unchecked(*unit),
                 value: 0.0,
                 unit: CssString::from(*unit),
             };

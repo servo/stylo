@@ -22,6 +22,8 @@ pub mod numeric_declaration;
 pub mod numeric_type;
 pub mod sum_value;
 
+pub use numeric_type::NumericType;
+
 /// A single segment of an unparsed Typed OM value.
 ///
 /// This corresponds to the `CSSUnparsedSegment` union in the Typed OM
@@ -106,6 +108,9 @@ pub struct KeywordValue(pub CssString);
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct UnitValue {
+    /// The numeric type associated with this value.
+    pub numeric_type: NumericType,
+
     /// The numeric component of the value.
     pub value: f32,
 
@@ -250,6 +255,7 @@ impl NumericValue {
     #[inline]
     pub fn zero_px() -> Self {
         Self::Unit(UnitValue {
+            numeric_type: NumericType::length(),
             value: 0.0,
             unit: CssString::from("px"),
         })
@@ -260,6 +266,7 @@ impl Zero for NumericValue {
     #[inline]
     fn zero() -> Self {
         Self::Unit(UnitValue {
+            numeric_type: NumericType::number(),
             value: 0.0,
             unit: CssString::from("number"),
         })
@@ -278,6 +285,7 @@ impl One for NumericValue {
     #[inline]
     fn one() -> Self {
         Self::Unit(UnitValue {
+            numeric_type: NumericType::number(),
             value: 1.0,
             unit: CssString::from("number"),
         })
@@ -749,9 +757,11 @@ where
 
 impl ToTyped for Au {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        let numeric_type = NumericType::length();
         let value = self.to_f32_px();
         let unit = CssString::from("px");
         dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            numeric_type,
             value,
             unit,
         })));
@@ -764,6 +774,7 @@ macro_rules! impl_to_typed_for_predefined_type {
         impl<'a> ToTyped for $name {
             fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
                 dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+                    numeric_type: NumericType::number(),
                     value: *self as f32,
                     unit: CssString::from("number"),
                 })));

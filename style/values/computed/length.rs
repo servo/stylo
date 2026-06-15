@@ -7,7 +7,7 @@
 use super::{Number, ToComputedValue};
 use crate::derives::*;
 use crate::logical_geometry::PhysicalSide;
-use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
+use crate::typed_om::{NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
 use crate::values::computed::position::TryTacticAdjustment;
 use crate::values::computed::{NonNegativeNumber, Percentage, Zoom};
@@ -276,6 +276,7 @@ impl ToCss for CSSPixelLength {
 impl ToTyped for CSSPixelLength {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            numeric_type: NumericType::length(),
             value: self.0 as f32,
             unit: CssString::from("px"),
         })));

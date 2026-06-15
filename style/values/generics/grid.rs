@@ -7,7 +7,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
+use crate::typed_om::{NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::specified;
 use crate::values::{CSSFloat, CustomIdent};
 use crate::{One, Zero};
@@ -260,9 +260,11 @@ impl ToCss for Flex {
 
 impl ToTyped for Flex {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        let numeric_type = NumericType::flex();
         let value = self.0;
         let unit = CssString::from("fr");
         dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            numeric_type,
             value,
             unit,
         })));

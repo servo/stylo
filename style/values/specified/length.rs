@@ -13,7 +13,7 @@ use crate::font_metrics::{FontMetrics, FontMetricsOrientation};
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::GeckoFontMetrics;
 use crate::parser::{Parse, ParserContext};
-use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
+use crate::typed_om::{NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::computed::{self, CSSPixelLength, Context, FontSize};
 use crate::values::generics::length as generics;
 use crate::values::generics::length::{
@@ -1058,9 +1058,11 @@ impl ToCss for NoCalcLength {
 
 impl ToTyped for NoCalcLength {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
+        let numeric_type = NumericType::length();
         let value = self.unitless_value();
         let unit = CssString::from(self.unit());
         dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
+            numeric_type,
             value,
             unit,
         })));

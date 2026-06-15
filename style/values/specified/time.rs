@@ -6,7 +6,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use crate::typed_om::{NumericValue, ToTyped, TypedValue, UnitValue};
+use crate::typed_om::{NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::computed::time::Time as ComputedTime;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
@@ -151,6 +151,7 @@ impl ToComputedValue for NoCalcTime {
 impl ToTyped for NoCalcTime {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         let numeric_value = NumericValue::Unit(UnitValue {
+            numeric_type: NumericType::time(),
             value: self.unitless_value(),
             unit: CssString::from(self.unit()),
         });

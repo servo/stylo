@@ -135,11 +135,11 @@ pub enum KeyframesIterationState {
 struct IntermediateComputedKeyframe {
     declarations: PropertyDeclarationBlock,
     timing_function: Option<TimingFunction>,
-    start_percentage: f32,
+    start_percentage: f64,
 }
 
 impl IntermediateComputedKeyframe {
-    fn new(start_percentage: f32) -> Self {
+    fn new(start_percentage: f64) -> Self {
         IntermediateComputedKeyframe {
             declarations: PropertyDeclarationBlock::new(),
             timing_function: None,
@@ -161,7 +161,7 @@ impl IntermediateComputedKeyframe {
         let mut intermediate_steps: Vec<Self> = Vec::with_capacity(animation.steps.len());
         let mut current_step = IntermediateComputedKeyframe::new(0.);
         for step in animation.steps.iter() {
-            let start_percentage = step.start_offset.percentage.0;
+            let start_percentage = step.start_offset.percentage.0 as f64;
             if start_percentage != current_step.start_percentage {
                 let new_step = IntermediateComputedKeyframe::new(start_percentage);
                 intermediate_steps.push(std::mem::replace(&mut current_step, new_step));
@@ -288,7 +288,7 @@ struct ComputedKeyframe {
 
     /// The starting percentage (a number between 0 and 1) which represents
     /// at what point in an animation iteration this step is.
-    start_percentage: f32,
+    start_percentage: f64,
 
     /// The animation values to transition to and from when processing this
     /// keyframe animation step.
@@ -324,7 +324,7 @@ struct KeyframeDataForProperty<'a> {
 
     /// The starting percentage (a number between 0 and 1) which represents
     /// at what point in an animation iteration this step is.
-    start_percentage: f32,
+    start_percentage: f64,
 
     value: &'a AnimationValue,
 }
@@ -873,7 +873,7 @@ impl Animation {
                 next_keyframe_index = self
                     .computed_steps
                     .iter()
-                    .position(|step| (total_progress as f32) < step.start_percentage);
+                    .position(|step| total_progress < step.start_percentage);
                 prev_keyframe_index = next_keyframe_index
                     .and_then(|pos| if pos != 0 { Some(pos - 1) } else { None })
                     .unwrap_or(0);
@@ -883,7 +883,7 @@ impl Animation {
                     .computed_steps
                     .iter()
                     .rev()
-                    .position(|step| total_progress as f32 <= 1. - step.start_percentage)
+                    .position(|step| total_progress <= 1. - step.start_percentage)
                     .map(|pos| num_steps - pos - 1);
                 prev_keyframe_index = next_keyframe_index
                     .and_then(|pos| {
@@ -948,11 +948,11 @@ impl Animation {
             };
 
             let percentage_between_keyframes =
-                (next_keyframe.start_percentage - previous_keyframe.start_percentage).abs() as f64;
+                (next_keyframe.start_percentage - previous_keyframe.start_percentage).abs();
             let duration_between_keyframes = percentage_between_keyframes * self.duration;
             let direction_aware_prev_keyframe_start_percentage = match self.current_direction {
-                AnimationDirection::Normal => previous_keyframe.start_percentage as f64,
-                AnimationDirection::Reverse => 1. - previous_keyframe.start_percentage as f64,
+                AnimationDirection::Normal => previous_keyframe.start_percentage,
+                AnimationDirection::Reverse => 1. - previous_keyframe.start_percentage,
                 _ => unreachable!(),
             };
             let progress_between_keyframes = (total_progress
@@ -962,7 +962,7 @@ impl Animation {
                 from: previous_keyframe.value.clone(),
                 to: next_keyframe.value.clone(),
                 timing_function: previous_keyframe.timing_function.clone(),
-                duration: duration_between_keyframes as f64,
+                duration: duration_between_keyframes,
             };
 
             let value = animation.calculate_value(progress_between_keyframes);
@@ -1781,7 +1781,7 @@ pub fn maybe_start_animations<E>(
         // NB: This delay may be negative, meaning that the animation may be created
         // in a state where we have advanced one or more iterations or even that the
         // animation begins in a finished state.
-        let delay = style.animation_delay_mod(i).seconds();
+        let delay = style.animation_delay_mod(i).seconds() as f64;
 
         let iteration_count = style.animation_iteration_count_mod(i);
         let iteration_state = if iteration_count.0.is_infinite() {
@@ -1802,7 +1802,7 @@ pub fn maybe_start_animations<E>(
         };
 
         let now = context.current_time_for_animations;
-        let started_at = now + delay as f64;
+        let started_at = now + delay;
         let mut starting_progress = (now - started_at) / duration;
         let state = match style.animation_play_state_mod(i) {
             AnimationPlayState::Paused => AnimationState::Paused(starting_progress),
@@ -1840,7 +1840,7 @@ pub fn maybe_start_animations<E>(
             started_at,
             duration,
             fill_mode: style.animation_fill_mode_mod(i),
-            delay: delay as f64,
+            delay,
             iteration_state,
             state,
             direction: animation_direction,

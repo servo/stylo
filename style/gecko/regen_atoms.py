@@ -14,9 +14,9 @@ from pseudo_elements import PseudoElementData
 import build
 
 
-# Matches lines like `GK_ATOM(foo, "foo")`.
+# Matches lines like `GK_ATOM(foo, "foo", 0x12345678, true)`.
 PATTERN = re.compile(
-    r'^GK_ATOM\(([^,]*),[^"]*"([^"]*)"\)',
+    r'^GK_ATOM\(([^,]*),[^"]*"([^"]*)",\s*(0x[0-9a-f]+),\s*[^,]*\)',
     re.MULTILINE,
 )
 FILE = "include/nsGkAtomList.h"
@@ -40,10 +40,11 @@ def map_atom(ident):
 
 
 class Atom:
-    def __init__(self, ident, value):
+    def __init__(self, ident, value, hash):
         self.ident = "nsGkAtoms_{}".format(ident)
         self.original_ident = ident
         self.value = value
+        self.hash = hash
 
 
 def collect_atoms(objdir):
@@ -54,7 +55,11 @@ def collect_atoms(objdir):
         content = f.read()
         for result in PATTERN.finditer(content):
             atoms.append(
-                Atom(result.group(1), result.group(2))
+                Atom(
+                    result.group(1),
+                    result.group(2),
+                    result.group(3),
+                )
             )
     return atoms
 

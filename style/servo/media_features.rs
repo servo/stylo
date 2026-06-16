@@ -6,7 +6,7 @@
 
 use crate::derives::*;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
-use crate::queries::values::PrefersColorScheme;
+use crate::queries::values::{PrefersColorScheme, PrefersContrast, PrefersReducedMotion, PrefersReducedTransparency};
 use crate::values::computed::{CSSPixelLength, Context, Resolution};
 use std::fmt::Debug;
 
@@ -43,6 +43,36 @@ fn eval_prefers_color_scheme(context: &Context, query_value: Option<PrefersColor
     match query_value {
         Some(v) => context.device().color_scheme() == v,
         None => true,
+    }
+}
+
+fn eval_prefers_contrast(context: &Context, query_value: Option<PrefersContrast>) -> bool {
+    let prefers_contrast = context.device().prefers_contrast();
+    match query_value {
+        Some(v) => prefers_contrast == v,
+        None => prefers_contrast != PrefersContrast::NoPreference,
+    }
+}
+
+fn eval_prefers_reduced_motion(
+    context: &Context,
+    query_value: Option<PrefersReducedMotion>,
+) -> bool {
+    let prefers_reduced_motion = context.device().prefers_reduced_motion();
+    match query_value {
+        Some(v) => prefers_reduced_motion == v,
+        None => prefers_reduced_motion != PrefersReducedMotion::NoPreference,
+    }
+}
+
+fn eval_prefers_reduced_transparency(
+    context: &Context,
+    query_value: Option<PrefersReducedTransparency>,
+) -> bool {
+    let prefers_reduced_transparency = context.device().prefers_reduced_transparency();
+    match query_value {
+        Some(v) => prefers_reduced_transparency == v,
+        None => prefers_reduced_transparency != PrefersReducedTransparency::NoPreference,
     }
 }
 
@@ -130,7 +160,7 @@ fn eval_any_hover(context: &Context, query_value: Option<Hover>) -> bool {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 10] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 13] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -189,6 +219,24 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 10] = [
         atom!("prefers-color-scheme"),
         AllowsRanges::No,
         keyword_evaluator!(eval_prefers_color_scheme, PrefersColorScheme),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-contrast"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_prefers_contrast, PrefersContrast),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-reduced-motion"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_prefers_reduced_motion, PrefersReducedMotion),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-reduced-transparency"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_prefers_reduced_transparency, PrefersReducedTransparency),
         FeatureFlags::empty(),
     ),
 ];

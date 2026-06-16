@@ -111,9 +111,14 @@ impl ColorFunction<AbsoluteColor> {
 
         Ok(match self {
             ColorFunction::Rgb(origin_color, r, g, b, alpha) => {
-                // Use `color(srgb ...)` to serialize `rgb(...)` if an origin color is available;
-                // this is the only reason for now.
-                let use_color_syntax = origin_color.is_some();
+                // Use `color(srgb ...)` to serialize `rgb(...)` when an origin color is available,
+                // or when any component is `none` (legacy rgb syntax cannot represent `none`, so
+                // routing through this path preserves the `*_IS_NONE` flags).
+                let use_color_syntax = origin_color.is_some()
+                    || r.is_none()
+                    || g.is_none()
+                    || b.is_none()
+                    || alpha.is_none();
 
                 if use_color_syntax {
                     let origin_color = origin_color.as_ref().map(|origin| {

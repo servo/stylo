@@ -82,8 +82,10 @@ pub enum MathFunction {
     /// `sign()`: https://drafts.csswg.org/css-values-4/#funcdef-sign
     Sign,
     /// `sibling-count()`: https://drafts.csswg.org/css-values-5/#funcdef-sibling-count
+    #[strum(serialize = "sibling-count")]
     SiblingCount,
     /// `sibling-index()`: https://drafts.csswg.org/css-values-5/#funcdef-sibling-index
+    #[strum(serialize = "sibling-index")]
     SiblingIndex,
 }
 

@@ -510,7 +510,7 @@ pub trait TElement:
     }
 
     /// Convert a 32-bit atom hash to a bloom filter value using k=2 hash functions.
-    /// This must match the C++ implementation of AttrArray::HashForBloomFilter. 
+    /// This must match the C++ implementation of AttrArray::HashForBloomFilter.
     fn hash_for_bloom_filter(hash: u32) -> u64 {
         // On 32-bit platforms, we have 31 bits available + 1 tag bit.
         // On 64-bit platforms, we have 63 bits available + 1 tag bit.

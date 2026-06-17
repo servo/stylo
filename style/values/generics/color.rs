@@ -15,9 +15,8 @@ use style_traits::{owned_slice::OwnedSlice, CssWriter, ToCss};
 
 /// This struct represents a combined color from a numeric color and
 /// the current foreground color (currentcolor keyword).
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToAnimatedValue, ToShmem, ToTyped)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToAnimatedValue, ToShmem)]
 #[repr(C)]
-#[typed(todo_derive_fields)]
 pub enum GenericColor<Percentage> {
     /// The actual numeric color.
     Absolute(AbsoluteColor),

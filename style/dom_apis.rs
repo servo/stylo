@@ -399,34 +399,6 @@ fn collect_elements_with_id<E, Q, F>(
     }
 }
 
-fn has_attr<E>(element: E, local_name: &crate::LocalName) -> bool
-where
-    E: TElement,
-{
-    let mut found = false;
-    element.each_attr_name(|name| found |= name == local_name);
-    found
-}
-
-#[inline(always)]
-fn local_name_matches<E>(element: E, local_name: &LocalName<E::Impl>) -> bool
-where
-    E: TElement,
-{
-    let LocalName {
-        ref name,
-        ref lower_name,
-    } = *local_name;
-
-    let chosen_name = if name == lower_name || element.is_html_element_in_html_document() {
-        lower_name
-    } else {
-        name
-    };
-
-    element.local_name() == &**chosen_name
-}
-
 fn get_attr_name(component: &Component<SelectorImpl>) -> Option<&crate::LocalName> {
     let (name, name_lower) = match component {
         Component::AttributeInNoNamespace { ref local_name, .. } => return Some(local_name),
@@ -435,7 +407,12 @@ fn get_attr_name(component: &Component<SelectorImpl>) -> Option<&crate::LocalNam
             ref local_name_lower,
             ..
         } => (local_name, local_name_lower),
-        Component::AttributeOther(ref attr) => (&attr.local_name, &attr.local_name_lower),
+        Component::AttributeOther(ref attr) => {
+            if attr.namespace.is_some() {
+                return None;
+            }
+            (&attr.local_name, &attr.local_name_lower)
+        },
         _ => return None,
     };
     if name != name_lower {
@@ -497,8 +474,26 @@ where
             });
         },
         Component::LocalName(ref local_name) => {
+            let hash = E::hash_for_bloom_filter(local_name.name.0.get_hash());
+            let hash_lower = if local_name.name == local_name.lower_name {
+                hash
+            } else {
+                E::hash_for_bloom_filter(local_name.lower_name.0.get_hash())
+            };
             collect_all_elements::<E, Q, _>(root, results, |element| {
-                Operation::from(local_name_matches(element, local_name))
+                if !element.bloom_may_have_hash(hash)
+                    && (hash == hash_lower || !element.bloom_may_have_hash(hash_lower))
+                {
+                    return Operation::RejectSkippingChildren;
+                }
+                Operation::from(
+                    *element.local_name()
+                        == ***matching::select_name(
+                            &element,
+                            &local_name.name,
+                            &local_name.lower_name,
+                        ),
+                )
             })
         },
         Component::AttributeInNoNamespaceExists {
@@ -771,7 +766,16 @@ where
 
     match simple_filter {
         SimpleFilter::Class(ref class) => {
+            // Bloom filter can only be used when case sensitive.
+            let bloom_hash = if class_and_id_case_sensitivity == CaseSensitivity::CaseSensitive {
+                Some(E::hash_for_bloom_filter(class.0.get_hash()))
+            } else {
+                None
+            };
             collect_all_elements::<E, Q, _>(root, results, |element| {
+                if bloom_hash.is_some_and(|hash| !element.bloom_may_have_hash(hash)) {
+                    return Operation::RejectSkippingChildren;
+                }
                 Operation::from(
                     element.has_class(class, class_and_id_case_sensitivity)
                         && matching::matches_selector_list(
@@ -783,27 +787,44 @@ where
             });
         },
         SimpleFilter::LocalName(ref local_name) => {
+            let hash = E::hash_for_bloom_filter(local_name.name.0.get_hash());
+            let hash_lower = if local_name.name == local_name.lower_name {
+                hash
+            } else {
+                E::hash_for_bloom_filter(local_name.lower_name.0.get_hash())
+            };
             collect_all_elements::<E, Q, _>(root, results, |element| {
-                Operation::from(
-                    local_name_matches(element, local_name)
-                        && matching::matches_selector_list(
-                            selector_list,
-                            &element,
-                            matching_context,
-                        ),
-                )
+                if !element.bloom_may_have_hash(hash)
+                    && (hash == hash_lower || !element.bloom_may_have_hash(hash_lower))
+                {
+                    return Operation::RejectSkippingChildren;
+                }
+                if *element.local_name()
+                    != ***matching::select_name(&element, &local_name.name, &local_name.lower_name)
+                {
+                    return Operation::Reject;
+                }
+                Operation::from(matching::matches_selector_list(
+                    selector_list,
+                    &element,
+                    matching_context,
+                ))
             });
         },
         SimpleFilter::Attr(ref local_name) => {
+            let hash = E::hash_for_bloom_filter(local_name.0.get_hash());
             collect_all_elements::<E, Q, _>(root, results, |element| {
-                Operation::from(
-                    has_attr(element, local_name)
-                        && matching::matches_selector_list(
-                            selector_list,
-                            &element,
-                            matching_context,
-                        ),
-                )
+                if !element.bloom_may_have_hash(hash) {
+                    return Operation::RejectSkippingChildren;
+                }
+                if !element.has_attr_in_no_namespace(local_name) {
+                    return Operation::Reject;
+                }
+                Operation::from(matching::matches_selector_list(
+                    selector_list,
+                    &element,
+                    matching_context,
+                ))
             });
         },
     }

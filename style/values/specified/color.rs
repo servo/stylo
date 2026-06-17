@@ -5,7 +5,6 @@
 //! Specified color values.
 
 use super::AllowQuirks;
-use crate::typed_om::{TypedValue, KeywordValue, ToTyped};
 use crate::color::mix::ColorInterpolationMethod;
 use crate::color::{parsing, AbsoluteColor, ColorFunction, ColorMixItemList, ColorSpace};
 use crate::derives::*;
@@ -26,9 +25,8 @@ use std::fmt::{self, Write};
 use std::io::Write as IoWrite;
 use style_traits::{
     owned_slice::OwnedSlice, CssType, CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo,
-    StyleParseErrorKind, ToCss, ValueParseErrorKind, CssString,
+    StyleParseErrorKind, ToCss, ValueParseErrorKind,
 };
-use thin_vec::ThinVec;
 
 /// A specified color-mix().
 pub type ColorMix = GenericColorMix<Color, Percentage>;
@@ -173,7 +171,8 @@ impl ToCss for Absolute {
 }
 
 /// Specified color value
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem, ToTyped)]
+#[typed(todo_derive_fields)]
 pub enum Color {
     /// The 'currentColor' keyword
     CurrentColor,
@@ -686,18 +685,6 @@ impl ToCss for Color {
             },
             Color::System(system) => system.to_css(dest),
             Color::InheritFromBodyQuirk => dest.write_str("-moz-inherit-from-body-quirk"),
-        }
-    }
-}
-
-impl ToTyped for Color {
-    fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        match *self {
-            Color::CurrentColor => {
-              dest.push(TypedValue::Keyword(KeywordValue(CssString::from("currentcolor"))));
-              Ok(())
-            },
-            _ => Err(())
         }
     }
 }

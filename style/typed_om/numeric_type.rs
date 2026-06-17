@@ -54,15 +54,50 @@ pub const ALL_NUMERIC_BASE_TYPES: [NumericBaseType; NUMERIC_BASE_TYPE_COUNT] = [
     NumericBaseType::Percent,
 ];
 
-const _ASSERT_ALL_NUMERIC_BASE_TYPES_ORDER: () = {
+const fn all_numeric_base_types_are_in_order() -> bool {
     let mut i = 0;
-    while i < NUMERIC_BASE_TYPE_COUNT {
-        assert!(ALL_NUMERIC_BASE_TYPES[i] as u8 == i as u8);
+    while i < NUMERIC_BASE_TYPE_COUNT - 1 {
+        if ALL_NUMERIC_BASE_TYPES_EXCEPT_PERCENT[i] as u8 != i as u8 {
+            return false;
+        }
         i += 1;
     }
-};
+    true
+}
+
+const_assert!(all_numeric_base_types_are_in_order());
+
+/// Every numeric base type except `Percent` in enum-declaration order.
+const ALL_NUMERIC_BASE_TYPES_EXCEPT_PERCENT: [NumericBaseType; NUMERIC_BASE_TYPE_COUNT - 1] = [
+    NumericBaseType::Length,
+    NumericBaseType::Angle,
+    NumericBaseType::Time,
+    NumericBaseType::Frequency,
+    NumericBaseType::Resolution,
+    NumericBaseType::Flex,
+];
+
+const fn all_numeric_base_types_except_percent_are_in_order() -> bool {
+    let mut i = 0;
+    while i < NUMERIC_BASE_TYPE_COUNT - 1 {
+        if ALL_NUMERIC_BASE_TYPES_EXCEPT_PERCENT[i] as u8 != i as u8 {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
+const_assert!(all_numeric_base_types_except_percent_are_in_order());
 
 /// https://drafts.css-houdini.org/css-typed-om-1/#numeric-typing
+///
+/// The spec models the per-base-type exponents as an ordered map keyed by base
+/// type. We use a fixed-size array indexed by `NumericBaseType` instead. A
+/// missing entry in the spec's map and a zero entry are observably equivalent
+/// for every operation the spec defines (comparisons and iteration only
+/// consider non-zero entries), so the array representation is simpler, avoids
+/// allocations, and produces the same results.
 ///
 /// `non_zero_count` and `non_zero_except_percent_count` are derived fields
 /// maintained in sync with `exponents`, allowing O(1) type compatibility
@@ -188,12 +223,10 @@ impl NumericType {
         result.unwrap_or(Self::number())
     }
 
-    #[allow(dead_code)]
     fn exponent(&self, base_type: NumericBaseType) -> i32 {
         self.exponents[base_type as usize]
     }
 
-    #[allow(dead_code)]
     fn set_exponent(&mut self, base_type: NumericBaseType, new_value: i32) {
         let old_value = self.exponent(base_type);
         self.exponents[base_type as usize] = new_value;
@@ -214,8 +247,153 @@ impl NumericType {
         }
     }
 
-    #[allow(dead_code)]
     fn add_exponent(&mut self, base_type: NumericBaseType, delta: i32) {
         self.set_exponent(base_type, self.exponent(base_type) + delta);
+    }
+
+    /// <https://drafts.css-houdini.org/css-typed-om-1/#apply-the-percent-hint>
+    fn apply_percent_hint(&mut self, hint: NumericBaseType) {
+        // Step 1.
+        self.percent_hint = Optional::Some(hint);
+
+        // Step 2.
+        // No-op for our array representation, the hint's slot already exists
+        // ("missing" and "zero" mean the same thing).
+
+        // Step 3.
+        if hint != NumericBaseType::Percent {
+            let percent = self.exponent(NumericBaseType::Percent);
+            if percent != 0 {
+                self.add_exponent(hint, percent);
+                self.set_exponent(NumericBaseType::Percent, 0);
+            }
+        }
+    }
+
+    /// <https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-add-two-types>
+    ///
+    /// The algorithm has some complexity and uses branches rather than
+    /// numbered sub-steps, so the implementation below quotes spec text
+    /// inline. This is more verbose than usual, but should help map each
+    /// branch back to the spec when reviewing or debugging.
+    fn add_two_types(type1: &NumericType, type2: &NumericType) -> Result<Self, ()> {
+        // Step 1.
+        // "Replace type1 with a fresh copy of type1, and type2 with a fresh
+        // copy of type2."
+        let mut type1 = type1.clone();
+        let mut type2 = type2.clone();
+        // "Let finalType be a new type with an initially empty ordered map and
+        // an initially null percent hint."
+        // We don't need a separate finalType with the array representation,
+        // when the entries match, type1 already represents the merged result.
+
+        // Step 2.
+        match (type1.percent_hint, type2.percent_hint) {
+            // Step 2, first branch.
+            // "If both type1 and type2 have non-null percent hints with
+            // different values"
+            (Optional::Some(h1), Optional::Some(h2)) if h1 as u8 != h2 as u8 => {
+                // "The types can't be added. Return failure."
+                return Err(());
+            },
+            // Step 2, second branch.
+            // "If type1 has a non-null percent hint hint and type2 doesn't"
+            (Optional::Some(hint), Optional::None) => {
+                // "Apply the percent hint hint to type2."
+                type2.apply_percent_hint(hint)
+            },
+            // "Vice versa if type2 has a non-null percent hint and type1
+            // doesn't."
+            (Optional::None, Optional::Some(hint)) => type1.apply_percent_hint(hint),
+            // Step 3, third branch.
+            // "Otherwise"
+            _ => {
+                // "Continue to the next step."
+            },
+        }
+
+        // Step 3, first branch.
+        // "If all the entries of type1 with non-zero values are contained in
+        // type2 with the same value, and vice-versa"
+        // With the array representation, the check reduces to array equality
+        // ("missing" and "zero" mean the same thing).
+        if type1.exponents == type2.exponents {
+            // "Copy all of type1’s entries to finalType, and then copy all of
+            // type2’s entries to finalType that finalType doesn’t already
+            // contain. Set finalType’s percent hint to type1’s percent hint.
+            // Return finalType."
+            // As noted in Step1, type1 already represents the merged result,
+            // so extra finalType is not needed.
+            return Ok(type1);
+        }
+
+        // Step 3, second branch.
+        // "If type1 and/or type2 contain 'percent' with a non-zero value, and
+        // type1 and/or type2 contain a key other than 'percent' with a
+        // non-zero value"
+        if (type1.exponent(NumericBaseType::Percent) != 0
+            || type2.exponent(NumericBaseType::Percent) != 0)
+            && (type1.non_zero_except_percent_count != 0
+                || type2.non_zero_except_percent_count != 0)
+        {
+            // "For each base type other than 'percent' hint:"
+            for &hint in ALL_NUMERIC_BASE_TYPES_EXCEPT_PERCENT.iter() {
+                // Step 3.1.
+                // "Provisionally apply the percent hint hint to both type1
+                // and type2."
+                // Instead of modifying type1 and type2 directly and then
+                // eventually reverting them to the original state, we just
+                // clone them.
+                let mut type1 = type1.clone();
+                let mut type2 = type2.clone();
+                type1.apply_percent_hint(hint);
+                type2.apply_percent_hint(hint);
+
+                // Step 3.2.
+                // "If, afterwards, all the entries of type1 with non-zero
+                // values are contained in type2 with the same value, and vice
+                // versa,"
+                // With the array representation, the check reduces to array
+                // equality ("missing" and "zero" mean the same thing).
+                if type1.exponents == type2.exponents {
+                    // "then copy all of type1’s entries to finalType, and
+                    // then copy all of type2’s entries to finalType that
+                    // finalType doesn’t already contain. Set finalType’s
+                    // percent hint to hint. Return finalType."
+                    // type1 already represents the merged result, so extra
+                    // finalType is not needed.
+                    return Ok(type1);
+                }
+
+                // Step 3.3.
+                // "Otherwise, revert type1 and type2 to their state at the
+                // start of this loop."
+                // The revert is implicit, t1 and t2 are discarded between
+                // iterations.
+            }
+            // "If the loop finishes without returning finalType, then the
+            // types can’t be added. Return failure."
+            return Err(());
+        }
+
+        // Step 3, third branch.
+        // "Otherwise"
+        // "The types can't be added. Return failure."
+        Err(())
+    }
+
+    /// Applies the add two types algorithm repeatedly across a sequence of
+    /// numeric types, returning the combined type.
+    pub fn add_types(types: &[&NumericType]) -> Result<Self, ()> {
+        let Some((first, rest)) = types.split_first() else {
+            return Err(());
+        };
+
+        let mut result = (*first).clone();
+        for next in rest {
+            result = NumericType::add_two_types(&result, next)?;
+        }
+
+        Ok(result)
     }
 }

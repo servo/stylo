@@ -13,7 +13,7 @@ use crate::values::specified::resolution::ResolutionUnit;
 use crate::values::specified::time::TimeUnit;
 
 /// https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-base-type
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(u8)]
 pub enum NumericBaseType {
     /// A `<length>` unit.
@@ -63,11 +63,18 @@ const _ASSERT_ALL_NUMERIC_BASE_TYPES_ORDER: () = {
 };
 
 /// https://drafts.css-houdini.org/css-typed-om-1/#numeric-typing
+///
+/// `non_zero_count` and `non_zero_except_percent_count` are derived fields
+/// maintained in sync with `exponents`, allowing O(1) type compatibility
+/// checks. They fit without padding into the 2 bytes following `percent_hint`,
+/// so the struct remains 32 bytes.
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct NumericType {
     exponents: [i32; NUMERIC_BASE_TYPE_COUNT],
     percent_hint: Optional<NumericBaseType>,
+    non_zero_count: u8,
+    non_zero_except_percent_count: u8,
 }
 
 impl NumericType {
@@ -76,13 +83,23 @@ impl NumericType {
         Self {
             exponents: [0; NUMERIC_BASE_TYPE_COUNT],
             percent_hint: Optional::None,
+            non_zero_count: 0,
+            non_zero_except_percent_count: 0,
         }
     }
 
+    /// Constructs a numeric type from a single base type.
+    ///
+    /// Keep Gecko's StyleNumericType::WithBaseType() in sync with this
+    /// implementation.
     #[inline]
     fn with_base_type(base_type: NumericBaseType) -> Self {
         let mut result = Self::empty();
         result.exponents[base_type as usize] = 1;
+        result.non_zero_count = 1;
+        if base_type != NumericBaseType::Percent {
+            result.non_zero_except_percent_count = 1;
+        }
         result
     }
 
@@ -169,5 +186,36 @@ impl NumericType {
         debug_assert!(result.is_ok(), "Expected a valid unit, got {unit:?}");
 
         result.unwrap_or(Self::number())
+    }
+
+    #[allow(dead_code)]
+    fn exponent(&self, base_type: NumericBaseType) -> i32 {
+        self.exponents[base_type as usize]
+    }
+
+    #[allow(dead_code)]
+    fn set_exponent(&mut self, base_type: NumericBaseType, new_value: i32) {
+        let old_value = self.exponent(base_type);
+        self.exponents[base_type as usize] = new_value;
+        match (old_value != 0, new_value != 0) {
+            (false, true) => {
+                self.non_zero_count += 1;
+                if base_type != NumericBaseType::Percent {
+                    self.non_zero_except_percent_count += 1;
+                }
+            },
+            (true, false) => {
+                self.non_zero_count -= 1;
+                if base_type != NumericBaseType::Percent {
+                    self.non_zero_except_percent_count -= 1;
+                }
+            },
+            _ => {},
+        }
+    }
+
+    #[allow(dead_code)]
+    fn add_exponent(&mut self, base_type: NumericBaseType, delta: i32) {
+        self.set_exponent(base_type, self.exponent(base_type) + delta);
     }
 }

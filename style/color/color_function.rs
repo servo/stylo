@@ -514,21 +514,6 @@ impl<C: style_traits::ToCss> style_traits::ToCss for ColorFunction<C> {
             }
         }
 
-        let is_opaque = if let ColorComponent::Value(value) = *alpha {
-            value.to_number(OPAQUE) == OPAQUE
-        } else {
-            false
-        };
-
-        macro_rules! serialize_alpha {
-            ($alpha_component:expr) => {{
-                if !is_opaque && !matches!($alpha_component, ColorComponent::AlphaOmitted) {
-                    dest.write_str(" / ")?;
-                    $alpha_component.to_css(dest)?;
-                }
-            }};
-        }
-
         macro_rules! serialize_components {
             ($c0:expr, $c1:expr, $c2:expr) => {{
                 debug_assert!(!matches!($c0, ColorComponent::AlphaOmitted));
@@ -544,43 +529,46 @@ impl<C: style_traits::ToCss> style_traits::ToCss for ColorFunction<C> {
         }
 
         match self {
-            Self::Rgb(_, c0, c1, c2, alpha) => {
+            Self::Rgb(_, c0, c1, c2, _) => {
                 serialize_components!(c0, c1, c2);
-                serialize_alpha!(alpha);
             },
-            Self::Hsl(_, c0, c1, c2, alpha) => {
+            Self::Hsl(_, c0, c1, c2, _) => {
                 serialize_components!(c0, c1, c2);
-                serialize_alpha!(alpha);
             },
-            Self::Hwb(_, c0, c1, c2, alpha) => {
+            Self::Hwb(_, c0, c1, c2, _) => {
                 serialize_components!(c0, c1, c2);
-                serialize_alpha!(alpha);
             },
-            Self::Lab(_, c0, c1, c2, alpha) => {
+            Self::Lab(_, c0, c1, c2, _) => {
                 serialize_components!(c0, c1, c2);
-                serialize_alpha!(alpha);
             },
-            Self::Lch(_, c0, c1, c2, alpha) => {
+            Self::Lch(_, c0, c1, c2, _) => {
                 serialize_components!(c0, c1, c2);
-                serialize_alpha!(alpha);
             },
-            Self::Oklab(_, c0, c1, c2, alpha) => {
+            Self::Oklab(_, c0, c1, c2, _) => {
                 serialize_components!(c0, c1, c2);
-                serialize_alpha!(alpha);
             },
-            Self::Oklch(_, c0, c1, c2, alpha) => {
+            Self::Oklch(_, c0, c1, c2, _) => {
                 serialize_components!(c0, c1, c2);
-                serialize_alpha!(alpha);
             },
-            Self::Color(_, c0, c1, c2, alpha, color_space) => {
+            Self::Color(_, c0, c1, c2, _, color_space) => {
                 color_space.to_css(dest)?;
                 dest.write_str(" ")?;
                 serialize_components!(c0, c1, c2);
-                serialize_alpha!(alpha);
             },
-            Self::Alpha(_, alpha) => {
-                serialize_alpha!(alpha);
-            },
+            Self::Alpha(_, _) => {},
+        }
+
+        // We can avoid serializing the alpha if it's 1, but only if the color is not relative
+        // (since otherwise it's different from the omitted alpha).
+        let omit_alpha = match *alpha {
+            ColorComponent::AlphaOmitted => true,
+            ColorComponent::Value(ref v) => origin_color.is_none() && v.to_number(OPAQUE) == OPAQUE,
+            _ => false,
+        };
+
+        if !omit_alpha {
+            dest.write_str(" / ")?;
+            alpha.to_css(dest)?;
         }
 
         dest.write_str(")")

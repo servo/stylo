@@ -17,6 +17,7 @@ use crate::derives::*;
 use crate::{
     parser::{Parse, ParserContext},
     values::{
+        computed::Color as ComputedColor,
         generics::{calc::CalcUnits, Optional},
         specified::{angle::NoCalcAngle, calc::Leaf, color::Color as SpecifiedColor},
     },
@@ -158,7 +159,10 @@ impl ToCss for ChannelKeyword {
             Self::Y => "y",
             Self::Z => "z",
             _ => {
-                debug_assert!(false, "tried to serialize unexpected multi-value ChannelKeyword");
+                debug_assert!(
+                    false,
+                    "tried to serialize unexpected multi-value ChannelKeyword"
+                );
                 ""
             },
         })
@@ -202,16 +206,15 @@ pub fn parse_color_with<'i, 't>(
             let name = name.clone();
             return input.parse_nested_block(|arguments| {
                 let color_function = parse_color_function(context, name, arguments)?;
-
-                if color_function.has_origin_color() {
-                    // Preserve the color as it was parsed.
-                    Ok(SpecifiedColor::ColorFunction(Box::new(color_function)))
-                } else if let Ok(resolved) = color_function.resolve_to_absolute(None) {
-                    Ok(SpecifiedColor::from_absolute_color(resolved))
-                } else {
-                    // The color could not be eagerly resolved, so preserve the original color.
-                    Ok(SpecifiedColor::ColorFunction(Box::new(color_function)))
+                if !color_function.has_origin_color() {
+                    if let Ok(ComputedColor::Absolute(resolved)) =
+                        color_function.to_computed_color(None)
+                    {
+                        return Ok(SpecifiedColor::from_absolute_color(resolved));
+                    }
                 }
+                // Preserve the color as it was parsed.
+                Ok(SpecifiedColor::ColorFunction(Box::new(color_function)))
             });
         },
         _ => Err(()),

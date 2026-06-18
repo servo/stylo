@@ -77,8 +77,7 @@ impl Color {
         }
     }
 
-    /// Combine this complex color with the given foreground color into an
-    /// absolute color.
+    /// Combine this complex color with the given foreground color into an absolute color.
     pub fn resolve_to_absolute(&self, current_color: &AbsoluteColor) -> AbsoluteColor {
         match *self {
             Self::Absolute(c) => c,

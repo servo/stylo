@@ -718,7 +718,9 @@ impl Color {
                 // For now we allow transparent colors if we can resolve the color function.
                 // <https://bugzilla.mozilla.org/show_bug.cgi?id=1923053>
                 color_function
-                    .resolve_to_absolute(Some(context))
+                    .to_computed_color(Some(context))
+                    .ok()
+                    .and_then(|c| c.as_absolute().copied())
                     .map(|resolved| allow_transparent && resolved.is_transparent())
                     .unwrap_or(false)
             },
@@ -758,33 +760,6 @@ impl Color {
             color,
             authored: None,
         }))
-    }
-
-    /// Resolve this Color into an AbsoluteColor if it does not use any of the
-    /// forms that are invalid in an absolute color.
-    ///   https://drafts.csswg.org/css-color-5/#absolute-color
-    /// Returns None if the specified color is not valid as an absolute color.
-    pub fn resolve_to_absolute(&self, context: Option<&Context>) -> Result<AbsoluteColor, ()> {
-        use crate::values::specified::percentage::ToPercentage;
-
-        match self {
-            Self::Absolute(c) => Ok(c.color),
-            Self::ColorFunction(ref color_function) => color_function.resolve_to_absolute(context),
-            Self::ColorMix(ref mix) => {
-                use crate::color::mix;
-
-                let mut items = ColorMixItemList::with_capacity(mix.items.len());
-                for item in mix.items.iter() {
-                    items.push(mix::ColorMixItem::new(
-                        item.color.resolve_to_absolute(context)?,
-                        item.percentage.to_percentage().ok_or(())?,
-                    ))
-                }
-
-                Ok(mix::mix_many(mix.interpolation, items, mix.flags))
-            },
-            _ => Err(()),
-        }
     }
 
     /// Parse a color, with quirks.
@@ -913,16 +888,7 @@ impl Color {
                 adjust_absolute_color!(color);
                 ComputedColor::Absolute(color)
             },
-            Color::ColorFunction(ref color_function) => {
-                // Try to eagerly resolve the color function before making it a computed color.
-                if let Ok(absolute) = color_function.resolve_to_absolute(context) {
-                    ComputedColor::Absolute(absolute)
-                } else {
-                    let color_function = color_function
-                        .map_origin_color(|origin_color| origin_color.to_computed_color(context))?;
-                    ComputedColor::ColorFunction(Box::new(color_function))
-                }
-            },
+            Color::ColorFunction(ref color_function) => color_function.to_computed_color(context)?,
             Color::LightDark(ref ld) => ld.compute(context.ok_or(())?),
             Color::ColorMix(ref mix) => {
                 let mut items = ColorMixItemList::with_capacity(mix.items.len());

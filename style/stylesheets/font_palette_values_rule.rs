@@ -56,7 +56,7 @@ impl Parse for FontPaletteOverrideColor {
         //   https://drafts.csswg.org/css-color-5/#absolute-color
         // so check that the specified color can be resolved without a context
         // or currentColor value.
-        if color.resolve_to_absolute(None).is_ok() {
+        if color.to_computed_color(None).is_ok_and(|c| c.is_absolute()) {
             // We store the specified color (not the resolved absolute color)
             // because that is what the rule exposes to authors.
             return Ok(FontPaletteOverrideColor { index, color });
@@ -217,7 +217,12 @@ impl FontPaletteValuesRule {
             for c in &self.override_colors {
                 // We checked at parse time that the specified color can be resolved
                 // in this way, so the unwrap() here will succeed.
-                let absolute = c.color.resolve_to_absolute(None).unwrap();
+                let absolute = c
+                    .color
+                    .to_computed_color(None)
+                    .ok()
+                    .and_then(|c| c.as_absolute().copied())
+                    .unwrap();
                 // We checked at parse time that the index is resolvable.
                 let index = c.index.0.resolve().unwrap();
                 unsafe {

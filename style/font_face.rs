@@ -10,6 +10,7 @@ use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
+use crate::values::computed::FontWeight;
 use crate::values::generics::font::FontStyle as GenericFontStyle;
 use crate::values::specified::{url::SpecifiedUrl, Angle};
 use cssparser::{Parser, RuleBodyParser, SourceLocation};
@@ -339,7 +340,7 @@ impl_range!(FontWeightRange, AbsoluteFontWeight);
 /// specified::Number.
 #[repr(C)]
 #[allow(missing_docs)]
-pub struct ComputedFontWeightRange(f32, f32);
+pub struct ComputedFontWeightRange(FontWeight, FontWeight);
 
 #[inline]
 fn sort_range<T: PartialOrd>(a: T, b: T) -> (T, T) {
@@ -353,7 +354,7 @@ fn sort_range<T: PartialOrd>(a: T, b: T) -> (T, T) {
 impl FontWeightRange {
     /// Returns a computed font-weight range, or None if either bound is an unresolvable calc.
     pub fn compute(&self) -> Option<ComputedFontWeightRange> {
-        let (min, max) = sort_range(self.0.compute()?.value(), self.1.compute()?.value());
+        let (min, max) = sort_range(self.0.compute()?, self.1.compute()?);
         Some(ComputedFontWeightRange(min, max))
     }
 }

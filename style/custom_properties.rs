@@ -17,7 +17,7 @@ use crate::properties::{
 };
 use crate::properties_and_values::{
     rule::Descriptors as PropertyDescriptors,
-    syntax::{Descriptor as SyntaxDescriptor, data_type::DependentDataTypes},
+    syntax::{data_type::DependentDataTypes, Descriptor as SyntaxDescriptor},
     value::{
         AllowComputationallyDependent, ComputedValue as ComputedRegisteredValue,
         SpecifiedValue as SpecifiedRegisteredValue,
@@ -31,9 +31,9 @@ use crate::typed_om::{
 };
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::calc::SortKey as AttrUnit;
-use crate::values::specified::{NoCalcLength, ParsedNamespace, param::LinkParamValueOrNone};
+use crate::values::specified::{param::LinkParamValueOrNone, NoCalcLength, ParsedNamespace};
+use crate::{derives::*, Namespace, Prefix};
 use crate::{Atom, LocalName};
-use crate::{Namespace, Prefix, derives::*};
 use cssparser::{
     CowRcStr, Delimiter, Parser, ParserInput, SourcePosition, Token, TokenSerializationType,
 };
@@ -2165,6 +2165,12 @@ fn substitute_all(
             refs_stack.push(&v.references);
             while let Some(refs) = refs_stack.pop() {
                 for next in &refs.refs {
+                    // Visit fallback references as well.
+                    // TODO(bug 2042898): Stop doing this eagerly.
+                    if let Some(ref fallback) = next.fallback {
+                        refs_stack.push(&fallback.references);
+                    }
+
                     if next.substitution_kind == SubstitutionFunctionKind::Env {
                         continue;
                     }
@@ -2193,12 +2199,6 @@ fn substitute_all(
                         &mut self_ref,
                         attribute_tracker,
                     );
-
-                    // Visit fallback references as well.
-                    // TODO(bug 2042898): Stop doing this eagerly.
-                    if let Some(ref fallback) = next.fallback {
-                        refs_stack.push(&fallback.references);
-                    }
                 }
             }
 
@@ -2336,11 +2336,10 @@ fn substitute_all(
                 )
                 .is_some()
                     || v.references.refs.iter().any(|reference| {
-                        (reference.substitution_kind == SubstitutionFunctionKind::Var
+                        reference.substitution_kind != SubstitutionFunctionKind::Env
                             && deferred
-                                .get(&reference.name, SubstitutionFunctionKind::Var)
-                                .is_some())
-                            || reference.substitution_kind == SubstitutionFunctionKind::Attr
+                                .get(&reference.name, reference.substitution_kind)
+                                .is_some()
                     });
                 if defer {
                     let value = ComputedRegisteredValue::universal(Arc::clone(v));

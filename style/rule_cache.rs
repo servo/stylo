@@ -13,7 +13,9 @@ use crate::rule_tree::{RuleCascadeFlags, StrongRuleNode};
 use crate::selector_parser::PseudoElement;
 use crate::shared_lock::StylesheetGuards;
 use crate::values::computed::{Context, NonNegativeLength};
+use crate::values::generics::NonNegative;
 use crate::values::specified::color::ColorSchemeFlags;
+use crate::values::specified::FontSize;
 use rustc_hash::FxHashMap;
 use servo_arc::Arc;
 use smallvec::SmallVec;
@@ -31,6 +33,7 @@ pub struct RuleCacheConditions {
 impl RuleCacheConditions {
     /// Sets the style as depending in the font-size value.
     pub fn set_font_size_dependency(&mut self, font_size: NonNegativeLength) {
+        let font_size = NonNegative(FontSize::quantize_font_size(font_size.0));
         debug_assert!(self.font_size.map_or(true, |f| f == font_size));
         self.font_size = Some(font_size);
     }

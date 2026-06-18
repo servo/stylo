@@ -1019,11 +1019,31 @@ impl FontSize {
                     }
                 },
             };
+        let size = NonNegative(Self::quantize_font_size(size));
         computed::FontSize {
-            computed_size: NonNegative(size),
-            used_size: NonNegative(size),
+            computed_size: size,
+            used_size: size,
             keyword_info: info,
         }
+    }
+
+    /// Quantize a value intended for use as a font size, to avoid creating a near-infinity
+    /// of different styles and font instances when "random" floating-point sizes are used.
+    #[inline]
+    pub fn quantize_font_size(size: CSSPixelLength) -> CSSPixelLength {
+        // Based on the Veltkamp-Dekker float-splitting algorithm, see e.g.
+        // https://indico.cern.ch/event/313684/contributions/1687773/attachments/600513/826490/FPArith-Part2.pdf
+        // A 32-bit float has 24 bits of precision (23 stored, plus an implicit 1 bit
+        // at the start of the mantissa).
+        // (Compare also QuantizeFontSize in dom/canvas/CanvasRenderingContext2D.cpp.)
+        // If we ever change the representation of CSSPixelLength (e.g. to f64 or some fixed-point type)
+        // this will need to be revised.
+        size_of_test!(CSSPixelLength, std::mem::size_of::<f32>());
+        let bits_to_drop = 14; // leaving 10 bits of precision
+        let scale = 1 << bits_to_drop;
+        let d = size.px() * (scale + 1) as f32;
+        let t = d - size.px();
+        CSSPixelLength::new(d - t)
     }
 }
 

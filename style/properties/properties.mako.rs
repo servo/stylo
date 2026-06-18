@@ -14,7 +14,6 @@ use std::{ops, ptr, fmt, mem};
 #[cfg(feature = "servo")] use euclid::SideOffsets2D;
 #[cfg(feature = "gecko")] use crate::gecko_bindings::structs::{self, NonCustomCSSPropertyId};
 #[cfg(feature = "servo")] use crate::logical_geometry::LogicalMargin;
-#[cfg(feature = "servo")] use crate::computed_values;
 #[cfg(feature = "servo")] use crate::dom::AttributeReferences;
 use crate::logical_geometry::WritingMode;
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};

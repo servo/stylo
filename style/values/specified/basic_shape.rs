@@ -438,10 +438,21 @@ impl Ellipse {
     ) -> Result<Self, ParseError<'i>> {
         let (semiaxis_x, semiaxis_y) = input
             .try_parse(|i| -> Result<_, ParseError> {
-                Ok((
-                    ShapeRadius::parse(context, i)?,
-                    ShapeRadius::parse(context, i)?,
-                ))
+                let s_x = ShapeRadius::parse(context, i)?;
+                let s_y = ShapeRadius::parse(context, i)?;
+                if !static_prefs::pref!("layout.css.ellipse-corners.enabled")
+                    && (matches!(
+                        s_x,
+                        ShapeRadius::ClosestCorner | ShapeRadius::FarthestCorner
+                    ) || matches!(
+                        s_y,
+                        ShapeRadius::ClosestCorner | ShapeRadius::FarthestCorner
+                    ))
+                {
+                    Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+                } else {
+                    Ok((s_x, s_y))
+                }
             })
             .unwrap_or_default();
         let position = parse_at_position(context, input)?;

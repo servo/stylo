@@ -767,6 +767,14 @@ struct SubstitutionFunctionReference {
     substitution_kind: SubstitutionFunctionKind,
 }
 
+impl SubstitutionFunctionReference {
+    /// Whether we're an attr(... type(...)) reference.
+    fn is_attr_with_type(&self) -> bool {
+        self.substitution_kind == SubstitutionFunctionKind::Attr
+            && matches!(self.attribute_data.kind, AttributeType::Type(..))
+    }
+}
+
 /// A struct holding information about the external references to that a custom
 /// property value may have.
 #[derive(Clone, Debug, Default, MallocSizeOf, PartialEq, ToShmem)]
@@ -1319,11 +1327,6 @@ fn get_attr_value_for_cycle_resolution(
     url_data: &UrlExtraData,
     attribute_tracker: &mut AttributeTracker,
 ) -> Result<ComputedRegisteredValue, ()> {
-    // If the attribute is not specified by the type() syntax, it
-    // has no reference to traverse and we can stop processing.
-    if !matches!(&attribute_data.kind, AttributeType::Type(_)) {
-        return Err(());
-    }
     #[cfg(feature = "gecko")]
     let local_name = LocalName::cast(name);
     #[cfg(feature = "servo")]
@@ -1754,7 +1757,7 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
     }
 
     /// For a given unparsed variable, update the attributes map with its attr references.
-    pub fn update_attributes_map(
+    fn update_attributes_map(
         &mut self,
         value: &'a VariableValue,
         attribute_tracker: &mut AttributeTracker,
@@ -1766,10 +1769,9 @@ impl<'a, 'b: 'a> CustomPropertiesBuilder<'a, 'b> {
         self.may_have_cycles = true;
 
         for next in &refs.refs {
-            // Skip non-attrs and attributes we've already processed.
-            if next.substitution_kind != SubstitutionFunctionKind::Attr
-                || !self.seen.attr.insert(&next.name)
-            {
+            if !next.is_attr_with_type() || !self.seen.attr.insert(&next.name) {
+                // Only type() can have nested references, so we don't need to eagerly look at
+                // others.
                 continue;
             }
             if let Ok(v) = get_attr_value_for_cycle_resolution(
@@ -2176,16 +2178,22 @@ fn substitute_all(
                     }
 
                     let next_var = if next.substitution_kind == SubstitutionFunctionKind::Attr {
+                        // An type()-less attr() within attr(... type()) can still have nested
+                        // references.
+                        let can_chain =
+                            next.is_attr_with_type() || matches!(var, VarType::Attr(..));
+                        if !can_chain {
+                            continue;
+                        }
                         if context.map.get_attr(&next.name).is_none() {
-                            let Ok(val) = get_attr_value_for_cycle_resolution(
+                            if let Ok(val) = get_attr_value_for_cycle_resolution(
                                 &next.name,
                                 &next.attribute_data,
                                 &v.url_data,
                                 attribute_tracker,
-                            ) else {
-                                continue;
-                            };
-                            context.map.insert_attr(&next.name, val);
+                            ) {
+                                context.map.insert_attr(&next.name, val);
+                            }
                         }
                         VarType::Attr(next.name.clone())
                     } else {

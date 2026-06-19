@@ -10,6 +10,7 @@ use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
+use crate::values::computed::font::FontStyleFixedPoint;
 use crate::values::computed::FontWeight;
 use crate::values::generics::font::FontStyle as GenericFontStyle;
 use crate::values::specified::{url::SpecifiedUrl, Angle};
@@ -401,13 +402,13 @@ pub enum FontStyle {
     Oblique(Angle, Angle),
 }
 
-/// The computed representation of the above, with angles in degrees, so that
-/// Gecko can read them easily.
+/// The computed representation of the above, with angles in degrees stored as
+/// signed 8.8 fixed-point values, so that Gecko can read them easily.
 #[repr(u8)]
 #[allow(missing_docs)]
 pub enum ComputedFontStyleDescriptor {
     Italic,
-    Oblique(f32, f32),
+    Oblique(FontStyleFixedPoint, FontStyleFixedPoint),
 }
 
 impl Parse for FontStyle {
@@ -475,7 +476,10 @@ impl FontStyle {
                 let first = SpecifiedFontStyle::compute_angle_degrees(first)?;
                 let second = SpecifiedFontStyle::compute_angle_degrees(second)?;
                 let (min, max) = sort_range(first, second);
-                Some(ComputedFontStyleDescriptor::Oblique(min, max))
+                Some(ComputedFontStyleDescriptor::Oblique(
+                    FontStyleFixedPoint::from_float(min),
+                    FontStyleFixedPoint::from_float(max),
+                ))
             },
         }
     }

@@ -958,15 +958,15 @@ where
     if settings_list.len() > 1 {
         settings_list.sort_by_key(|k| k.tag().0);
         // dedup() keeps the first of any duplicates, but we want the last,
-        // so we implement it manually here.
-        let mut prev_tag = settings_list.last().unwrap().tag();
-        for i in (0..settings_list.len() - 1).rev() {
-            let cur_tag = settings_list[i].tag();
-            if cur_tag == prev_tag {
-                settings_list.remove(i);
+        // so swap elements in the dedup_by closure if their tags are equal.
+        settings_list.dedup_by(|a, b| {
+            if a.tag() == b.tag() {
+                std::mem::swap(a, b);
+                true
+            } else {
+                false
             }
-            prev_tag = cur_tag;
-        }
+        });
     }
 }
 

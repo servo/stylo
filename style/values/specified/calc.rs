@@ -14,7 +14,7 @@ use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::calc::{
     self as generic, CalcNodeLeaf, CalcUnits, GenericAnchorFunctionFallback, MinMaxOp, ModRemOp,
-    PositivePercentageBasis, RoundingStrategy, SimplificationResult, SortKey,
+    PositivePercentageBasis, ProgressClampingMode, RoundingStrategy, SimplificationResult, SortKey,
 };
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{
@@ -82,6 +82,8 @@ pub enum MathFunction {
     Abs,
     /// `sign()`: https://drafts.csswg.org/css-values-4/#funcdef-sign
     Sign,
+    /// `progress()`: https://drafts.csswg.org/css-values-5/#funcdef-progress
+    Progress,
     /// `sibling-count()`: https://drafts.csswg.org/css-values-5/#funcdef-sibling-count
     #[strum(serialize = "sibling-count")]
     SiblingCount,
@@ -1118,6 +1120,34 @@ impl CalcNode {
                         flags.new_including(CalcUnits::ALL - CalcUnits::PERCENTAGE),
                     )?;
                     Ok(Self::Sign(Box::new(node)))
+                },
+                MathFunction::Progress => {
+                    if !static_prefs::pref!("layout.css.progress-function.enabled") {
+                        return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    }
+
+                    let clamping_mode = input
+                        .try_parse(|i| ProgressClampingMode::parse(i))
+                        .unwrap_or(ProgressClampingMode::Clamp);
+
+                    let allow_all = flags.new_including(CalcUnits::ALL);
+                    let value = Self::parse_argument(context, input, allow_all)?;
+                    input.expect_comma()?;
+                    let start = Self::parse_argument(context, input, allow_all)?;
+                    input.expect_comma()?;
+                    let end = Self::parse_argument(context, input, allow_all)?;
+
+                    // TODO(Bug 2042060) - Allow combining length and percentage arguments (if it can be resolved).
+                    if value.unit() != start.unit() || value.unit() != end.unit() {
+                        return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    }
+
+                    Ok(Self::Progress {
+                        clamping_mode,
+                        value: Box::new(value),
+                        start: Box::new(start),
+                        end: Box::new(end),
+                    })
                 },
                 MathFunction::SiblingCount | MathFunction::SiblingIndex => {
                     if !static_prefs::pref!("layout.css.tree-counting-functions.enabled") {

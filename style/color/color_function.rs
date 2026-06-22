@@ -305,23 +305,28 @@ impl ColorFunction<ComputedColor> {
                         alpha!(alpha),
                     )
                 } else {
+                    // Resolve a component to its legacy sRGB value in [0..1], preserving
+                    // `none` as `None` so the `*_IS_NONE` flags are kept on the color. Legacy
+                    // syntax cannot serialize `none`, but the flags are still needed to carry
+                    // missing components forward through interpolation (e.g. `color-mix`).
                     #[inline]
                     fn resolve(
                         component: &ColorComponent<NumberOrPercentageComponent>,
-                    ) -> Result<u8, ()> {
-                        Ok(clamp_floor_256_f32(
-                            component
-                                .resolve()?
-                                .map_or(0.0, |value| value.to_number(u8::MAX as f32)),
-                        ))
+                    ) -> Result<Option<f32>, ()> {
+                        Ok(component.resolve()?.map(|value| {
+                            clamp_floor_256_f32(value.to_number(u8::MAX as f32)) as f32 / 255.0
+                        }))
                     }
 
-                    AbsoluteColor::srgb_legacy(
+                    let mut result = AbsoluteColor::new(
+                        ColorSpace::Srgb,
                         resolve(r)?,
                         resolve(g)?,
                         resolve(b)?,
-                        alpha!(alpha).unwrap_or(0.0),
-                    )
+                        alpha!(alpha),
+                    );
+                    result.flags.insert(ColorFlags::IS_LEGACY_SRGB);
+                    result
                 }
             },
             ColorFunction::Hsl(origin_color, h, s, l, alpha) => {

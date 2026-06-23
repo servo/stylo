@@ -163,25 +163,6 @@ where
     }
 
     fn collect_user_agent_rules(&mut self) {
-        // Element-backed pseudo-elements (e.g. ::picker), also apply UA rules that target underlying element directly
-        if self.is_element_backed_pseudo_element() {
-            let cascade_level = CascadeLevel::new(CascadeOrigin::UA);
-            let cascade_data = self
-                .stylist
-                .cascade_data()
-                .borrow_for_origin(Origin::UserAgent);
-            if let Some(map) = cascade_data.normal_rules(&[]) {
-                let element = self.element;
-                self.in_tree(None, |collector| {
-                    collector.collect_rules_in_map_with_target(
-                        map,
-                        cascade_level,
-                        cascade_data,
-                        element,
-                    );
-                });
-            }
-        }
         self.collect_stylist_rules(Origin::UserAgent);
         #[cfg(feature = "gecko")]
         self.collect_view_transition_dynamic_rules();

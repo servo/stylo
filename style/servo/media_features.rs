@@ -129,7 +129,7 @@ fn eval_any_hover(context: &Context, query_value: Option<Hover>) -> bool {
     eval_hover_capabilities(query_value, context.device().all_pointer_capabilities())
 }
 
-/// https://drafts.csswg.org/mediaqueries-4/#aspect-ratio
+/// <https://drafts.csswg.org/mediaqueries-4/#aspect-ratio>
 fn eval_aspect_ratio(context: &Context) -> Ratio {
     let size = context.device().au_viewport_size();
     Ratio::new(size.width.0 as f32, size.height.0 as f32)

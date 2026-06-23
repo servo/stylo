@@ -171,16 +171,12 @@ pub enum GenericTextDecorationLength<L> {
 /// https://drafts.csswg.org/css-text-decor-4/#text-decoration-skip-inset-property
 #[repr(C, u8)]
 #[derive(
-    Animate,
     Clone,
-    ComputeSquaredDistance,
     Debug,
     Eq,
     MallocSizeOf,
     PartialEq,
     SpecifiedValueInfo,
-    ToAnimatedValue,
-    ToAnimatedZero,
     ToComputedValue,
     ToResolvedValue,
     ToShmem,

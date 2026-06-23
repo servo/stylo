@@ -5,8 +5,11 @@
 //! Computed types for text properties.
 
 use crate::derives::*;
+use crate::gecko_bindings::bindings;
 use crate::typed_om::{KeywordValue, ToTyped, TypedValue};
-use crate::values::computed::length::{Length, LengthPercentage};
+use crate::values::animated::text::TextDecorationInset as AnimatedTextDecorationInset;
+use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
+use crate::values::computed::length::{CSSPixelLength, Length, LengthPercentage};
 use crate::values::generics::text::{
     GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationInset,
     GenericTextDecorationLength, GenericTextIndent,
@@ -14,7 +17,7 @@ use crate::values::generics::text::{
 use crate::values::generics::NumberOrAuto;
 use crate::values::specified::text as specified;
 use crate::values::specified::text::{TextEmphasisFillMode, TextEmphasisShapeKeyword};
-use crate::values::{CSSFloat, CSSInteger};
+use crate::values::{CSSFloat, CSSInteger, ComputeSquaredDistance};
 use crate::Zero;
 use std::fmt::{self, Write};
 use style_traits::{CssString, CssWriter, ToCss};
@@ -35,6 +38,48 @@ pub type TextDecorationLength = GenericTextDecorationLength<LengthPercentage>;
 
 /// Implements type for `text-decoration-inset` property.
 pub type TextDecorationInset = GenericTextDecorationInset<Length>;
+
+impl ToAnimatedValue for TextDecorationInset {
+    type AnimatedValue = AnimatedTextDecorationInset;
+
+    fn to_animated_value(self, context: &AnimatedContext) -> Self::AnimatedValue {
+        match self {
+            Self::Auto => {
+                let font_size_px = context
+                    .style
+                    .get_font()
+                    .clone_font_size()
+                    .computed_size()
+                    .px();
+                let auto_length = CSSPixelLength::new(unsafe {
+                    bindings::Gecko_CalcAutoDecorationInset(font_size_px)
+                });
+                Self::AnimatedValue {
+                    start: auto_length,
+                    end: auto_length,
+                    is_auto: true,
+                }
+            },
+            Self::Length { start, end } => Self::AnimatedValue {
+                start: start.to_animated_value(context),
+                end: end.to_animated_value(context),
+                is_auto: false,
+            },
+        }
+    }
+
+    #[inline]
+    fn from_animated_value(value: Self::AnimatedValue) -> Self {
+        if value.is_auto {
+            Self::Auto
+        } else {
+            Self::Length {
+                start: value.start,
+                end: value.end,
+            }
+        }
+    }
+}
 
 /// The computed value of `text-align`.
 pub type TextAlign = specified::TextAlignKeyword;

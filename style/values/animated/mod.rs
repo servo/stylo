@@ -25,6 +25,7 @@ mod font;
 mod grid;
 pub mod lists;
 mod svg;
+pub mod text;
 pub mod transform;
 
 /// The category a property falls into for ordering purposes.

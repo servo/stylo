@@ -6,7 +6,7 @@
 
 <%namespace name="helpers" file="/helpers.mako.rs" />
 <% from itertools import groupby %>
-<% from data import PropertyRestrictions, to_camel_case, RULE_VALUES, SYSTEM_FONT_LONGHANDS, PRIORITARY_PROPERTIES %>
+<% from data import PropertyRestrictions, to_camel_case, RULE_VALUES, SYSTEM_FONT_LONGHANDS, PRIORITARY_PROPERTIES, PRIORITARY_PROPERTY_DEPENDENCIES %>
 
 use servo_arc::{Arc, UniqueArc};
 use std::{ops, ptr, fmt, mem};
@@ -39,7 +39,7 @@ use crate::values::{
 use std::cell::Cell;
 use super::{
     PropertyDeclarationId, PropertyId, NonCustomPropertyId,
-    NonCustomPropertyIdSet, PropertyFlags, SourcePropertyDeclaration,
+    NonCustomPropertyIdSet, PrioritaryPropertyIdSet, PropertyFlags, SourcePropertyDeclaration,
     LonghandIdSet, VariableDeclaration, CustomDeclaration,
     WideKeywordDeclaration, NonCustomPropertyIterator, TransitionPropertyIterator,
 };
@@ -288,11 +288,10 @@ impl PropertyDeclaration {
 
     /// Returns the color value of a given property, for high-contrast-mode tweaks.
     pub(super) fn color_value(&self) -> Option<&crate::values::specified::Color> {
-        ${static_longhand_id_set("COLOR_PROPERTIES", lambda p: p.predefined_type == "Color")}
+        static COLOR_PROPERTIES: LonghandIdSet = ${longhand_id_set(lambda p: p.predefined_type == "Color")};
         <%
             # sanity check
             assert data.longhands_by_name["background-color"].predefined_type == "Color"
-
             color_specified_type = data.longhands_by_name["background-color"].specified_type()
         %>
         let id = self.id().as_longhand()?;
@@ -363,22 +362,18 @@ impl NonCustomPropertyId {
     /// Returns whether this property is animatable.
     #[inline]
     pub fn is_animatable(self) -> bool {
-        ${static_non_custom_property_id_set("ANIMATABLE", lambda p: p.animatable)}
+        static ANIMATABLE: NonCustomPropertyIdSet =
+            ${non_custom_property_id_set(lambda p: p.animatable)};
         ANIMATABLE.contains(self)
     }
 
     /// Whether this property is enabled for all content right now.
     #[inline]
     pub(super) fn enabled_for_all_content(self) -> bool {
-        ${static_non_custom_property_id_set(
-            "EXPERIMENTAL",
-            lambda p: p.experimental(engine)
-        )}
-
-        ${static_non_custom_property_id_set(
-            "ALWAYS_ENABLED",
+        static EXPERIMENTAL: NonCustomPropertyIdSet = ${non_custom_property_id_set(lambda p: p.experimental(engine))};
+        static ALWAYS_ENABLED: NonCustomPropertyIdSet = ${non_custom_property_id_set(
             lambda p: (not p.experimental(engine)) and p.enabled_in_content()
-        )}
+        )};
 
         let passes_pref_check = || {
             % if engine == "gecko":
@@ -457,16 +452,12 @@ impl NonCustomPropertyId {
         if self.enabled_for_all_content() {
             return true;
         }
-
-        ${static_non_custom_property_id_set(
-            "ENABLED_IN_UA_SHEETS",
+        static ENABLED_IN_UA_SHEETS: NonCustomPropertyIdSet = ${non_custom_property_id_set(
             lambda p: p.explicitly_enabled_in_ua_sheets()
-        )}
-        ${static_non_custom_property_id_set(
-            "ENABLED_IN_CHROME",
+        )};
+        static ENABLED_IN_CHROME: NonCustomPropertyIdSet = ${non_custom_property_id_set(
             lambda p: p.explicitly_enabled_in_chrome()
-        )}
-
+        )};
         if context.stylesheet_origin == Origin::UserAgent &&
             ENABLED_IN_UA_SHEETS.contains(self)
         {
@@ -519,26 +510,26 @@ impl NonCustomPropertyId {
     }
 }
 
-<%def name="static_non_custom_property_id_set(name, is_member)">
+<%def name="id_set(set_type, ids, is_member)">
 <%
-    storage = [0] * int((len(data.longhands) + len(data.shorthands) + len(data.all_aliases()) - 1 + 32) / 32)
-    for i, property in enumerate(data.longhands + data.shorthands + data.all_aliases()):
+    storage = [0] * int((len(ids) - 1 + 32) / 32)
+    for i, property in enumerate(ids):
         if is_member(property):
             storage[int(i / 32)] |= 1 << (i % 32)
 %>
-static ${name}: NonCustomPropertyIdSet =
-    NonCustomPropertyIdSet::from_storage([${", ".join("0x%x" % word for word in storage)}]);
+    ${set_type}::from_storage([${", ".join("0x%x" % word for word in storage)}])
 </%def>
 
-<%def name="static_longhand_id_set(name, is_member)">
-<%
-    storage = [0] * int((len(data.longhands) - 1 + 32) / 32)
-    for i, property in enumerate(data.longhands):
-        if is_member(property):
-            storage[int(i / 32)] |= 1 << (i % 32)
-%>
-static ${name}: LonghandIdSet =
-    LonghandIdSet::from_storage([${", ".join("0x%x" % word for word in storage)}]);
+<%def name="non_custom_property_id_set(is_member)">
+${id_set("NonCustomPropertyIdSet", data.longhands + data.shorthands + data.all_aliases(), is_member)}
+</%def>
+
+<%def name="longhand_id_set(is_member)">
+${id_set("LonghandIdSet", data.longhands, is_member)}
+</%def>
+
+<%def name="prioritary_property_id_set(is_member)">
+${id_set("PrioritaryPropertyIdSet", [p for p in data.longhands if p.is_prioritary()], is_member)}
 </%def>
 
 <%
@@ -673,25 +664,41 @@ impl PrioritaryPropertyId {
         ];
         LONGHAND_TO_PRIORITARY[l as usize]
     }
+
+    /// Returns the set of prioritary properties that must be applied before
+    /// this one, i.e. the properties it depends on.
+    #[inline]
+    pub fn dependencies(self) -> &'static PrioritaryPropertyIdSet {
+        static DEPENDENCIES: [PrioritaryPropertyIdSet; property_counts::PRIORITARY] = [
+        % for p in data.longhands:
+        % if p.is_prioritary():
+            ${prioritary_property_id_set(
+                lambda dep, p=p: dep.name in PRIORITARY_PROPERTY_DEPENDENCIES[p.name]
+            )},
+        % endif
+        % endfor
+        ];
+        &DEPENDENCIES[self as usize]
+    }
 }
 
 impl LonghandIdSet {
     /// The set of non-inherited longhands.
     #[inline]
     pub(super) fn reset() -> &'static Self {
-        ${static_longhand_id_set("RESET", lambda p: not p.style_struct.inherited)}
+        static RESET: LonghandIdSet = ${longhand_id_set(lambda p: not p.style_struct.inherited)};
         &RESET
     }
 
     #[inline]
     pub(super) fn discrete_animatable() -> &'static Self {
-        ${static_longhand_id_set("DISCRETE_ANIMATABLE", lambda p: p.animation_type == "discrete")}
+        static DISCRETE_ANIMATABLE: LonghandIdSet = ${longhand_id_set(lambda p: p.animation_type == "discrete")};
         &DISCRETE_ANIMATABLE
     }
 
     #[inline]
     pub(super) fn logical() -> &'static Self {
-        ${static_longhand_id_set("LOGICAL", lambda p: p.logical)}
+        static LOGICAL: LonghandIdSet = ${longhand_id_set(lambda p: p.logical)};
         &LOGICAL
     }
 
@@ -699,37 +706,33 @@ impl LonghandIdSet {
     /// disabled.
     #[inline]
     pub(super) fn ignored_when_colors_disabled() -> &'static Self {
-        ${static_longhand_id_set(
-            "IGNORED_WHEN_COLORS_DISABLED",
-            lambda p: p.ignored_when_colors_disabled
-        )}
+        static IGNORED_WHEN_COLORS_DISABLED: LonghandIdSet = ${longhand_id_set(lambda p: p.ignored_when_colors_disabled)};
         &IGNORED_WHEN_COLORS_DISABLED
     }
 
-    /// Only a few properties are allowed to depend on the visited state of
-    /// links. When cascading visited styles, we can save time by only
-    /// processing these properties.
+    /// Only a few properties are allowed to depend on the visited state of links. When cascading
+    /// visited styles, we can save time by only processing these properties.
     pub(super) fn visited_dependent() -> &'static Self {
-        ${static_longhand_id_set("VISITED_DEPENDENT", lambda p: p.is_visited_dependent())}
+        static VISITED_DEPENDENT: LonghandIdSet = ${longhand_id_set(lambda p: p.is_visited_dependent())};
         debug_assert!(Self::late_group().contains_all(&VISITED_DEPENDENT));
         &VISITED_DEPENDENT
     }
 
     #[inline]
     pub(super) fn prioritary_properties() -> &'static Self {
-        ${static_longhand_id_set("PRIORITARY_PROPERTIES", lambda p: p.is_prioritary())}
-        &PRIORITARY_PROPERTIES
+        static PRIORITARY: LonghandIdSet = ${longhand_id_set(lambda p: p.is_prioritary())};
+        &PRIORITARY
     }
 
     #[inline]
     pub(super) fn late_group_only_inherited() -> &'static Self {
-        ${static_longhand_id_set("LATE_GROUP_ONLY_INHERITED", lambda p: p.style_struct.inherited and not p.is_prioritary())}
+        static LATE_GROUP_ONLY_INHERITED: LonghandIdSet = ${longhand_id_set(lambda p: p.style_struct.inherited and not p.is_prioritary())};
         &LATE_GROUP_ONLY_INHERITED
     }
 
     #[inline]
     pub(super) fn late_group() -> &'static Self {
-        ${static_longhand_id_set("LATE_GROUP", lambda p: not p.is_prioritary())}
+        static LATE_GROUP: LonghandIdSet = ${longhand_id_set(lambda p: not p.is_prioritary())};
         &LATE_GROUP
     }
 
@@ -742,20 +745,16 @@ impl LonghandIdSet {
         // data.py asserts that has_no_effect_on_gecko_scrollbars is True or
         // False for properties that are inherited and Gecko pref controlled,
         // and is None for all other properties.
-        ${static_longhand_id_set(
-            "HAS_NO_EFFECT_ON_SCROLLBARS",
+        static HAS_NO_EFFECT_ON_SCROLLBARS: LonghandIdSet = ${longhand_id_set(
             lambda p: p.has_effect_on_gecko_scrollbars is False
-        )}
+        )};
         &HAS_NO_EFFECT_ON_SCROLLBARS
     }
 
     /// Returns the set of margin properties, for the purposes of <h1> use counters / warnings.
     #[inline]
     pub fn margin_properties() -> &'static Self {
-        ${static_longhand_id_set(
-            "MARGIN_PROPERTIES",
-            lambda p: p.logical_group == "margin"
-        )}
+        static MARGIN_PROPERTIES: LonghandIdSet = ${longhand_id_set(lambda p: p.logical_group == "margin")};
         &MARGIN_PROPERTIES
     }
 
@@ -763,20 +762,19 @@ impl LonghandIdSet {
     /// appearance.
     #[inline]
     pub fn border_background_properties() -> &'static Self {
-        ${static_longhand_id_set(
-            "BORDER_BACKGROUND_PROPERTIES",
+        static BORDER_BACKGROUND_PROPERTIES: LonghandIdSet = ${longhand_id_set(
             lambda p: (p.logical_group and p.logical_group.startswith("border")) or \
                         p in data.shorthands_by_name["border"].sub_properties or \
                         p in data.shorthands_by_name["background"].sub_properties and \
                         p.name not in ["background-blend-mode", "background-repeat"]
-        )}
+        )};
         &BORDER_BACKGROUND_PROPERTIES
     }
 
     /// Returns properties that are zoom dependent (basically, that contain lengths).
     #[inline]
     pub fn zoom_dependent() -> &'static Self {
-        ${static_longhand_id_set("ZOOM_DEPENDENT", lambda p: p.is_zoom_dependent())}
+        static ZOOM_DEPENDENT: LonghandIdSet = ${longhand_id_set(lambda p: p.is_zoom_dependent())};
         &ZOOM_DEPENDENT
     }
 
@@ -784,7 +782,7 @@ impl LonghandIdSet {
     /// properties.
     #[inline]
     pub fn zoom_dependent_inherited_properties() -> &'static Self {
-        ${static_longhand_id_set("ZOOM_DEPENDENT_INHERITED", lambda p: p.is_inherited_zoom_dependent_property())}
+        static ZOOM_DEPENDENT_INHERITED: LonghandIdSet = ${longhand_id_set(lambda p: p.is_inherited_zoom_dependent_property())};
         &ZOOM_DEPENDENT_INHERITED
     }
 }

@@ -2281,7 +2281,7 @@ pub struct StyleBuilder<'a> {
     ///
     /// This is effectively
     /// `parent_style.unwrap_or(device.default_computed_values())`.
-    inherited_style: &'a ComputedValues,
+    pub inherited_style: &'a ComputedValues,
 
     /// The style we're getting reset structs from.
     reset_style: &'a ComputedValues,

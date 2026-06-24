@@ -1381,24 +1381,26 @@ pub fn get_attr_value_for_cycle_resolution(
 pub fn handle_invalid_at_computed_value_time(
     name: &Name,
     kind: SubstitutionFunctionKind,
-    substitution_functions: &mut ComputedSubstitutionFunctions,
-    computed_context: &computed::Context,
+    registration: &PropertyDescriptors,
+    context: &mut computed::Context,
 ) {
     if kind == SubstitutionFunctionKind::Attr {
         // Early return: `attr()` is always treated as unregistered.
-        substitution_functions.remove_attr(name);
+        context.builder.substitution_functions.remove_attr(name);
         return;
     }
 
-    let stylist = computed_context.style().stylist.unwrap();
-    let registration = stylist.get_custom_property_registration(&name);
     if !registration.is_universal() {
         // For the root element, inherited maps are empty. We should just
         // use the initial value if any, rather than removing the name.
-        if registration.inherits() && !computed_context.is_root_element() {
-            let inherited = computed_context.inherited_custom_properties();
+        if registration.inherits() && !context.builder.is_root_element {
+            let inherited = context.builder.inherited_style.custom_properties();
             if let Some(value) = inherited.get(registration, name) {
-                substitution_functions.insert_var(registration, name, value.clone());
+                context.builder.substitution_functions.insert_var(
+                    registration,
+                    name,
+                    value.clone(),
+                );
                 return;
             }
         } else if let Some(ref initial_value) = registration.initial_value {
@@ -1406,15 +1408,22 @@ pub fn handle_invalid_at_computed_value_time(
                 &initial_value.css,
                 &initial_value.url_data,
                 registration,
-                computed_context,
+                context,
                 AttrTaint::default(),
             ) {
-                substitution_functions.insert_var(registration, name, initial_value);
+                context.builder.substitution_functions.insert_var(
+                    registration,
+                    name,
+                    initial_value,
+                );
                 return;
             }
         }
     }
-    substitution_functions.remove_var(registration, name);
+    context
+        .builder
+        .substitution_functions
+        .remove_var(registration, name);
 }
 
 /// Replace `var()`, `env()`, and `attr()` functions in a pre-existing variable value.
@@ -1422,9 +1431,8 @@ pub fn substitute_references_if_needed_and_apply(
     name: &Name,
     kind: SubstitutionFunctionKind,
     value: &Arc<VariableValue>,
-    substitution_functions: &mut ComputedSubstitutionFunctions,
     stylist: &Stylist,
-    computed_context: &computed::Context,
+    context: &mut computed::Context,
     attribute_tracker: &mut AttributeTracker,
 ) {
     debug_assert_ne!(kind, SubstitutionFunctionKind::Env);
@@ -1433,28 +1441,31 @@ pub fn substitute_references_if_needed_and_apply(
     if is_var && !value.has_references() && registration.is_universal() {
         // Trivial path: no references and no need to compute the value, just apply it directly.
         let computed_value = ComputedRegisteredValue::universal(Arc::clone(value));
-        substitution_functions.insert_var(registration, name, computed_value);
+        context
+            .builder
+            .substitution_functions
+            .insert_var(registration, name, computed_value);
         return;
     }
 
-    let inherited = computed_context.inherited_custom_properties();
     let url_data = &value.url_data;
     let substitution = substitute_internal(
         value,
-        substitution_functions,
+        &context.builder.substitution_functions,
         stylist,
-        computed_context,
+        context,
         attribute_tracker,
         &mut SmallVec::new(),
         None,
     );
 
     let Ok(substitution) = substitution else {
-        handle_invalid_at_computed_value_time(name, kind, substitution_functions, computed_context);
+        handle_invalid_at_computed_value_time(name, kind, registration, context);
         return;
     };
 
     // If variable fallback results in a wide keyword, deal with it now.
+    let inherited = context.builder.inherited_style.custom_properties();
     if is_var {
         let css = &substitution.css;
         let css_wide_kw = {
@@ -1467,11 +1478,7 @@ pub fn substitute_references_if_needed_and_apply(
             // TODO: It's unclear what this should do for revert / revert-layer, see
             // https://github.com/w3c/csswg-drafts/issues/9131. For now treating as unset
             // seems fine?
-            match (
-                kw,
-                registration.inherits(),
-                computed_context.is_root_element(),
-            ) {
+            match (kw, registration.inherits(), context.is_root_element()) {
                 (CSSWideKeyword::Initial, _, _)
                 | (CSSWideKeyword::Revert, false, _)
                 | (CSSWideKeyword::RevertLayer, false, _)
@@ -1482,7 +1489,11 @@ pub fn substitute_references_if_needed_and_apply(
                 | (CSSWideKeyword::RevertRule, true, true)
                 | (CSSWideKeyword::Unset, true, true)
                 | (CSSWideKeyword::Inherit, _, true) => {
-                    remove_and_insert_initial_value(name, registration, substitution_functions);
+                    remove_and_insert_initial_value(
+                        name,
+                        registration,
+                        &mut context.builder.substitution_functions,
+                    );
                 },
                 (CSSWideKeyword::Revert, true, false)
                 | (CSSWideKeyword::RevertLayer, true, false)
@@ -1491,10 +1502,17 @@ pub fn substitute_references_if_needed_and_apply(
                 | (CSSWideKeyword::Unset, true, false) => {
                     match inherited.get(registration, name) {
                         Some(value) => {
-                            substitution_functions.insert_var(registration, name, value.clone());
+                            context.builder.substitution_functions.insert_var(
+                                registration,
+                                name,
+                                value.clone(),
+                            );
                         },
                         None => {
-                            substitution_functions.remove_var(registration, name);
+                            context
+                                .builder
+                                .substitution_functions
+                                .remove_var(registration, name);
                         },
                     };
                 },
@@ -1505,19 +1523,17 @@ pub fn substitute_references_if_needed_and_apply(
 
     match kind {
         SubstitutionFunctionKind::Var => {
-            let value = match substitution.into_value(url_data, registration, computed_context) {
+            let value = match substitution.into_value(url_data, registration, context) {
                 Ok(v) => v,
                 Err(()) => {
-                    handle_invalid_at_computed_value_time(
-                        name,
-                        kind,
-                        substitution_functions,
-                        computed_context,
-                    );
+                    handle_invalid_at_computed_value_time(name, kind, registration, context);
                     return;
                 },
             };
-            substitution_functions.insert_var(registration, name, value);
+            context
+                .builder
+                .substitution_functions
+                .insert_var(registration, name, value);
         },
         SubstitutionFunctionKind::Attr => {
             let mut value = ComputedRegisteredValue::universal(Arc::new(VariableValue::new(
@@ -1527,7 +1543,10 @@ pub fn substitute_references_if_needed_and_apply(
                 substitution.last_token_type,
             )));
             value.attr_tainted |= substitution.attr_tainted;
-            substitution_functions.insert_attr(name, value);
+            context
+                .builder
+                .substitution_functions
+                .insert_attr(name, value);
         },
         SubstitutionFunctionKind::Env => unreachable!("Kind cannot be env."),
     }

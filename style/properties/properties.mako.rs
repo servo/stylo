@@ -627,9 +627,11 @@ impl LogicalGroupSet {
 }
 
 
+/// An id of a property that can be depended on by other properties.
 #[repr(u8)]
 #[derive(Copy, Clone, Debug)]
-pub(crate) enum PrioritaryPropertyId {
+#[allow(missing_docs)]
+pub enum PrioritaryPropertyId {
     % for p in data.longhands:
     % if p.is_prioritary():
     ${p.camel_case},
@@ -638,6 +640,15 @@ pub(crate) enum PrioritaryPropertyId {
 }
 
 impl PrioritaryPropertyId {
+    /// Iterates over all prioritary properties, in declaration (longhand) order.
+    #[inline]
+    pub fn each() -> impl Iterator<Item = Self> {
+        // Safe because `PrioritaryPropertyId` is `#[repr(u8)]` with contiguous discriminants in
+        // `0..property_counts::PRIORITARY`.
+        (0..property_counts::PRIORITARY as u8).map(|i| unsafe { std::mem::transmute::<u8, Self>(i) })
+    }
+
+    /// Converts a PrioritaryPropertyId to a LonghandId.
     #[inline]
     pub fn to_longhand(self) -> LonghandId {
         static PRIORITARY_TO_LONGHAND: [LonghandId; property_counts::PRIORITARY] = [
@@ -649,6 +660,8 @@ impl PrioritaryPropertyId {
         ];
         PRIORITARY_TO_LONGHAND[self as usize]
     }
+
+    /// Converts a LonghandId to a PrioritaryPropertyId.
     #[inline]
     pub fn from_longhand(l: LonghandId) -> Option<Self> {
         static LONGHAND_TO_PRIORITARY: [Option<PrioritaryPropertyId>; ${len(data.longhands)}] = [
@@ -2283,9 +2296,9 @@ pub struct StyleBuilder<'a> {
     /// The set of attributes used as values in `attr()`
     pub attribute_references: crate::dom::AttributeReferences,
 
-    /// Non-custom properties that are considered invalid at compute time
-    /// due to cyclic dependencies with custom properties.
-    /// e.g. `--foo: 1em; font-size: var(--foo)` where `--foo` is registered.
+    /// Non-custom properties that are considered invalid at compute time due to cyclic
+    /// dependencies with custom properties, e.g. `--foo: 1em; font-size: var(--foo)` where
+    /// `--foo` is registered. Such a property uses its inherited/initial value.
     pub invalid_non_custom_properties: LonghandIdSet,
 
     /// The pseudo-element this style will represent.

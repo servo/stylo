@@ -1222,6 +1222,35 @@ impl NonCustomPropertyIdSet {
     }
 }
 
+/// A set of prioritary properties
+#[derive(Clone, Copy, Debug, Default, MallocSizeOf, PartialEq)]
+pub struct PrioritaryPropertyIdSet {
+    storage: [u32; ((property_counts::PRIORITARY as usize) - 1 + 32) / 32],
+}
+
+impl PrioritaryPropertyIdSet {
+    /// Creates an empty set.
+    pub fn new() -> Self {
+        Self {
+            storage: Default::default(),
+        }
+    }
+
+    /// Insert a prioritary property in the set.
+    #[inline]
+    pub fn insert(&mut self, id: PrioritaryPropertyId) {
+        let bit = id as usize;
+        self.storage[bit / 32] |= 1 << (bit % 32);
+    }
+
+    /// Return whether the given property is in the set
+    #[inline]
+    pub fn contains(&self, id: PrioritaryPropertyId) -> bool {
+        let bit = id as usize;
+        (self.storage[bit / 32] & (1 << (bit % 32))) != 0
+    }
+}
+
 /// A set of longhand properties
 #[derive(Clone, Copy, Debug, Default, MallocSizeOf, PartialEq)]
 pub struct LonghandIdSet {

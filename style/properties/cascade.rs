@@ -9,25 +9,34 @@ use crate::color::AbsoluteColor;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::TreeCountingCaches;
 use crate::custom_properties::{
-    CustomPropertiesBuilder, DeferFontRelativeCustomPropertyResolution,
+    get_attr_value_for_cycle_resolution, handle_invalid_at_computed_value_time,
+    remove_and_insert_initial_value, substitute_references_if_needed_and_apply,
+    ComputedCustomProperties, ComputedSubstitutionFunctions, Name, NonCustomReferenceMap,
+    ReferenceFlags, References, SingleNonCustomReference, SubstitutionFunctionKind, VariableValue,
 };
 use crate::dom::{AttributeTracker, DummyElementContext, ElementContext, TElement};
 #[cfg(feature = "gecko")]
 use crate::font_metrics::FontMetricsOrientation;
-use crate::logical_geometry::WritingMode;
 use crate::properties::{
     property_counts, CSSWideKeyword, ComputedValues, DeclarationImportanceIterator, LonghandId,
-    LonghandIdSet, PrioritaryPropertyId, PropertyDeclaration, PropertyDeclarationId, PropertyFlags,
-    ShorthandsWithPropertyReferencesCache, StyleBuilder, CASCADE_PROPERTY,
+    LonghandIdSet, PrioritaryPropertyId, PrioritaryPropertyIdSet, PropertyDeclaration,
+    PropertyDeclarationId, PropertyFlags, ShorthandsWithPropertyReferencesCache, StyleBuilder,
+    CASCADE_PROPERTY,
 };
+use crate::properties::{CustomDeclaration, CustomDeclarationValue, UnparsedValue};
+use crate::properties_and_values::rule::Descriptors as PropertyDescriptors;
+use crate::properties_and_values::value::ComputedValue as ComputedRegisteredValue;
 use crate::rule_cache::{RuleCache, RuleCacheConditions};
 use crate::rule_tree::{CascadeLevel, CascadeOrigin, RuleCascadeFlags, StrongRuleNode};
+use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet};
 use crate::selector_parser::PseudoElement;
 use crate::shared_lock::StylesheetGuards;
 use crate::style_adjuster::StyleAdjuster;
 use crate::stylesheets::container_rule::ContainerSizeQuery;
 use crate::stylesheets::layer_rule::LayerOrder;
+use crate::stylesheets::UrlExtraData;
 use crate::stylist::Stylist;
+use crate::values::computed::ToComputedValue;
 #[cfg(feature = "gecko")]
 use crate::values::specified::length::FontBaseSize;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
@@ -37,6 +46,8 @@ use selectors::matching::ElementSelectorFlags;
 use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::borrow::Cow;
+use std::cmp;
+use std::collections::hash_map::Entry;
 
 /// Whether we're resolving a style with the purposes of reparenting for ::first-line.
 #[derive(Copy, Clone)]
@@ -238,23 +249,28 @@ pub enum CascadeMode<'a, 'b> {
     },
 }
 
-fn iter_declarations<'custom_builder, 'decls: 'custom_builder, 'builder>(
+fn iter_declarations<'c, 'decls: 'c>(
     iter: impl Iterator<Item = (&'decls PropertyDeclaration, CascadePriority)>,
     declarations: &mut Declarations<'decls>,
-    mut custom_builder: Option<&mut CustomPropertiesBuilder<'custom_builder, 'builder>>,
+    mut custom: Option<(&mut Cascade<'c>, &mut computed::Context)>,
     attribute_tracker: &mut AttributeTracker,
 ) {
     for (declaration, priority) in iter {
         if let PropertyDeclaration::Custom(ref declaration) = *declaration {
-            if let Some(ref mut builder) = custom_builder {
-                builder.cascade(declaration, priority, attribute_tracker);
+            if let Some((ref mut cascade, ref mut context)) = custom {
+                cascade.cascade_custom_property(context, declaration, priority, attribute_tracker);
             }
         } else {
             let id = declaration.id().as_longhand().unwrap();
             declarations.note_declaration(declaration, priority, id);
-            if CustomPropertiesBuilder::might_have_non_custom_or_attr_dependency(id, declaration) {
-                if let Some(ref mut builder) = custom_builder {
-                    builder.maybe_note_non_custom_dependency(id, declaration, attribute_tracker);
+            if Cascade::might_have_non_custom_or_attr_dependency(id, declaration) {
+                if let Some((ref mut cascade, ref mut context)) = custom {
+                    cascade.maybe_note_non_custom_dependency(
+                        context,
+                        id,
+                        declaration,
+                        attribute_tracker,
+                    );
                 }
             }
         }
@@ -319,10 +335,15 @@ where
     );
 
     context.style().add_flags(cascade_input_flags);
+    // Reuse flags from computing registered custom properties initial values, such as
+    // whether they depend on viewport units.
+    context
+        .style()
+        .add_flags(stylist.get_custom_property_initial_values_flags());
 
     let using_cached_reset_properties;
     let ignore_colors = context.builder.device.forced_colors().is_active();
-    let mut cascade = Cascade::new(first_line_reparenting, try_tactic, ignore_colors);
+    let mut cascade = Cascade::new(first_line_reparenting, stylist, ignore_colors);
     let mut declarations = Default::default();
     let mut shorthand_cache = ShorthandsWithPropertyReferencesCache::default();
     let mut attribute_tracker = AttributeTracker::new(element_context);
@@ -345,42 +366,23 @@ where
             LonghandIdSet::visited_dependent()
         },
         CascadeMode::Unvisited { visited_rules } => {
-            let deferred_custom_properties = {
-                let mut builder = CustomPropertiesBuilder::new(stylist, &mut context);
-                iter_declarations(
-                    iter,
-                    &mut declarations,
-                    Some(&mut builder),
-                    &mut attribute_tracker,
-                );
-                // Detect cycles, remove properties participating in them, and resolve properties, except:
-                // * Registered custom properties that depend on font-relative properties (Resolved)
-                //   when prioritary properties are resolved), and
-                // * Any property that, in turn, depend on properties like above.
-                builder.build(
-                    DeferFontRelativeCustomPropertyResolution::Yes,
-                    &mut attribute_tracker,
-                )
-            };
-
-            // Resolve prioritary properties - Guaranteed to not fall into a cycle with existing custom
-            // properties.
-            cascade.apply_prioritary_properties(
+            cascade.init_custom_properties(&mut context);
+            iter_declarations(
+                iter,
+                &mut declarations,
+                Some((&mut cascade, &mut context)),
+                &mut attribute_tracker,
+            );
+            // Detect cycles, remove properties participating in them, and resolve custom
+            // properties, applying prioritary properties (font-size, color-scheme, line-height)
+            // interleaved so that a custom property depending on `em`/`lh`/the used color-scheme is
+            // substituted once the prioritary property it needs has been applied.
+            cascade.apply_custom_and_prioritary_properties(
                 &mut context,
                 &declarations,
                 &mut shorthand_cache,
                 &mut attribute_tracker,
             );
-
-            // Resolve the deferred custom properties.
-            if let Some(deferred) = deferred_custom_properties {
-                CustomPropertiesBuilder::build_deferred(
-                    deferred,
-                    stylist,
-                    &mut context,
-                    &mut attribute_tracker,
-                );
-            }
 
             if let Some(visited_rules) = visited_rules {
                 cascade.compute_visited_style_if_needed(
@@ -388,6 +390,7 @@ where
                     element,
                     parent_style,
                     layout_parent_style,
+                    try_tactic,
                     visited_rules,
                     guards,
                 );
@@ -642,7 +645,7 @@ struct Declaration<'a> {
 
 /// The set of property declarations from our rules.
 #[derive(Default)]
-struct Declarations<'a> {
+pub(crate) struct Declarations<'a> {
     /// Whether we have any prioritary property. This is just a minor optimization.
     has_prioritary_properties: bool,
     /// A list of all the applicable longhand declarations.
@@ -691,32 +694,157 @@ impl<'a> Declarations<'a> {
     }
 }
 
-struct Cascade<'b> {
-    first_line_reparenting: FirstLineReparenting<'b>,
-    try_tactic: &'b PositionTryFallbacksTryTactic,
-    ignore_colors: bool,
-    seen: LonghandIdSet,
-    author_specified: LonghandIdSet,
-    reverted_set: LonghandIdSet,
-    reverted: FxHashMap<LonghandId, (CascadePriority, RevertKind)>,
-    declarations_to_apply_unless_overridden: DeclarationsToApplyUnlessOverriden,
+#[derive(Default)]
+struct RevertedSet {
+    // Just to avoid the hashmap lookup in the common case.
+    longhands_set: LonghandIdSet,
+    longhands: FxHashMap<LonghandId, (CascadePriority, RevertKind)>,
+    custom: PrecomputedHashMap<Name, (CascadePriority, RevertKind)>,
 }
 
-impl<'b> Cascade<'b> {
+#[derive(Default)]
+struct SeenSubstitutionFunctions<'a> {
+    var: PrecomputedHashSet<&'a Name>,
+    attr: PrecomputedHashSet<&'a Name>,
+}
+
+#[derive(Default)]
+struct SeenSet<'a> {
+    longhands: LonghandIdSet,
+    custom: SeenSubstitutionFunctions<'a>,
+}
+
+/// Only registered (typed) properties emit a non-custom edge, from their own value.
+fn find_non_custom_references(
+    registration: &PropertyDescriptors,
+    value: &VariableValue,
+    is_root_element: bool,
+) -> ReferenceFlags {
+    use crate::properties_and_values::syntax::data_type::DependentDataTypes;
+
+    let mut result = ReferenceFlags::empty();
+    let Some(syntax) = registration.syntax.as_ref() else {
+        return result;
+    };
+    let dependent_types = syntax.dependent_types();
+    let may_reference_length = dependent_types.intersects(DependentDataTypes::LENGTH);
+    if may_reference_length {
+        result |= value.references.non_custom_references(is_root_element);
+    }
+    if dependent_types.intersects(DependentDataTypes::COLOR) {
+        // The value depends on the used color-scheme (e.g. a `<color>` property referencing
+        // `light-dark()` or a system color).
+        result |= ReferenceFlags::COLOR_SCHEME;
+    }
+    result
+}
+
+/// Resolves the custom properties for a single `@keyframes` keyframe, layered on top of the base
+/// style's already-computed custom properties.
+///
+/// `@keyframes` aren't part of the regular cascade (see bug 1883255), so this lets the caller seed
+/// the substitution map with the element's computed custom properties, cascade the keyframe's
+/// custom declarations on top, and resolve them (running cycle detection and substitution) into
+/// `context.builder.substitution_functions`, which the subsequent animation-value computation reads
+/// to substitute `var()` references.
+pub struct KeyframeCustomPropertiesBuilder<'a> {
+    cascade: Cascade<'a>,
+    decls: Declarations<'a>,
+    shorthand_cache: ShorthandsWithPropertyReferencesCache,
+}
+
+impl<'a> KeyframeCustomPropertiesBuilder<'a> {
+    /// Creates a new builder, seeding the substitution map with `base` (typically the element's
+    /// computed custom properties).
+    pub fn new(
+        stylist: &'a Stylist,
+        context: &mut computed::Context,
+        base: ComputedCustomProperties,
+    ) -> Self {
+        context.builder.substitution_functions =
+            ComputedSubstitutionFunctions::new(Some(base), None);
+        Self {
+            cascade: Cascade::new_for_custom_properties_only(stylist),
+            decls: Declarations::default(),
+            shorthand_cache: ShorthandsWithPropertyReferencesCache::default(),
+        }
+    }
+
+    /// Cascades a single custom-property declaration from the keyframe.
+    pub fn cascade(
+        &mut self,
+        context: &mut computed::Context,
+        declaration: &'a CustomDeclaration,
+        priority: CascadePriority,
+        attribute_tracker: &mut AttributeTracker,
+    ) {
+        self.cascade
+            .cascade_custom_property(context, declaration, priority, attribute_tracker);
+    }
+
+    /// Resolves the cascaded custom properties into `context.builder.substitution_functions`.
+    pub fn build(
+        mut self,
+        context: &mut computed::Context,
+        attribute_tracker: &mut AttributeTracker,
+    ) {
+        self.cascade.apply_custom_and_prioritary_properties(
+            context,
+            &self.decls,
+            &mut self.shorthand_cache,
+            attribute_tracker,
+        );
+    }
+}
+
+pub(crate) struct Cascade<'a> {
+    first_line_reparenting: FirstLineReparenting<'a>,
+    stylist: &'a Stylist,
+    ignore_colors: bool,
+    seen: SeenSet<'a>,
+    reverted: RevertedSet,
+    author_specified: LonghandIdSet,
+    declarations_to_apply_unless_overridden: DeclarationsToApplyUnlessOverriden,
+    may_have_custom_property_cycles: bool,
+    references_from_non_custom_properties: NonCustomReferenceMap<Vec<Arc<UnparsedValue>>>,
+    /// Set of prioritary properties that have already been applied.
+    ensured_prioritary: PrioritaryPropertyIdSet,
+}
+
+impl<'a> Cascade<'a> {
     fn new(
-        first_line_reparenting: FirstLineReparenting<'b>,
-        try_tactic: &'b PositionTryFallbacksTryTactic,
+        first_line_reparenting: FirstLineReparenting<'a>,
+        stylist: &'a Stylist,
         ignore_colors: bool,
     ) -> Self {
         Self {
             first_line_reparenting,
-            try_tactic,
+            stylist,
             ignore_colors,
-            seen: LonghandIdSet::default(),
-            author_specified: LonghandIdSet::default(),
-            reverted_set: Default::default(),
+            seen: Default::default(),
+            author_specified: Default::default(),
             reverted: Default::default(),
             declarations_to_apply_unless_overridden: Default::default(),
+            may_have_custom_property_cycles: false,
+            ensured_prioritary: PrioritaryPropertyIdSet::default(),
+            references_from_non_custom_properties: Default::default(),
+        }
+    }
+
+    /// Creates a `Cascade` for resolving custom properties outside of a full cascade (e.g. for
+    /// keyframes). The visited-style and position-try paths aren't reachable in this mode.
+    fn new_for_custom_properties_only(stylist: &'a Stylist) -> Self {
+        Self {
+            first_line_reparenting: FirstLineReparenting::No,
+            stylist,
+            ignore_colors: false,
+            seen: Default::default(),
+            author_specified: Default::default(),
+            reverted: Default::default(),
+            declarations_to_apply_unless_overridden: Default::default(),
+            may_have_custom_property_cycles: false,
+            ensured_prioritary: PrioritaryPropertyIdSet::default(),
+            references_from_non_custom_properties: Default::default(),
         }
     }
 
@@ -771,10 +899,10 @@ impl<'b> Cascade<'b> {
         cache: &mut ShorthandsWithPropertyReferencesCache,
         id: PrioritaryPropertyId,
         attr_provider: &mut AttributeTracker,
-    ) -> bool {
+    ) {
         let mut index = decls.prioritary_positions[id as usize].most_important;
         if index == DeclarationIndex::MAX {
-            return false;
+            return;
         }
 
         let longhand_id = id.to_longhand();
@@ -792,8 +920,10 @@ impl<'b> Cascade<'b> {
                 cache,
                 attr_provider,
             );
-            if self.seen.contains(longhand_id) {
-                return true; // Common case, we're done.
+            if self.seen.longhands.contains(longhand_id) {
+                // Found it!
+                self.did_apply_prioritary_property(context, id);
+                return;
             }
             debug_assert!(
                 decl.next_index == 0 || decl.next_index > index,
@@ -803,123 +933,95 @@ impl<'b> Cascade<'b> {
             );
             index = decl.next_index;
             if index == 0 {
-                break;
+                return;
             }
         }
-        false
     }
 
-    fn apply_prioritary_properties(
+    // TODO: Better representation for this.
+    fn prioritary_property_dependencies(
+        id: PrioritaryPropertyId,
+    ) -> &'static [PrioritaryPropertyId] {
+        use crate::properties::PrioritaryPropertyId::*;
+        match id {
+            MozDefaultAppearance => &[],
+            Appearance => &[MozDefaultAppearance],
+            XTextScale => &[FontFamily],
+            ColorScheme => &[ForcedColorAdjust],
+            FontFamily => &[XLang],
+            FontSize => &[Zoom, FontFamily, MathDepth, MozMinFontSizeRatio, XTextScale],
+            FontWeight | FontStretch | FontStyle | FontSizeAdjust => &[FontSize],
+            LineHeight => &[FontWeight, FontStretch, FontStyle, FontSizeAdjust],
+            MathDepth | MozMinFontSizeRatio | XLang | Zoom | ForcedColorAdjust | Direction
+            | WritingMode | TextOrientation => &[Appearance],
+        }
+    }
+
+    /// Some prioritary properties need book-keeping, which this takes care of.
+    fn did_apply_prioritary_property(
         &mut self,
         context: &mut computed::Context,
-        decls: &Declarations,
-        cache: &mut ShorthandsWithPropertyReferencesCache,
-        attribute_tracker: &mut AttributeTracker,
+        id: PrioritaryPropertyId,
     ) {
-        // Keeps apply_one_prioritary_property calls readable, considering the repititious
-        // arguments.
-        macro_rules! apply {
-            ($prop:ident) => {
-                self.apply_one_prioritary_property(
-                    context,
-                    decls,
-                    cache,
-                    PrioritaryPropertyId::$prop,
-                    attribute_tracker,
-                )
-            };
-        }
-
-        if !decls.has_prioritary_properties {
-            return;
-        }
-
-        #[cfg(feature = "gecko")]
-        apply!(MozDefaultAppearance);
-        #[cfg(feature = "gecko")]
-        if apply!(Appearance) && is_base_appearance(&context) {
-            context
-                .style()
-                .add_flags(ComputedValueFlags::IS_IN_APPEARANCE_BASE_SUBTREE);
-            context
-                .included_cascade_flags
-                .insert(RuleCascadeFlags::APPEARANCE_BASE);
-        }
-
-        let has_writing_mode = apply!(WritingMode) | apply!(Direction);
-        #[cfg(feature = "gecko")]
-        let has_writing_mode = has_writing_mode | apply!(TextOrientation);
-
-        if has_writing_mode {
-            context.builder.writing_mode = WritingMode::new(context.builder.get_inherited_box())
-        }
-
-        if apply!(Zoom) {
-            context.builder.recompute_effective_zooms();
-            if !context.builder.effective_zoom_for_inheritance.is_one() {
-                // NOTE(emilio): This is a bit of a hack, but matches the shipped WebKit and Blink
-                // behavior for now. Ideally, in the future, we have a pass over all
-                // implicitly-or-explicitly-inherited properties that can contain lengths and
-                // re-compute them properly, see https://github.com/w3c/csswg-drafts/issues/9397.
-                // TODO(emilio): we need to eagerly do this for line-height as well, probably.
-                self.recompute_font_size_for_zoom_change(&mut context.builder);
-            }
-        }
-
-        // Compute font-family.
-        let has_font_family = apply!(FontFamily);
-        let has_lang = apply!(XLang);
-        #[cfg(feature = "gecko")]
-        {
-            if has_lang {
+        use crate::properties::PrioritaryPropertyId::*;
+        match id {
+            Appearance => {
+                if is_base_appearance(context) {
+                    context
+                        .style()
+                        .add_flags(ComputedValueFlags::IS_IN_APPEARANCE_BASE_SUBTREE);
+                    context
+                        .included_cascade_flags
+                        .insert(RuleCascadeFlags::APPEARANCE_BASE);
+                }
+            },
+            WritingMode | Direction | TextOrientation => {
+                context.builder.writing_mode =
+                    crate::logical_geometry::WritingMode::new(context.builder.get_inherited_box());
+            },
+            Zoom => {
+                context.builder.recompute_effective_zooms();
+                if !context.builder.effective_zoom_for_inheritance.is_one() {
+                    // NOTE(emilio): This is a bit of a hack, but matches the shipped WebKit and Blink
+                    // behavior for now. Ideally, in the future, we have a pass over all
+                    // implicitly-or-explicitly-inherited properties that can contain lengths and
+                    // re-compute them properly, see https://github.com/w3c/csswg-drafts/issues/9397.
+                    // TODO(emilio): we need to eagerly do this for line-height as well, probably.
+                    self.recompute_font_size_for_zoom_change(&mut context.builder);
+                }
+            },
+            XLang => {
                 self.recompute_initial_font_family_if_needed(&mut context.builder);
-            }
-            if has_font_family {
+                self.recompute_keyword_font_size_if_needed(context);
+            },
+            FontFamily => {
                 self.prioritize_user_fonts_if_needed(&mut context.builder);
-            }
-
-            // Compute font-size.
-            if apply!(XTextScale) {
-                self.unzoom_fonts_if_needed(&mut context.builder);
-            }
-            let has_font_size = apply!(FontSize);
-            let has_math_depth = apply!(MathDepth);
-            let has_min_font_size_ratio = apply!(MozMinFontSizeRatio);
-
-            if has_math_depth && has_font_size {
-                self.recompute_math_font_size_if_needed(context);
-            }
-            if has_lang || has_font_family {
                 self.recompute_keyword_font_size_if_needed(context);
-            }
-            if has_font_size || has_min_font_size_ratio || has_lang || has_font_family {
+            },
+            FontSize => {
+                if self.seen.longhands.contains(LonghandId::MathDepth) {
+                    Self::recompute_math_font_size_if_needed(context);
+                }
+                if self.seen.longhands.contains(LonghandId::XLang)
+                    || self.seen.longhands.contains(LonghandId::FontFamily)
+                {
+                    self.recompute_keyword_font_size_if_needed(context);
+                }
                 self.constrain_font_size_if_needed(&mut context.builder);
-            }
+            },
+            XTextScale => {
+                self.unzoom_fonts_if_needed(&mut context.builder);
+            },
+            MozMinFontSizeRatio => {
+                self.constrain_font_size_if_needed(&mut context.builder);
+            },
+            ColorScheme => {
+                context.builder.color_scheme =
+                    context.builder.get_inherited_ui().color_scheme_bits();
+            },
+            MozDefaultAppearance | MathDepth | FontWeight | FontStretch | FontStyle
+            | FontSizeAdjust | ForcedColorAdjust | LineHeight => {},
         }
-
-        #[cfg(feature = "servo")]
-        {
-            apply!(FontSize);
-            if has_lang || has_font_family {
-                self.recompute_keyword_font_size_if_needed(context);
-            }
-        }
-
-        // Compute the rest of the first-available-font-affecting properties.
-        apply!(FontWeight);
-        apply!(FontStretch);
-        apply!(FontStyle);
-        #[cfg(feature = "gecko")]
-        apply!(FontSizeAdjust);
-
-        #[cfg(feature = "gecko")]
-        apply!(ForcedColorAdjust);
-        // color-scheme needs to be after forced-color-adjust, since it's one of the "skipped in
-        // forced-colors-mode" properties.
-        if apply!(ColorScheme) {
-            context.builder.color_scheme = context.builder.get_inherited_ui().color_scheme_bits();
-        }
-        apply!(LineHeight);
     }
 
     fn apply_non_prioritary_properties(
@@ -961,7 +1063,7 @@ impl<'b> Cascade<'b> {
             for declaration in std::mem::take(&mut self.declarations_to_apply_unless_overridden) {
                 let longhand_id = declaration.id().as_longhand().unwrap();
                 debug_assert!(!longhand_id.is_logical());
-                if !self.seen.contains(longhand_id) {
+                if !self.seen.longhands.contains(longhand_id) {
                     unsafe {
                         self.do_apply_declaration(context, longhand_id, &declaration);
                     }
@@ -976,9 +1078,9 @@ impl<'b> Cascade<'b> {
 
     #[cold]
     fn recompute_zoom_dependent_inherited_lengths(&self, context: &mut computed::Context) {
-        debug_assert!(self.seen.contains(LonghandId::Zoom));
+        debug_assert!(self.seen.longhands.contains(LonghandId::Zoom));
         for prop in LonghandIdSet::zoom_dependent_inherited_properties().iter() {
-            if self.seen.contains(prop) {
+            if self.seen.longhands.contains(prop) {
                 continue;
             }
             let declaration = PropertyDeclaration::css_wide_keyword(prop, CSSWideKeyword::Inherit);
@@ -998,7 +1100,7 @@ impl<'b> Cascade<'b> {
         attribute_tracker: &mut AttributeTracker,
     ) {
         debug_assert!(!longhand_id.is_logical());
-        if self.seen.contains(longhand_id) {
+        if self.seen.longhands.contains(longhand_id) {
             return;
         }
 
@@ -1006,8 +1108,10 @@ impl<'b> Cascade<'b> {
             return;
         }
 
-        if self.reverted_set.contains(longhand_id) {
-            if let Some(&(reverted_priority, revert_kind)) = self.reverted.get(&longhand_id) {
+        if self.reverted.longhands_set.contains(longhand_id) {
+            if let Some(&(reverted_priority, revert_kind)) =
+                self.reverted.longhands.get(&longhand_id)
+            {
                 if !reverted_priority.allows_when_reverted(&priority, revert_kind) {
                     return;
                 }
@@ -1032,10 +1136,13 @@ impl<'b> Cascade<'b> {
         let can_skip_apply = match declaration.get_css_wide_keyword() {
             Some(keyword) => {
                 if let Some(revert_kind) = keyword.revert_kind() {
-                    // We intentionally don't want to insert it into `self.seen`, `reverted` takes
-                    // care of rejecting other declarations as needed.
-                    self.reverted_set.insert(longhand_id);
-                    self.reverted.insert(longhand_id, (priority, revert_kind));
+                    // We intentionally don't want to insert it into
+                    // `self.seen.longhands`, `reverted` takes care of rejecting
+                    // other declarations as needed.
+                    self.reverted.longhands_set.insert(longhand_id);
+                    self.reverted
+                        .longhands
+                        .insert(longhand_id, (priority, revert_kind));
                     return;
                 }
 
@@ -1054,7 +1161,7 @@ impl<'b> Cascade<'b> {
             None => false,
         };
 
-        self.seen.insert(longhand_id);
+        self.seen.longhands.insert(longhand_id);
         if origin.is_author_origin() {
             self.author_specified.insert(longhand_id);
         }
@@ -1093,6 +1200,7 @@ impl<'b> Cascade<'b> {
         element: Option<E>,
         parent_style: Option<&ComputedValues>,
         layout_parent_style: Option<&ComputedValues>,
+        try_tactic: &PositionTryFallbacksTryTactic,
         visited_rules: &StrongRuleNode,
         guards: &StylesheetGuards,
     ) where
@@ -1120,7 +1228,7 @@ impl<'b> Cascade<'b> {
             visited_parent!(parent_style),
             visited_parent!(layout_parent_style),
             self.first_line_reparenting,
-            self.try_tactic,
+            try_tactic,
             CascadeMode::Visited {
                 unvisited_context: &*context,
             },
@@ -1180,8 +1288,8 @@ impl<'b> Cascade<'b> {
 
     fn try_to_use_cached_reset_properties(
         &self,
-        context: &mut computed::Context<'b>,
-        cache: Option<&'b RuleCache>,
+        context: &mut computed::Context<'a>,
+        cache: Option<&'a RuleCache>,
         guards: &StylesheetGuards,
     ) -> bool {
         let style = match self.first_line_reparenting {
@@ -1307,7 +1415,9 @@ impl<'b> Cascade<'b> {
     fn recompute_keyword_font_size_if_needed(&self, context: &mut computed::Context) {
         use crate::values::computed::ToComputedValue;
 
-        if !self.seen.contains(LonghandId::XLang) && !self.seen.contains(LonghandId::FontFamily) {
+        if !self.seen.longhands.contains(LonghandId::XLang)
+            && !self.seen.longhands.contains(LonghandId::FontFamily)
+        {
             return;
         }
 
@@ -1361,7 +1471,7 @@ impl<'b> Cascade<'b> {
     /// zoomed in the parent.
     #[cfg(feature = "gecko")]
     fn unzoom_fonts_if_needed(&self, builder: &mut StyleBuilder) {
-        debug_assert!(self.seen.contains(LonghandId::XTextScale));
+        debug_assert!(self.seen.longhands.contains(LonghandId::XTextScale));
 
         let parent_text_scale = builder.get_parent_font().clone__x_text_scale();
         let text_scale = builder.get_font().clone__x_text_scale();
@@ -1382,7 +1492,7 @@ impl<'b> Cascade<'b> {
     }
 
     fn recompute_font_size_for_zoom_change(&self, builder: &mut StyleBuilder) {
-        debug_assert!(self.seen.contains(LonghandId::Zoom));
+        debug_assert!(self.seen.longhands.contains(LonghandId::Zoom));
         // NOTE(emilio): Intentionally not using the effective zoom here, since all the inherited
         // zooms are already applied.
         let old_size = builder.get_font().clone_font_size();
@@ -1398,7 +1508,7 @@ impl<'b> Cascade<'b> {
     /// TODO: Bug: 1548471: MathML Core also does not specify a script min size
     /// should we unship that feature or standardize it?
     #[cfg(feature = "gecko")]
-    fn recompute_math_font_size_if_needed(&self, context: &mut computed::Context) {
+    fn recompute_math_font_size_if_needed(context: &mut computed::Context) {
         use crate::values::generics::NonNegative;
 
         // Do not do anything if font-size: math or math-depth is not set.
@@ -1525,4 +1635,1051 @@ impl<'b> Cascade<'b> {
         font.mSize = NonNegative(new_size);
         font.mScriptUnconstrainedSize = NonNegative(new_unconstrained_size);
     }
+
+    /// Seeds `context.builder.substitution_functions` with the inherited custom properties and the
+    /// registered initial values, before custom-property declarations are cascaded into it.
+    fn init_custom_properties(&mut self, context: &mut computed::Context) {
+        let is_root_element = context.is_root_element();
+        let initial_values = self.stylist.get_custom_property_initial_values();
+        let inherited = if is_root_element {
+            debug_assert!(context.inherited_custom_properties().is_empty());
+            initial_values.inherited.clone()
+        } else {
+            context.inherited_custom_properties().inherited.clone()
+        };
+        let properties = ComputedCustomProperties {
+            inherited,
+            non_inherited: initial_values.non_inherited.clone(),
+        };
+        context.builder.substitution_functions =
+            ComputedSubstitutionFunctions::new(Some(properties), None);
+    }
+
+    /// Resolves the custom properties and applies the prioritary properties in a single
+    /// cycle-tracked walk: as a custom property depending on `em`/`lh`/the used color-scheme
+    /// becomes resolvable, `substitute_all` applies the prioritary property it needs (via
+    /// `ensure_prioritary_property`) so it computes against the right value. Any prioritary
+    /// property not triggered that way is applied at the end.
+    fn apply_custom_and_prioritary_properties(
+        &mut self,
+        context: &mut computed::Context,
+        decls: &Declarations,
+        shorthand_cache: &mut ShorthandsWithPropertyReferencesCache,
+        attribute_tracker: &mut AttributeTracker,
+    ) {
+        if self.may_have_custom_property_cycles {
+            let stylist = self.stylist;
+            let seen = std::mem::take(&mut self.seen.custom);
+            let references = std::mem::take(&mut self.references_from_non_custom_properties);
+            let mut map = std::mem::take(&mut context.builder.substitution_functions);
+            substitute_all(
+                &mut map,
+                &seen,
+                &references,
+                stylist,
+                context,
+                self,
+                decls,
+                shorthand_cache,
+                attribute_tracker,
+            );
+            context.builder.substitution_functions = map;
+        }
+        // Apply any prioritary property that wasn't applied while resolving custom properties.
+        if decls.has_prioritary_properties {
+            for id in PrioritaryPropertyId::each() {
+                self.ensure_prioritary_property(
+                    context,
+                    decls,
+                    shorthand_cache,
+                    attribute_tracker,
+                    id,
+                );
+            }
+        }
+        self.finish_cascade_custom_properties(context);
+    }
+
+    /// Applies a prioritary property and the prioritary properties it depends on.
+    fn ensure_prioritary_property(
+        &mut self,
+        context: &mut computed::Context,
+        decls: &Declarations,
+        cache: &mut ShorthandsWithPropertyReferencesCache,
+        attribute_tracker: &mut AttributeTracker,
+        id: PrioritaryPropertyId,
+    ) {
+        if self.ensured_prioritary.contains(id) {
+            return;
+        }
+        self.ensured_prioritary.insert(id);
+        for dep in Self::prioritary_property_dependencies(id) {
+            self.ensure_prioritary_property(context, decls, cache, attribute_tracker, *dep);
+        }
+        self.apply_one_prioritary_property(context, decls, cache, id, attribute_tracker);
+    }
+
+    /// Cascade a given custom property declaration.
+    fn cascade_custom_property(
+        &mut self,
+        context: &mut computed::Context,
+        declaration: &'a CustomDeclaration,
+        priority: CascadePriority,
+        attribute_tracker: &mut AttributeTracker,
+    ) {
+        let CustomDeclaration {
+            ref name,
+            ref value,
+        } = *declaration;
+
+        if let Some(&(reverted_priority, revert_kind)) = self.reverted.custom.get(name) {
+            if !reverted_priority.allows_when_reverted(&priority, revert_kind) {
+                return;
+            }
+        }
+
+        if !(priority.flags() - context.included_cascade_flags).is_empty() {
+            return;
+        }
+
+        let was_already_present = !self.seen.custom.var.insert(name);
+        if was_already_present {
+            return;
+        }
+
+        if !self.value_may_affect_style(context, name, value) {
+            return;
+        }
+
+        let kind = SubstitutionFunctionKind::Var;
+        let registration = self.stylist.get_custom_property_registration(&name);
+        match value {
+            CustomDeclarationValue::Unparsed(unparsed_value) => {
+                // Non-custom dependency is really relevant for registered custom properties
+                // that require computed value of such dependencies.
+                let has_dependency = unparsed_value
+                    .references
+                    .flags
+                    .intersects(ReferenceFlags::ATTR | ReferenceFlags::VAR)
+                    || !find_non_custom_references(
+                        registration,
+                        unparsed_value,
+                        context.is_root_element(),
+                    )
+                    .is_empty();
+                // If the variable value has no references to other properties, perform
+                // substitution here instead of forcing a full traversal in `substitute_all`
+                // afterwards.
+                if !has_dependency {
+                    let mut map = std::mem::take(&mut context.builder.substitution_functions);
+                    substitute_references_if_needed_and_apply(
+                        name,
+                        kind,
+                        unparsed_value,
+                        &mut map,
+                        self.stylist,
+                        context,
+                        attribute_tracker,
+                    );
+                    context.builder.substitution_functions = map;
+                    return;
+                }
+                self.may_have_custom_property_cycles = true;
+                let value = ComputedRegisteredValue::universal(Arc::clone(unparsed_value));
+                context
+                    .builder
+                    .substitution_functions
+                    .insert_var(registration, name, value);
+            },
+            CustomDeclarationValue::Parsed(parsed_value) => {
+                let value = parsed_value.to_computed_value(&context);
+                context
+                    .builder
+                    .substitution_functions
+                    .insert_var(registration, name, value);
+            },
+            CustomDeclarationValue::CSSWideKeyword(keyword) => match keyword.revert_kind() {
+                Some(revert_kind) => {
+                    self.seen.custom.var.remove(name);
+                    self.reverted
+                        .custom
+                        .insert(name.clone(), (priority, revert_kind));
+                },
+                None => match keyword {
+                    CSSWideKeyword::Initial => {
+                        // For non-inherited custom properties, 'initial' was handled in value_may_affect_style.
+                        debug_assert!(registration.inherits(), "Should've been handled earlier");
+                        remove_and_insert_initial_value(
+                            name,
+                            registration,
+                            &mut context.builder.substitution_functions,
+                        );
+                    },
+                    CSSWideKeyword::Inherit => {
+                        // For inherited custom properties, 'inherit' was handled in value_may_affect_style.
+                        debug_assert!(!registration.inherits(), "Should've been handled earlier");
+                        context
+                            .style()
+                            .add_flags(ComputedValueFlags::INHERITS_RESET_STYLE);
+                        let inherited_value = context
+                            .inherited_custom_properties()
+                            .non_inherited
+                            .get(name)
+                            .cloned();
+                        if let Some(inherited_value) = inherited_value {
+                            context.builder.substitution_functions.insert_var(
+                                registration,
+                                name,
+                                inherited_value,
+                            );
+                        }
+                    },
+                    // handled in value_may_affect_style or in the revert_kind branch above.
+                    CSSWideKeyword::Revert
+                    | CSSWideKeyword::RevertLayer
+                    | CSSWideKeyword::RevertRule
+                    | CSSWideKeyword::Unset => unreachable!(),
+                },
+            },
+        }
+    }
+
+    /// Fast check to avoid calling maybe_note_non_custom_dependency in ~all cases.
+    #[inline]
+    pub fn might_have_non_custom_or_attr_dependency(
+        id: LonghandId,
+        decl: &PropertyDeclaration,
+    ) -> bool {
+        if let PropertyDeclaration::WithVariables(v) = decl {
+            return matches!(id, LonghandId::LineHeight | LonghandId::FontSize)
+                || v.value
+                    .variable_value
+                    .references
+                    .flags
+                    .intersects(ReferenceFlags::ATTR);
+        }
+        false
+    }
+
+    /// Note a non-custom property with variable reference that may in turn depend on that property.
+    /// e.g. `font-size` depending on a custom property that may be a registered property using `em`.
+    pub fn maybe_note_non_custom_dependency(
+        &mut self,
+        context: &mut computed::Context,
+        id: LonghandId,
+        decl: &'a PropertyDeclaration,
+        attribute_tracker: &mut AttributeTracker,
+    ) {
+        debug_assert!(Self::might_have_non_custom_or_attr_dependency(id, decl));
+        let PropertyDeclaration::WithVariables(v) = decl else {
+            return;
+        };
+        let value = &v.value.variable_value;
+        let refs = &value.references;
+
+        if !refs
+            .flags
+            .intersects(ReferenceFlags::VAR | ReferenceFlags::ATTR)
+        {
+            return;
+        }
+
+        // Attributes in non-custom properties may reference `var()` or `attr()` in their
+        // values, which we need to track to support chained references and detect cycles.
+        if refs.flags.intersects(ReferenceFlags::ATTR) {
+            self.update_attributes_map(context, value, attribute_tracker);
+            if !refs.flags.intersects(ReferenceFlags::VAR) {
+                return;
+            }
+        }
+
+        // The non-custom node(s) this property feeds. We don't try to figure out here which
+        // referenced custom properties can actually cycle back to it: instead we record the whole
+        // declaration value, and let `substitute_all` traverse its references (following fallbacks
+        // only when the primary is invalid). This way, references that only appear in an unused
+        // fallback (e.g. `var(--exists, var(--font-size-em))`) don't create a spurious cycle, while
+        // references in a used fallback (e.g. `var(--noexist, var(--font-size-em))`) do.
+        //
+        // With unit algebra in `calc()`, references aren't limited to `font-size`. For example,
+        // `--foo: 100ex; font-weight: calc(var(--foo) / 1ex);`, or
+        // `--foo: 1em; zoom: calc(var(--foo) * 30px / 2em);`
+        let references = match id {
+            LonghandId::FontSize => ReferenceFlags::FONT_UNITS,
+            LonghandId::LineHeight => ReferenceFlags::LH_UNITS | ReferenceFlags::FONT_UNITS,
+            LonghandId::ColorScheme => ReferenceFlags::COLOR_SCHEME,
+            _ => return,
+        };
+
+        references.for_each_non_custom(context.is_root_element(), |idx| {
+            self.references_from_non_custom_properties[idx]
+                .get_or_insert_with(Vec::new)
+                .push(v.value.clone());
+        });
+    }
+
+    fn value_may_affect_style(
+        &self,
+        context: &computed::Context,
+        name: &Name,
+        value: &CustomDeclarationValue,
+    ) -> bool {
+        let registration = self.stylist.get_custom_property_registration(&name);
+        match *value {
+            CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Inherit) => {
+                // For inherited custom properties, explicit 'inherit' means we
+                // can just use any existing value in the inherited
+                // CustomPropertiesMap.
+                if registration.inherits() {
+                    return false;
+                }
+            },
+            CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Initial) => {
+                // For non-inherited custom properties, explicit 'initial' means
+                // we can just use any initial value in the registration.
+                if !registration.inherits() {
+                    return false;
+                }
+            },
+            CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Unset) => {
+                // Explicit 'unset' means we can either just use any existing
+                // value in the inherited CustomPropertiesMap or the initial
+                // value in the registration.
+                return false;
+            },
+            _ => {},
+        }
+
+        let existing_value = context
+            .builder
+            .substitution_functions
+            .get_var(registration, &name);
+        let Some(existing_value) = existing_value else {
+            if matches!(
+                value,
+                CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Initial)
+            ) {
+                debug_assert!(registration.inherits(), "Should've been handled earlier");
+                // The initial value of a custom property without a
+                // guaranteed-invalid initial value is the same as it
+                // not existing in the map.
+                if registration.initial_value.is_none() {
+                    return false;
+                }
+            }
+            return true;
+        };
+        match value {
+            CustomDeclarationValue::Unparsed(value) => {
+                // Don't bother overwriting an existing value with the same
+                // specified value.
+                if let Some(existing_value) = existing_value.as_universal() {
+                    return existing_value != value;
+                }
+            },
+            CustomDeclarationValue::Parsed(..) => {
+                // If the value has dependencies, context might not yield the same
+                // result as the eventual value.
+            },
+            CustomDeclarationValue::CSSWideKeyword(kw) => {
+                match kw {
+                    CSSWideKeyword::Inherit => {
+                        debug_assert!(!registration.inherits(), "Should've been handled earlier");
+                        // existing_value is the registered initial value.
+                        // Don't bother adding it to self.custom_properties.non_inherited
+                        // if the key is also absent from self.inherited.non_inherited.
+                        if context
+                            .inherited_custom_properties()
+                            .non_inherited
+                            .get(name)
+                            .is_none()
+                        {
+                            return false;
+                        }
+                    },
+                    CSSWideKeyword::Initial => {
+                        debug_assert!(registration.inherits(), "Should've been handled earlier");
+                        // Don't bother overwriting an existing value with the initial value
+                        // specified in the registration.
+                        if let Some(initial_value) = self
+                            .stylist
+                            .get_custom_property_initial_values()
+                            .get(registration, name)
+                        {
+                            return existing_value != initial_value;
+                        }
+                    },
+                    CSSWideKeyword::Unset => {
+                        debug_assert!(false, "Should've been handled earlier");
+                    },
+                    CSSWideKeyword::Revert
+                    | CSSWideKeyword::RevertLayer
+                    | CSSWideKeyword::RevertRule => {},
+                }
+            },
+        };
+
+        true
+    }
+
+    /// For a given unparsed variable, update the attributes map with its attr references.
+    pub fn update_attributes_map(
+        &mut self,
+        context: &mut computed::Context,
+        value: &'a VariableValue,
+        attribute_tracker: &mut AttributeTracker,
+    ) {
+        let refs = &value.references;
+        if !refs.flags.intersects(ReferenceFlags::ATTR) {
+            return;
+        }
+        self.may_have_custom_property_cycles = true;
+
+        for next in &refs.refs {
+            if !next.is_attr_with_type() || !self.seen.custom.attr.insert(&next.name) {
+                // Only type() can have nested references, so we don't need to eagerly look at
+                // others.
+                continue;
+            }
+            if let Ok(v) = get_attr_value_for_cycle_resolution(
+                &next.name,
+                &next.attribute_data,
+                &value.url_data,
+                attribute_tracker,
+            ) {
+                context
+                    .builder
+                    .substitution_functions
+                    .insert_attr(&next.name, v);
+            }
+        }
+    }
+
+    /// Computes the map of applicable custom properties, saving the result into the computed
+    /// context, and applies the prioritary properties interleaved with custom-property resolution.
+    pub fn finish_cascade_custom_properties(&mut self, context: &mut computed::Context) {
+        context
+            .builder
+            .substitution_functions
+            .custom_properties
+            .shrink_to_fit();
+
+        // Some pages apply a lot of redundant custom properties, see e.g.
+        // bug 1758974 comment 5. Try to detect the case where the values
+        // haven't really changed, and save some memory by reusing the inherited
+        // map in that case.
+        let initial_values = self.stylist.get_custom_property_initial_values();
+        let reuse_inherited = context.inherited_custom_properties().inherited
+            == context
+                .builder
+                .substitution_functions
+                .custom_properties
+                .inherited;
+        if reuse_inherited {
+            let inherited = context.inherited_custom_properties().inherited.clone();
+            context
+                .builder
+                .substitution_functions
+                .custom_properties
+                .inherited = inherited;
+        }
+        if initial_values.non_inherited
+            == context
+                .builder
+                .substitution_functions
+                .custom_properties
+                .non_inherited
+        {
+            let non_inherited = initial_values.non_inherited.clone();
+            context
+                .builder
+                .substitution_functions
+                .custom_properties
+                .non_inherited = non_inherited;
+        }
+    }
+}
+
+fn substitute_all(
+    substitution_function_map: &mut ComputedSubstitutionFunctions,
+    seen: &SeenSubstitutionFunctions,
+    references_from_non_custom_properties: &NonCustomReferenceMap<Vec<Arc<UnparsedValue>>>,
+    stylist: &Stylist,
+    computed_context: &mut computed::Context,
+    cascade: &mut Cascade,
+    decls: &Declarations,
+    shorthand_cache: &mut ShorthandsWithPropertyReferencesCache,
+    attr_tracker: &mut AttributeTracker,
+) {
+    // The cycle dependencies removal in this function is a variant
+    // of Tarjan's algorithm. It is mostly based on the pseudo-code
+    // listed in
+    // https://en.wikipedia.org/w/index.php?
+    // title=Tarjan%27s_strongly_connected_components_algorithm&oldid=801728495
+
+    #[derive(Clone, Eq, PartialEq, Debug)]
+    enum VarType {
+        Attr(Name),
+        Custom(Name),
+        NonCustom(SingleNonCustomReference),
+    }
+
+    /// Struct recording necessary information for each variable.
+    #[derive(Debug)]
+    struct VarInfo {
+        /// The name of the variable. It will be taken to save addref
+        /// when the corresponding variable is popped from the stack.
+        /// This also serves as a mark for whether the variable is
+        /// currently in the stack below.
+        var: Option<VarType>,
+        /// If the variable is in a dependency cycle, lowlink represents
+        /// a smaller index which corresponds to a variable in the same
+        /// strong connected component, which is known to be accessible
+        /// from this variable. It is not necessarily the root, though.
+        lowlink: usize,
+    }
+
+    #[derive(Debug, Default)]
+    struct OrderIndexMap {
+        /// The map from the custom property name to its order index.
+        var: PrecomputedHashMap<Name, usize>,
+        /// The map from the attribute name to its order index.
+        attr: PrecomputedHashMap<Name, usize>,
+    }
+
+    /// Context struct for traversing the variable graph, so that we can
+    /// avoid referencing all the fields multiple times.
+    struct Context<'a, 'b: 'a, 'c, 'd> {
+        /// Number of variables visited. This is used as the order index
+        /// when we visit a new unresolved variable.
+        count: usize,
+        /// The map from a substitution function name to its order index.
+        index_map: OrderIndexMap,
+        /// Mapping from a non-custom dependency to its order index.
+        non_custom_index_map: NonCustomReferenceMap<usize>,
+        /// Information of each variable indexed by the order index.
+        var_info: SmallVec<[VarInfo; 5]>,
+        /// The stack of order index of visited variables. It contains
+        /// all unfinished strong connected components.
+        stack: SmallVec<[usize; 5]>,
+        /// The in-progress custom-property/attribute map. It lives outside `computed_context`
+        /// during traversal (so we can take `&mut` to it while reading `computed_context`
+        /// immutably), and is moved into `computed_context.builder.substitution_functions`
+        /// temporarily whenever we apply a prioritary property (see `apply_prioritary_property`).
+        map: &'a mut ComputedSubstitutionFunctions,
+        /// The stylist is used to get registered properties, and to resolve the environment to
+        /// substitute `env()` variables.
+        stylist: &'a Stylist,
+        /// The computed context is used to get inherited custom properties, compute registered
+        /// custom properties, and apply prioritary properties.
+        computed_context: &'a mut computed::Context<'b>,
+        /// The cascade owns prioritary-property application; when a `NonCustom` node (or a
+        /// color-scheme-dependent custom property) becomes resolvable, we apply the corresponding
+        /// prioritary property directly through it.
+        cascade: &'a mut Cascade<'c>,
+        /// The declarations, needed to apply prioritary properties.
+        decls: &'a Declarations<'d>,
+        /// Shorthand cache, needed to apply prioritary properties.
+        cache: &'a mut ShorthandsWithPropertyReferencesCache,
+    }
+
+    /// Applies a prioritary property (and its dependencies) while resolving custom properties.
+    ///
+    /// The in-progress map lives outside `computed_context` during traversal; we move it into
+    /// `computed_context.builder.substitution_functions` so the prioritary declaration's `var()`
+    /// references resolve against the custom properties resolved so far, then take it back out.
+    fn apply_prioritary_property<'a, 'b, 'c, 'd>(
+        context: &mut Context<'a, 'b, 'c, 'd>,
+        id: PrioritaryPropertyId,
+        attr_tracker: &mut AttributeTracker,
+    ) {
+        // TODO(emilio): This is gross, try to remove this.
+        context.computed_context.builder.substitution_functions = std::mem::take(&mut *context.map);
+        context.cascade.ensure_prioritary_property(
+            context.computed_context,
+            context.decls,
+            context.cache,
+            attr_tracker,
+            id,
+        );
+        *context.map = std::mem::take(&mut context.computed_context.builder.substitution_functions);
+    }
+
+    /// Traverse the references in `root` (the value of a custom property or of a non-custom
+    /// property feeding a `NonCustom` node), creating graph edges to the referenced substitution
+    /// functions and updating `lowlink`/`self_ref` accordingly.
+    ///
+    /// We follow var()/attr()/env() fallbacks only when the primary substitution function is
+    /// guaranteed-invalid (i.e. when the fallback is actually used). This matches the substitution
+    /// order and the resolution of https://github.com/w3c/csswg-drafts/issues/11500: cycles (or
+    /// dependencies) that only exist through an unused fallback don't count.
+    ///
+    /// We need to bubble up non custom references from unregistered properties.
+    fn visit_value_references<'a, 'b, 'c, 'd>(
+        var: &VarType,
+        root: &References,
+        url_data: &UrlExtraData,
+        index: usize,
+        references_from_non_custom_properties: &NonCustomReferenceMap<Vec<Arc<UnparsedValue>>>,
+        context: &mut Context<'a, 'b, 'c, 'd>,
+        lowlink: &mut usize,
+        self_ref: &mut bool,
+        attribute_tracker: &mut AttributeTracker,
+        non_custom_references: &mut ReferenceFlags,
+    ) {
+        // FIXME: Maybe avoid visiting the same var twice if not needed?
+        let mut refs_stack = SmallVec::<[&References; 5]>::new();
+        refs_stack.push(root);
+        while let Some(refs) = refs_stack.pop() {
+            *non_custom_references |= refs.flags;
+            for next in &refs.refs {
+                if next.substitution_kind == SubstitutionFunctionKind::Env {
+                    // env() doesn't reference custom properties, so it never participates in
+                    // cycles; its fallback is used only when the environment doesn't provide
+                    // the variable.
+                    let device = context.stylist.device();
+                    let present = device
+                        .environment()
+                        .get(&next.name, device, url_data)
+                        .is_some();
+                    if !present {
+                        if let Some(ref fallback) = next.fallback {
+                            refs_stack.push(&fallback.references);
+                        }
+                    }
+                    continue;
+                }
+
+                let next_var = if next.substitution_kind == SubstitutionFunctionKind::Attr {
+                    // An type()-less attr() within attr(... type()) can still have nested
+                    // references.
+                    let can_chain = next.is_attr_with_type() || matches!(var, VarType::Attr(..));
+                    if !can_chain {
+                        continue;
+                    }
+                    if context.map.get_attr(&next.name).is_none() {
+                        if let Ok(val) = get_attr_value_for_cycle_resolution(
+                            &next.name,
+                            &next.attribute_data,
+                            url_data,
+                            attribute_tracker,
+                        ) {
+                            context.map.insert_attr(&next.name, val);
+                        }
+                    }
+                    VarType::Attr(next.name.clone())
+                } else {
+                    VarType::Custom(next.name.clone())
+                };
+
+                visit_link(
+                    next_var,
+                    index,
+                    references_from_non_custom_properties,
+                    context,
+                    lowlink,
+                    self_ref,
+                    attribute_tracker,
+                );
+
+                // Now that the primary reference has been resolved, classify it to
+                // decide whether its fallback is used.
+                let kind = next.substitution_kind;
+                let resolved = match kind {
+                    SubstitutionFunctionKind::Var => {
+                        let registration =
+                            context.stylist.get_custom_property_registration(&next.name);
+                        context.map.get_var(registration, &next.name)
+                    },
+                    SubstitutionFunctionKind::Attr => context.map.get_attr(&next.name),
+                    SubstitutionFunctionKind::Env => unreachable!("Handled above"),
+                };
+                // The primary is guaranteed-invalid if it's absent from the map, or still
+                // present but unresolved (i.e. part of a cycle currently being resolved).
+                let mut primary_valid = false;
+                if let Some(ref resolved) = resolved {
+                    if let Some(v) = resolved.as_universal() {
+                        primary_valid = !v.has_references();
+                        *non_custom_references |= v.references.flags;
+                    } else {
+                        // Resolved and computed value, no other custom references left.
+                        primary_valid = true;
+                    }
+                }
+
+                if !primary_valid {
+                    if let Some(ref fallback) = next.fallback {
+                        refs_stack.push(&fallback.references);
+                    }
+                }
+            }
+        }
+    }
+
+    /// Traverse a single dependency `var` of the variable at order index `index`, updating its
+    /// `lowlink`/`self_ref` from the result.
+    fn visit_link<'a, 'b, 'c, 'd>(
+        var: VarType,
+        index: usize,
+        non_custom_references: &NonCustomReferenceMap<Vec<Arc<UnparsedValue>>>,
+        context: &mut Context<'a, 'b, 'c, 'd>,
+        lowlink: &mut usize,
+        self_ref: &mut bool,
+        attr_tracker: &mut AttributeTracker,
+    ) {
+        let next_index = match traverse(var, non_custom_references, context, attr_tracker) {
+            Some(index) => index,
+            // There is nothing to do if the next variable has been
+            // fully resolved at this point.
+            None => return,
+        };
+        let next_info = &context.var_info[next_index];
+        if next_index > index {
+            // The next variable has a larger index than us, so it
+            // must be inserted in the recursive call above. We want
+            // to get its lowlink.
+            *lowlink = cmp::min(*lowlink, next_info.lowlink);
+        } else if next_index == index {
+            *self_ref = true;
+        } else if next_info.var.is_some() {
+            // The next variable has a smaller order index and it is
+            // in the stack, so we are at the same component.
+            *lowlink = cmp::min(*lowlink, next_index);
+        }
+    }
+
+    /// This function combines the traversal for cycle removal and value
+    /// substitution. It returns either a signal None if this variable
+    /// has been fully resolved (to either having no reference or being
+    /// marked invalid), or the order index for the given name.
+    ///
+    /// When it returns, the variable corresponds to the name would be
+    /// in one of the following states:
+    /// * It is still in context.stack, which means it is part of an
+    ///   potentially incomplete dependency circle.
+    /// * It has been removed from the map.  It can be either that the
+    ///   substitution failed, or it is inside a dependency circle.
+    ///   When this function removes a variable from the map because
+    ///   of dependency circle, it would put all variables in the same
+    ///   strong connected component to the set together.
+    /// * It doesn't have any reference, because either this variable
+    ///   doesn't have reference at all in specified value, or it has
+    ///   been completely resolved.
+    /// * There is no such variable at all.
+    fn traverse<'a, 'b, 'c, 'd>(
+        var: VarType,
+        references_from_non_custom_properties: &NonCustomReferenceMap<Vec<Arc<UnparsedValue>>>,
+        context: &mut Context<'a, 'b, 'c, 'd>,
+        attribute_tracker: &mut AttributeTracker,
+    ) -> Option<usize> {
+        // Some shortcut checks.
+        // The non-custom (font/line-height/color-scheme) dependencies of this value, carried out
+        // of the match so we can create the corresponding nodes once we've pushed this variable.
+        let mut value_non_custom_refs = ReferenceFlags::empty();
+        let mut registered = false;
+        let kind = if matches!(var, VarType::Custom(..)) {
+            SubstitutionFunctionKind::Var
+        } else {
+            SubstitutionFunctionKind::Attr
+        };
+        let value = match var {
+            VarType::Custom(ref name) | VarType::Attr(ref name) => {
+                let registration;
+                let value;
+                match kind {
+                    SubstitutionFunctionKind::Var => {
+                        registration = context.stylist.get_custom_property_registration(name);
+                        value = context.map.get_var(registration, name)?.as_universal()?;
+                    },
+                    SubstitutionFunctionKind::Attr => {
+                        // `attr()` is always treated as unregistered.
+                        registration = PropertyDescriptors::unregistered();
+                        value = context.map.get_attr(name)?.as_universal()?;
+                    },
+                    _ => unreachable!("Substitution kind must be var or attr for VarType::Custom."),
+                }
+                let is_root = context.computed_context.is_root_element();
+                value_non_custom_refs = find_non_custom_references(registration, value, is_root);
+                registered = !registration.is_universal();
+                let has_dependency = value
+                    .references
+                    .flags
+                    .intersects(ReferenceFlags::ATTR | ReferenceFlags::VAR)
+                    || !value_non_custom_refs.is_empty();
+                // Nothing to resolve.
+                if !has_dependency {
+                    debug_assert!(
+                        !value.references.flags.intersects(ReferenceFlags::ENV),
+                        "Should've been handled earlier"
+                    );
+                    if kind == SubstitutionFunctionKind::Attr || registered {
+                        // We might still need to compute the value if this is not an universal
+                        // registration but we thought it had a dependency during the cascade and it
+                        // turned out not to. Note that if this was already computed we would've
+                        // bailed out in the as_universal() check.
+                        let value = value.clone();
+                        substitute_references_if_needed_and_apply(
+                            name,
+                            kind,
+                            &value,
+                            &mut context.map,
+                            context.stylist,
+                            context.computed_context,
+                            attribute_tracker,
+                        );
+                    }
+                    return None;
+                }
+
+                // Has this variable been visited?
+                let index_map = if kind == SubstitutionFunctionKind::Var {
+                    &mut context.index_map.var
+                } else {
+                    &mut context.index_map.attr
+                };
+                match index_map.entry(name.clone()) {
+                    Entry::Occupied(entry) => {
+                        return Some(*entry.get());
+                    },
+                    Entry::Vacant(entry) => {
+                        entry.insert(context.count);
+                    },
+                }
+                // Hold a strong reference to the value so that we don't
+                // need to keep reference to context.map.
+                Some(value.clone())
+            },
+            VarType::NonCustom(ref non_custom) => {
+                let entry = &mut context.non_custom_index_map[*non_custom];
+                if let Some(v) = entry {
+                    return Some(*v);
+                }
+                *entry = Some(context.count);
+                None
+            },
+        };
+
+        // Add new entry to the information table.
+        let index = context.count;
+        context.count += 1;
+        debug_assert_eq!(index, context.var_info.len());
+        context.var_info.push(VarInfo {
+            var: Some(var.clone()),
+            lowlink: index,
+        });
+        context.stack.push(index);
+
+        let mut self_ref = false;
+        let mut lowlink = index;
+        if let Some(ref v) = value.as_ref() {
+            debug_assert!(
+                matches!(var, VarType::Custom(_) | VarType::Attr(_)),
+                "Non-custom property has references?"
+            );
+
+            // Visit the references in this value...
+            visit_value_references(
+                &var,
+                &v.references,
+                &v.url_data,
+                index,
+                references_from_non_custom_properties,
+                context,
+                &mut lowlink,
+                &mut self_ref,
+                attribute_tracker,
+                &mut value_non_custom_refs,
+            );
+
+            // ... Then the non-custom properties this value depends on (font-size, line-height,
+            // color-scheme), as computed by `find_non_custom_references` above.
+            let is_root = context.computed_context.is_root_element();
+            if registered && !value_non_custom_refs.is_empty() {
+                value_non_custom_refs.for_each_non_custom(is_root, |r| {
+                    visit_link(
+                        VarType::NonCustom(r),
+                        index,
+                        references_from_non_custom_properties,
+                        context,
+                        &mut lowlink,
+                        &mut self_ref,
+                        attribute_tracker,
+                    );
+                });
+            }
+        } else if let VarType::NonCustom(non_custom) = var {
+            // line-height's resolution depends on font-size's, so its node has a graph edge to the
+            // font-size node. This is needed for cycle detection (not just application order, which
+            // `prioritary_property_dependencies(LineHeight)` handles): it puts the line-height node
+            // in the same strongly-connected component as a font-size<->custom cycle, so the node
+            // doesn't apply line-height (and, transitively, font-size) before that cycle is
+            // removed.
+            //
+            // TODO(emilio): I think the right fix for this is
+            // s/SingleNonCustomReference/PrioritaryPropertyId in VarType::NonCustom.
+            if non_custom == SingleNonCustomReference::LhUnits {
+                visit_link(
+                    VarType::NonCustom(SingleNonCustomReference::FontUnits),
+                    index,
+                    references_from_non_custom_properties,
+                    context,
+                    &mut lowlink,
+                    &mut self_ref,
+                    attribute_tracker,
+                );
+            }
+            let entry = &references_from_non_custom_properties[non_custom];
+            if let Some(values) = entry.as_ref() {
+                for value in values {
+                    // Traverse the non-custom property's declaration value(s), creating edges to
+                    // the custom properties they reference (directly or through a used fallback)
+                    // that might cycle back to this node. Note we traverse unregistered/universal
+                    // references too: while their own font-relative units are textual (resolved
+                    // against the parent, see `find_non_custom_references`), they may chain to a
+                    // registered property that does cycle back.
+                    let value = &value.variable_value;
+                    visit_value_references(
+                        &var,
+                        &value.references,
+                        &value.url_data,
+                        index,
+                        references_from_non_custom_properties,
+                        context,
+                        &mut lowlink,
+                        &mut self_ref,
+                        attribute_tracker,
+                        &mut Default::default(),
+                    );
+                }
+            }
+        }
+
+        context.var_info[index].lowlink = lowlink;
+        if lowlink != index {
+            // This variable is in a loop, but it is not the root of this strong connected
+            // component. We simply return for now, and the root would remove it from the map.
+            //
+            // This cannot be removed from the map here, because otherwise the shortcut check at the
+            // beginning of this function would return the wrong value.
+            return Some(index);
+        }
+
+        // This is the root of a strong-connected component.
+        let mut in_loop = self_ref;
+        let name;
+
+        let handle_variable_in_loop =
+            |name: &Name, context: &mut Context<'a, 'b, 'c, 'd>, kind: SubstitutionFunctionKind| {
+                // This variable is in a loop. Resolve to invalid.
+                handle_invalid_at_computed_value_time(
+                    name,
+                    kind,
+                    &mut context.map,
+                    context.computed_context,
+                );
+            };
+        loop {
+            let var_index = context
+                .stack
+                .pop()
+                .expect("The current variable should still be in stack");
+            let var_info = &mut context.var_info[var_index];
+            // We should never visit the variable again, so it's safe
+            // to take the name away, so that we don't do additional
+            // reference count.
+            let var_name = var_info
+                .var
+                .take()
+                .expect("Variable should not be poped from stack twice");
+            if var_index == index {
+                name = match var_name {
+                    VarType::Custom(name) | VarType::Attr(name) => name,
+                    VarType::NonCustom(non_custom) => {
+                        // At the root of this component, and it's a non-custom reference. A
+                        // non-custom node can still be the root of a strongly-connected component.
+                        // Otherwise all the custom properties it (transitively) references have now
+                        // been resolved, so it's safe to apply it.
+                        let id = non_custom.to_prioritary_id();
+                        if in_loop {
+                            context
+                                .computed_context
+                                .builder
+                                .invalid_non_custom_properties
+                                .insert(id.to_longhand());
+                        } else {
+                            apply_prioritary_property(context, id, attribute_tracker);
+                        }
+                        return None;
+                    },
+                };
+                break;
+            }
+            match var_name {
+                VarType::Custom(name) | VarType::Attr(name) => {
+                    // Anything here is in a loop which can traverse to the
+                    // variable we are handling, so it's invalid at
+                    // computed-value time.
+                    handle_variable_in_loop(&name, context, kind);
+                },
+                VarType::NonCustom(non_custom) => context
+                    .computed_context
+                    .builder
+                    .invalid_non_custom_properties
+                    .insert(non_custom.to_prioritary_id().to_longhand()),
+            }
+            in_loop = true;
+        }
+        if in_loop {
+            handle_variable_in_loop(&name, context, kind);
+            return None;
+        }
+
+        if let Some(ref v) = value {
+            // We know we're not in a loop now, perform substitution.
+            // TODO(emilio): Merge with the cycle detection loop instead?
+            substitute_references_if_needed_and_apply(
+                &name,
+                kind,
+                v,
+                &mut context.map,
+                context.stylist,
+                context.computed_context,
+                attribute_tracker,
+            );
+        }
+        // All resolved, so return the signal value.
+        None
+    }
+
+    let mut run = |make_var: fn(Name) -> VarType, seen: &PrecomputedHashSet<&Name>| {
+        for name in seen {
+            let mut context = Context {
+                count: 0,
+                index_map: OrderIndexMap::default(),
+                non_custom_index_map: NonCustomReferenceMap::default(),
+                stack: SmallVec::new(),
+                var_info: SmallVec::new(),
+                map: &mut *substitution_function_map,
+                stylist,
+                computed_context: &mut *computed_context,
+                cascade: &mut *cascade,
+                decls,
+                cache: &mut *shorthand_cache,
+            };
+
+            traverse(
+                make_var((*name).clone()),
+                references_from_non_custom_properties,
+                &mut context,
+                attr_tracker,
+            );
+        }
+    };
+
+    // Note that `seen` doesn't contain names inherited from our parent, but
+    // those can't have variable references (since we inherit the computed
+    // variables) so we don't want to spend cycles traversing them anyway.
+    run(VarType::Custom, &seen.var);
+    // Traverse potentially untraversed chained references from `attr(type())`
+    // in non-custom properties.
+    run(VarType::Attr, &seen.attr);
 }

@@ -258,7 +258,7 @@ fn iter_declarations<'c, 'decls: 'c>(
     for (declaration, priority) in iter {
         if let PropertyDeclaration::Custom(ref declaration) = *declaration {
             if let Some((ref mut cascade, ref mut context)) = custom {
-                cascade.cascade_custom_property(context, declaration, priority, attribute_tracker);
+                cascade.cascade_custom_property(context, declaration, priority);
             }
         } else {
             let id = declaration.id().as_longhand().unwrap();
@@ -704,7 +704,9 @@ struct RevertedSet {
 
 #[derive(Default)]
 struct SeenSubstitutionFunctions<'a> {
-    var: PrecomputedHashSet<&'a Name>,
+    /// The boolean means whether the value may have references. If false, we don't need to bother
+    /// performing lookups for cycle detection.
+    var: PrecomputedHashMap<&'a Name, bool>,
     attr: PrecomputedHashSet<&'a Name>,
 }
 
@@ -776,10 +778,9 @@ impl<'a> KeyframeCustomPropertiesBuilder<'a> {
         context: &mut computed::Context,
         declaration: &'a CustomDeclaration,
         priority: CascadePriority,
-        attribute_tracker: &mut AttributeTracker,
     ) {
         self.cascade
-            .cascade_custom_property(context, declaration, priority, attribute_tracker);
+            .cascade_custom_property(context, declaration, priority);
     }
 
     /// Resolves the cascaded custom properties into `context.builder.substitution_functions`.
@@ -1725,7 +1726,6 @@ impl<'a> Cascade<'a> {
         context: &mut computed::Context,
         declaration: &'a CustomDeclaration,
         priority: CascadePriority,
-        attribute_tracker: &mut AttributeTracker,
     ) {
         let CustomDeclaration {
             ref name,
@@ -1742,22 +1742,23 @@ impl<'a> Cascade<'a> {
             return;
         }
 
-        let was_already_present = !self.seen.custom.var.insert(name);
-        if was_already_present {
-            return;
-        }
+        let entry = match self.seen.custom.var.entry(name) {
+            Entry::Occupied(..) => return,
+            Entry::Vacant(v) => v,
+        };
 
-        if !self.value_may_affect_style(context, name, value) {
-            return;
-        }
-
-        let kind = SubstitutionFunctionKind::Var;
         let registration = self.stylist.get_custom_property_registration(&name);
-        match value {
+        let initial_values = self.stylist.get_custom_property_initial_values();
+        if !Self::value_may_affect_style(context, name, registration, initial_values, value) {
+            entry.insert(false);
+            return;
+        }
+
+        let has_references = match value {
             CustomDeclarationValue::Unparsed(unparsed_value) => {
                 // Non-custom dependency is really relevant for registered custom properties
                 // that require computed value of such dependencies.
-                let has_dependency = unparsed_value
+                unparsed_value
                     .references
                     .flags
                     .intersects(ReferenceFlags::ATTR | ReferenceFlags::VAR)
@@ -1766,25 +1767,22 @@ impl<'a> Cascade<'a> {
                         unparsed_value,
                         context.is_root_element(),
                     )
-                    .is_empty();
-                // If the variable value has no references to other properties, perform
-                // substitution here instead of forcing a full traversal in `substitute_all`
-                // afterwards.
-                if !has_dependency {
-                    let mut map = std::mem::take(&mut context.builder.substitution_functions);
-                    substitute_references_if_needed_and_apply(
-                        name,
-                        kind,
-                        unparsed_value,
-                        &mut map,
-                        self.stylist,
-                        context,
-                        attribute_tracker,
-                    );
-                    context.builder.substitution_functions = map;
-                    return;
-                }
-                self.may_have_custom_property_cycles = true;
+                    .is_empty()
+            },
+            // XXX This matches the previous behavior but I don't think it's fully sound. Parsed
+            // values may have non-custom references, can't they? But also how do we get a parsed
+            // value at all here?
+            CustomDeclarationValue::Parsed(..) => false,
+            // If we're a wide keyword we either get an initial value or an inherited one (no
+            // references). Revert might have references, but we remove the `seen` entry, so it
+            // doesn't matter.
+            CustomDeclarationValue::CSSWideKeyword(..) => false,
+        };
+        self.may_have_custom_property_cycles |= has_references;
+        entry.insert(has_references);
+
+        match value {
+            CustomDeclarationValue::Unparsed(unparsed_value) => {
                 let value = ComputedRegisteredValue::universal(Arc::clone(unparsed_value));
                 context
                     .builder
@@ -1918,12 +1916,12 @@ impl<'a> Cascade<'a> {
     }
 
     fn value_may_affect_style(
-        &self,
         context: &computed::Context,
         name: &Name,
+        registration: &PropertyDescriptors,
+        initial_values: &ComputedCustomProperties,
         value: &CustomDeclarationValue,
     ) -> bool {
-        let registration = self.stylist.get_custom_property_registration(&name);
         match *value {
             CustomDeclarationValue::CSSWideKeyword(CSSWideKeyword::Inherit) => {
                 // For inherited custom properties, explicit 'inherit' means we
@@ -2000,11 +1998,7 @@ impl<'a> Cascade<'a> {
                         debug_assert!(registration.inherits(), "Should've been handled earlier");
                         // Don't bother overwriting an existing value with the initial value
                         // specified in the registration.
-                        if let Some(initial_value) = self
-                            .stylist
-                            .get_custom_property_initial_values()
-                            .get(registration, name)
-                        {
+                        if let Some(initial_value) = initial_values.get(registration, name) {
                             return existing_value != initial_value;
                         }
                     },
@@ -2146,6 +2140,13 @@ fn substitute_all(
         attr: PrecomputedHashMap<Name, usize>,
     }
 
+    impl OrderIndexMap {
+        fn clear(&mut self) {
+            self.var.clear();
+            self.attr.clear();
+        }
+    }
+
     /// Context struct for traversing the variable graph, so that we can
     /// avoid referencing all the fields multiple times.
     struct Context<'a, 'b: 'a, 'c, 'd> {
@@ -2182,26 +2183,37 @@ fn substitute_all(
         cache: &'a mut ShorthandsWithPropertyReferencesCache,
     }
 
-    /// Applies a prioritary property (and its dependencies) while resolving custom properties.
-    ///
-    /// The in-progress map lives outside `computed_context` during traversal; we move it into
-    /// `computed_context.builder.substitution_functions` so the prioritary declaration's `var()`
-    /// references resolve against the custom properties resolved so far, then take it back out.
-    fn apply_prioritary_property<'a, 'b, 'c, 'd>(
-        context: &mut Context<'a, 'b, 'c, 'd>,
-        id: PrioritaryPropertyId,
-        attr_tracker: &mut AttributeTracker,
-    ) {
-        // TODO(emilio): This is gross, try to remove this.
-        context.computed_context.builder.substitution_functions = std::mem::take(&mut *context.map);
-        context.cascade.ensure_prioritary_property(
-            context.computed_context,
-            context.decls,
-            context.cache,
-            attr_tracker,
-            id,
-        );
-        *context.map = std::mem::take(&mut context.computed_context.builder.substitution_functions);
+    impl<'a, 'b: 'a, 'c, 'd> Context<'a, 'b, 'c, 'd> {
+        fn reset(&mut self) {
+            self.count = 0;
+            self.index_map.clear();
+            self.non_custom_index_map = Default::default();
+            self.var_info.clear();
+            self.stack.clear();
+        }
+
+        /// Applies a prioritary property (and its dependencies) while resolving custom properties.
+        ///
+        /// The in-progress map lives outside `computed_context` during traversal; we move it into
+        /// `computed_context.builder.substitution_functions` so the prioritary declaration's `var()`
+        /// references resolve against the custom properties resolved so far, then take it back out.
+        fn apply_prioritary_property(
+            &mut self,
+            id: PrioritaryPropertyId,
+            attr_tracker: &mut AttributeTracker,
+        ) {
+            // TODO(emilio): This is gross, try to remove this, but substitution needs to
+            // significantly change for this...
+            self.computed_context.builder.substitution_functions = std::mem::take(&mut *self.map);
+            self.cascade.ensure_prioritary_property(
+                self.computed_context,
+                self.decls,
+                self.cache,
+                attr_tracker,
+                id,
+            );
+            *self.map = std::mem::take(&mut self.computed_context.builder.substitution_functions);
+        }
     }
 
     /// Traverse the references in `root` (the value of a custom property or of a non-custom
@@ -2606,7 +2618,7 @@ fn substitute_all(
                                 .invalid_non_custom_properties
                                 .insert(id.to_longhand());
                         } else {
-                            apply_prioritary_property(context, id, attribute_tracker);
+                            context.apply_prioritary_property(id, attribute_tracker);
                         }
                         return None;
                     },
@@ -2650,36 +2662,44 @@ fn substitute_all(
         None
     }
 
-    let mut run = |make_var: fn(Name) -> VarType, seen: &PrecomputedHashSet<&Name>| {
-        for name in seen {
-            let mut context = Context {
-                count: 0,
-                index_map: OrderIndexMap::default(),
-                non_custom_index_map: NonCustomReferenceMap::default(),
-                stack: SmallVec::new(),
-                var_info: SmallVec::new(),
-                map: &mut *substitution_function_map,
-                stylist,
-                computed_context: &mut *computed_context,
-                cascade: &mut *cascade,
-                decls,
-                cache: &mut *shorthand_cache,
-            };
-
-            traverse(
-                make_var((*name).clone()),
-                references_from_non_custom_properties,
-                &mut context,
-                attr_tracker,
-            );
-        }
+    let mut context = Context {
+        count: 0,
+        index_map: OrderIndexMap::default(),
+        non_custom_index_map: NonCustomReferenceMap::default(),
+        stack: SmallVec::new(),
+        var_info: SmallVec::new(),
+        map: &mut *substitution_function_map,
+        stylist,
+        computed_context: &mut *computed_context,
+        cascade: &mut *cascade,
+        decls,
+        cache: &mut *shorthand_cache,
     };
-
+    let mut first = true;
+    let mut run_one = |var: VarType| {
+        if !first {
+            context.reset();
+        }
+        first = false;
+        traverse(
+            var,
+            references_from_non_custom_properties,
+            &mut context,
+            attr_tracker,
+        );
+    };
     // Note that `seen` doesn't contain names inherited from our parent, but
     // those can't have variable references (since we inherit the computed
     // variables) so we don't want to spend cycles traversing them anyway.
-    run(VarType::Custom, &seen.var);
-    // Traverse potentially untraversed chained references from `attr(type())`
-    // in non-custom properties.
-    run(VarType::Attr, &seen.attr);
+    for (var, has_refs) in &seen.var {
+        if !has_refs {
+            continue;
+        }
+        run_one(VarType::Custom((*var).clone()));
+    }
+    // Traverse potentially untraversed chained references from `attr(type())` in non-custom
+    // properties.
+    for attr in &seen.attr {
+        run_one(VarType::Attr((*attr).clone()));
+    }
 }

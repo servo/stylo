@@ -520,27 +520,25 @@ impl NonCustomPropertyId {
 }
 
 <%def name="static_non_custom_property_id_set(name, is_member)">
-static ${name}: NonCustomPropertyIdSet = NonCustomPropertyIdSet {
-    <%
-        storage = [0] * int((len(data.longhands) + len(data.shorthands) + len(data.all_aliases()) - 1 + 32) / 32)
-        for i, property in enumerate(data.longhands + data.shorthands + data.all_aliases()):
-            if is_member(property):
-                storage[int(i / 32)] |= 1 << (i % 32)
-    %>
-    storage: [${", ".join("0x%x" % word for word in storage)}]
-};
+<%
+    storage = [0] * int((len(data.longhands) + len(data.shorthands) + len(data.all_aliases()) - 1 + 32) / 32)
+    for i, property in enumerate(data.longhands + data.shorthands + data.all_aliases()):
+        if is_member(property):
+            storage[int(i / 32)] |= 1 << (i % 32)
+%>
+static ${name}: NonCustomPropertyIdSet =
+    NonCustomPropertyIdSet::from_storage([${", ".join("0x%x" % word for word in storage)}]);
 </%def>
 
 <%def name="static_longhand_id_set(name, is_member)">
-static ${name}: LonghandIdSet = LonghandIdSet {
-    <%
-        storage = [0] * int((len(data.longhands) - 1 + 32) / 32)
-        for i, property in enumerate(data.longhands):
-            if is_member(property):
-                storage[int(i / 32)] |= 1 << (i % 32)
-    %>
-    storage: [${", ".join("0x%x" % word for word in storage)}]
-};
+<%
+    storage = [0] * int((len(data.longhands) - 1 + 32) / 32)
+    for i, property in enumerate(data.longhands):
+        if is_member(property):
+            storage[int(i / 32)] |= 1 << (i % 32)
+%>
+static ${name}: LonghandIdSet =
+    LonghandIdSet::from_storage([${", ".join("0x%x" % word for word in storage)}]);
 </%def>
 
 <%

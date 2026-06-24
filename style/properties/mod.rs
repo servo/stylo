@@ -1193,92 +1193,175 @@ impl<'a> PropertyDeclarationId<'a> {
     }
 }
 
-/// A set of all properties.
-#[derive(Clone, PartialEq, Default)]
-pub struct NonCustomPropertyIdSet {
-    storage: [u32; ((property_counts::NON_CUSTOM as usize) - 1 + 32) / 32],
+/// A trait for property-id-like types that can be stored compactly in an
+/// `IdSet` bitfield.
+pub trait IndexedId: Copy {
+    /// The number of distinct ids, i.e. the number of bits the set needs.
+    const COUNT: usize;
+    /// Builds an id from its index in the set. The caller must guarantee that
+    /// `index < Self::COUNT`.
+    unsafe fn from_index_release_unchecked(index: usize) -> Self;
+    /// Returns the index of this id in the set.
+    fn to_index(self) -> usize;
 }
 
-impl NonCustomPropertyIdSet {
-    /// Creates an empty `NonCustomPropertyIdSet`.
-    pub fn new() -> Self {
+impl IndexedId for NonCustomPropertyId {
+    const COUNT: usize = property_counts::NON_CUSTOM;
+
+    #[inline(always)]
+    unsafe fn from_index_release_unchecked(index: usize) -> Self {
+        debug_assert!(index < Self::COUNT);
+        NonCustomPropertyId(index as u16)
+    }
+
+    #[inline(always)]
+    fn to_index(self) -> usize {
+        self.0 as usize
+    }
+}
+
+impl IndexedId for PrioritaryPropertyId {
+    const COUNT: usize = property_counts::PRIORITARY;
+
+    #[inline(always)]
+    unsafe fn from_index_release_unchecked(index: usize) -> Self {
+        debug_assert!(index < Self::COUNT);
+        std::mem::transmute(index as u8)
+    }
+
+    #[inline(always)]
+    fn to_index(self) -> usize {
+        self as usize
+    }
+}
+
+impl IndexedId for LonghandId {
+    const COUNT: usize = property_counts::LONGHANDS;
+
+    #[inline(always)]
+    unsafe fn from_index_release_unchecked(index: usize) -> Self {
+        debug_assert!(index < Self::COUNT);
+        std::mem::transmute(index as u16)
+    }
+
+    #[inline(always)]
+    fn to_index(self) -> usize {
+        self as usize
+    }
+}
+
+/// A set of non-custom properties.
+pub type NonCustomPropertyIdSet =
+    IdSet<NonCustomPropertyId, { (property_counts::NON_CUSTOM - 1 + 32) / 32 }>;
+/// An iterator over non-custom properties.
+pub type NonCustomPropertyIdSetIterator<'a> = IdSetIterator<'a, NonCustomPropertyId>;
+/// A set of prioritary properties.
+pub type PrioritaryPropertyIdSet =
+    IdSet<PrioritaryPropertyId, { (property_counts::PRIORITARY - 1 + 32) / 32 }>;
+/// An iterator over prioritary properties.
+pub type PrioritaryPropertyIdSetIterator<'a> = IdSetIterator<'a, PrioritaryPropertyId>;
+/// A set of longhand properties.
+pub type LonghandIdSet = IdSet<LonghandId, { (property_counts::LONGHANDS - 1 + 32) / 32 }>;
+/// An iterator over longhand properties.
+pub type LonghandIdSetIterator<'a> = IdSetIterator<'a, LonghandId>;
+
+/// A set of ids indexed in a bitfield. `W` is the number of `u32` chunks needed to store
+/// `Id::COUNT` bits, and is filled in by the type aliases above.
+///
+/// TODO(emilio): It'd be nice for the const parameter to be COUNT (or even not be there and pull
+/// from Id::COUNT), but that can't be done in stable rust yet, see:
+/// https://github.com/rust-lang/rust/issues/76560
+pub struct IdSet<Id: IndexedId, const W: usize> {
+    storage: [u32; W],
+    _phantom: std::marker::PhantomData<Id>,
+}
+
+impl<Id: IndexedId, const W: usize> Clone for IdSet<Id, W> {
+    #[inline]
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<Id: IndexedId, const W: usize> Copy for IdSet<Id, W> {}
+
+impl<Id: IndexedId, const W: usize> Default for IdSet<Id, W> {
+    #[inline]
+    fn default() -> Self {
         Self {
-            storage: Default::default(),
+            storage: [0; W],
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<Id: IndexedId, const W: usize> PartialEq for IdSet<Id, W> {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.storage == other.storage
+    }
+}
+
+impl<Id: IndexedId, const W: usize> fmt::Debug for IdSet<Id, W> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.storage.fmt(f)
+    }
+}
+
+impl<Id: IndexedId, const W: usize> malloc_size_of::MallocSizeOf for IdSet<Id, W> {
+    #[inline(always)]
+    fn size_of(&self, _: &mut malloc_size_of::MallocSizeOfOps) -> usize {
+        0
+    }
+}
+
+impl<Id: IndexedId, const W: usize> IdSet<Id, W> {
+    /// Creates an empty `IdSet`.
+    #[inline]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Creates a set from its raw bitfield storage.
+    pub(crate) const fn from_storage(storage: [u32; W]) -> Self {
+        Self {
+            storage,
+            _phantom: std::marker::PhantomData,
         }
     }
 
-    /// Insert a non-custom-property in the set.
+    /// Insert an id in the set.
     #[inline]
-    pub fn insert(&mut self, id: NonCustomPropertyId) {
-        let bit = id.0 as usize;
+    pub fn insert(&mut self, id: Id) {
+        let bit = id.to_index();
         self.storage[bit / 32] |= 1 << (bit % 32);
     }
 
-    /// Return whether the given property is in the set
+    /// Remove the given id from the set.
     #[inline]
-    pub fn contains(&self, id: NonCustomPropertyId) -> bool {
-        let bit = id.0 as usize;
+    pub fn remove(&mut self, id: Id) {
+        let bit = id.to_index();
+        self.storage[bit / 32] &= !(1 << (bit % 32));
+    }
+
+    /// Return whether the given id is in the set.
+    #[inline]
+    pub fn contains(&self, id: Id) -> bool {
+        let bit = id.to_index();
         (self.storage[bit / 32] & (1 << (bit % 32))) != 0
     }
-}
 
-/// A set of prioritary properties
-#[derive(Clone, Copy, Debug, Default, MallocSizeOf, PartialEq)]
-pub struct PrioritaryPropertyIdSet {
-    storage: [u32; ((property_counts::PRIORITARY as usize) - 1 + 32) / 32],
-}
-
-impl PrioritaryPropertyIdSet {
-    /// Creates an empty set.
-    pub fn new() -> Self {
-        Self {
-            storage: Default::default(),
-        }
-    }
-
-    /// Insert a prioritary property in the set.
-    #[inline]
-    pub fn insert(&mut self, id: PrioritaryPropertyId) {
-        let bit = id as usize;
-        self.storage[bit / 32] |= 1 << (bit % 32);
-    }
-
-    /// Return whether the given property is in the set
-    #[inline]
-    pub fn contains(&self, id: PrioritaryPropertyId) -> bool {
-        let bit = id as usize;
-        (self.storage[bit / 32] & (1 << (bit % 32))) != 0
-    }
-}
-
-/// A set of longhand properties
-#[derive(Clone, Copy, Debug, Default, MallocSizeOf, PartialEq)]
-pub struct LonghandIdSet {
-    storage: [u32; ((property_counts::LONGHANDS as usize) - 1 + 32) / 32],
-}
-
-to_shmem::impl_trivial_to_shmem!(LonghandIdSet);
-
-impl LonghandIdSet {
-    /// Return an empty LonghandIdSet.
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            storage: Default::default(),
-        }
-    }
-
-    /// Iterate over the current longhand id set.
-    pub fn iter(&self) -> LonghandIdSetIterator<'_> {
-        LonghandIdSetIterator {
+    /// Iterate over the current id set.
+    pub fn iter(&self) -> IdSetIterator<'_, Id> {
+        IdSetIterator {
             chunks: &self.storage,
             cur_chunk: 0,
             cur_bit: 0,
+            _phantom: std::marker::PhantomData,
         }
     }
 
-    /// Returns whether this set contains at least every longhand that `other`
-    /// also contains.
+    /// Returns whether this set contains at least every id that `other` also contains.
     pub fn contains_all(&self, other: &Self) -> bool {
         for (self_cell, other_cell) in self.storage.iter().zip(other.storage.iter()) {
             if (*self_cell & *other_cell) != *other_cell {
@@ -1288,7 +1371,7 @@ impl LonghandIdSet {
         true
     }
 
-    /// Returns whether this set contains any longhand that `other` also contains.
+    /// Returns whether this set contains any id that `other` also contains.
     pub fn contains_any(&self, other: &Self) -> bool {
         for (self_cell, other_cell) in self.storage.iter().zip(other.storage.iter()) {
             if (*self_cell & *other_cell) != 0 {
@@ -1298,39 +1381,12 @@ impl LonghandIdSet {
         false
     }
 
-    /// Remove all the given properties from the set.
+    /// Remove all the given ids from the set.
     #[inline]
     pub fn remove_all(&mut self, other: &Self) {
         for (self_cell, other_cell) in self.storage.iter_mut().zip(other.storage.iter()) {
             *self_cell &= !*other_cell;
         }
-    }
-
-    /// Return whether the given property is in the set
-    #[inline]
-    pub fn contains(&self, id: LonghandId) -> bool {
-        let bit = id as usize;
-        (self.storage[bit / 32] & (1 << (bit % 32))) != 0
-    }
-
-    /// Return whether this set contains any reset longhand.
-    #[inline]
-    pub fn contains_any_reset(&self) -> bool {
-        self.contains_any(Self::reset())
-    }
-
-    /// Add the given property to the set
-    #[inline]
-    pub fn insert(&mut self, id: LonghandId) {
-        let bit = id as usize;
-        self.storage[bit / 32] |= 1 << (bit % 32);
-    }
-
-    /// Remove the given property from the set
-    #[inline]
-    pub fn remove(&mut self, id: LonghandId) {
-        let bit = id as usize;
-        self.storage[bit / 32] &= !(1 << (bit % 32));
     }
 
     /// Clear all bits
@@ -1348,15 +1404,25 @@ impl LonghandIdSet {
     }
 }
 
-/// An iterator over a set of longhand ids.
-pub struct LonghandIdSetIterator<'a> {
+to_shmem::impl_trivial_to_shmem!(LonghandIdSet);
+impl LonghandIdSet {
+    /// Return whether this set contains any reset longhand.
+    #[inline]
+    pub fn contains_any_reset(&self) -> bool {
+        self.contains_any(Self::reset())
+    }
+}
+
+/// An iterator over a set of ids.
+pub struct IdSetIterator<'a, Id: IndexedId> {
     chunks: &'a [u32],
     cur_chunk: u32,
     cur_bit: u32, // [0..31], note that zero means the end-most bit
+    _phantom: std::marker::PhantomData<Id>,
 }
 
-impl<'a> Iterator for LonghandIdSetIterator<'a> {
-    type Item = LonghandId;
+impl<'a, Id: IndexedId> Iterator for IdSetIterator<'a, Id> {
+    type Item = Id;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -1372,9 +1438,9 @@ impl<'a> Iterator for LonghandIdSetIterator<'a> {
                 continue;
             }
             debug_assert!(cur_bit + next_bit < 32);
-            let longhand_id = cur_chunk * 32 + cur_bit + next_bit;
-            debug_assert!(longhand_id as usize <= property_counts::LONGHANDS);
-            let id: LonghandId = unsafe { mem::transmute(longhand_id as u16) };
+            let index = (cur_chunk * 32 + cur_bit + next_bit) as usize;
+            debug_assert!(index < Id::COUNT);
+            let id = unsafe { Id::from_index_release_unchecked(index) };
             self.cur_bit += next_bit + 1;
             if self.cur_bit == 32 {
                 self.cur_bit = 0;

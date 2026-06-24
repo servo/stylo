@@ -1780,6 +1780,21 @@ impl<'a> Cascade<'a> {
 
         match value {
             CustomDeclarationValue::Unparsed(unparsed_value) => {
+                if !has_references {
+                    // If the variable value has no references to other properties, perform
+                    // substitution here instead of forcing a full traversal in `substitute_all`
+                    // afterwards.
+                    substitute_references_if_needed_and_apply(
+                        name,
+                        SubstitutionFunctionKind::Var,
+                        unparsed_value,
+                        self.stylist,
+                        context,
+                        // We just checked there are no attr dependencies.
+                        &mut AttributeTracker::new_dummy(),
+                    );
+                    return;
+                }
                 let value = ComputedRegisteredValue::universal(Arc::clone(unparsed_value));
                 context
                     .builder

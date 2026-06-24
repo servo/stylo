@@ -11,7 +11,7 @@ type = "FamilyName"
 type = "SourceList"
 
 [font-style]
-type = "FontStyle"
+type = "FontStyleRange"
 
 [font-weight]
 type = "FontWeightRange"

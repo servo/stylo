@@ -344,16 +344,6 @@ pub const FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES: f32 = 90.;
 pub const FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES: f32 = -90.;
 
 impl SpecifiedFontStyle {
-    /// Gets a clamped angle in degrees from a specified Angle.
-    pub fn compute_angle_degrees(angle: &Angle) -> Option<f32> {
-        Some(
-            angle
-                .degrees()?
-                .max(FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES)
-                .min(FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES),
-        )
-    }
-
     /// Parse a suitable angle for font-style: oblique.
     pub fn parse_angle<'i, 't>(
         context: &ParserContext,

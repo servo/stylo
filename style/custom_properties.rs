@@ -1380,16 +1380,9 @@ pub fn get_attr_value_for_cycle_resolution(
 /// See https://drafts.csswg.org/css-variables-2/#invalid-at-computed-value-time
 pub fn handle_invalid_at_computed_value_time(
     name: &Name,
-    kind: SubstitutionFunctionKind,
     registration: &PropertyDescriptors,
     context: &mut computed::Context,
 ) {
-    if kind == SubstitutionFunctionKind::Attr {
-        // Early return: `attr()` is always treated as unregistered.
-        context.builder.substitution_functions.remove_attr(name);
-        return;
-    }
-
     if !registration.is_universal() {
         // For the root element, inherited maps are empty. We should just
         // use the initial value if any, rather than removing the name.
@@ -1460,7 +1453,11 @@ pub fn substitute_references_if_needed_and_apply(
     );
 
     let Ok(substitution) = substitution else {
-        handle_invalid_at_computed_value_time(name, kind, registration, context);
+        if is_var {
+            handle_invalid_at_computed_value_time(name, registration, context);
+        } else {
+            context.builder.substitution_functions.remove_attr(name);
+        }
         return;
     };
 
@@ -1526,7 +1523,7 @@ pub fn substitute_references_if_needed_and_apply(
             let value = match substitution.into_value(url_data, registration, context) {
                 Ok(v) => v,
                 Err(()) => {
-                    handle_invalid_at_computed_value_time(name, kind, registration, context);
+                    handle_invalid_at_computed_value_time(name, registration, context);
                     return;
                 },
             };

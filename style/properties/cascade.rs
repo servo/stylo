@@ -2131,15 +2131,13 @@ fn substitute_all(
     /// Struct recording necessary information for each variable.
     #[derive(Debug)]
     struct VarInfo {
-        /// The name of the variable. It will be taken to save addref
-        /// when the corresponding variable is popped from the stack.
-        /// This also serves as a mark for whether the variable is
-        /// currently in the stack below.
+        /// The name of the variable. It will be taken when the corresponding variable is popped
+        /// from the stack, which serves as a mark for whether the variable is currently in the
+        /// stack below.
         var: Option<VarType>,
-        /// If the variable is in a dependency cycle, lowlink represents
-        /// a smaller index which corresponds to a variable in the same
-        /// strong connected component, which is known to be accessible
-        /// from this variable. It is not necessarily the root, though.
+        /// If the variable is in a dependency cycle, lowlink represents a smaller index which
+        /// corresponds to a variable in the same strong connected component, which is known to be
+        /// accessible from this variable. It is not necessarily the root, though.
         lowlink: usize,
     }
 
@@ -2204,6 +2202,32 @@ fn substitute_all(
 
         fn map_mut(&mut self) -> &mut ComputedSubstitutionFunctions {
             &mut self.computed_context.builder.substitution_functions
+        }
+
+        /// Marks a given `name` as being in a loop.
+        fn handle_loop(&mut self, name: &VarType) {
+            match name {
+                VarType::Attr(name) => {
+                    self.computed_context
+                        .builder
+                        .substitution_functions
+                        .remove_attr(name);
+                },
+                VarType::Custom(name) => {
+                    // This variable is in a loop. Resolve to invalid.
+                    handle_invalid_at_computed_value_time(
+                        name,
+                        self.stylist.get_custom_property_registration(name),
+                        self.computed_context,
+                    );
+                },
+                VarType::NonCustom(non_custom) => {
+                    self.computed_context
+                        .builder
+                        .invalid_non_custom_properties
+                        .insert(non_custom.to_prioritary_id().to_longhand());
+                },
+            }
         }
 
         /// Applies a prioritary property (and its dependencies) while resolving custom properties.
@@ -2398,25 +2422,22 @@ fn substitute_all(
         // of the match so we can create the corresponding nodes once we've pushed this variable.
         let mut value_non_custom_refs = ReferenceFlags::empty();
         let mut registered = false;
-        let kind = if matches!(var, VarType::Custom(..)) {
-            SubstitutionFunctionKind::Var
-        } else {
-            SubstitutionFunctionKind::Attr
-        };
         let value = match var {
             VarType::Custom(ref name) | VarType::Attr(ref name) => {
                 let map = &context.computed_context.builder.substitution_functions;
-                let (registration, value) = if matches!(var, VarType::Custom(_)) {
+                let (registration, value, kind) = if matches!(var, VarType::Custom(..)) {
                     let registration = context.stylist.get_custom_property_registration(name);
                     (
                         registration,
                         map.get_var(registration, name)?.as_universal()?,
+                        SubstitutionFunctionKind::Var,
                     )
                 } else {
                     // `attr()` is always treated as unregistered.
                     (
                         PropertyDescriptors::unregistered(),
                         map.get_attr(name)?.as_universal()?,
+                        SubstitutionFunctionKind::Attr,
                     )
                 };
                 let is_root = context.computed_context.is_root_element();
@@ -2586,85 +2607,59 @@ fn substitute_all(
 
         // This is the root of a strong-connected component.
         let mut in_loop = self_ref;
-        let name;
-
-        let handle_variable_in_loop =
-            |name: &Name, context: &mut Context<'a, 'b, 'c, 'd>, kind: SubstitutionFunctionKind| {
-                // This variable is in a loop. Resolve to invalid.
-                handle_invalid_at_computed_value_time(
-                    name,
-                    kind,
-                    context.stylist.get_custom_property_registration(name),
-                    context.computed_context,
-                );
-            };
         loop {
             let var_index = context
                 .stack
                 .pop()
                 .expect("The current variable should still be in stack");
             let var_info = &mut context.var_info[var_index];
-            // We should never visit the variable again, so it's safe
-            // to take the name away, so that we don't do additional
-            // reference count.
+            // We should never visit the variable again, so it's safe to take the name away.
             let var_name = var_info
                 .var
                 .take()
-                .expect("Variable should not be poped from stack twice");
+                .expect("Variable should not be popped from stack twice");
+            if var_index != index {
+                // Anything here is in a loop which can traverse to the node we are handling, so
+                // it's invalid at computed-value time.
+                in_loop = true;
+            }
+            if in_loop {
+                context.handle_loop(&var_name);
+            }
             if var_index == index {
-                name = match var_name {
-                    VarType::Custom(name) | VarType::Attr(name) => name,
-                    VarType::NonCustom(non_custom) => {
-                        // At the root of this component, and it's a non-custom reference. A
-                        // non-custom node can still be the root of a strongly-connected component.
-                        // Otherwise all the custom properties it (transitively) references have now
-                        // been resolved, so it's safe to apply it.
-                        let id = non_custom.to_prioritary_id();
-                        if in_loop {
-                            context
-                                .computed_context
-                                .builder
-                                .invalid_non_custom_properties
-                                .insert(id.to_longhand());
-                        } else {
-                            context.apply_prioritary_property(id, attribute_tracker);
-                        }
-                        return None;
-                    },
-                };
+                debug_assert_eq!(var_name, var);
                 break;
             }
-            match var_name {
-                VarType::Custom(name) | VarType::Attr(name) => {
-                    // Anything here is in a loop which can traverse to the
-                    // variable we are handling, so it's invalid at
-                    // computed-value time.
-                    handle_variable_in_loop(&name, context, kind);
-                },
-                VarType::NonCustom(non_custom) => context
-                    .computed_context
-                    .builder
-                    .invalid_non_custom_properties
-                    .insert(non_custom.to_prioritary_id().to_longhand()),
-            }
-            in_loop = true;
         }
+
         if in_loop {
-            handle_variable_in_loop(&name, context, kind);
             return None;
         }
 
-        if let Some(ref v) = value {
-            // We know we're not in a loop now, perform substitution.
-            // TODO(emilio): Merge with the cycle detection loop instead?
-            substitute_references_if_needed_and_apply(
-                &name,
-                kind,
-                v,
-                context.stylist,
-                context.computed_context,
-                attribute_tracker,
-            );
+        // Not in a loop, apply the value.
+        match var {
+            VarType::Custom(ref name) | VarType::Attr(ref name) => {
+                if let Some(ref v) = value {
+                    let kind = if matches!(var, VarType::Custom(..)) {
+                        SubstitutionFunctionKind::Var
+                    } else {
+                        SubstitutionFunctionKind::Attr
+                    };
+                    // We know we're not in a loop now, perform substitution.
+                    // TODO(emilio): Merge with the cycle detection loop instead?
+                    substitute_references_if_needed_and_apply(
+                        name,
+                        kind,
+                        v,
+                        context.stylist,
+                        context.computed_context,
+                        attribute_tracker,
+                    );
+                }
+            },
+            VarType::NonCustom(non_custom) => {
+                context.apply_prioritary_property(non_custom.to_prioritary_id(), attribute_tracker);
+            },
         }
         // All resolved, so return the signal value.
         None

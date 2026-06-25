@@ -25,6 +25,6 @@ impl TreeCountingResult {
 
     /// Creates a default TreeCountingResult.
     pub fn default() -> Self {
-        TreeCountingResult::new(0, 0)
+        TreeCountingResult::new(1, 1)
     }
 }

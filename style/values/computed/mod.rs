@@ -481,7 +481,8 @@ impl<'a> Context<'a> {
         //
         // As a loosely-matched reference, the tree-counting function can only match if
         // the declaration is in the same or descendant shadow tree of the element. It
-        // does not match if the declaration is in a containing tree, so it must return 0.
+        // does not match if the declaration is in a containing tree, so it must return
+        // the default sibling index and count of 1.
         if self
             .current_scope()
             .shadow_order()

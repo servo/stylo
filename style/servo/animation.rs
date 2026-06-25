@@ -606,8 +606,13 @@ impl Animation {
             return 0.;
         }
 
-        if let KeyframesIterationState::Finite(ref mut current, max) = self.iteration_state {
-            *current = (*current + n).min(max);
+        match self.iteration_state {
+            KeyframesIterationState::Finite(ref mut current, max) => {
+                *current = (*current + n).min(max);
+            },
+            KeyframesIterationState::Infinite(ref mut current) => {
+                *current += n;
+            },
         }
 
         if let AnimationState::Paused(ref mut progress) = self.state {

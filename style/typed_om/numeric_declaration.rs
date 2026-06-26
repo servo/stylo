@@ -8,7 +8,7 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::typed_om::numeric::NoCalcNumeric;
 use crate::values::generics::calc::CalcUnits;
-use crate::values::specified::calc::{CalcParseFlags, CalcNode};
+use crate::values::specified::calc::{CalcNode, CalcParseFlags};
 use crate::values::specified::NoCalcLength;
 use cssparser::{Parser, Token};
 use style_traits::values::specified::AllowedNumericType;

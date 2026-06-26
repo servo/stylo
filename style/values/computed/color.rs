@@ -4,15 +4,15 @@
 
 //! Computed color values.
 
-use crate::typed_om::{TypedValue, KeywordValue, ToTyped};
 use crate::color::AbsoluteColor;
+use crate::typed_om::{KeywordValue, ToTyped, TypedValue};
 use crate::values::animated::ToAnimatedZero;
 use crate::values::computed::percentage::Percentage;
 use crate::values::generics::color::{
     GenericCaretColor, GenericColor, GenericColorMix, GenericColorOrAuto,
 };
 use std::fmt::{self, Write};
-use style_traits::{CssWriter, ToCss, CssString};
+use style_traits::{CssString, CssWriter, ToCss};
 use thin_vec::ThinVec;
 
 pub use crate::values::specified::color::{ColorScheme, ForcedColorAdjust, PrintColorAdjust};
@@ -49,10 +49,12 @@ impl ToTyped for Color {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         match *self {
             Self::CurrentColor => {
-              dest.push(TypedValue::Keyword(KeywordValue(CssString::from("currentcolor"))));
-              Ok(())
+                dest.push(TypedValue::Keyword(KeywordValue(CssString::from(
+                    "currentcolor",
+                ))));
+                Ok(())
             },
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }

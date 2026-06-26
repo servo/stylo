@@ -5,12 +5,12 @@
 //! Specified color values.
 
 use super::AllowQuirks;
-use crate::typed_om::{TypedValue, KeywordValue, ToTyped};
 use crate::color::mix::ColorInterpolationMethod;
 use crate::color::{parsing, AbsoluteColor, ColorFunction, ColorMixItemList, ColorSpace};
 use crate::derives::*;
 use crate::device::Device;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::{KeywordValue, ToTyped, TypedValue};
 use crate::values::computed::{
     Color as ComputedColor, Context, Percentage as ComputedPercentage, ToComputedValue,
 };
@@ -25,8 +25,8 @@ use cssparser::{match_ignore_ascii_case, BasicParseErrorKind, ParseErrorKind, Pa
 use std::fmt::{self, Write};
 use std::io::Write as IoWrite;
 use style_traits::{
-    owned_slice::OwnedSlice, CssType, CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo,
-    StyleParseErrorKind, ToCss, ValueParseErrorKind, CssString,
+    owned_slice::OwnedSlice, CssString, CssType, CssWriter, KeywordsCollectFn, ParseError,
+    SpecifiedValueInfo, StyleParseErrorKind, ToCss, ValueParseErrorKind,
 };
 use thin_vec::ThinVec;
 
@@ -694,10 +694,12 @@ impl ToTyped for Color {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         match *self {
             Color::CurrentColor => {
-              dest.push(TypedValue::Keyword(KeywordValue(CssString::from("currentcolor"))));
-              Ok(())
+                dest.push(TypedValue::Keyword(KeywordValue(CssString::from(
+                    "currentcolor",
+                ))));
+                Ok(())
             },
-            _ => Err(())
+            _ => Err(()),
         }
     }
 }
@@ -888,7 +890,9 @@ impl Color {
                 adjust_absolute_color!(color);
                 ComputedColor::Absolute(color)
             },
-            Color::ColorFunction(ref color_function) => color_function.to_computed_color(context)?,
+            Color::ColorFunction(ref color_function) => {
+                color_function.to_computed_color(context)?
+            },
             Color::LightDark(ref ld) => ld.compute(context.ok_or(())?),
             Color::ColorMix(ref mix) => {
                 let mut items = ColorMixItemList::with_capacity(mix.items.len());

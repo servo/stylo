@@ -474,7 +474,7 @@ impl NonCustomPropertyId {
     /// The supported types of this property. The return value should be
     /// style_traits::CssType when it can become a bitflags type.
     pub(super) fn supported_types(&self) -> u8 {
-        const SUPPORTED_TYPES: [u8; ${len(data.longhands) + len(data.shorthands)}] = [
+        const SUPPORTED_TYPES: [u8; property_counts::LONGHANDS_AND_SHORTHANDS] = [
             % for prop in data.longhands:
                 <${prop.specified_type()} as SpecifiedValueInfo>::SUPPORTED_TYPES,
             % endfor
@@ -493,7 +493,7 @@ impl NonCustomPropertyId {
     pub(super) fn collect_property_completion_keywords(&self, f: KeywordsCollectFn) {
         fn do_nothing(_: KeywordsCollectFn) {}
         const COLLECT_FUNCTIONS: [fn(KeywordsCollectFn);
-                                  ${len(data.longhands) + len(data.shorthands)}] = [
+                                  property_counts::LONGHANDS_AND_SHORTHANDS] = [
             % for prop in data.longhands:
                 <${prop.specified_type()} as SpecifiedValueInfo>::collect_completion_keywords,
             % endfor
@@ -653,7 +653,7 @@ impl PrioritaryPropertyId {
     /// Converts a LonghandId to a PrioritaryPropertyId.
     #[inline]
     pub fn from_longhand(l: LonghandId) -> Option<Self> {
-        static LONGHAND_TO_PRIORITARY: [Option<PrioritaryPropertyId>; ${len(data.longhands)}] = [
+        static LONGHAND_TO_PRIORITARY: [Option<PrioritaryPropertyId>; property_counts::LONGHANDS] = [
         % for p in data.longhands:
         % if p.is_prioritary():
             Some(PrioritaryPropertyId::${p.camel_case}),
@@ -883,7 +883,7 @@ impl LonghandId {
             context: &ParserContext,
             input: &mut Parser<'i, 't>,
         ) -> Result<PropertyDeclaration, ParseError<'i>>;
-        static PARSE_PROPERTY: [ParsePropertyFn; ${len(data.longhands)}] = [
+        static PARSE_PROPERTY: [ParsePropertyFn; property_counts::LONGHANDS] = [
         % for property in data.longhands:
             longhands::${property.ident}::parse_declared,
         % endfor
@@ -893,7 +893,7 @@ impl LonghandId {
 
     /// Return the relevant data to map a particular logical property into physical.
     fn logical_mapping_data(self) -> Option<&'static LogicalMappingData> {
-        const LOGICAL_MAPPING_DATA: [Option<LogicalMappingData>; ${len(data.longhands)}] = [
+        const LOGICAL_MAPPING_DATA: [Option<LogicalMappingData>; property_counts::LONGHANDS] = [
             % for prop in data.longhands:
             % if prop.logical:
             Some(LogicalMappingData {
@@ -918,7 +918,7 @@ impl LonghandId {
 
     /// Return the logical group of this longhand property.
     pub fn logical_group(self) -> Option<LogicalGroupId> {
-        const LOGICAL_GROUP_IDS: [Option<LogicalGroupId>; ${len(data.longhands)}] = [
+        const LOGICAL_GROUP_IDS: [Option<LogicalGroupId>; property_counts::LONGHANDS] = [
             % for prop in data.longhands:
             % if prop.logical_group:
             Some(LogicalGroupId::${to_camel_case(prop.logical_group)}),
@@ -933,7 +933,7 @@ impl LonghandId {
     /// Returns PropertyFlags for given longhand property.
     #[inline(always)]
     pub fn flags(self) -> PropertyFlags {
-        const FLAGS: [PropertyFlags; ${len(data.longhands)}] = [
+        const FLAGS: [PropertyFlags; property_counts::LONGHANDS] = [
             % for property in data.longhands:
                 PropertyFlags::empty()
                 % for flag in property.flags + restriction_flags(property):
@@ -992,7 +992,7 @@ impl ShorthandId {
             Ok(())
         }
 
-        static LONGHANDS_TO_CSS: [LonghandsToCssFn; ${len(data.shorthands)}] = [
+        static LONGHANDS_TO_CSS: [LonghandsToCssFn; property_counts::SHORTHANDS] = [
             % for shorthand in data.shorthands:
             % if shorthand.ident == "all":
                 all_to_css,
@@ -1008,7 +1008,7 @@ impl ShorthandId {
     /// Returns PropertyFlags for the given shorthand property.
     #[inline]
     pub fn flags(self) -> PropertyFlags {
-        const FLAGS: [u16; ${len(data.shorthands)}] = [
+        const FLAGS: [u16; property_counts::SHORTHANDS] = [
             % for property in data.shorthands:
                 % for flag in property.flags:
                     PropertyFlags::${flag}.bits() |
@@ -1030,7 +1030,7 @@ impl ShorthandId {
             for order, shorthand in enumerate(sorted_shorthands):
                 ordered[shorthand.ident] = order
         %>
-        static IDL_NAME_SORT_ORDER: [u32; ${len(data.shorthands)}] = [
+        static IDL_NAME_SORT_ORDER: [u32; property_counts::SHORTHANDS] = [
             % for property in data.shorthands:
             ${ordered[property.ident]},
             % endfor
@@ -1059,7 +1059,7 @@ impl ShorthandId {
             Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
         }
 
-        static PARSE_INTO: [ParseIntoFn; ${len(data.shorthands)}] = [
+        static PARSE_INTO: [ParseIntoFn; property_counts::SHORTHANDS] = [
             % for shorthand in data.shorthands:
             % if shorthand.ident == "all":
             parse_all,
@@ -2774,7 +2774,7 @@ pub type CascadePropertyFn =
 
 /// A per-longhand array of functions to perform the CSS cascade on each of
 /// them, effectively doing virtual dispatch.
-pub static CASCADE_PROPERTY: [CascadePropertyFn; ${len(data.longhands)}] = [
+pub static CASCADE_PROPERTY: [CascadePropertyFn; property_counts::LONGHANDS] = [
     % for property in data.longhands:
         longhands::${property.ident}::cascade_property,
     % endfor
@@ -2801,7 +2801,7 @@ impl AliasId {
     /// Returns the property we're aliasing, as a longhand or a shorthand.
     #[inline]
     pub fn aliased_property(self) -> NonCustomPropertyId {
-        static MAP: [NonCustomPropertyId; ${len(data.all_aliases())}] = [
+        static MAP: [NonCustomPropertyId; property_counts::ALIASES] = [
         % for alias in data.all_aliases():
             % if alias.original.type() == "longhand":
             NonCustomPropertyId::from_longhand(LonghandId::${alias.original.camel_case}),

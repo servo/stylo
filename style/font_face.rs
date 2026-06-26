@@ -414,7 +414,7 @@ pub enum FontStyle {
 /// signed 8.8 fixed-point values, so that Gecko and Servo can read them easily.
 #[repr(u8)]
 #[allow(missing_docs)]
-#[cfg_attr(feature = "servo", derive(Clone, Debug, Deserialize, Serialize))]
+#[cfg_attr(feature = "servo", derive(Clone, Debug, Deserialize, MallocSizeOf, Serialize))]
 pub enum ComputedFontStyleDescriptor {
     Italic,
     Oblique(FontStyleFixedPoint, FontStyleFixedPoint),

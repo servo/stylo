@@ -57,6 +57,8 @@ pub(super) struct ExtraDeviceData {
     media_type: MediaType,
     /// The current viewport size, in CSS pixels.
     viewport_size: Size2D<f32, CSSPixel>,
+    /// The current screen size, in device pixels.
+    device_size: Size2D<f32, DevicePixel>,
     /// The current device pixel ratio, from CSS pixels to device pixels.
     device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
     /// The current quirks mode.
@@ -82,6 +84,7 @@ impl Device {
         media_type: MediaType,
         quirks_mode: QuirksMode,
         viewport_size: Size2D<f32, CSSPixel>,
+        device_size: Size2D<f32, DevicePixel>,
         device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
         font_metrics_provider: Box<dyn FontMetricsProvider>,
         default_values: Arc<ComputedValues>,
@@ -110,6 +113,7 @@ impl Device {
             extra: ExtraDeviceData {
                 media_type,
                 viewport_size,
+                device_size,
                 device_pixel_ratio,
                 quirks_mode,
                 prefers_color_scheme,
@@ -216,6 +220,21 @@ impl Device {
         device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
     ) {
         self.extra.device_pixel_ratio = device_pixel_ratio;
+    }
+
+    /// Set the device size on this [`Device`] (e.g. the available screen dimensions).
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_device_size(&mut self, device_size: Size2D<f32, DevicePixel>) {
+        self.extra.device_size = device_size;
+    }
+
+    /// Returns the screen size of the current device in app units.
+    #[inline]
+    pub fn device_size(&self) -> Size2D<f32, DevicePixel> {
+        self.extra.device_size
     }
 
     /// Gets the size of the scrollbar in CSS pixels.

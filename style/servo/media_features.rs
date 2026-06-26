@@ -15,6 +15,20 @@ fn eval_width(context: &Context) -> CSSPixelLength {
     CSSPixelLength::new(context.device().au_viewport_size().width.to_f32_px())
 }
 
+/// https://drafts.csswg.org/mediaqueries-4/#device-width
+fn eval_device_width(context: &Context) -> CSSPixelLength {
+    let device = context.device();
+    let scaled = device.device_size() / device.device_pixel_ratio();
+    CSSPixelLength::new(scaled.width)
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#device-height
+fn eval_device_height(context: &Context) -> CSSPixelLength {
+    let device = context.device();
+    let scaled = device.device_size() / device.device_pixel_ratio();
+    CSSPixelLength::new(scaled.height)
+}
+
 #[derive(Clone, Copy, Debug, FromPrimitive, Parse, ToCss)]
 #[repr(u8)]
 enum Scan {
@@ -136,7 +150,7 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 11] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 13] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -172,6 +186,18 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 11] = [
         AllowsRanges::Yes,
         Evaluator::NumberRatio(eval_aspect_ratio),
         FeatureFlags::VIEWPORT_DEPENDENT,
+    ),
+    feature!(
+        atom!("device-width"),
+        AllowsRanges::Yes,
+        Evaluator::Length(eval_device_width),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("device-height"),
+        AllowsRanges::Yes,
+        Evaluator::Length(eval_device_height),
+        FeatureFlags::empty(),
     ),
     feature!(
         atom!("scan"),

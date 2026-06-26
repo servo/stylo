@@ -139,7 +139,32 @@ impl UnitValue {
 /// This corresponds to `CSSMathSum` in the Typed OM specification. A sum
 /// value represents an expression such as `10px + 2em`. Each entry is itself
 /// a `NumericValue`, allowing nested sums if needed.
-pub type MathSum = ThinVec<NumericValue>;
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MathSum {
+    /// The numeric type associated with this sum.
+    pub numeric_type: NumericType,
+
+    /// The list of numeric terms that make up the sum.
+    pub values: ThinVec<NumericValue>,
+}
+
+impl MathSum {
+    /// Creates a math sum from a sequence of numeric values.
+    ///
+    /// Returns an error if the values do not have addable numeric types.
+    pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
+        // Temporarily ignore NumericValue variants that don't expose a
+        // numeric type. This filter can be removed once numeric type support
+        // is implemented for all NumericValue variants.
+        let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
+
+        Ok(Self {
+            numeric_type,
+            values,
+        })
+    }
+}
 
 /// A product of numeric values.
 ///
@@ -227,6 +252,17 @@ pub enum MathValue {
     Clamp(MathClamp),
 }
 
+impl MathValue {
+    /// Returns the numeric type associated with this math value, if
+    /// available.
+    pub fn numeric_type(&self) -> Option<&NumericType> {
+        match self {
+            Self::Sum(math_sum) => Some(&math_sum.numeric_type),
+            _ => None,
+        }
+    }
+}
+
 /// A numeric value used by the Typed OM.
 ///
 /// This corresponds to `CSSNumericValue` and its subclasses in the Typed OM
@@ -259,6 +295,15 @@ impl NumericValue {
             value: 0.0,
             unit: CssString::from("px"),
         })
+    }
+
+    /// Returns the numeric type associated with this numeric value, if
+    /// available.
+    pub fn numeric_type(&self) -> Option<&NumericType> {
+        match self {
+            Self::Unit(unit_value) => Some(&unit_value.numeric_type),
+            Self::Math(math_value) => math_value.numeric_type(),
+        }
     }
 }
 

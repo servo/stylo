@@ -384,13 +384,13 @@ impl NumericType {
 
     /// Applies the add two types algorithm repeatedly across a sequence of
     /// numeric types, returning the combined type.
-    pub fn add_types(types: &[&NumericType]) -> Result<Self, ()> {
-        let Some((first, rest)) = types.split_first() else {
-            return Err(());
-        };
+    pub fn add_types<'a, I>(mut types: I) -> Result<Self, ()>
+    where
+        I: Iterator<Item = &'a NumericType>,
+    {
+        let mut result = types.next().ok_or(())?.clone();
 
-        let mut result = (*first).clone();
-        for next in rest {
+        for next in types {
             result = NumericType::add_two_types(&result, next)?;
         }
 

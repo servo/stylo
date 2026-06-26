@@ -5,7 +5,7 @@
 //! Animation implementations for text-related types.
 
 use super::{Animate, Procedure, ToAnimatedZero};
-use crate::values::computed::Length;
+use crate::values::computed::LengthPercentage;
 use crate::values::{ComputeSquaredDistance, MallocSizeOf, SquaredDistance};
 
 /// A `text-decoration-inset` value for animation: we resolve `auto` to a pair of lengths,
@@ -13,9 +13,9 @@ use crate::values::{ComputeSquaredDistance, MallocSizeOf, SquaredDistance};
 #[derive(Clone, Debug, MallocSizeOf, PartialEq)]
 pub struct TextDecorationInset {
     /// The inset at the start of the decoration.
-    pub start: Length,
+    pub start: LengthPercentage,
     /// The inset at the end of the decoration.
-    pub end: Length,
+    pub end: LengthPercentage,
     /// Whether this represents a resolved `auto` value.
     pub is_auto: bool,
 }
@@ -50,8 +50,8 @@ impl ToAnimatedZero for TextDecorationInset {
     #[inline]
     fn to_animated_zero(&self) -> Result<Self, ()> {
         Ok(Self {
-            start: Length::new(0.),
-            end: Length::new(0.),
+            start: self.start.to_animated_zero()?,
+            end: self.end.to_animated_zero()?,
             is_auto: false,
         })
     }

@@ -9,7 +9,7 @@ use crate::gecko_bindings::bindings;
 use crate::typed_om::{KeywordValue, ToTyped, TypedValue};
 use crate::values::animated::text::TextDecorationInset as AnimatedTextDecorationInset;
 use crate::values::animated::{Context as AnimatedContext, ToAnimatedValue};
-use crate::values::computed::length::{CSSPixelLength, Length, LengthPercentage};
+use crate::values::computed::length::{CSSPixelLength, LengthPercentage};
 use crate::values::generics::text::{
     GenericHyphenateLimitChars, GenericInitialLetter, GenericTextDecorationInset,
     GenericTextDecorationLength, GenericTextIndent,
@@ -37,7 +37,7 @@ pub type InitialLetter = GenericInitialLetter<CSSFloat, CSSInteger>;
 pub type TextDecorationLength = GenericTextDecorationLength<LengthPercentage>;
 
 /// Implements type for `text-decoration-inset` property.
-pub type TextDecorationInset = GenericTextDecorationInset<Length>;
+pub type TextDecorationInset = GenericTextDecorationInset<LengthPercentage>;
 
 impl ToAnimatedValue for TextDecorationInset {
     type AnimatedValue = AnimatedTextDecorationInset;
@@ -55,12 +55,12 @@ impl ToAnimatedValue for TextDecorationInset {
                     bindings::Gecko_CalcAutoDecorationInset(font_size_px)
                 });
                 Self::AnimatedValue {
-                    start: auto_length,
-                    end: auto_length,
+                    start: LengthPercentage::new_length(auto_length),
+                    end: LengthPercentage::new_length(auto_length),
                     is_auto: true,
                 }
             },
-            Self::Length { start, end } => Self::AnimatedValue {
+            Self::LengthPercentage { start, end } => Self::AnimatedValue {
                 start: start.to_animated_value(context),
                 end: end.to_animated_value(context),
                 is_auto: false,
@@ -73,7 +73,7 @@ impl ToAnimatedValue for TextDecorationInset {
         if value.is_auto {
             Self::Auto
         } else {
-            Self::Length {
+            Self::LengthPercentage {
                 start: value.start,
                 end: value.end,
             }

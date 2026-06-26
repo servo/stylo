@@ -2773,7 +2773,8 @@ initial = "computed::text::TextDecorationInset::get_initial_value()"
 struct = "text"
 engine = "gecko"
 gecko_pref = "layout.css.text-decoration-inset.enabled"
-spec = "https://drafts.csswg.org/css-text-decor-4/#text-decoration-skip-inset-property"
+spec = "https://drafts.csswg.org/css-text-decor-4/#text-decoration-inset-property"
+boxed = true
 affects = "overflow"
 
 [initial-letter]

@@ -616,7 +616,7 @@ impl Animation {
         }
 
         if let AnimationState::Paused(ref mut progress) = self.state {
-            debug_assert!(*progress > n);
+            debug_assert!(*progress >= n);
             *progress -= n;
         }
 

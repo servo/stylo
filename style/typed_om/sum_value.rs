@@ -375,9 +375,9 @@ impl SumValue {
         if units.is_empty() {
             values.sort_by(|a, b| a.unit.cmp(&b.unit));
 
-            return Ok(MathSum::try_from_numeric_values(
+            return Ok(MathSum::from_numeric_values_unchecked(
                 values.into_iter().map(NumericValue::Unit).collect(),
-            )?);
+            ));
         }
 
         // Step 5.
@@ -421,6 +421,6 @@ impl SumValue {
             return Err(());
         }
 
-        Ok(MathSum::try_from_numeric_values(result)?)
+        Ok(MathSum::from_numeric_values_unchecked(result))
     }
 }

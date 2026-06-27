@@ -164,6 +164,18 @@ impl MathSum {
             values,
         })
     }
+
+    /// Creates a math sum from a previously validated sequence of numeric
+    /// values.
+    pub fn from_numeric_values_unchecked(values: ThinVec<NumericValue>) -> Self {
+        let result = Self::try_from_numeric_values(values);
+        debug_assert!(result.is_ok(), "Expected addable values");
+
+        result.unwrap_or_else(|_| Self {
+            numeric_type: NumericType::number(),
+            values: ThinVec::from([NumericValue::zero()]),
+        })
+    }
 }
 
 /// A product of numeric values.

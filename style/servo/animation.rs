@@ -1126,9 +1126,15 @@ impl Transition {
 
     /// Update the given animation at a given point of progress.
     pub fn calculate_value(&self, time: f64) -> AnimationValue {
-        let progress = (time - self.start_time) / (self.property_animation.duration);
-        self.property_animation
-            .calculate_value(progress.clamp(0.0, 1.0))
+        let progress = if time < self.start_time {
+            0.0
+        } else if self.property_animation.duration == 0.0 {
+            1.0
+        } else {
+            ((time - self.start_time) / self.property_animation.duration).clamp(0.0, 1.0)
+        };
+
+        self.property_animation.calculate_value(progress)
     }
 }
 

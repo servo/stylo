@@ -150,7 +150,7 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 13] = [
+pub static MEDIA_FEATURES: &[QueryFeatureDescription] = &[
     feature!(
         atom!("width"),
         AllowsRanges::Yes,

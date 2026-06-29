@@ -14,7 +14,9 @@ use crate::properties::style_structs::Font;
 use crate::properties::ComputedValues;
 use crate::queries::values::PrefersColorScheme;
 use crate::values::computed::font::GenericFontFamily;
-use crate::values::computed::{CSSPixelLength, Length, LineHeight, NonNegativeLength};
+use crate::values::computed::{
+    CSSPixelLength, Length, LineHeight, LinkParameters, NonNegativeLength,
+};
 use crate::values::specified::color::{ColorSchemeFlags, ForcedColors, SystemColor};
 use crate::values::specified::font::{
     QueryFontMetricsFlags, FONT_MEDIUM_CAP_PX, FONT_MEDIUM_CH_PX, FONT_MEDIUM_EX_PX,
@@ -409,5 +411,12 @@ impl Device {
     #[inline]
     pub fn chrome_rules_enabled_for_document(&self) -> bool {
         false
+    }
+
+    /// Returns the link-parameters that have been set for this document.
+    /// <https://drafts.csswg.org/css-link-params-1/>
+    #[inline]
+    pub fn link_parameters(&self) -> Option<&LinkParameters> {
+        None
     }
 }

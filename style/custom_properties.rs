@@ -205,10 +205,13 @@ impl CssEnvironment {
         device: &Device,
         url_data: &UrlExtraData,
     ) -> Option<VariableValue> {
-        if name.as_slice().starts_with(&[b'-' as u16, b'-' as u16]) {
+        #[cfg(feature = "gecko")]
+        let is_link_parameter = name.as_slice().starts_with(&[b'-' as u16, b'-' as u16]);
+        #[cfg(feature = "servo")]
+        let is_link_parameter = name.starts_with("--");
+        if is_link_parameter {
             let param = device
-                .pres_context()?
-                .mLinkParameters
+                .link_parameters()?
                 .0
                 .iter()
                 .find(|p| p.name.0 == *name)?;

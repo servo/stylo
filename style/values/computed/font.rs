@@ -1424,7 +1424,7 @@ impl ToResolvedValue for LineHeight {
         #[cfg(feature = "gecko")]
         {
             // Resolve <number> to an absolute <length> based on font size.
-            if matches!(self, Self::Normal | Self::MozBlockHeight) {
+            if matches!(self, Self::Normal) {
                 return self;
             }
             let wm = context.style.writing_mode;

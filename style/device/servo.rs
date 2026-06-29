@@ -322,6 +322,11 @@ impl Device {
         self.extra.all_pointer_capabilities
     }
 
+    /// Set the default computed values for this device.
+    pub fn set_default_computed_values(&mut self, values: Arc<ComputedValues>) {
+        self.default_values = values;
+    }
+
     pub(crate) fn is_dark_color_scheme(&self, _: ColorSchemeFlags) -> bool {
         false
     }

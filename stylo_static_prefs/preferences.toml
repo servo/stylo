@@ -33,6 +33,7 @@
 "layout.css.stylo-local-work-queue.in-worker" = 0
 "layout.css.stylo-work-unit-size" = 16
 "layout.css.system-ui.enabled" = true
+"layout.css.tree-counting-functions.enabled" = false
 "layout.css.webkit-fill-available.all-size-properties.enabled" = true
 "layout.css.webkit-fill-available.enabled" = true
 "layout.grid.enabled" = false

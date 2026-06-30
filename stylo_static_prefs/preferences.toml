@@ -13,6 +13,7 @@
 "layout.css.content.alt-text.enabled" = false
 "layout.css.contrast-color.enabled" = true
 "layout.css.custom-media.enabled" = false
+"layout.css.ellipse-corners.enabled" = false
 "layout.css.fit-content-function.enabled" = true
 "layout.css.font-palette.enabled" = false
 "layout.css.font-tech.enabled" = false

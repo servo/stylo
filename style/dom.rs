@@ -984,6 +984,35 @@ pub trait TElement:
     fn compute_layout_damage(_old: &ComputedValues, _new: &ComputedValues) -> RestyleDamage {
         Default::default()
     }
+
+    /// Return the value of the given custom attribute if it exists.
+    fn get_attr(&self, attr: &LocalName, namespace: &Namespace) -> Option<String>;
+
+    /// Traverse the siblings of the element, returning the element's sibling-index()
+    /// and sibling-count(). Also populates `caches` with the sibling-index() and
+    /// sibling-count() values for all siblings of this element.
+    fn get_tree_counting_result(&self, caches: &mut TreeCountingCaches) -> TreeCountingResult {
+        let Some(parent) = self.as_node().parent_node() else {
+            return TreeCountingResult::default();
+        };
+
+        let mut curr = parent.first_child();
+        let mut index = 0u32;
+        let mut count = 0u32;
+        while let Some(node) = curr {
+            if let Some(element) = node.as_element() {
+                count += 1;
+                if *self == element {
+                    index = count;
+                }
+                caches.sibling_index.insert(element.opaque(), count);
+            }
+            curr = node.next_sibling();
+        }
+        caches.sibling_count.insert(parent.opaque(), count);
+
+        TreeCountingResult::new(index, count)
+    }
 }
 
 /// Provides element-level context needed during style computation.
@@ -1001,6 +1030,24 @@ pub trait ElementContext {
     /// and sibling-count(). Also populates `caches` with the sibling-index() and
     /// sibling-count() values for all siblings of this element.
     fn get_tree_counting_result(&self, caches: &mut TreeCountingCaches) -> TreeCountingResult;
+}
+
+impl<T: TElement> ElementContext for T {
+    fn opaque_element(&self) -> Option<OpaqueElement> {
+        Some(self.opaque())
+    }
+
+    fn opaque_parent(&self) -> Option<OpaqueNode> {
+        self.as_node().parent_node().map(|n| n.opaque())
+    }
+
+    fn get_attr(&self, attr: &LocalName, namespace: &Namespace) -> Option<String> {
+        TElement::get_attr(self, attr, namespace)
+    }
+
+    fn get_tree_counting_result(&self, caches: &mut TreeCountingCaches) -> TreeCountingResult {
+        TElement::get_tree_counting_result(self, caches)
+    }
 }
 
 /// A set of the attributes used to compute a style that uses `attr()`

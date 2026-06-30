@@ -16,13 +16,10 @@
 
 use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::each_relevant_element_hash;
-use crate::context::TreeCountingCaches;
 use crate::context::{QuirksMode, SharedStyleContext, UpdateAnimationsTasks};
 use crate::data::{ElementDataMut, ElementDataRef, ElementDataWrapper};
 use crate::device::Device;
-use crate::dom::{
-    ElementContext, LayoutIterator, NodeInfo, OpaqueNode, TDocument, TElement, TNode, TShadowRoot,
-};
+use crate::dom::{LayoutIterator, NodeInfo, OpaqueNode, TDocument, TElement, TNode, TShadowRoot};
 use crate::gecko::selector_parser::{NonTSPseudoClass, PseudoElement, SelectorImpl};
 use crate::gecko::snapshot_helpers;
 use crate::gecko_bindings::bindings;
@@ -66,7 +63,7 @@ use crate::shared_lock::{Locked, SharedRwLock};
 use crate::string_cache::{Atom, Namespace, WeakAtom, WeakNamespace};
 use crate::stylesheets::scope_rule::ImplicitScopeRoot;
 use crate::stylist::CascadeData;
-use crate::values::computed::{Display, TreeCountingResult};
+use crate::values::computed::Display;
 use crate::values::{AtomIdent, AtomString};
 use crate::CaseSensitivityExt;
 use crate::LocalName;
@@ -1808,9 +1805,7 @@ impl<'le> TElement for GeckoElement<'le> {
             ElementSelectorFlags::empty()
         }
     }
-}
 
-impl<'le> ElementContext for GeckoElement<'le> {
     fn get_attr(&self, attr: &LocalName, namespace: &Namespace) -> Option<String> {
         //TODO(bug 2003334): Avoid unnecessary string copies/conversions here.
         let mut result = nsString::new();
@@ -1826,37 +1821,6 @@ impl<'le> ElementContext for GeckoElement<'le> {
         } else {
             None
         }
-    }
-
-    fn opaque_element(&self) -> Option<OpaqueElement> {
-        Some(self.opaque())
-    }
-
-    fn opaque_parent(&self) -> Option<OpaqueNode> {
-        self.as_node().parent_node().map(|n| n.opaque())
-    }
-
-    fn get_tree_counting_result(&self, caches: &mut TreeCountingCaches) -> TreeCountingResult {
-        let Some(parent) = self.as_node().parent_node() else {
-            return TreeCountingResult::default();
-        };
-
-        let mut curr = parent.first_child();
-        let mut index = 0u32;
-        let mut count = 0u32;
-        while let Some(node) = curr {
-            if let Some(element) = node.as_element() {
-                count += 1;
-                if *self == element {
-                    index = count;
-                }
-                caches.sibling_index.insert(element.opaque(), count);
-            }
-            curr = node.next_sibling();
-        }
-        caches.sibling_count.insert(parent.opaque(), count);
-
-        TreeCountingResult::new(index, count)
     }
 }
 

@@ -1395,3 +1395,30 @@ pub enum ImageRendering {
     #[cfg(feature = "gecko")]
     Optimizequality,
 }
+
+/// Internal -moz-image-decoding property. This allows images to be forcefully sync-decoded.
+///
+/// We use different defaults for sync vs. async decoding, which sometimes cause site issues.
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    FromPrimitive,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum ImageDecoding {
+    /// Use the default heuristics.
+    Auto,
+    /// Force sync-decoding.
+    Sync,
+}

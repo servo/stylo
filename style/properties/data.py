@@ -657,6 +657,7 @@ class Longhand(Property):
                 "FontVariantLigatures",
                 "FontVariantNumeric",
                 "GridAutoFlow",
+                "ImageDecoding",
                 "ImageRendering",
                 "Inert",
                 "PositionArea",

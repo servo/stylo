@@ -1131,6 +1131,17 @@ spec = "https://drafts.csswg.org/css-images/#propdef-image-rendering"
 animation_type = "discrete"
 affects = "paint"
 
+[-moz-image-decoding]
+type = "ImageDecoding"
+initial = "specified::ImageDecoding::Auto"
+struct = "inherited_box"
+engine = "gecko"
+gecko_ffi_name = "mImageDecoding"
+animation_type = "discrete"
+enabled_in = "chrome"
+spec = "Nonstandard, intended for interventions"
+affects = "paint"
+
 [inline-size]
 type = "Size"
 initial = "computed::Size::auto()"

@@ -24,6 +24,7 @@
 "layout.css.marker.restricted" = true
 "layout.css.motion-path-url.enabled" = false
 "layout.css.outline-offset.snapping" = 1
+"layout.css.progress-function.enabled" = false
 "layout.css.properties-and-values.enabled" = true
 "layout.css.relative-color-syntax.enabled" = true
 "layout.css.revert-rule.enabled" = true

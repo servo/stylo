@@ -413,8 +413,8 @@ pub enum FontStyleRange {
 /// signed 8.8 fixed-point values, so that Gecko and Servo can read them easily.
 #[repr(C)]
 #[allow(missing_docs)]
-#[cfg_attr(feature = "servo", derive(Clone, Debug, Deserialize, MallocSizeOf, Serialize))]
-pub struct ComputedFontStyleRange(FontStyle, FontStyle);
+#[cfg_attr(feature = "servo", derive(Clone, Debug, Deserialize, Hash, MallocSizeOf, PartialEq, Serialize))]
+pub struct ComputedFontStyleRange(pub FontStyle, pub FontStyle);
 
 impl Parse for FontStyleRange {
     fn parse<'i, 't>(

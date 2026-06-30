@@ -9,7 +9,9 @@ use crate::parser::{Parse, ParserContext};
 use crate::typed_om::numeric::NoCalcNumeric;
 use crate::values::generics::calc::CalcUnits;
 use crate::values::specified::calc::{CalcNode, CalcParseFlags};
-use crate::values::specified::NoCalcLength;
+use crate::values::specified::{
+    NoCalcAngle, NoCalcLength, NoCalcNumber, NoCalcPercentage, NoCalcTime,
+};
 use cssparser::{Parser, Token};
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{ParseError, StyleParseErrorKind};
@@ -39,15 +41,31 @@ impl Parse for NumericDeclaration {
 
         // Step 2.
         match *token {
+            Token::Number { value, .. } => Ok(Self::NoCalc(NoCalcNumeric::Number(
+                NoCalcNumber::new(value),
+            ))),
+
+            Token::Percentage { unit_value, .. } => Ok(Self::NoCalc(NoCalcNumeric::Percentage(
+                NoCalcPercentage::new(unit_value),
+            ))),
+
             Token::Dimension {
                 value, ref unit, ..
             } => {
-                NoCalcLength::parse_dimension_with_context(context, value, unit)
-                    .map(NoCalcNumeric::Length)
-                    .map(Self::NoCalc)
-                    .map_err(|()| location.new_unexpected_token_error(token.clone()))
+                if let Ok(length) = NoCalcLength::parse_dimension_with_context(context, value, unit)
+                {
+                    return Ok(Self::NoCalc(NoCalcNumeric::Length(length)));
+                }
 
-                // TODO: Add support for other values.
+                if let Ok(angle) = NoCalcAngle::parse_dimension(value, unit) {
+                    return Ok(Self::NoCalc(NoCalcNumeric::Angle(angle)));
+                }
+
+                if let Ok(time) = NoCalcTime::parse_dimension(value, unit) {
+                    return Ok(Self::NoCalc(NoCalcNumeric::Time(time)));
+                }
+
+                Err(location.new_unexpected_token_error(token.clone()))
 
                 // Step 3.
 

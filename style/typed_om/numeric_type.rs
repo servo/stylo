@@ -292,7 +292,7 @@ impl NumericType {
             // Step 2, first branch.
             // "If both type1 and type2 have non-null percent hints with
             // different values"
-            (Optional::Some(h1), Optional::Some(h2)) if h1 as u8 != h2 as u8 => {
+            (Optional::Some(h1), Optional::Some(h2)) if h1 != h2 => {
                 // "The types can't be added. Return failure."
                 return Err(());
             },
@@ -382,18 +382,106 @@ impl NumericType {
         Err(())
     }
 
-    /// Applies the add two types algorithm repeatedly across a sequence of
-    /// numeric types, returning the combined type.
-    pub fn add_types<'a, I>(mut types: I) -> Result<Self, ()>
+    /// <https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-multiply-two-types>
+    ///
+    /// Spec text is quoted inline to make each step easy to map back to the
+    /// algorithm during review.
+    fn multiply_two_types(type1: &NumericType, type2: &NumericType) -> Result<Self, ()> {
+        // Step 1.
+        // "Replace type1 with a fresh copy of type1, and type2 with a fresh
+        // copy of type2."
+        let mut type1 = type1.clone();
+        let mut type2 = type2.clone();
+        // "Let finalType be a new type with an initially empty ordered map
+        // and an initially null percent hint."
+        // We don't need a separate finalType with the array representation,
+        // since multiplying types is equivalent to adding the exponents,
+        // type1 can be used directly.
+
+        match (type1.percent_hint, type2.percent_hint) {
+            // Step 2.
+            // "If both type1 and type2 have non-null percent hints with
+            // different values, the types can't be multiplied."
+            (Optional::Some(h1), Optional::Some(h2)) if h1 != h2 => {
+                // "Return failure."
+                return Err(());
+            },
+            // Step 3.
+            // "If type1 has a non-null percent hint hint and type2 doesn't, "
+            (Optional::Some(hint), Optional::None) => {
+                // "apply the percent hint hint to type2."
+                type2.apply_percent_hint(hint)
+            },
+            // "Vice versa if type2 has a non-null percent hint and type1
+            // doesn't."
+            (Optional::None, Optional::Some(hint)) => type1.apply_percent_hint(hint),
+            _ => {},
+        }
+
+        // Step 4.
+        // "Copy all of type1's entries to finalType,"
+        // As noted in Step 1, type1 can be used directly, so a separate
+        // finalType is not needed.
+        // "then for each baseType -> power of type2:"
+        for &base_type in ALL_NUMERIC_BASE_TYPES.iter() {
+            let power = type2.exponent(base_type);
+
+            // The spec iterates only the baseType → power entries present in
+            // type2. With the array representation we iterate all base types,
+            // so skip entries whose exponent is zero.
+            if power == 0 {
+                continue;
+            }
+
+            // Step 4.1.
+            // "If finalType[baseType] exists, increment its value by power."
+            // Step 4.2.
+            // "Otherwise, set finalType[baseType] to power."
+            // With the array representation, both cases are handled by adding
+            // the exponent, because missing entries are represented as zero.
+            type1.add_exponent(base_type, power);
+        }
+        // "Set finalType's percent hint to type1's percent hint."
+        // After Step 3, type1's percent hint equals type2's in all surviving
+        // cases (both null, both equal, or the null side was filled in), so
+        // type1 already has the final hint.
+
+        // Step 5.
+        // "Return finalType."
+        Ok(type1)
+    }
+
+    fn combine_types<'a, I>(
+        mut types: I,
+        combine: fn(&NumericType, &NumericType) -> Result<NumericType, ()>,
+    ) -> Result<Self, ()>
     where
         I: Iterator<Item = &'a NumericType>,
     {
         let mut result = types.next().ok_or(())?.clone();
 
         for next in types {
-            result = NumericType::add_two_types(&result, next)?;
+            result = combine(&result, next)?;
         }
 
         Ok(result)
+    }
+
+    /// Applies the add two types algorithm repeatedly across a sequence of
+    /// numeric types, returning the combined type.
+    pub fn add_types<'a, I>(types: I) -> Result<Self, ()>
+    where
+        I: Iterator<Item = &'a NumericType>,
+    {
+        Self::combine_types(types, Self::add_two_types)
+    }
+
+    /// Applies the multiply two types algorithm repeatedly across a sequence of
+    /// numeric types, returning the combined type.
+    pub fn multiply_types<'a, I>(types: I) -> Result<Self, ()>
+    where
+        I: Iterator<Item = &'a NumericType>,
+    {
+        Self::combine_types(types, Self::multiply_two_types)
     }
 }

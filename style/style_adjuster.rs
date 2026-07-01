@@ -766,7 +766,6 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     /// the computed value of 'line-height' is 'normal'.
     ///
     /// https://github.com/w3c/csswg-drafts/issues/3257
-    #[cfg(feature = "gecko")]
     fn adjust_for_appearance<E>(&mut self, element: Option<E>)
     where
         E: TElement,
@@ -1075,11 +1074,10 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         self.adjust_for_table_text_align();
         self.adjust_for_writing_mode(layout_parent_style);
         #[cfg(feature = "gecko")]
-        {
-            self.adjust_for_ruby(element);
-            self.adjust_for_appearance(element);
-            self.adjust_for_marker_pseudo(author_specified_properties);
-        }
+        self.adjust_for_ruby(element);
+        self.adjust_for_appearance(element);
+        #[cfg(feature = "gecko")]
+        self.adjust_for_marker_pseudo(author_specified_properties);
         if !try_tactic.is_empty() {
             self.adjust_for_try_tactic(try_tactic);
         }

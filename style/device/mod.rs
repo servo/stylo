@@ -291,4 +291,16 @@ impl Device {
         self.body_text_color
             .store(color.to_nscolor(), Ordering::Relaxed)
     }
+
+    /// Applies text zoom to a font-size or line-height value (see nsStyleFont::ZoomText).
+    #[inline]
+    pub fn zoom_text(&self, size: Length) -> Length {
+        size.scale_by(self.text_zoom())
+    }
+
+    /// Un-apply text zoom.
+    #[inline]
+    pub fn unzoom_text(&self, size: Length) -> Length {
+        size.scale_by(1. / self.text_zoom())
+    }
 }

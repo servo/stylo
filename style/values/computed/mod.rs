@@ -534,7 +534,6 @@ impl<'a> Context<'a> {
     }
 
     /// Apply text-zoom if enabled.
-    #[cfg(feature = "gecko")]
     pub fn maybe_zoom_text(&self, size: CSSPixelLength) -> CSSPixelLength {
         if self
             .style()
@@ -546,12 +545,6 @@ impl<'a> Context<'a> {
         } else {
             size
         }
-    }
-
-    /// (Servo doesn't do text-zoom)
-    #[cfg(feature = "servo")]
-    pub fn maybe_zoom_text(&self, size: CSSPixelLength) -> CSSPixelLength {
-        size
     }
 }
 

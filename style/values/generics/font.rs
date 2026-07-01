@@ -275,6 +275,7 @@ impl<Angle: Zero> FontStyle<Angle> {
     ToResolvedValue,
     ToShmem,
 )]
+#[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
 pub enum GenericFontSizeAdjust<Factor> {
     #[animation(error)]
     None,

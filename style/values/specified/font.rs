@@ -1803,6 +1803,7 @@ impl MetricsOverride {
     ToShmem,
     ToTyped,
 )]
+#[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
 #[repr(u8)]
 /// How to do font-size scaling.
 pub enum XTextScale {

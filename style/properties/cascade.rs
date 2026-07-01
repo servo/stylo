@@ -464,7 +464,6 @@ where
 /// This is a bit of a clunky way of achieving this.
 type DeclarationsToApplyUnlessOverriden = SmallVec<[PropertyDeclaration; 2]>;
 
-#[cfg(feature = "gecko")]
 fn is_base_appearance(context: &computed::Context) -> bool {
     use computed::Appearance;
     let box_style = context.builder.get_box();
@@ -500,15 +499,12 @@ fn tweak_when_ignoring_colors(
     }
 
     // Always honor colors if forced-color-adjust is set to none.
-    #[cfg(feature = "gecko")]
-    {
-        let forced = context
-            .builder
-            .get_inherited_text()
-            .clone_forced_color_adjust();
-        if forced == computed::ForcedColorAdjust::None {
-            return;
-        }
+    let forced = context
+        .builder
+        .get_inherited_text()
+        .clone_forced_color_adjust();
+    if forced == computed::ForcedColorAdjust::None {
+        return;
     }
 
     fn alpha_channel(color: &Color, context: &computed::Context) -> f32 {
@@ -973,15 +969,18 @@ impl<'a> Cascade<'a> {
                 }
             },
             XLang => {
+                #[cfg(feature = "gecko")]
                 self.recompute_initial_font_family_if_needed(&mut context.builder);
                 self.recompute_keyword_font_size_if_needed(context);
             },
             FontFamily => {
+                #[cfg(feature = "gecko")]
                 self.prioritize_user_fonts_if_needed(&mut context.builder);
                 self.recompute_keyword_font_size_if_needed(context);
             },
             FontSize => {
                 if self.seen.longhands.contains(LonghandId::MathDepth) {
+                    #[cfg(feature = "gecko")]
                     Self::recompute_math_font_size_if_needed(context);
                 }
                 if self.seen.longhands.contains(LonghandId::XLang)
@@ -989,12 +988,15 @@ impl<'a> Cascade<'a> {
                 {
                     self.recompute_keyword_font_size_if_needed(context);
                 }
+                #[cfg(feature = "gecko")]
                 self.constrain_font_size_if_needed(&mut context.builder);
             },
             XTextScale => {
+                #[cfg(feature = "gecko")]
                 self.unzoom_fonts_if_needed(&mut context.builder);
             },
             MozMinFontSizeRatio => {
+                #[cfg(feature = "gecko")]
                 self.constrain_font_size_if_needed(&mut context.builder);
             },
             ColorScheme => {

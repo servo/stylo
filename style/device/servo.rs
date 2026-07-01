@@ -385,6 +385,13 @@ impl Device {
         }
     }
 
+    /// Returns the current effective text zoom.
+    #[inline]
+    pub(super) fn text_zoom(&self) -> f32 {
+        // (Servo doesn't do text-zoom)
+        1.
+    }
+
     /// Returns safe area insets
     pub fn safe_area_insets(&self) -> SideOffsets2D<f32, CSSPixel> {
         SideOffsets2D::zero()

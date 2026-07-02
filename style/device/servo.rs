@@ -321,9 +321,24 @@ impl Device {
     pub fn all_pointer_capabilities(&self) -> PointerCapabilities {
         self.extra.all_pointer_capabilities
     }
+    pub(crate) fn is_dark_color_scheme(&self, flags: ColorSchemeFlags) -> bool {
+        // The below is based on the implementation from Gecko:
+        // https://searchfox.org/firefox-main/source/widget/nsXPLookAndFeel.cpp#1296
 
-    pub(crate) fn is_dark_color_scheme(&self, _: ColorSchemeFlags) -> bool {
-        false
+        let supports_light = flags.contains(ColorSchemeFlags::LIGHT);
+        let supports_dark = flags.contains(ColorSchemeFlags::DARK);
+
+        match (supports_light, supports_dark) {
+            // Content only support the light color scheme. So the color scheme IS NOT dark.
+            (true, false) => false,
+            // Content only support the dark color scheme. So the color scheme IS dark.
+            (false, true) => true,
+            // Content supports both schemes, or doesn't specify. Use the preferred color scheme.
+            (true, true) | (false, false) => match self.extra.prefers_color_scheme {
+                PrefersColorScheme::Light => false,
+                PrefersColorScheme::Dark => true,
+            },
+        }
     }
 
     pub(crate) fn system_color(

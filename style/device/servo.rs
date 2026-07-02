@@ -260,6 +260,15 @@ impl Device {
             .query_font_metrics(vertical, font, base_size, flags)
     }
 
+    /// Set the media type on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_media_type(&mut self, media_type: MediaType) {
+        self.extra.media_type = media_type;
+    }
+
     /// Return the media type of the current device.
     pub fn media_type(&self) -> MediaType {
         self.extra.media_type.clone()

@@ -61,6 +61,10 @@ bitflags! {
 
         /// Do a selector match of the element if it depends on an ancestor's font.
         const RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT = 1 << 13;
+
+        /// We don't need to match this element but do a selector match of it's
+        /// children if they are affected by style container queries.
+        const RESTYLE_CHILD_IF_AFFECTED_BY_STYLE_QUERIES = 1 <<14;
     }
 }
 
@@ -132,6 +136,9 @@ impl RestyleHint {
         }
         if self.contains(Self::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT) {
             result |= Self::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT;
+        }
+        if self.contains(Self::RESTYLE_CHILD_IF_AFFECTED_BY_STYLE_QUERIES) {
+            result |= Self::RESTYLE_IF_AFFECTED_BY_STYLE_QUERIES;
         }
         if self.contains(Self::RESTYLE_IF_AFFECTED_BY_NAMED_STYLE_CONTAINER) {
             // We may need to restyle further down the tree if rules are

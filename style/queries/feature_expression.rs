@@ -18,6 +18,7 @@ use crate::properties::{self, CSSWideKeyword};
 use crate::properties_and_values::value::{ComputedValueComponent as Component, ValueInner};
 use crate::selector_map::PrecomputedHashSet;
 use crate::str::{starts_with_ignore_ascii_case, string_as_ascii_lowercase};
+use crate::stylesheets::container_rule::AttrReferenceSet;
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
 use crate::values::computed::{self, CSSPixelLength, ToComputedValue};
 use crate::values::specified::{
@@ -828,6 +829,13 @@ impl QueryExpressionValue {
         }
         Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
     }
+
+    fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
+        match self {
+            Self::Function(f) => f.collect_attribute_references(references),
+            _ => {},
+        }
+    }
 }
 
 /// https://drafts.csswg.org/css-conditional-5/#typedef-style-range
@@ -1147,6 +1155,32 @@ impl QueryStyleRange {
                 }
             },
             _ => None,
+        }
+    }
+
+    /// Get all the attributes referenced inside of an attr() function within
+    /// all our QueryExpressionValues.
+    pub fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
+        match self {
+            QueryStyleRange::StyleRange2 {
+                value1,
+                op1: _,
+                value2,
+            } => {
+                value1.collect_attribute_references(references);
+                value2.collect_attribute_references(references);
+            },
+            QueryStyleRange::StyleRange3 {
+                value1,
+                op1: _,
+                value2,
+                op2: _,
+                value3,
+            } => {
+                value1.collect_attribute_references(references);
+                value2.collect_attribute_references(references);
+                value3.collect_attribute_references(references);
+            },
         }
     }
 }

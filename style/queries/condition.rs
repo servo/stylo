@@ -19,6 +19,7 @@ use crate::properties_and_values::value::{
     AllowComputationallyDependent, ComputedValue as ComputedRegisteredValue,
     SpecifiedValue as SpecifiedRegisteredValue,
 };
+use crate::stylesheets::container_rule::AttrReferenceSet;
 use crate::stylesheets::{CssRuleType, CustomMediaEvaluator, Origin, UrlExtraData};
 use crate::stylist::Stylist;
 use crate::values::{computed, AtomString, DashedIdent};
@@ -270,6 +271,18 @@ impl StyleQuery {
             StyleQuery::GeneralEnclosed(_) => KleeneValue::Unknown,
         }
     }
+
+    fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
+        match self {
+            Self::Feature(c) => c.collect_attribute_references(references),
+            Self::GeneralEnclosed(_) => {},
+            Self::InParens(c) => c.collect_attribute_references(references),
+            Self::Not(c) => c.collect_attribute_references(references),
+            Self::Operation(c, _) => c
+                .iter()
+                .for_each(|c| c.collect_attribute_references(references)),
+        }
+    }
 }
 
 impl OperationParser for StyleQuery {
@@ -341,6 +354,13 @@ impl StyleFeature {
         match self {
             Self::Plain(plain) => plain.matches(ctx, attribute_tracker),
             Self::Range(range) => range.evaluate(ctx, attribute_tracker),
+        }
+    }
+
+    fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
+        match self {
+            Self::Plain(plain) => plain.collect_attribute_references(references),
+            Self::Range(range) => range.collect_attribute_references(references),
         }
     }
 }
@@ -526,6 +546,13 @@ impl StyleFeaturePlain {
                 }
             },
         })
+    }
+
+    fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
+        match &self.value {
+            StyleFeatureValue::Value(Some(v)) => v.collect_attribute_references(references),
+            _ => {},
+        }
     }
 }
 
@@ -929,6 +956,14 @@ impl QueryCondition {
         };
 
         result
+    }
+
+    /// Collect the attribute references in this query condition, if any.
+    pub fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
+        match self {
+            QueryCondition::Style(c) => c.collect_attribute_references(references),
+            _ => {},
+        }
     }
 }
 

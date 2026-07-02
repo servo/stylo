@@ -255,7 +255,7 @@ impl WeakAtom {
 
     /// Returns whether this atom is ascii lowercase.
     #[inline]
-    fn is_ascii_lowercase(&self) -> bool {
+    pub fn is_ascii_lowercase(&self) -> bool {
         self.0.mIsAsciiLowercase() != 0
     }
 

@@ -323,7 +323,7 @@ impl Device {
     }
     pub(crate) fn is_dark_color_scheme(&self, flags: ColorSchemeFlags) -> bool {
         // The below is based on the implementation from Gecko:
-        // https://searchfox.org/firefox-main/source/widget/nsXPLookAndFeel.cpp#1296
+        // https://github.com/mozilla-firefox/firefox/blob/d92a7ec0e622782fe62529bb3a4809780da01d6c/widget/nsXPLookAndFeel.cpp#L1296
 
         let supports_light = flags.contains(ColorSchemeFlags::LIGHT);
         let supports_dark = flags.contains(ColorSchemeFlags::DARK);

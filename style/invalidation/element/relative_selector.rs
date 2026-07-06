@@ -485,7 +485,6 @@ where
             DependencyInvalidationKind::Normal(..) | DependencyInvalidationKind::Scope(..) => {
                 self.dependencies
                     .entry(element)
-                    .and_modify(|v| v.push((host, dependency)))
                     .or_default()
                     .push((host, dependency));
             },

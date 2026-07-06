@@ -153,7 +153,7 @@ impl SumValue {
                 }];
 
                 // Step 2.
-                for item in math_product {
+                for item in &math_product.values {
                     // Step 2.1 & 2.2.
                     let new_values = SumValue::try_from_numeric_value(item)?;
 

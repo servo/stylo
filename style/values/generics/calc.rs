@@ -7,7 +7,7 @@
 //! [calc]: https://drafts.csswg.org/css-values/#calc-notation
 
 use crate::derives::*;
-use crate::typed_om::{MathSum, MathValue, NumericValue, ToTyped, TypedValue};
+use crate::typed_om::{MathProduct, MathSum, MathValue, NumericValue, ToTyped, TypedValue};
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
 use crate::values::generics::Optional;
@@ -2807,7 +2807,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
 
                 dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Product(
-                    values,
+                    MathProduct::try_from_numeric_values(values)?,
                 ))));
                 Ok(())
             },

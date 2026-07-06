@@ -183,7 +183,33 @@ impl MathSum {
 /// This corresponds to `CSSMathProduct` in the Typed OM specification. A
 /// product value represents an expression such as `10px * 2`. Each entry is
 /// itself a `NumericValue`, allowing nested math expressions if needed.
-pub type MathProduct = ThinVec<NumericValue>;
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MathProduct {
+    /// The numeric type associated with this product.
+    pub numeric_type: NumericType,
+
+    /// The list of numeric terms that make up the product.
+    pub values: ThinVec<NumericValue>,
+}
+
+impl MathProduct {
+    /// Creates a math product from a sequence of numeric values.
+    ///
+    /// Returns an error if the values do not have multipliable numeric types.
+    pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
+        // Temporarily ignore NumericValue variants that don't expose a
+        // numeric type. This filter can be removed once numeric type support
+        // is implemented for all NumericValue variants.
+        let numeric_type =
+            NumericType::multiply_types(values.iter().filter_map(|v| v.numeric_type()))?;
+
+        Ok(Self {
+            numeric_type,
+            values,
+        })
+    }
+}
 
 /// A negated numeric value.
 ///
@@ -270,6 +296,7 @@ impl MathValue {
     pub fn numeric_type(&self) -> Option<&NumericType> {
         match self {
             Self::Sum(math_sum) => Some(&math_sum.numeric_type),
+            Self::Product(math_product) => Some(&math_product.numeric_type),
             _ => None,
         }
     }

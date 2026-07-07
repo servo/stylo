@@ -6,13 +6,18 @@
 
 use crate::derives::*;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
-use crate::queries::values::PrefersColorScheme;
+use crate::queries::values::{Orientation, PrefersColorScheme};
 use crate::values::computed::{CSSPixelLength, Context, Ratio, Resolution};
 use std::fmt::Debug;
 
 /// https://drafts.csswg.org/mediaqueries-4/#width
 fn eval_width(context: &Context) -> CSSPixelLength {
     CSSPixelLength::new(context.device().au_viewport_size().width.to_f32_px())
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#height
+fn eval_height(context: &Context) -> CSSPixelLength {
+    CSSPixelLength::new(context.device().au_viewport_size().height.to_f32_px())
 }
 
 /// https://drafts.csswg.org/mediaqueries-4/#device-width
@@ -27,6 +32,11 @@ fn eval_device_height(context: &Context) -> CSSPixelLength {
     let device = context.device();
     let scaled = device.device_size() / device.device_pixel_ratio();
     CSSPixelLength::new(scaled.height)
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#orientation
+fn eval_orientation(context: &Context, value: Option<Orientation>) -> bool {
+    Orientation::eval(context.device().au_viewport_size(), value)
 }
 
 #[derive(Clone, Copy, Debug, FromPrimitive, Parse, ToCss)]
@@ -150,12 +160,24 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 13] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
         Evaluator::Length(eval_width),
-        FeatureFlags::empty(),
+        FeatureFlags::VIEWPORT_DEPENDENT,
+    ),
+    feature!(
+        atom!("height"),
+        AllowsRanges::Yes,
+        Evaluator::Length(eval_height),
+        FeatureFlags::VIEWPORT_DEPENDENT,
+    ),
+    feature!(
+        atom!("orientation"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_orientation, Orientation),
+        FeatureFlags::VIEWPORT_DEPENDENT,
     ),
     feature!(
         atom!("pointer"),

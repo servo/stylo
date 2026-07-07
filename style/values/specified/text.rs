@@ -1060,15 +1060,16 @@ impl Parse for TextIndent {
 ///
 /// https://drafts.csswg.org/css-text-decor-4/#text-decoration-skip-ink-property
 #[repr(u8)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[derive(
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     MallocSizeOf,
     Parse,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,

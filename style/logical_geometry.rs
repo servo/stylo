@@ -422,13 +422,11 @@ impl fmt::Display for WritingMode {
 /// (in addition to taking it as a parameter to methods) and check it.
 /// In non-debug builds, make this storage zero-size and the checks no-ops.
 #[cfg(not(debug_assertions))]
-#[derive(Clone, Copy, Eq, PartialEq)]
-#[cfg_attr(feature = "servo", derive(Serialize))]
+#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 struct DebugWritingMode;
 
 #[cfg(debug_assertions)]
-#[derive(Clone, Copy, Eq, PartialEq)]
-#[cfg_attr(feature = "servo", derive(Serialize))]
+#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 struct DebugWritingMode {
     mode: WritingMode,
 }
@@ -478,16 +476,14 @@ impl Debug for DebugWritingMode {
 }
 
 // Used to specify the logical direction.
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "servo", derive(Serialize))]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 pub enum Direction {
     Inline,
     Block,
 }
 
 /// A 2D size in flow-relative dimensions
-#[derive(Clone, Copy, Eq, PartialEq)]
-#[cfg_attr(feature = "servo", derive(Serialize))]
+#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 pub struct LogicalSize<T> {
     pub inline: T, // inline-size, a.k.a. logical width, a.k.a. measure
     pub block: T,  // block-size, a.k.a. logical height, a.k.a. extent
@@ -629,8 +625,7 @@ impl<T: Sub<T, Output = T>> Sub for LogicalSize<T> {
 }
 
 /// A 2D point in flow-relative dimensions
-#[derive(Clone, Copy, Eq, PartialEq)]
-#[cfg_attr(feature = "servo", derive(Serialize))]
+#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 pub struct LogicalPoint<T> {
     /// inline-axis coordinate
     pub i: T,
@@ -867,8 +862,7 @@ impl<T: Copy + Sub<T, Output = T>> Sub<LogicalSize<T>> for LogicalPoint<T> {
 /// Represents the four sides of the margins, borders, or padding of a CSS box,
 /// or a combination of those.
 /// A positive "margin" can be added to a rectangle to obtain a bigger rectangle.
-#[derive(Clone, Copy, Eq, PartialEq)]
-#[cfg_attr(feature = "servo", derive(Serialize))]
+#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 pub struct LogicalMargin<T> {
     pub block_start: T,
     pub inline_end: T,
@@ -1230,8 +1224,7 @@ impl<T: Sub<T, Output = T>> Sub for LogicalMargin<T> {
 }
 
 /// A rectangle in flow-relative dimensions
-#[derive(Clone, Copy, Eq, PartialEq)]
-#[cfg_attr(feature = "servo", derive(Serialize))]
+#[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 pub struct LogicalRect<T> {
     pub start: LogicalPoint<T>,
     pub size: LogicalSize<T>,

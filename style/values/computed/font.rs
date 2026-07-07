@@ -65,14 +65,15 @@ pub use crate::values::specified::Number as SpecifiedNumber;
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     Hash,
     MallocSizeOf,
     PartialEq,
     PartialOrd,
+    Serialize,
     ToResolvedValue,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct FixedPoint<T, const FRACTION_BITS: u16> {
     /// The actual representation.
     pub value: T,
@@ -142,13 +143,14 @@ pub type FontWeightFixedPoint = FixedPoint<u16, FONT_WEIGHT_FRACTION_BITS>;
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     Hash,
     MallocSizeOf,
     PartialEq,
     PartialOrd,
+    Serialize,
     ToResolvedValue,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct FontWeight(FontWeightFixedPoint);
 impl ToAnimatedValue for FontWeight {
@@ -261,13 +263,14 @@ impl FontWeight {
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     ToAnimatedZero,
     ToCss,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
 /// The computed value of font-size
 pub struct FontSize {
     /// The computed size, that we use to compute ems etc. This accounts for
@@ -353,8 +356,18 @@ impl ToResolvedValue for FontSize {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, ToComputedValue, ToResolvedValue, ToTyped)]
-#[cfg_attr(feature = "servo", derive(Hash, Serialize, Deserialize))]
+#[derive(
+    Clone,
+    Debug,
+    Deserialize,
+    Eq,
+    Hash,
+    PartialEq,
+    Serialize,
+    ToComputedValue,
+    ToResolvedValue,
+    ToTyped,
+)]
 /// Specifies a prioritized list of font family names or generic family names.
 #[repr(C)]
 #[typed(todo_derive_fields)]
@@ -499,9 +512,18 @@ impl ToCss for FontFamily {
 
 /// The name of a font family of choice.
 #[derive(
-    Clone, Debug, Eq, Hash, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem,
+    Clone,
+    Debug,
+    Deserialize,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct FamilyName {
     /// Name of the font family.
@@ -559,9 +581,19 @@ impl ToCss for FamilyName {
 }
 
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem,
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 /// Font family names must either be given quoted as strings,
 /// or unquoted as a sequence of one or more identifiers.
 #[repr(u8)]
@@ -578,9 +610,19 @@ pub enum FontFamilyNameSyntax {
 /// A set of faces that vary in weight, width or slope.
 /// cbindgen:derive-mut-casts=true
 #[derive(
-    Clone, Debug, Eq, MallocSizeOf, PartialEq, ToCss, ToComputedValue, ToResolvedValue, ToShmem,
+    Clone,
+    Debug,
+    Deserialize,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToCss,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize, Hash))]
 #[repr(u8)]
 pub enum SingleFontFamily {
     /// The name of a font family of choice.
@@ -611,17 +653,18 @@ fn math_enabled(context: &ParserContext) -> bool {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     Hash,
     MallocSizeOf,
     PartialEq,
     Parse,
+    Serialize,
     ToCss,
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(u32)]
 #[allow(missing_docs)]
 pub enum GenericFontFamily {
@@ -724,8 +767,18 @@ impl Parse for SingleFontFamily {
 }
 
 /// A list of font families.
-#[derive(Clone, Debug, ToComputedValue, ToResolvedValue, ToShmem, PartialEq, Eq)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize, Hash))]
+#[derive(
+    Clone,
+    Debug,
+    Deserialize,
+    Hash,
+    Serialize,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+    PartialEq,
+    Eq,
+)]
 #[repr(C)]
 pub struct FontFamilyList {
     /// The actual list of font families specified.
@@ -1000,9 +1053,11 @@ where
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToResolvedValue,
@@ -1010,7 +1065,6 @@ where
     ToTyped,
 )]
 #[repr(C)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[typed(todo_derive_fields)]
 #[value_info(other_values = "normal")]
 pub struct FontLanguageOverride(pub u32);
@@ -1147,15 +1201,16 @@ pub type FontStyleFixedPoint = FixedPoint<i16, FONT_STYLE_FRACTION_BITS>;
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     Hash,
     MallocSizeOf,
     PartialEq,
     PartialOrd,
+    Serialize,
     ToResolvedValue,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 #[typed(todo_derive_fields)]
 pub struct FontStyle(FontStyleFixedPoint);
@@ -1264,9 +1319,18 @@ pub type FontStretchFixedPoint = FixedPoint<u16, FONT_STRETCH_FRACTION_BITS>;
 /// cbindgen:derive-gt
 /// cbindgen:derive-gte
 #[derive(
-    Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToResolvedValue,
+    Clone,
+    ComputeSquaredDistance,
+    Copy,
+    Debug,
+    Deserialize,
+    Hash,
+    MallocSizeOf,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    ToResolvedValue,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[repr(C)]
 pub struct FontStretch(pub FontStretchFixedPoint);
 

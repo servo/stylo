@@ -39,13 +39,14 @@ pub struct GenericBoxShadow<Color, SizeLength, BlurShapeLength, ShapeLength> {
 pub use self::GenericBoxShadow as BoxShadow;
 
 /// A generic value for a single `filter`.
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[derive(
     Clone,
     ComputeSquaredDistance,
     Debug,
+    Deserialize,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToComputedValue,

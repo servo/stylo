@@ -4,6 +4,8 @@
 
 //! Misc information about a given computed style.
 
+use crate::derives::MallocSizeOf;
+
 /// Misc information about a given computed style.
 ///
 /// All flags are currently inherited for text, pseudo elements, and
@@ -11,8 +13,7 @@
 /// If we ever want to add some flags that shouldn't inherit for them,
 /// we might want to add a function to handle this.
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "servo", derive(crate::derives::MallocSizeOf))]
+#[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq)]
 pub struct ComputedValueFlags(u32);
 
 bitflags! {

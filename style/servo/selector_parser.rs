@@ -545,8 +545,7 @@ impl NonTSPseudoClass {
 
 /// The abstract struct we implement the selector parser implementation on top
 /// of.
-#[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq)]
 pub struct SelectorImpl;
 
 /// A set of extra data to carry along with the matching context, either for

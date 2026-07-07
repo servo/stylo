@@ -103,14 +103,19 @@ impl Color {
             },
             Self::ContrastColor(ref c) => {
                 let bg_color = c.resolve_to_absolute(current_color);
-                if Self::contrast_ratio(&bg_color, &AbsoluteColor::BLACK)
-                    > Self::contrast_ratio(&bg_color, &AbsoluteColor::WHITE)
-                {
-                    AbsoluteColor::BLACK
-                } else {
-                    AbsoluteColor::WHITE
-                }
+                Self::resolve_contrast_color(&bg_color)
             },
+        }
+    }
+
+    /// Performs the resolution of contrast-color given a background color.
+    pub fn resolve_contrast_color(bg_color: &AbsoluteColor) -> AbsoluteColor {
+        if Self::contrast_ratio(&bg_color, &AbsoluteColor::BLACK)
+            > Self::contrast_ratio(&bg_color, &AbsoluteColor::WHITE)
+        {
+            AbsoluteColor::BLACK
+        } else {
+            AbsoluteColor::WHITE
         }
     }
 

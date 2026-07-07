@@ -913,7 +913,12 @@ impl Color {
                 })
             },
             Color::ContrastColor(ref c) => {
-                ComputedColor::ContrastColor(Box::new(c.to_computed_color(context)?))
+                let computed = c.to_computed_color(context)?;
+                if let Some(abs) = computed.as_absolute() {
+                    ComputedColor::Absolute(ComputedColor::resolve_contrast_color(&abs))
+                } else {
+                    ComputedColor::ContrastColor(Box::new(computed))
+                }
             },
             Color::System(system) => system.compute(context.ok_or(())?),
             Color::InheritFromBodyQuirk => {

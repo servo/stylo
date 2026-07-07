@@ -46,12 +46,119 @@ fn eval_prefers_color_scheme(context: &Context, query_value: Option<PrefersColor
     }
 }
 
+bitflags! {
+    /// https://drafts.csswg.org/mediaqueries-4/#mf-interaction
+    #[derive(Debug, Clone, Copy)]
+    pub struct PointerCapabilities: u8 {
+        /// The input mechanism includes a pointing device of limited accuracy, such as a finger on a touchscreen.
+        const COARSE = 0b001;
+        /// The input mechanism includes an accurate pointing device, such as a mouse.
+        const FINE = 0b010;
+        /// The input mechanism can conveniently hover over elements.
+        const HOVER = 0b100;
+    }
+}
+
+impl Default for PointerCapabilities {
+    #[cfg(any(target_os = "ios", target_os = "android", target_env = "ohos"))]
+    fn default() -> Self {
+        PointerCapabilities::COARSE
+    }
+    #[cfg(not(any(target_os = "ios", target_os = "android", target_env = "ohos")))]
+    fn default() -> Self {
+        PointerCapabilities::FINE | PointerCapabilities::HOVER
+    }
+}
+
+#[derive(Clone, Copy, Debug, FromPrimitive, Parse, ToCss)]
+#[repr(u8)]
+enum Pointer {
+    None,
+    Coarse,
+    Fine,
+}
+
+fn eval_pointer_capabilities(
+    query_value: Option<Pointer>,
+    pointer_capabilities: PointerCapabilities,
+) -> bool {
+    match query_value {
+        None => !pointer_capabilities.is_empty(),
+        Some(Pointer::None) => pointer_capabilities.is_empty(),
+        Some(Pointer::Coarse) => pointer_capabilities.intersects(PointerCapabilities::COARSE),
+        Some(Pointer::Fine) => pointer_capabilities.intersects(PointerCapabilities::FINE),
+    }
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#pointer
+fn eval_pointer(context: &Context, query_value: Option<Pointer>) -> bool {
+    eval_pointer_capabilities(query_value, context.device().primary_pointer_capabilities())
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#descdef-media-any-pointer
+fn eval_any_pointer(context: &Context, query_value: Option<Pointer>) -> bool {
+    eval_pointer_capabilities(query_value, context.device().all_pointer_capabilities())
+}
+
+#[derive(Clone, Copy, Debug, FromPrimitive, Parse, ToCss)]
+#[repr(u8)]
+enum Hover {
+    None,
+    Hover,
+}
+
+fn eval_hover_capabilities(
+    query_value: Option<Hover>,
+    pointer_capabilities: PointerCapabilities,
+) -> bool {
+    let can_hover = pointer_capabilities.intersects(PointerCapabilities::HOVER);
+    match query_value {
+        Some(Hover::None) => !can_hover,
+        Some(Hover::Hover) => can_hover,
+        None => return can_hover,
+    }
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#hover
+fn eval_hover(context: &Context, query_value: Option<Hover>) -> bool {
+    eval_hover_capabilities(query_value, context.device().primary_pointer_capabilities())
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#descdef-media-any-hover
+fn eval_any_hover(context: &Context, query_value: Option<Hover>) -> bool {
+    eval_hover_capabilities(query_value, context.device().all_pointer_capabilities())
+}
+
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 6] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 10] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
         Evaluator::Length(eval_width),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("pointer"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_pointer, Pointer),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("any-pointer"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_any_pointer, Pointer),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("hover"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_hover, Hover),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("any-hover"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_any_hover, Hover),
         FeatureFlags::empty(),
     ),
     feature!(

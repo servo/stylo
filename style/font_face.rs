@@ -334,13 +334,17 @@ macro_rules! impl_range {
 pub struct FontWeightRange(pub AbsoluteFontWeight, pub AbsoluteFontWeight);
 impl_range!(FontWeightRange, AbsoluteFontWeight);
 
-/// The computed representation of the above so Gecko can read them easily.
+/// The computed representation of the above so Gecko and Servo can read them easily.
 ///
 /// This one is needed because cbindgen doesn't know how to generate
 /// specified::Number.
 #[repr(C)]
 #[allow(missing_docs)]
-pub struct ComputedFontWeightRange(FontWeight, FontWeight);
+#[cfg_attr(
+    feature = "servo",
+    derive(Clone, Debug, Deserialize, Hash, MallocSizeOf, PartialEq, Serialize)
+)]
+pub struct ComputedFontWeightRange(pub FontWeight, pub FontWeight);
 
 #[inline]
 fn sort_range<T: PartialOrd>(a: T, b: T) -> (T, T) {
@@ -366,11 +370,15 @@ impl FontWeightRange {
 pub struct FontStretchRange(pub SpecifiedFontStretch, pub SpecifiedFontStretch);
 impl_range!(FontStretchRange, SpecifiedFontStretch);
 
-/// The computed representation of the above, so that Gecko can read them
+/// The computed representation of the above, so that Gecko and Servo can read them
 /// easily.
 #[repr(C)]
 #[allow(missing_docs)]
-pub struct ComputedFontStretchRange(FontStretch, FontStretch);
+#[cfg_attr(
+    feature = "servo",
+    derive(Clone, Debug, Deserialize, Hash, MallocSizeOf, PartialEq, Serialize)
+)]
+pub struct ComputedFontStretchRange(pub FontStretch, pub FontStretch);
 
 impl FontStretchRange {
     /// Returns a computed font-stretch range, or None if any value contains a calc
@@ -402,10 +410,14 @@ pub enum FontStyleRange {
 }
 
 /// The computed representation of the above, with angles in degrees stored as
-/// signed 8.8 fixed-point values, so that Gecko can read them easily.
+/// signed 8.8 fixed-point values, so that Gecko and Servo can read them easily.
 #[repr(C)]
 #[allow(missing_docs)]
-pub struct ComputedFontStyleRange(FontStyle, FontStyle);
+#[cfg_attr(
+    feature = "servo",
+    derive(Clone, Debug, Deserialize, Hash, MallocSizeOf, PartialEq, Serialize)
+)]
+pub struct ComputedFontStyleRange(pub FontStyle, pub FontStyle);
 
 impl Parse for FontStyleRange {
     fn parse<'i, 't>(

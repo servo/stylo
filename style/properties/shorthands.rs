@@ -3605,13 +3605,12 @@ pub mod mask {
     pub use crate::properties::generated::shorthands::mask::*;
 
     use super::*;
-    use crate::parser::Parse;
     use crate::properties::longhands::{
         mask_clip, mask_composite, mask_mode, mask_origin, mask_position_x, mask_position_y,
         mask_repeat,
     };
     use crate::properties::longhands::{mask_image, mask_size};
-    use crate::values::specified::{Position, PositionComponent};
+    use crate::values::specified::{AllowQuirks, Position, PositionComponent};
 
     impl From<mask_origin::single_value::SpecifiedValue> for mask_clip::single_value::SpecifiedValue {
         fn from(
@@ -3672,7 +3671,9 @@ pub mod mask {
 
                 try_parse_one!(context, input, image, mask_image::single_value::parse);
                 if position.is_none() {
-                    if let Ok(value) = input.try_parse(|input| Position::parse(context, input)) {
+                    if let Ok(value) = input.try_parse(|input| {
+                        Position::parse_three_value_quirky(context, input, AllowQuirks::No)
+                    }) {
                         position = Some(value);
                         size = input
                             .try_parse(|input| {

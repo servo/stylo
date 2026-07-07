@@ -1875,7 +1875,7 @@ affects = "paint"
 type = "ScrollbarColor"
 initial = "Default::default()"
 struct = "inherited_ui"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-scrollbars-1/#scrollbar-color"
 boxed = true
 ignored_when_colors_disabled = true
@@ -4130,7 +4130,7 @@ keyword = { values = ["auto", "normal", "active", "disabled", "inactive"] }
 
 [scrollbar-width]
 struct = "ui"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-scrollbars-1/#scrollbar-width"
 animation_type = "discrete"
 affects = "layout"

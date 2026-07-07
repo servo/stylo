@@ -1266,6 +1266,7 @@ struct = "ui"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-link-params-1/#propdef-link-parameters"
 affects = "paint"
+engine = "gecko"
 gecko_pref = "layout.css.link-parameters.enabled"
 
 [list-style-image]

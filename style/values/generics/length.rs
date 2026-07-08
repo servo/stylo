@@ -29,8 +29,10 @@ use style_traits::{CssWriter, SpecifiedValueInfo};
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToAnimatedZero,
@@ -40,7 +42,6 @@ use style_traits::{CssWriter, SpecifiedValueInfo};
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C, u8)]
 pub enum GenericLengthPercentageOrAuto<LengthPercent> {
     LengthPercentage(LengthPercent),

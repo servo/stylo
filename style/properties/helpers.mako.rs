@@ -193,8 +193,26 @@ pub mod ${property.ident} {
     pub mod computed_value {
         #[allow(unused_imports)]
         use crate::derives::*;
-        #[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
-        #[derive(Clone, Copy, Debug, Eq, FromPrimitive, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToAnimatedValue, ToComputedValue, ToCss, ToResolvedValue, ToShmem, ToTyped)]
+        #[derive(
+            Clone,
+            Copy,
+            Debug,
+            Deserialize,
+            Eq,
+            FromPrimitive,
+            Hash,
+            MallocSizeOf,
+            Parse,
+            PartialEq,
+            Serialize,
+            SpecifiedValueInfo,
+            ToAnimatedValue,
+            ToComputedValue,
+            ToCss,
+            ToResolvedValue,
+            ToShmem,
+            ToTyped,
+        )]
         pub enum T {
         % for variant in property.keyword.values_for(engine):
         <%

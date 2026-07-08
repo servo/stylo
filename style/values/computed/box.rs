@@ -65,9 +65,20 @@ pub type Perspective = GenericPerspective<NonNegativeLength>;
 
 /// A computed value for the `resize` property.
 #[allow(missing_docs)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[derive(
-    Clone, Copy, Debug, Eq, Hash, MallocSizeOf, Parse, PartialEq, ToCss, ToResolvedValue, ToTyped,
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    ToCss,
+    ToResolvedValue,
+    ToTyped,
 )]
 #[repr(u8)]
 pub enum Resize {
@@ -130,13 +141,14 @@ impl ToComputedValue for specified::Resize {
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     MallocSizeOf,
     PartialEq,
     PartialOrd,
+    Serialize,
     ToResolvedValue,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct Zoom(f32);
 

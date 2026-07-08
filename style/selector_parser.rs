@@ -39,7 +39,7 @@ pub use crate::servo::restyle_damage::ServoRestyleDamage as RestyleDamage;
 pub use crate::gecko::restyle_damage::GeckoRestyleDamage as RestyleDamage;
 
 /// Servo's selector parser.
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(MallocSizeOf)]
 pub struct SelectorParser<'a> {
     /// The origin of the stylesheet we're parsing.
     pub stylesheet_origin: Origin,

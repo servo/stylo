@@ -14,9 +14,18 @@ use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo,
 
 /// Constants shared by multiple CSS Box Alignment properties
 #[derive(
-    Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem,
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct AlignFlags(u8);
 bitflags! {
@@ -157,16 +166,17 @@ pub enum AxisDirection {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     ToComputedValue,
     ToCss,
     ToResolvedValue,
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 #[typed(todo_derive_fields)]
 pub struct ContentDistribution {
@@ -292,16 +302,17 @@ impl SpecifiedValueInfo for ContentDistribution {
     Copy,
     Debug,
     Deref,
+    Deserialize,
     Eq,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     ToComputedValue,
     ToCss,
     ToResolvedValue,
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 #[typed(todo_derive_fields)]
 pub struct SelfAlignment(pub AlignFlags);
@@ -430,16 +441,17 @@ impl SpecifiedValueInfo for SelfAlignment {
     Copy,
     Debug,
     Deref,
+    Deserialize,
     Eq,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     ToComputedValue,
     ToCss,
     ToResolvedValue,
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 #[typed(todo_derive_fields)]
 pub struct ItemPlacement(pub AlignFlags);
@@ -515,9 +527,20 @@ impl SpecifiedValueInfo for ItemPlacement {
 ///
 /// <https://drafts.csswg.org/css-align/#justify-items-property>
 #[derive(
-    Clone, Copy, Debug, Deref, Eq, MallocSizeOf, PartialEq, ToCss, ToResolvedValue, ToShmem, ToTyped,
+    Clone,
+    Copy,
+    Debug,
+    Deref,
+    Deserialize,
+    Eq,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C)]
 pub struct JustifyItems(pub ItemPlacement);
 

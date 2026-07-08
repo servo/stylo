@@ -13,8 +13,7 @@
 /// Because the script task's GC does not trace layout, node data cannot be safely stored in layout
 /// data structures. Also, layout code tends to be faster when the DOM is not being accessed, for
 /// locality reasons. Using `OpaqueNode` enforces this invariant.
-#[derive(Clone, Copy, Debug, Eq, Hash, MallocSizeOf, PartialEq)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, MallocSizeOf, PartialEq, Serialize)]
 pub struct OpaqueNode(pub usize);
 
 impl OpaqueNode {

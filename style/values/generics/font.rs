@@ -27,16 +27,18 @@ pub trait TaggedFontValue {
 #[derive(
     Clone,
     Debug,
+    Deserialize,
     Eq,
+    Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 pub struct FeatureTagValue<Integer> {
     /// A four-character tag, packed into a u32 (one byte per character).
     pub tag: FontTag,
@@ -77,9 +79,11 @@ where
     Clone,
     ComputeSquaredDistance,
     Debug,
+    Deserialize,
     Eq,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToComputedValue,
@@ -87,7 +91,6 @@ where
     ToResolvedValue,
     ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct VariationValue<Number> {
     /// A four-character tag, packed into a u32 (one byte per character).
     #[animation(constant)]
@@ -106,9 +109,12 @@ impl<T> TaggedFontValue for VariationValue<T> {
 #[derive(
     Clone,
     Debug,
+    Deserialize,
     Eq,
+    Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToCss,
@@ -116,7 +122,6 @@ impl<T> TaggedFontValue for VariationValue<T> {
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[css(comma)]
 #[typed(todo_derive_fields)]
 pub struct FontSettings<T>(#[css(if_empty = "normal", iterable)] pub Box<[T]>);
@@ -160,16 +165,18 @@ impl<T: Parse> Parse for FontSettings<T> {
 #[derive(
     Clone,
     Copy,
+    Deserialize,
     Eq,
+    Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToComputedValue,
     ToResolvedValue,
     ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 pub struct FontTag(pub u32);
 
 impl fmt::Debug for FontTag {
@@ -222,16 +229,17 @@ impl Parse for FontTag {
 ///
 /// https://drafts.csswg.org/css-fonts-4/#font-style-prop
 #[allow(missing_docs)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[derive(
     Animate,
     Clone,
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToAnimatedZero,
@@ -265,9 +273,11 @@ impl<Angle: Zero> FontStyle<Angle> {
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToAnimatedZero,
@@ -275,7 +285,6 @@ impl<Angle: Zero> FontStyle<Angle> {
     ToResolvedValue,
     ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
 pub enum GenericFontSizeAdjust<Factor> {
     #[animation(error)]
     None,
@@ -330,8 +339,10 @@ impl<Factor: ToTyped> ToTyped for GenericFontSizeAdjust<Factor> {
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToCss,
@@ -339,7 +350,6 @@ impl<Factor: ToTyped> ToTyped for GenericFontSizeAdjust<Factor> {
     Parse,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(C, u8)]
 pub enum GenericLineHeight<N, L> {
     /// `normal`

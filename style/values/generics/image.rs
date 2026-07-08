@@ -298,15 +298,16 @@ pub use self::GenericEllipse as Ellipse;
 
 /// <https://drafts.csswg.org/css-images/#typedef-extent-keyword>
 #[allow(missing_docs)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[derive(
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     MallocSizeOf,
     Parse,
     PartialEq,
+    Serialize,
     ToComputedValue,
     ToCss,
     ToResolvedValue,
@@ -372,14 +373,13 @@ impl<Color, T> ColorStop<Color, T> {
 
 /// Specified values for a paint worklet.
 /// <https://drafts.css-houdini.org/css-paint-api/>
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
-#[derive(Clone, Debug, PartialEq, ToComputedValue, ToResolvedValue, ToShmem)]
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToComputedValue, ToResolvedValue, ToShmem)]
 pub struct PaintWorklet {
     /// The name the worklet was registered with.
     pub name: Atom,
     /// The arguments for the worklet.
     /// TODO: store a parsed representation of the arguments.
-    #[cfg_attr(feature = "servo", ignore_malloc_size_of = "Arc")]
+    #[ignore_malloc_size_of = "Arc"]
     #[compute(no_field_bound)]
     #[resolve(no_field_bound)]
     pub arguments: Vec<Arc<custom_properties::SpecifiedValue>>,

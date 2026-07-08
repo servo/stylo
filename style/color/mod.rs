@@ -27,8 +27,7 @@ pub const PRE_ALLOCATED_COLOR_MIX_ITEMS: usize = 3;
 pub type ColorMixItemList<T> = smallvec::SmallVec<[T; PRE_ALLOCATED_COLOR_MIX_ITEMS]>;
 
 /// The 3 components that make up a color.  (Does not include the alpha component)
-#[derive(Copy, Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[derive(Copy, Clone, Debug, Deserialize, MallocSizeOf, PartialEq, Serialize, ToShmem)]
 #[repr(C)]
 pub struct ColorComponents(pub f32, pub f32, pub f32);
 
@@ -85,17 +84,18 @@ impl std::ops::Div for ColorComponents {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     MallocSizeOf,
     Parse,
     PartialEq,
+    Serialize,
     ToAnimatedValue,
     ToComputedValue,
     ToCss,
     ToResolvedValue,
     ToShmem,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 #[repr(u8)]
 pub enum ColorSpace {
     /// A color specified in the sRGB color space with either the rgb/rgba(..)
@@ -243,8 +243,7 @@ bitflags! {
 
 /// An absolutely specified color, using either rgb(), rgba(), lab(), lch(),
 /// oklab(), oklch() or color().
-#[derive(Copy, Clone, Debug, MallocSizeOf, ToShmem, ToTyped)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
+#[derive(Copy, Clone, Debug, Deserialize, MallocSizeOf, Serialize, ToShmem, ToTyped)]
 #[repr(C)]
 #[typed(todo_derive_fields)]
 pub struct AbsoluteColor {

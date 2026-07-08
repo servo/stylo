@@ -251,6 +251,14 @@ impl NumericType {
         self.set_exponent(base_type, self.exponent(base_type) + delta);
     }
 
+    /// Inverts this numeric type as described in the CSSMathInvert branch of
+    /// <https://drafts.css-houdini.org/css-typed-om-1/#type-of-a-cssmathvalue>
+    pub fn invert(&mut self) {
+        for exp in self.exponents.iter_mut() {
+            *exp = -*exp;
+        }
+    }
+
     /// <https://drafts.css-houdini.org/css-typed-om-1/#apply-the-percent-hint>
     fn apply_percent_hint(&mut self, hint: NumericBaseType) {
         // Step 1.

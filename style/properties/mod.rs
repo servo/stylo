@@ -178,7 +178,7 @@ pub struct VariableDeclaration {
 
 /// A custom property declaration value is either an unparsed value or a CSS
 /// wide-keyword.
-#[derive(Clone, PartialEq, ToCss, ToShmem)]
+#[derive(Clone, PartialEq, ToCss, ToShmem, ToTyped)]
 pub enum CustomDeclarationValue {
     /// An unparsed value.
     Unparsed(Arc<custom_properties::SpecifiedValue>),
@@ -190,7 +190,6 @@ pub enum CustomDeclarationValue {
 
 /// A custom property declaration with the property name and the declared value.
 #[derive(Clone, PartialEq, ToCss, ToShmem, MallocSizeOf, ToTyped)]
-#[typed(todo_derive_fields)]
 pub struct CustomDeclaration {
     /// The name of the custom property.
     #[css(skip)]

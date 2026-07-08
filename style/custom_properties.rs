@@ -477,6 +477,14 @@ impl ComputedCustomProperties {
             self.non_inherited.get(name)
         }
     }
+
+    /// Returns a property just by the name. Slightly less efficient than get(), if you already have
+    /// a custom registration handy, thus the longer name.
+    pub fn get_for_cssom(&self, name: &Name) -> Option<&ComputedRegisteredValue> {
+        self.inherited
+            .get(name)
+            .or_else(|| self.non_inherited.get(name))
+    }
 }
 
 /// Both specified and computed values are VariableValues, the difference is

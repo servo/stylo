@@ -737,15 +737,17 @@ impl Animation {
                         self.state = Pending;
                     }
                 },
-                _ => {
-                    // Running or Pending — re-advance iterations from a fresh
-                    // iteration state.
-                    let starting_progress = (now - self.started_at) / self.duration;
+                Canceled | Pending | Running => {
+                    // Re-advance iterations from a fresh iteration state.
+                    let new_starting_progress = (now - self.started_at) / self.duration;
                     match self.iteration_state {
                         KeyframesIterationState::Finite(ref mut current, _) => *current = 0.0,
                         _ => {},
                     }
-                    self.iterate_by(starting_progress);
+                    if let AnimationState::Paused(ref mut starting_progress) = &mut self.state {
+                        *starting_progress = new_starting_progress;
+                    }
+                    self.iterate_by(new_starting_progress);
                 },
             }
 

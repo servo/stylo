@@ -154,9 +154,7 @@ impl MathSum {
     ///
     /// Returns an error if the values do not have addable numeric types.
     pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
-        // TODO: Remove this filter once NumericValue::numeric_type() stops
-        // returning Option in a follow-up patch.
-        let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
+        let numeric_type = NumericType::add_types(values.iter().map(|v| v.numeric_type()))?;
 
         Ok(Self {
             numeric_type,
@@ -197,10 +195,7 @@ impl MathProduct {
     ///
     /// Returns an error if the values do not have multipliable numeric types.
     pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
-        // TODO: Remove this filter once NumericValue::numeric_type() stops
-        // returning Option in a follow-up patch.
-        let numeric_type =
-            NumericType::multiply_types(values.iter().filter_map(|v| v.numeric_type()))?;
+        let numeric_type = NumericType::multiply_types(values.iter().map(|v| v.numeric_type()))?;
 
         Ok(Self {
             numeric_type,
@@ -228,12 +223,7 @@ impl MathNegate {
     ///
     /// The numeric type is the same as the type of the negated value.
     pub fn from_numeric_value(value: NumericValue) -> Self {
-        // TODO: Remove this fallback once NumericValue::numeric_type() stops
-        // returning Option in a follow-up patch.
-        let numeric_type = value
-            .numeric_type()
-            .unwrap_or(&NumericType::number())
-            .clone();
+        let numeric_type = value.numeric_type().clone();
 
         Self {
             numeric_type,
@@ -263,12 +253,7 @@ impl MathInvert {
     /// The numeric type is the same as the input type, but with all exponent
     /// values negated.
     pub fn from_numeric_value(value: NumericValue) -> Self {
-        // TODO: Remove this fallback once NumericValue::numeric_type() stops
-        // returning Option in a follow-up patch.
-        let mut numeric_type = value
-            .numeric_type()
-            .unwrap_or(&NumericType::number())
-            .clone();
+        let mut numeric_type = value.numeric_type().clone();
         numeric_type.invert();
 
         Self {
@@ -298,9 +283,7 @@ impl MathMin {
     ///
     /// Returns an error if the values do not have addable numeric types.
     pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
-        // TODO: Remove this filter once NumericValue::numeric_type() stops
-        // returning Option in a follow-up patch.
-        let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
+        let numeric_type = NumericType::add_types(values.iter().map(|v| v.numeric_type()))?;
 
         Ok(Self {
             numeric_type,
@@ -329,9 +312,7 @@ impl MathMax {
     ///
     /// Returns an error if the values do not have addable numeric types.
     pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
-        // TODO: Remove this filter once NumericValue::numeric_type() stops
-        // returning Option in a follow-up patch.
-        let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
+        let numeric_type = NumericType::add_types(values.iter().map(|v| v.numeric_type()))?;
 
         Ok(Self {
             numeric_type,
@@ -363,9 +344,7 @@ impl MathClamp {
     ///
     /// Returns an error if the values do not have addable numeric types.
     pub fn try_from_numeric_values(values: crate::OwnedArray<NumericValue, 3>) -> Result<Self, ()> {
-        // TODO: Remove this filter once NumericValue::numeric_type() stops
-        // returning Option in a follow-up patch.
-        let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
+        let numeric_type = NumericType::add_types(values.iter().map(|v| v.numeric_type()))?;
 
         Ok(Self {
             numeric_type,
@@ -418,17 +397,16 @@ pub enum MathValue {
 }
 
 impl MathValue {
-    /// Returns the numeric type associated with this math value, if
-    /// available.
-    pub fn numeric_type(&self) -> Option<&NumericType> {
+    /// Returns the numeric type associated with this math value.
+    pub fn numeric_type(&self) -> &NumericType {
         match self {
-            Self::Sum(math_sum) => Some(&math_sum.numeric_type),
-            Self::Product(math_product) => Some(&math_product.numeric_type),
-            Self::Negate(math_negate) => Some(&math_negate.numeric_type),
-            Self::Invert(math_invert) => Some(&math_invert.numeric_type),
-            Self::Min(math_min) => Some(&math_min.numeric_type),
-            Self::Max(math_max) => Some(&math_max.numeric_type),
-            Self::Clamp(math_clamp) => Some(&math_clamp.numeric_type),
+            Self::Sum(math_sum) => &math_sum.numeric_type,
+            Self::Product(math_product) => &math_product.numeric_type,
+            Self::Negate(math_negate) => &math_negate.numeric_type,
+            Self::Invert(math_invert) => &math_invert.numeric_type,
+            Self::Min(math_min) => &math_min.numeric_type,
+            Self::Max(math_max) => &math_max.numeric_type,
+            Self::Clamp(math_clamp) => &math_clamp.numeric_type,
         }
     }
 }
@@ -467,11 +445,10 @@ impl NumericValue {
         })
     }
 
-    /// Returns the numeric type associated with this numeric value, if
-    /// available.
-    pub fn numeric_type(&self) -> Option<&NumericType> {
+    /// Returns the numeric type associated with this numeric value.
+    pub fn numeric_type(&self) -> &NumericType {
         match self {
-            Self::Unit(unit_value) => Some(&unit_value.numeric_type),
+            Self::Unit(unit_value) => &unit_value.numeric_type,
             Self::Math(math_value) => math_value.numeric_type(),
         }
     }

@@ -173,9 +173,30 @@ pub fn mix_many(
 ) -> AbsoluteColor {
     let items = items.into_iter().collect::<ColorMixItemList<_>>();
 
+    // Convert a mix result into the syntax required by the flags:
+    // - modern syntax when requested (converting legacy spaces like hsl/hwb to srgb), otherwise;
+    // - legacy srgb when every mixed color used legacy syntax.
+    let finalize = |result: AbsoluteColor| -> AbsoluteColor {
+        if flags.contains(ColorMixFlags::RESULT_IN_MODERN_SYNTAX) {
+            if result.is_legacy_syntax() {
+                // If the result *MUST* be in modern syntax, then make sure it is in a color space
+                // that allows the modern syntax. So hsl and hwb will be converted to srgb.
+                let mut srgb = result.to_color_space(ColorSpace::Srgb);
+                srgb.flags.remove(ColorFlags::IS_LEGACY_SRGB);
+                srgb
+            } else {
+                result
+            }
+        } else if items.iter().all(|item| item.color.is_legacy_syntax()) {
+            result.into_srgb_legacy()
+        } else {
+            result
+        }
+    };
+
     // Match the behavior when the sum of weights equal 0.
     if items.is_empty() {
-        return AbsoluteColor::TRANSPARENT_BLACK.to_color_space(interpolation.space);
+        return finalize(AbsoluteColor::TRANSPARENT_BLACK.to_color_space(interpolation.space));
     }
 
     let normalize = flags.contains(ColorMixFlags::NORMALIZE_WEIGHTS);
@@ -185,7 +206,7 @@ pub fn mix_many(
         // https://drafts.csswg.org/css-color-5/#color-mix-percent-norm
         let sum: f32 = items.iter().map(|item| item.weight).sum();
         if sum == 0.0 {
-            return AbsoluteColor::TRANSPARENT_BLACK.to_color_space(interpolation.space);
+            return finalize(AbsoluteColor::TRANSPARENT_BLACK.to_color_space(interpolation.space));
         }
         if (sum - 1.0).abs() > f32::EPSILON {
             weight_scale = 1.0 / sum;
@@ -244,22 +265,7 @@ pub fn mix_many(
     );
     result.flags = accumulated_color.flags;
 
-    if flags.contains(ColorMixFlags::RESULT_IN_MODERN_SYNTAX) {
-        // If the result *MUST* be in modern syntax, then make sure it is in a
-        // color space that allows the modern syntax. So hsl and hwb will be
-        // converted to srgb.
-        if result.is_legacy_syntax() {
-            result.to_color_space(ColorSpace::Srgb)
-        } else {
-            result
-        }
-    } else if items.iter().all(|item| item.color.is_legacy_syntax()) {
-        // If both sides of the mix is legacy then convert the result back into
-        // legacy.
-        result.into_srgb_legacy()
-    } else {
-        result
-    }
+    finalize(result)
 }
 
 /// What the outcome of each component should be in a mix result.

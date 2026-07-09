@@ -6,7 +6,7 @@
 
 use crate::derives::*;
 use crate::error_reporting::ContextualParseError;
-use crate::parser::ParserContext;
+use crate::parser::{Parse, ParserContext};
 use crate::properties::{
     longhands::{
         animation_composition::single_value::SpecifiedValue as SpecifiedComposition,
@@ -20,6 +20,7 @@ use crate::shared_lock::{Locked, ToCssWithGuard};
 use crate::stylesheets::rule_parser::VendorPrefix;
 use crate::stylesheets::{CssRuleType, StylesheetContents};
 use crate::values::specified::animation::TimelineRangeName;
+use crate::values::specified::{Number, Percentage};
 use crate::values::{serialize_percentage, KeyframesName};
 use cssparser::{
     parse_one_rule, AtRuleParser, DeclarationParser, Parser, ParserInput, ParserState,
@@ -172,7 +173,7 @@ impl KeyframeSelector {
     }
 
     /// Parse a keyframe selector from CSS input.
-    pub fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
+    pub fn parse_internal<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
         // `from | to | <percentage [0,100]>`
         if let Ok(percentage) = input.try_parse(KeyframePercentage::parse) {
             return Ok(Self::from_percentage(percentage));
@@ -190,6 +191,15 @@ impl KeyframeSelector {
             range_name: TimelineRangeName::parse(input)?,
             percentage: KeyframePercentage::new(input.expect_percentage()?),
         })
+    }
+}
+
+impl Parse for KeyframeSelector {
+    fn parse<'i, 't>(
+        _context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        KeyframeSelector::parse_internal(input)
     }
 }
 
@@ -212,7 +222,7 @@ impl KeyframeSelectors {
     /// Parse the keyframe selectors from CSS input.
     pub fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
         input
-            .parse_comma_separated(KeyframeSelector::parse)
+            .parse_comma_separated(KeyframeSelector::parse_internal)
             .map(KeyframeSelectors)
     }
 }
@@ -665,4 +675,23 @@ impl<'a, 'b, 'i> RuleBodyItemParser<'i, Arc<Locked<Keyframe>>, StyleParseErrorKi
     fn parse_declarations(&self) -> bool {
         false
     }
+}
+
+/// The Keyframe offset for Web Animations. Since we support double value from JS, so we need to
+/// include a number for it as well.
+// Note: we don't do the range check at parse time for Web animations.
+// Per spec (step 7 in [1]), we check the range of the offset in a separate step and throw a
+// TypeError if needed. That's why we would like to handle Percentage separately and we don't check
+// the range of Number and Percentage.
+//
+// [1] https://drafts.csswg.org/web-animations-1/#process-a-keyframes-argument
+#[derive(Debug, Parse)]
+pub enum KeyframeOffset {
+    /// The double value, e.g. 0.5.
+    Number(Number),
+    /// The percentage (including calc() percentage), e.g. 10%, calc(50%).
+    // FIXME: Bug 2007780. Support length and percentage.
+    Percentage(Percentage),
+    /// The pair of TimelineRangeName and percentage.
+    KeyframeSelector(KeyframeSelector),
 }

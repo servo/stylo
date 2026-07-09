@@ -147,6 +147,12 @@ impl Percentage {
         Self::new(1.)
     }
 
+    /// Returns true if it is a calc percentage.
+    #[inline]
+    pub fn is_calc(&self) -> bool {
+        self.0.is_boxed()
+    }
+
     /// Returns the value if this is a plain (non-calc) percentage, or None otherwise.
     /// Use `resolve()` to also handle resolvable calc expressions, or `to_computed_value()`
     /// when computed context is available.

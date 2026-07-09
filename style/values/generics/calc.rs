@@ -7,7 +7,10 @@
 //! [calc]: https://drafts.csswg.org/css-values/#calc-notation
 
 use crate::derives::*;
-use crate::typed_om::{MathProduct, MathSum, MathValue, NumericValue, ToTyped, TypedValue};
+use crate::typed_om::{
+    MathClamp, MathInvert, MathMax, MathMin, MathNegate, MathProduct, MathSum, MathValue,
+    NumericValue, ToTyped, TypedValue,
+};
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
 use crate::values::generics::Optional;
@@ -2712,7 +2715,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     .ok_or(())?;
 
                 dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Invert(
-                    Box::new(inner),
+                    MathInvert::from_numeric_value(inner),
                 ))));
                 Ok(())
             },
@@ -2733,9 +2736,9 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                                     let inner = negated.to_numeric_value().ok_or(())?;
 
-                                    values.push(NumericValue::Math(MathValue::Negate(Box::new(
-                                        inner,
-                                    ))));
+                                    values.push(NumericValue::Math(MathValue::Negate(
+                                        MathNegate::from_numeric_value(inner),
+                                    )));
                                 } else {
                                     let inner = l.to_numeric_value().ok_or(())?;
 
@@ -2747,7 +2750,9 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                                     .to_numeric_value()
                                     .ok_or(())?;
 
-                                values.push(NumericValue::Math(MathValue::Negate(Box::new(inner))));
+                                values.push(NumericValue::Math(MathValue::Negate(
+                                    MathNegate::from_numeric_value(inner),
+                                )));
                             },
                             _ => {
                                 let inner = CalcNodeWithLevel::nested(child)
@@ -2785,7 +2790,9 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                                     .to_numeric_value()
                                     .ok_or(())?;
 
-                                values.push(NumericValue::Math(MathValue::Invert(Box::new(inner))));
+                                values.push(NumericValue::Math(MathValue::Invert(
+                                    MathInvert::from_numeric_value(inner),
+                                )));
                             },
                             _ => {
                                 let inner = CalcNodeWithLevel::nested(child)
@@ -2823,8 +2830,8 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
 
                 let math_value = match op {
-                    MinMaxOp::Min => MathValue::Min(values),
-                    MinMaxOp::Max => MathValue::Max(values),
+                    MinMaxOp::Min => MathValue::Min(MathMin::try_from_numeric_values(values)?),
+                    MinMaxOp::Max => MathValue::Max(MathMax::try_from_numeric_values(values)?),
                 };
 
                 dest.push(TypedValue::Numeric(NumericValue::Math(math_value)));
@@ -2848,7 +2855,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     .ok_or(())?;
 
                 dest.push(TypedValue::Numeric(NumericValue::Math(MathValue::Clamp(
-                    [lower, value, upper].into(),
+                    MathClamp::try_from_numeric_values([lower, value, upper].into())?,
                 ))));
                 Ok(())
             },

@@ -188,7 +188,7 @@ impl SumValue {
             // CSSMathNegate
             NumericValue::Math(MathValue::Negate(math_negate)) => {
                 // Step 1 & 2.
-                let mut values = SumValue::try_from_numeric_value(math_negate)?.0;
+                let mut values = SumValue::try_from_numeric_value(&math_negate.value)?.0;
 
                 // Step 3.
                 for item in &mut values {
@@ -202,7 +202,7 @@ impl SumValue {
             // CSSMathInvert
             NumericValue::Math(MathValue::Invert(math_invert)) => {
                 // Step 1 & 2.
-                let mut values = SumValue::try_from_numeric_value(math_invert)?.0;
+                let mut values = SumValue::try_from_numeric_value(&math_invert.value)?.0;
 
                 // Step 3.
                 if values.len() != 1 {
@@ -226,7 +226,7 @@ impl SumValue {
                 // Step 1 & 2.
                 let mut args = Vec::new();
 
-                for item in math_min {
+                for item in &math_min.values {
                     let values = SumValue::try_from_numeric_value(item)?;
 
                     if values.0.len() > 1 {
@@ -258,7 +258,7 @@ impl SumValue {
                 // Step 1 & 2.
                 let mut args = Vec::new();
 
-                for item in math_max {
+                for item in &math_max.values {
                     let values = SumValue::try_from_numeric_value(item)?;
 
                     if values.0.len() > 1 {
@@ -306,9 +306,9 @@ impl SumValue {
             // See https://github.com/w3c/csswg-drafts/issues/14038
             NumericValue::Math(MathValue::Clamp(math_clamp)) => {
                 // Step 1 & 2.
-                let lower = SumValue::try_from_numeric_value(&math_clamp[0])?;
-                let value = SumValue::try_from_numeric_value(&math_clamp[1])?;
-                let upper = SumValue::try_from_numeric_value(&math_clamp[2])?;
+                let lower = SumValue::try_from_numeric_value(&math_clamp.values[0])?;
+                let value = SumValue::try_from_numeric_value(&math_clamp.values[1])?;
+                let upper = SumValue::try_from_numeric_value(&math_clamp.values[2])?;
 
                 if lower.0.len() > 1 || value.0.len() > 1 || upper.0.len() > 1 {
                     return Err(());

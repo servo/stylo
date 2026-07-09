@@ -154,9 +154,8 @@ impl MathSum {
     ///
     /// Returns an error if the values do not have addable numeric types.
     pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
-        // Temporarily ignore NumericValue variants that don't expose a
-        // numeric type. This filter can be removed once numeric type support
-        // is implemented for all NumericValue variants.
+        // TODO: Remove this filter once NumericValue::numeric_type() stops
+        // returning Option in a follow-up patch.
         let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
 
         Ok(Self {
@@ -198,9 +197,8 @@ impl MathProduct {
     ///
     /// Returns an error if the values do not have multipliable numeric types.
     pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
-        // Temporarily ignore NumericValue variants that don't expose a
-        // numeric type. This filter can be removed once numeric type support
-        // is implemented for all NumericValue variants.
+        // TODO: Remove this filter once NumericValue::numeric_type() stops
+        // returning Option in a follow-up patch.
         let numeric_type =
             NumericType::multiply_types(values.iter().filter_map(|v| v.numeric_type()))?;
 
@@ -215,28 +213,132 @@ impl MathProduct {
 ///
 /// This corresponds to `CSSMathNegate` in the Typed OM specification. A negate
 /// expression represents constructs such as `-10px` or `-(10px + 2em)`.
-pub type MathNegate = Box<NumericValue>;
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MathNegate {
+    /// The numeric type associated with this negate.
+    pub numeric_type: NumericType,
+
+    /// The numeric value being negated.
+    pub value: Box<NumericValue>,
+}
+
+impl MathNegate {
+    /// Creates a math negate from a numeric value.
+    ///
+    /// The numeric type is the same as the type of the negated value.
+    pub fn from_numeric_value(value: NumericValue) -> Self {
+        // TODO: Remove this fallback once NumericValue::numeric_type() stops
+        // returning Option in a follow-up patch.
+        let numeric_type = value
+            .numeric_type()
+            .unwrap_or(&NumericType::number())
+            .clone();
+
+        Self {
+            numeric_type,
+            value: Box::new(value),
+        }
+    }
+}
 
 /// An inverted numeric value.
 ///
 /// This corresponds to `CSSMathInvert` in the Typed OM specification. An
 /// invert expression represents constructs such as `1 / 2`, `1 / 10px`, or
 /// more generally the reciprocal of another numeric value.
-pub type MathInvert = Box<NumericValue>;
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MathInvert {
+    /// The numeric type associated with this invert.
+    pub numeric_type: NumericType,
+
+    /// The numeric value being inverted.
+    pub value: Box<NumericValue>,
+}
+
+impl MathInvert {
+    /// Creates a math invert from a numeric value.
+    ///
+    /// The numeric type is the same as the input type, but with all exponent
+    /// values negated.
+    pub fn from_numeric_value(value: NumericValue) -> Self {
+        // TODO: Remove this fallback once NumericValue::numeric_type() stops
+        // returning Option in a follow-up patch.
+        let mut numeric_type = value
+            .numeric_type()
+            .unwrap_or(&NumericType::number())
+            .clone();
+        numeric_type.invert();
+
+        Self {
+            numeric_type,
+            value: Box::new(value),
+        }
+    }
+}
 
 /// A minimum expression over numeric values.
 ///
 /// This corresponds to `CSSMathMin` in the Typed OM specification. A minimum
 /// expression represents constructs such as `min(10px, 20%)`. Each entry is
 /// itself a `NumericValue`, allowing nested math expressions if needed.
-pub type MathMin = ThinVec<NumericValue>;
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MathMin {
+    /// The numeric type associated with this min.
+    pub numeric_type: NumericType,
+
+    /// The list of numeric terms that make up the min.
+    pub values: ThinVec<NumericValue>,
+}
+
+impl MathMin {
+    /// Creates a math min from a sequence of numeric values.
+    ///
+    /// Returns an error if the values do not have addable numeric types.
+    pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
+        // TODO: Remove this filter once NumericValue::numeric_type() stops
+        // returning Option in a follow-up patch.
+        let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
+
+        Ok(Self {
+            numeric_type,
+            values,
+        })
+    }
+}
 
 /// A maximum expression over numeric values.
 ///
 /// This corresponds to `CSSMathMax` in the Typed OM specification. A maximum
 /// expression represents constructs such as `max(10px, 20%)`. Each entry is
 /// itself a `NumericValue`, allowing nested math expressions if needed.
-pub type MathMax = ThinVec<NumericValue>;
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MathMax {
+    /// The numeric type associated with this max.
+    pub numeric_type: NumericType,
+
+    /// The list of numeric terms that make up the max.
+    pub values: ThinVec<NumericValue>,
+}
+
+impl MathMax {
+    /// Creates a math max from a sequence of numeric values.
+    ///
+    /// Returns an error if the values do not have addable numeric types.
+    pub fn try_from_numeric_values(values: ThinVec<NumericValue>) -> Result<Self, ()> {
+        // TODO: Remove this filter once NumericValue::numeric_type() stops
+        // returning Option in a follow-up patch.
+        let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
+
+        Ok(Self {
+            numeric_type,
+            values,
+        })
+    }
+}
 
 /// A clamp expression over numeric values.
 ///
@@ -245,7 +347,32 @@ pub type MathMax = ThinVec<NumericValue>;
 ///
 /// The array entries correspond to the lower bound, value, and upper bound,
 /// respectively.
-pub type MathClamp = crate::OwnedArray<NumericValue, 3>;
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct MathClamp {
+    /// The numeric type associated with this clamp.
+    pub numeric_type: NumericType,
+
+    /// The lower bound, value, and upper bound of the clamp expression, in
+    /// that order.
+    pub values: crate::OwnedArray<NumericValue, 3>,
+}
+
+impl MathClamp {
+    /// Creates a math clamp from a sequence of numeric values.
+    ///
+    /// Returns an error if the values do not have addable numeric types.
+    pub fn try_from_numeric_values(values: crate::OwnedArray<NumericValue, 3>) -> Result<Self, ()> {
+        // TODO: Remove this filter once NumericValue::numeric_type() stops
+        // returning Option in a follow-up patch.
+        let numeric_type = NumericType::add_types(values.iter().filter_map(|v| v.numeric_type()))?;
+
+        Ok(Self {
+            numeric_type,
+            values,
+        })
+    }
+}
 
 /// A math expression used by the Typed OM.
 ///
@@ -297,7 +424,11 @@ impl MathValue {
         match self {
             Self::Sum(math_sum) => Some(&math_sum.numeric_type),
             Self::Product(math_product) => Some(&math_product.numeric_type),
-            _ => None,
+            Self::Negate(math_negate) => Some(&math_negate.numeric_type),
+            Self::Invert(math_invert) => Some(&math_invert.numeric_type),
+            Self::Min(math_min) => Some(&math_min.numeric_type),
+            Self::Max(math_max) => Some(&math_max.numeric_type),
+            Self::Clamp(math_clamp) => Some(&math_clamp.numeric_type),
         }
     }
 }

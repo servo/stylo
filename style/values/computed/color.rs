@@ -90,12 +90,14 @@ impl Color {
             Self::ColorMix(ref mix) => {
                 use crate::color::mix;
 
+                let fill = mix.omitted_weight().unwrap_or(0.0);
+
                 mix::mix_many(
                     mix.interpolation,
                     mix.items.iter().map(|item| {
                         mix::ColorMixItem::new(
                             item.color.resolve_to_absolute(current_color),
-                            item.percentage.0,
+                            item.percentage.as_ref().map_or(fill, |p| p.0),
                         )
                     }),
                     mix.flags,

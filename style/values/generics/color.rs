@@ -7,6 +7,7 @@
 use crate::color::ColorMixItemList;
 use crate::color::{mix::ColorInterpolationMethod, AbsoluteColor, ColorFunction};
 use crate::derives::*;
+use crate::values::generics::Optional;
 use crate::values::{
     computed::ToComputedValue, specified::percentage::ToPercentage, ParseError, Parser,
 };
@@ -58,7 +59,8 @@ bitflags! {
 #[repr(C)]
 pub struct GenericColorMixItem<Color, Percentage> {
     pub color: Color,
-    pub percentage: Percentage,
+    /// [Optional::None] when the percentage was omitted next to a calc() sibling.
+    pub percentage: Optional<Percentage>,
 }
 
 /// A restricted version of the css `color-mix()` function, which only supports
@@ -100,17 +102,15 @@ impl<Color: ToCss, Percentage: ToCss + ToPercentage> ToCss for ColorMix<Color, P
             dest.write_str(", ")?;
         }
 
-        let uniform = self
-            .items
-            .split_first()
-            .map(|(first, rest)| {
-                rest.iter()
-                    .all(|item| item.percentage.to_percentage() == first.percentage.to_percentage())
-            })
-            .unwrap_or(false);
         let uniform_value = 1.0 / self.items.len() as f32;
 
-        let is_pair = self.items.len() == 2;
+        // Per https://drafts.csswg.org/css-color-5/#serial-color-mix: omit every
+        // percentage iff all are known (specified, non-calc) and equal to 100%/N.
+        let omit_all = self.items.iter().all(|item| {
+            item.percentage.as_ref().map_or(false, |p| {
+                !p.is_calc() && p.to_percentage() == Some(uniform_value)
+            })
+        });
 
         for (index, item) in self.items.iter().enumerate() {
             if index != 0 {
@@ -119,39 +119,42 @@ impl<Color: ToCss, Percentage: ToCss + ToPercentage> ToCss for ColorMix<Color, P
 
             item.color.to_css(dest)?;
 
-            let omit = if is_pair {
-                let can_omit = |a: &Percentage, b: &Percentage, is_left| {
-                    if a.is_calc() {
-                        return false;
-                    }
-                    // Percentages are enforced to be resolvable at parse time for the specified
-                    // colors, and are already resolved for computed colors.
-                    let a = a.to_percentage().unwrap();
-                    let b = b.to_percentage().unwrap();
-                    if a == 0.5 {
-                        return b == 0.5;
-                    }
-                    if is_left {
-                        return false;
-                    }
-                    (1.0 - a - b).abs() <= f32::EPSILON
-                };
+            if omit_all {
+                continue;
+            }
 
-                let other = &self.items[1 - index].percentage;
-                can_omit(&item.percentage, other, index == 0)
-            } else {
-                !item.percentage.is_calc()
-                    && uniform
-                    && item.percentage.to_percentage() == Some(uniform_value)
-            };
-
-            if !omit {
+            // An omitted percentage next to a calc() sibling serializes to nothing.
+            if let Some(percentage) = item.percentage.as_ref() {
                 dest.write_char(' ')?;
-                item.percentage.to_css(dest)?;
+                percentage.to_css(dest)?;
             }
         }
 
         dest.write_char(')')
+    }
+}
+
+impl<Color, Percentage> ColorMix<Color, Percentage> {
+    /// The weight used for percentages that were omitted next to a calc()
+    /// sibling: an equal share of the weight not taken by specified percentages.
+    /// Returns `None` if a specified percentage can't be resolved to a number.
+    pub(crate) fn omitted_weight(&self) -> Option<f32>
+    where
+        Percentage: ToPercentage,
+    {
+        let mut specified_sum = 0.0;
+        let mut omitted = 0;
+        for item in self.items.iter() {
+            match item.percentage.as_ref() {
+                Some(p) => specified_sum += p.to_percentage()?,
+                None => omitted += 1,
+            }
+        }
+        Some(if omitted > 0 {
+            (1.0 - specified_sum) / omitted as f32
+        } else {
+            0.0
+        })
     }
 }
 
@@ -164,12 +167,15 @@ impl<Percentage> ColorMix<GenericColor<Percentage>, Percentage> {
     {
         use crate::color::mix;
 
+        let fill = self.omitted_weight()?;
+
         let mut items = ColorMixItemList::with_capacity(self.items.len());
         for item in self.items.iter() {
-            items.push(mix::ColorMixItem::new(
-                *item.color.as_absolute()?,
-                item.percentage.to_percentage()?,
-            ))
+            let weight = match item.percentage.as_ref() {
+                Some(percentage) => percentage.to_percentage()?,
+                None => fill,
+            };
+            items.push(mix::ColorMixItem::new(*item.color.as_absolute()?, weight))
         }
 
         Some(mix::mix_many(self.interpolation, items, self.flags))

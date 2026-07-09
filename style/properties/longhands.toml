@@ -3669,7 +3669,6 @@ gecko_inexhaustive = true
 
 [box-decoration-break]
 struct = "border"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-break/#propdef-box-decoration-break"
 animation_type = "discrete"
 affects = "layout"

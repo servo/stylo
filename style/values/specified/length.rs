@@ -75,6 +75,8 @@ pub enum LengthUnit {
     Q,
     Pt,
     Pc,
+    // Lynx-specific viewport-relative length (1rpx = viewport width / 750).
+    Rpx,
     // Font-relative lengths.
     Em,
     Ex,
@@ -148,6 +150,10 @@ impl LengthUnit {
             "q" => Self::Q,
             "pt" => Self::Pt,
             "pc" => Self::Pc,
+            // The Lynx rpx unit is viewport-relative (1rpx = viewport
+            // width / 750), so like vw/vh below it is only valid in contexts
+            // permitting computational dependence (not @font-face descriptors).
+            "rpx" if allows_computational_dependence => Self::Rpx,
             // font-relative
             "em" if allows_computational_dependence => Self::Em,
             "ex" if allows_computational_dependence => Self::Ex,
@@ -209,6 +215,7 @@ impl LengthUnit {
             Self::Q => "q",
             Self::Pt => "pt",
             Self::Pc => "pc",
+            Self::Rpx => "rpx",
             Self::Em => NoCalcLength::EM,
             Self::Ex => NoCalcLength::EX,
             Self::Rex => NoCalcLength::REX,
@@ -284,6 +291,12 @@ impl LengthUnit {
         )
     }
 
+    /// Whether this is the Lynx-specific `rpx` viewport-relative unit.
+    #[inline]
+    pub fn is_rpx(self) -> bool {
+        matches!(self, Self::Rpx)
+    }
+
     /// Whether this is a viewport-percentage unit.
     #[inline]
     pub fn is_viewport_percentage(self) -> bool {
@@ -333,6 +346,7 @@ impl LengthUnit {
             Self::Px | Self::In | Self::Cm | Self::Mm | Self::Q | Self::Pt | Self::Pc => {
                 SortKey::Px
             },
+            Self::Rpx => SortKey::Rpx,
             Self::Em => SortKey::Em,
             Self::Ex => SortKey::Ex,
             Self::Rex => SortKey::Rex,
@@ -981,6 +995,21 @@ impl NoCalcLength {
         CSSPixelLength::new((container_length.to_f64_px() * factor as f64 / 100.0) as f32).finite()
     }
 
+    /// Compute the Lynx `rpx` length: `1rpx = viewport width / 750`.
+    ///
+    /// This is exactly [`Self::viewport_percentage_to_computed_value`]'s `vw`
+    /// pipeline with a denominator of 750 instead of 100 (`N rpx` ==
+    /// `N/7.5 vw`): the viewport width comes from the device (flagging the
+    /// style with `USES_VIEWPORT_UNITS`), zoom applies to the base, and the
+    /// scaled result truncates on the `Au` grid.
+    fn rpx_to_computed_value(&self, context: &Context) -> CSSPixelLength {
+        debug_assert_eq!(self.unit, LengthUnit::Rpx);
+        let size = context.viewport_size_for_viewport_unit_resolution(ViewportVariant::UADefault);
+        let length = context.builder.effective_zoom.zoom(size.width.0 as f32);
+        let trunc_scaled = ((length as f64 * self.value as f64 / 750.).trunc() / AU_PER_PX as f64) as f32;
+        CSSPixelLength::new(crate::values::normalize(trunc_scaled))
+    }
+
     /// Computes a ServoCharacterWidth length against a reference font size.
     fn servo_character_width_to_computed_value(
         &self,
@@ -1016,6 +1045,9 @@ impl NoCalcLength {
         }
         if unit.is_container_relative() {
             return self.container_relative_to_computed_value(context);
+        }
+        if unit.is_rpx() {
+            return self.rpx_to_computed_value(context);
         }
         debug_assert_eq!(unit, LengthUnit::ServoCharacterWidth);
         self.servo_character_width_to_computed_value(

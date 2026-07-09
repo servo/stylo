@@ -1259,6 +1259,171 @@ spec = "https://drafts.csswg.org/css2/visudet.html#propdef-line-height"
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
+# Lynx linear layout knobs are stored in Box because they parameterize the
+# box-level `display: linear` layout mode; reusing Box keeps this patch small
+# and gives ComputedValues generated clone_* accessors without a new style struct.
+[linear-direction]
+struct = "box"
+spec = "Nonstandard Lynx linear layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+keyword = { values = ["column", "row", "column-reverse", "row-reverse"] }
+
+[linear-weight]
+type = "NonNegativeNumber"
+initial = "From::from(0.)"
+struct = "box"
+spec = "Nonstandard Lynx linear layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[linear-weight-sum]
+type = "NonNegativeNumber"
+initial = "From::from(0.)"
+struct = "box"
+spec = "Nonstandard Lynx linear layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+# Lynx relative layout knobs are stored in Box for the same reason as the
+# linear layout knobs above: they parameterize the box-level `display: relative`
+# layout mode while keeping this fork patch mechanical and accessor-compatible.
+[relative-id]
+type = "Integer"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-align-top]
+type = "lynx_layout::RelativeAlign"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-align-right]
+type = "lynx_layout::RelativeAlign"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-align-bottom]
+type = "lynx_layout::RelativeAlign"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-align-left]
+type = "lynx_layout::RelativeAlign"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-top-of]
+type = "Integer"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-right-of]
+type = "Integer"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-bottom-of]
+type = "Integer"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-left-of]
+type = "Integer"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-align-inline-start]
+type = "lynx_layout::RelativeAlign"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-align-inline-end]
+type = "lynx_layout::RelativeAlign"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-inline-start-of]
+type = "Integer"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-inline-end-of]
+type = "Integer"
+initial = "-1"
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
+[relative-center]
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+keyword = { values = ["none", "vertical", "horizontal", "both"] }
+
+[relative-layout-once]
+struct = "box"
+spec = "Nonstandard Lynx relative layout property"
+animation_type = "none"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+keyword = { values = ["true", "false"] }
+
 [link-parameters]
 type = "LinkParameters"
 initial = "computed::LinkParameters::none()"

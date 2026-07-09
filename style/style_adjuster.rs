@@ -578,6 +578,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         );
         let new_display = match parent_display {
             Display::Flex | Display::InlineFlex => Some(Display::Flex),
+            Display::Linear => Some(Display::Linear),
             Display::Grid | Display::InlineGrid => Some(Display::Grid),
             _ => None,
         };

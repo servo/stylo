@@ -104,8 +104,12 @@ pub enum DisplayInside {
     Flow,
     FlowRoot,
     Flex,
+    #[css(keyword = "linear")]
+    LynxLinear,
     Grid,
     Table,
+    #[css(keyword = "relative")]
+    LynxRelative,
     TableRowGroup,
     TableColumn,
     TableColumnGroup,
@@ -196,12 +200,19 @@ impl Display {
     );
     pub const Flex: Self =
         Self(((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Flex as u16);
+    pub const Linear: Self = Self(
+        ((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::LynxLinear as u16,
+    );
     pub const InlineFlex: Self =
         Self(((DisplayOutside::Inline as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Flex as u16);
     pub const Grid: Self =
         Self(((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Grid as u16);
     pub const InlineGrid: Self =
         Self(((DisplayOutside::Inline as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Grid as u16);
+    pub const LynxRelative: Self = Self(
+        ((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT)
+            | DisplayInside::LynxRelative as u16,
+    );
     pub const Table: Self =
         Self(((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Table as u16);
     pub const InlineTable: Self = Self(
@@ -358,7 +369,7 @@ impl Display {
     /// This is used to implement various style fixups.
     pub fn is_item_container(&self) -> bool {
         match self.inside() {
-            DisplayInside::Flex => true,
+            DisplayInside::Flex | DisplayInside::LynxLinear => true,
             DisplayInside::Grid => true,
             _ => false,
         }
@@ -449,6 +460,8 @@ impl DisplayKeyword {
         Ok(try_match_ident_ignore_ascii_case! { input,
             "none" => Full(Display::None),
             "contents" => Full(Display::Contents),
+            "linear" => Full(Display::Linear),
+            "relative" => Full(Display::LynxRelative),
             "inline-block" => Full(Display::InlineBlock),
             "inline-table" => Full(Display::InlineTable),
             "-webkit-flex" => Full(Display::Flex),
@@ -503,6 +516,8 @@ impl ToCss for Display {
         let outside = self.outside();
         let inside = self.inside();
         match *self {
+            Display::Linear => dest.write_str("linear"),
+            Display::LynxRelative => dest.write_str("relative"),
             Display::Block | Display::Inline => outside.to_css(dest),
             Display::InlineBlock => dest.write_str("inline-block"),
             #[cfg(feature = "gecko")]
@@ -626,8 +641,10 @@ impl SpecifiedValueInfo for Display {
             "inline-table",
             "inline list-item",
             "inline flow-root list-item",
+            "linear",
             "list-item",
             "none",
+            "relative",
             "block ruby",
             "ruby",
             "ruby-base",

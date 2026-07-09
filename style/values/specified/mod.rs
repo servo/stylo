@@ -144,6 +144,7 @@ pub mod image;
 pub mod intersection_observer;
 pub mod length;
 pub mod list;
+pub mod lynx_layout;
 pub mod motion;
 pub mod number;
 pub mod outline;

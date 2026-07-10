@@ -107,6 +107,10 @@ pub enum DocumentMatchingFunction {
     /// Matching function for a plain-text document.
     #[css(function)]
     PlainTextDocument(()),
+    /// Matching function for a document that can be observed by other content
+    /// documents.
+    #[css(function)]
+    UnobservableDocument(()),
 }
 
 macro_rules! parse_quoted_or_unquoted_string {
@@ -166,6 +170,13 @@ impl DocumentMatchingFunction {
                 })
             },
 
+            "unobservable-document" => {
+                input.parse_nested_block(|input| {
+                    input.expect_exhausted()?;
+                    Ok(DocumentMatchingFunction::UnobservableDocument(()))
+                })
+            },
+
             _ => {
                 Err(location.new_custom_error(
                     StyleParseErrorKind::UnexpectedFunction(function.clone())
@@ -192,6 +203,9 @@ impl DocumentMatchingFunction {
             DocumentMatchingFunction::PlainTextDocument(..) => {
                 GeckoDocumentMatchingFunction::PlainTextDocument
             },
+            DocumentMatchingFunction::UnobservableDocument(..) => {
+                GeckoDocumentMatchingFunction::UnobservableDocument
+            },
         };
 
         let pattern = nsCStr::from(match *self {
@@ -204,7 +218,8 @@ impl DocumentMatchingFunction {
                 MediaDocumentKind::Image => "image",
                 MediaDocumentKind::Video => "video",
             },
-            DocumentMatchingFunction::PlainTextDocument(()) => "",
+            DocumentMatchingFunction::PlainTextDocument(())
+            | DocumentMatchingFunction::UnobservableDocument(()) => "",
         });
         unsafe { Gecko_DocumentRule_UseForPresentation(device.document(), &*pattern, func) }
     }

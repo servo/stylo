@@ -65,8 +65,9 @@ jobs:
     needs:
       - linux-debug
       - linux-release
-      - macos-debug
       - windows-debug
+      # macos-debug is not required, because there are so few runners that waiting for an
+      # available one would take too long.
     steps:
       - name: Success
         if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}

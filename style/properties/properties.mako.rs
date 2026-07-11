@@ -1289,8 +1289,7 @@ pub mod style_structs {
 
     % for style_struct in data.active_style_structs():
         % if style_struct.name == "Font":
-        #[derive(Clone, Debug, MallocSizeOf)]
-        #[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
+        #[derive(Clone, Debug, Deserialize, MallocSizeOf, Serialize)]
         % else:
         #[derive(Clone, Debug, MallocSizeOf, PartialEq)]
         % endif
@@ -1587,7 +1586,7 @@ pub mod style_structs {
 pub use super::gecko::{ComputedValues, ComputedValuesInner};
 
 #[cfg(feature = "servo")]
-#[cfg_attr(feature = "servo", derive(Clone, Debug))]
+#[derive(Clone, Debug)]
 /// Actual data of ComputedValues, to match up with Gecko
 pub struct ComputedValuesInner {
     % for style_struct in data.active_style_structs():
@@ -1625,7 +1624,7 @@ pub struct ComputedValuesInner {
 ///
 /// When needed, the structs may be copied in order to get mutated.
 #[cfg(feature = "servo")]
-#[cfg_attr(feature = "servo", derive(Clone, Debug))]
+#[derive(Clone, Debug)]
 pub struct ComputedValues {
     /// The actual computed values
     ///

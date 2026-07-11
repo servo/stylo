@@ -4,6 +4,7 @@
 
 //! Different objects protected by the same lock
 
+use crate::derives::MallocSizeOf;
 use crate::stylesheets::Origin;
 use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 use servo_arc::Arc;
@@ -31,7 +32,7 @@ pub struct SharedRwLock {
 #[cfg(feature = "servo")]
 malloc_size_of::malloc_size_of_is_0!(SharedRwLock);
 
-#[cfg_attr(feature = "servo", derive(crate::derives::MallocSizeOf))]
+#[derive(MallocSizeOf)]
 struct SomethingZeroSizedButTyped;
 
 impl fmt::Debug for SharedRwLock {

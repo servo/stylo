@@ -33,16 +33,14 @@ use crate::{Atom, LocalName, Namespace, Prefix};
 // Duplicated from script::dom::values.
 const UNSIGNED_LONG_MAX: u32 = 2147483647;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq)]
 pub enum LengthOrPercentageOrAuto {
     Auto,
     Percentage(f32),
     Length(Au),
 }
 
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, Debug, MallocSizeOf)]
 pub enum AttrValue {
     //
     // Variants that are stored in their serialized form.
@@ -707,8 +705,7 @@ pub fn parse_length(mut value: &str) -> LengthOrPercentageOrAuto {
 }
 
 /// A struct that uniquely identifies an element's attribute.
-#[derive(Clone, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, Debug, MallocSizeOf)]
 pub struct AttrIdentifier {
     pub local_name: LocalName,
     pub name: LocalName,

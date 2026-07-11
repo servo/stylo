@@ -30,8 +30,7 @@ use std::ops::Add;
 // Animations for Matrix/Matrix3D.
 // ------------------------------------
 /// A 2d matrix for interpolation.
-#[derive(Clone, ComputeSquaredDistance, Copy, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf)]
 #[allow(missing_docs)]
 // FIXME: We use custom derive for ComputeSquaredDistance. However, If possible, we should convert
 // the InnerMatrix2D into types with physical meaning. This custom derive computes the squared
@@ -56,13 +55,11 @@ impl Animate for InnerMatrix2D {
 }
 
 /// A 2d translation function.
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
-#[derive(Animate, Clone, ComputeSquaredDistance, Copy, Debug)]
+#[derive(Animate, Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf)]
 pub struct Translate2D(f32, f32);
 
 /// A 2d scale function.
-#[derive(Clone, ComputeSquaredDistance, Copy, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf)]
 pub struct Scale2D(f32, f32);
 
 impl Animate for Scale2D {
@@ -75,8 +72,7 @@ impl Animate for Scale2D {
 }
 
 /// A decomposed 2d matrix.
-#[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, Copy, Debug, MallocSizeOf)]
 pub struct MatrixDecomposed2D {
     /// The translation function.
     pub translate: Translate2D,
@@ -275,13 +271,11 @@ impl Animate for Matrix {
 }
 
 /// A 3d translation.
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
-#[derive(Animate, Clone, ComputeSquaredDistance, Copy, Debug)]
+#[derive(Animate, Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf)]
 pub struct Translate3D(pub f32, pub f32, pub f32);
 
 /// A 3d scale function.
-#[derive(Clone, ComputeSquaredDistance, Copy, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf)]
 pub struct Scale3D(pub f32, pub f32, pub f32);
 
 impl Scale3D {
@@ -304,8 +298,7 @@ impl Animate for Scale3D {
 }
 
 /// A 3d skew function.
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
-#[derive(Animate, Clone, Copy, Debug)]
+#[derive(Animate, Clone, Copy, Debug, MallocSizeOf)]
 pub struct Skew(f32, f32, f32);
 
 impl ComputeSquaredDistance for Skew {
@@ -320,8 +313,7 @@ impl ComputeSquaredDistance for Skew {
 }
 
 /// A 3d perspective transformation.
-#[derive(Clone, ComputeSquaredDistance, Copy, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf)]
 pub struct Perspective(pub f32, pub f32, pub f32, pub f32);
 
 impl Animate for Perspective {
@@ -336,8 +328,7 @@ impl Animate for Perspective {
 }
 
 /// A quaternion used to represent a rotation.
-#[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Clone, Copy, Debug, MallocSizeOf)]
 pub struct Quaternion(f64, f64, f64, f64);
 
 impl Quaternion {
@@ -499,8 +490,7 @@ impl ComputeSquaredDistance for Quaternion {
 }
 
 /// A decomposed 3d matrix.
-#[derive(Animate, Clone, ComputeSquaredDistance, Copy, Debug)]
-#[cfg_attr(feature = "servo", derive(MallocSizeOf))]
+#[derive(Animate, Clone, ComputeSquaredDistance, Copy, Debug, MallocSizeOf)]
 pub struct MatrixDecomposed3D {
     /// A translation function.
     pub translate: Translate3D,

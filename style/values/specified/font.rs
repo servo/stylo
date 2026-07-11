@@ -556,8 +556,10 @@ impl Default for FontSizeKeyword {
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Deserialize,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     ToAnimatedValue,
     ToAnimatedZero,
     ToComputedValue,
@@ -566,7 +568,6 @@ impl Default for FontSizeKeyword {
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
 /// Additional information for keyword-derived font sizes.
 pub struct KeywordInfo {
     /// The keyword used
@@ -657,8 +658,7 @@ pub enum FontSize {
 }
 
 /// Specifies a prioritized list of font family names or generic family names.
-#[derive(Clone, Debug, Eq, PartialEq, ToCss, ToShmem, ToTyped)]
-#[cfg_attr(feature = "servo", derive(Hash))]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, ToCss, ToShmem, ToTyped)]
 #[typed(todo_derive_fields)]
 pub enum FontFamily {
     /// List of `font-family`
@@ -1321,10 +1321,13 @@ impl Parse for FontVariantAlternates {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
+    Hash,
     MallocSizeOf,
     PartialEq,
     Parse,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -1332,7 +1335,6 @@ impl Parse for FontVariantAlternates {
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[css(bitflags(
     single = "normal",
     mixed = "jis78,jis83,jis90,jis04,simplified,traditional,full-width,proportional-width,ruby",
@@ -1391,10 +1393,13 @@ impl FontVariantEastAsian {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
+    Hash,
     MallocSizeOf,
     PartialEq,
     Parse,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -1402,7 +1407,6 @@ impl FontVariantEastAsian {
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 #[css(bitflags(
     single = "normal,none",
     mixed = "common-ligatures,no-common-ligatures,discretionary-ligatures,no-discretionary-ligatures,historical-ligatures,no-historical-ligatures,contextual,no-contextual",
@@ -1458,10 +1462,13 @@ impl FontVariantLigatures {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
+    Hash,
     MallocSizeOf,
     PartialEq,
     Parse,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -1474,7 +1481,6 @@ impl FontVariantLigatures {
     mixed = "lining-nums,oldstyle-nums,proportional-nums,tabular-nums,diagonal-fractions,stacked-fractions,ordinal,slashed-zero",
     validate_mixed = "Self::validate_mixed_flags",
 ))]
-#[cfg_attr(feature = "servo", derive(Serialize, Deserialize, Hash))]
 #[repr(C)]
 pub struct FontVariantNumeric(u8);
 bitflags! {
@@ -1585,11 +1591,13 @@ impl Parse for FontLanguageOverride {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
     Hash,
     MallocSizeOf,
     Parse,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -1597,7 +1605,6 @@ impl Parse for FontLanguageOverride {
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub enum FontSynthesis {
     /// This attribute may be synthesized if not supported by a face.
     Auto,
@@ -1793,9 +1800,11 @@ impl MetricsOverride {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     MallocSizeOf,
     Parse,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -1803,7 +1812,6 @@ impl MetricsOverride {
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Serialize, Deserialize))]
 #[repr(u8)]
 /// How to do font-size scaling.
 pub enum XTextScale {
@@ -1826,8 +1834,12 @@ impl XTextScale {
 #[derive(
     Clone,
     Debug,
+    Deserialize,
+    Eq,
+    Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -1835,7 +1847,6 @@ impl XTextScale {
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(feature = "servo", derive(Deserialize, Eq, Hash, Serialize))]
 /// Internal property that reflects the lang attribute
 pub struct XLang(#[css(skip)] pub Atom);
 

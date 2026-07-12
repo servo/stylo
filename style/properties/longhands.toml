@@ -2767,7 +2767,7 @@ initial = "computed_value::T::currentcolor()"
 struct = "text"
 ignored_when_colors_disabled = true
 spec = "https://drafts.csswg.org/css-text-decor/#propdef-text-decoration-color"
-servo_restyle_damage = "recalculate_overflow"
+servo_restyle_damage = "repaint"
 affects = "paint"
 
 [text-decoration-inset]

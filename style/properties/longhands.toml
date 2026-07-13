@@ -3361,6 +3361,16 @@ rule_types_allowed = ["style", "keyframe", "scope", "position-try"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 
+[margin-trim]
+type = "MarginTrim"
+initial = "computed::MarginTrim::empty()"
+struct = "margin"
+engine = "gecko"
+gecko_pref = "layout.css.margin-trim.enabled"
+animation_type = "none"
+spec = "https://drafts.csswg.org/css-box-4/#propdef-margin-trim"
+affects = "layout"
+
 [scroll-margin-top]
 type = "Length"
 initial = "computed::Length::zero()"

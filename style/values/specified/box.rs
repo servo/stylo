@@ -43,46 +43,6 @@ fn appearance_base_select_enabled(_context: &ParserContext) -> bool {
     static_prefs::pref!("dom.select.customizable_select.enabled")
 }
 
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    Parse,
-    ToCss,
-    SpecifiedValueInfo,
-    ToComputedValue,
-    ToResolvedValue,
-    ToShmem,
-    ToTyped,
-)]
-#[css(bitflags(
-    single = "none",
-    mixed = "block,block-start,block-end",
-    overlapping_bits
-))]
-#[repr(C)]
-/// Specified value of the `margin-trim` property, which trims the margins of a
-/// container's children where they meet the container's edges.
-/// https://drafts.csswg.org/css-box-4/#propdef-margin-trim
-/// Pending https://github.com/w3c/csswg-drafts/issues/13731, we're only targetting block
-/// trimming for now and skipping `inline-start` and `inline-end`
-pub struct MarginTrim(u8);
-bitflags! {
-    impl MarginTrim: u8 {
-        /// `none` variant, no margins are trimmed.
-        const NONE = 0;
-        /// Trim the block-start margin of the first child.
-        const BLOCK_START = 1 << 0;
-        /// Trim the block-end margin of the last child.
-        const BLOCK_END = 1 << 1;
-        /// `block` shorthand: both block-axis margins.
-        const BLOCK = MarginTrim::BLOCK_START.bits() | MarginTrim::BLOCK_END.bits();
-    }
-}
-
 /// The specified value of `overflow-clip-margin`.
 pub type OverflowClipMargin = GenericOverflowClipMargin<NonNegativeLength>;
 

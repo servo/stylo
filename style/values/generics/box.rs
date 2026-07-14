@@ -6,8 +6,10 @@
 
 use crate::derives::*;
 use crate::values::animated::ToAnimatedZero;
+use crate::values::generics::Optional;
 use crate::Zero;
 use std::fmt::{self, Write};
+use style_traits::values::SequenceWriter;
 use style_traits::{CssWriter, ToCss};
 
 #[derive(
@@ -137,45 +139,198 @@ impl<L: ToCss> ToCss for ContainIntrinsicSize<L> {
     }
 }
 
-/// Note that we only implement -webkit-line-clamp as a single, longhand
-/// property for now, but the spec defines line-clamp as a shorthand for
-/// separate max-lines, block-ellipsis, and continue properties.
-///
-/// https://drafts.csswg.org/css-overflow-3/#line-clamp
+/// A block ellipsis for line clamping.
 #[derive(
     Clone,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    PartialEq,
+    Parse,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+)]
+#[repr(C, u8)]
+pub enum BlockEllipsis {
+    /// Display the ellipsis character.
+    Ellipsis,
+    /// Do not display an ellipsis.
+    NoEllipsis,
+    /// Display the given string.
+    String(crate::values::AtomString),
+}
+
+impl BlockEllipsis {
+    /// Returns whether this value is `ellipsis`.
+    pub fn is_ellipsis(&self) -> bool {
+        matches!(self, Self::Ellipsis)
+    }
+}
+
+/// A keyword for the maximum lines used by `line-clamp`.
+#[derive(
+    Animate,
+    Clone,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    PartialEq,
+    Parse,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+)]
+#[repr(u8)]
+pub enum MaxLinesKeyword {
+    /// No block-size clamping is applied.
+    None,
+    /// Clamp using the available block size.
+    Auto,
+}
+
+impl MaxLinesKeyword {
+    /// Returns whether this keyword is `none`.
+    pub fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+}
+
+/// A generic value for the maximum lines used by `line-clamp`.
+/// <https://drafts.csswg.org/css-overflow-4/#propdef-max-lines>
+#[derive(
+    Animate,
+    Clone,
     ComputeSquaredDistance,
-    Copy,
     Debug,
     MallocSizeOf,
     PartialEq,
     SpecifiedValueInfo,
-    ToComputedValue,
     ToAnimatedValue,
     ToAnimatedZero,
+    ToComputedValue,
+    ToCss,
     ToResolvedValue,
     ToShmem,
     ToTyped,
 )]
-#[repr(transparent)]
-#[value_info(other_values = "none")]
-pub struct GenericLineClamp<I>(pub I);
+#[repr(C)]
+#[typed(todo_derive_fields)]
+pub struct GenericMaxLines<I> {
+    /// The maximum number of lines.
+    pub lines: Optional<I>,
+    /// Whether block-size clamping is applied.
+    #[css(skip_if = "MaxLinesKeyword::is_none")]
+    #[animation(constant)]
+    pub kw: MaxLinesKeyword,
+}
 
-pub use self::GenericLineClamp as LineClamp;
+pub use self::GenericMaxLines as MaxLines;
 
-impl<I: Zero> LineClamp<I> {
-    /// Returns the `none` value.
+impl<I> MaxLines<I> {
+    /// Returns a new `none` value.
     pub fn none() -> Self {
-        Self(crate::Zero::zero())
+        Self {
+            lines: Optional::None,
+            kw: MaxLinesKeyword::None,
+        }
     }
 
-    /// Returns whether we're the `none` value.
+    /// Returns a new `auto` value.
+    pub fn auto() -> Self {
+        Self {
+            lines: Optional::None,
+            kw: MaxLinesKeyword::Auto,
+        }
+    }
+
+    /// Returns a new line-count value, optionally with the `auto` keyword.
+    pub fn lines(lines: I, auto: bool) -> Self {
+        Self {
+            lines: Optional::Some(lines),
+            kw: if auto {
+                MaxLinesKeyword::Auto
+            } else {
+                MaxLinesKeyword::None
+            },
+        }
+    }
+
+    /// Returns whether there is no line-count or block-size clamping.
     pub fn is_none(&self) -> bool {
-        self.0.is_zero()
+        self.lines.is_none() && matches!(self.kw, MaxLinesKeyword::None)
+    }
+
+    /// Returns whether this value is `auto`.
+    pub fn is_auto(&self) -> bool {
+        self.lines.is_none() && matches!(self.kw, MaxLinesKeyword::Auto)
+    }
+
+    /// Returns the line count if exists.
+    pub fn lines_value(&self) -> Option<&I> {
+        self.lines.as_ref()
     }
 }
 
-impl<I: Zero + ToCss> ToCss for LineClamp<I> {
+/// A generic value for the `line-clamp` property.
+#[derive(
+    Animate,
+    Clone,
+    ComputeSquaredDistance,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToAnimatedZero,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(C)]
+#[typed(todo_derive_fields)]
+#[value_info(other_values = "none")]
+pub struct GenericLineClamp<I> {
+    /// Maximum `line-count` and `block-size` clamping behavior.
+    pub max_lines: GenericMaxLines<I>,
+    /// Ellipsis displayed at the clamp point.
+    #[animation(constant)]
+    pub block_ellipsis: BlockEllipsis,
+    /// Whether legacy line clamping behavior is used.
+    #[animation(constant)]
+    pub webkit_legacy: bool,
+    /// Whether the `-webkit-legacy` keyword is printed during serialization.
+    #[animation(constant)]
+    pub serialize_webkit_legacy: bool,
+}
+
+pub use self::GenericLineClamp as LineClamp;
+
+impl<I> LineClamp<I> {
+    /// Returns the `none` value.
+    pub fn none() -> Self {
+        Self {
+            max_lines: MaxLines::none(),
+            block_ellipsis: BlockEllipsis::Ellipsis,
+            webkit_legacy: false,
+            serialize_webkit_legacy: false,
+        }
+    }
+
+    /// Returns whether we are the `none` value or not.
+    pub fn is_none(&self) -> bool {
+        self.max_lines.is_none() && self.block_ellipsis.is_ellipsis()
+    }
+}
+
+impl<I: ToCss> ToCss for LineClamp<I> {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: Write,
@@ -183,7 +338,21 @@ impl<I: Zero + ToCss> ToCss for LineClamp<I> {
         if self.is_none() {
             return dest.write_str("none");
         }
-        self.0.to_css(dest)
+
+        let mut writer = SequenceWriter::new(dest, " ");
+        if !self.max_lines.is_none() {
+            writer.item(&self.max_lines)?;
+        }
+        if !self.block_ellipsis.is_ellipsis() {
+            writer.item(&self.block_ellipsis)?;
+        }
+        if self.webkit_legacy
+            && self.serialize_webkit_legacy
+            && static_prefs::pref!("layout.css.line-clamp.enabled")
+        {
+            writer.raw_item("-webkit-legacy")?;
+        }
+        Ok(())
     }
 }
 

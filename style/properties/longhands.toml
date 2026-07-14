@@ -100,8 +100,21 @@ affects = "layout"
 type = "LineClamp"
 initial = "computed::LineClamp::none()"
 struct = "box"
+boxed = true
 engine = "gecko"
-spec = "https://drafts.csswg.org/css-overflow-3/#line-clamp"
+parse_method = "parse_legacy"
+spec = "https://drafts.csswg.org/css-overflow-4/#webkit-line-clamp"
+affects = "layout"
+
+[line-clamp]
+type = "LineClamp"
+initial = "computed::LineClamp::none()"
+struct = "box"
+boxed = true
+engine = "gecko"
+gecko_pref = "layout.css.line-clamp.enabled"
+gecko_ffi_name = "mWebkitLineClamp"
+spec = "https://drafts.csswg.org/css-overflow-4/#propdef-line-clamp"
 affects = "layout"
 
 [-x-lang]

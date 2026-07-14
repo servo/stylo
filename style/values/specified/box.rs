@@ -10,11 +10,12 @@ use crate::parser::{Parse, ParserContext};
 use crate::properties::{LonghandId, PropertyDeclarationId, PropertyId};
 pub use crate::typed_om::{KeywordValue, ToTyped, TypedValue};
 use crate::values::generics::box_::{
-    BaselineShiftKeyword, GenericBaselineShift, GenericContainIntrinsicSize, GenericLineClamp,
-    GenericOverflowClipMargin, GenericPerspective, OverflowClipMarginBox,
+    BaselineShiftKeyword, BlockEllipsis, GenericBaselineShift, GenericContainIntrinsicSize,
+    GenericLineClamp, GenericOverflowClipMargin, GenericPerspective, MaxLines,
+    OverflowClipMarginBox,
 };
 use crate::values::specified::length::{LengthPercentage, NonNegativeLength};
-use crate::values::specified::{AllowQuirks, Integer, NonNegativeNumberOrPercentage};
+use crate::values::specified::{AllowQuirks, NonNegativeNumberOrPercentage, PositiveInteger};
 use crate::values::CustomIdent;
 use cssparser::Parser;
 use num_traits::FromPrimitive;
@@ -653,7 +654,7 @@ impl SpecifiedValueInfo for Display {
 pub type ContainIntrinsicSize = GenericContainIntrinsicSize<NonNegativeLength>;
 
 /// A specified value for the `line-clamp` property.
-pub type LineClamp = GenericLineClamp<Integer>;
+pub type LineClamp = GenericLineClamp<PositiveInteger>;
 
 /// A specified value for the `baseline-shift` property.
 pub type BaselineShift = GenericBaselineShift<LengthPercentage>;
@@ -1391,16 +1392,103 @@ impl Parse for ContainIntrinsicSize {
     }
 }
 
-impl Parse for LineClamp {
-    /// none | <positive-integer>
+impl Parse for MaxLines<PositiveInteger> {
     fn parse<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        if let Ok(i) =
+        let mut lines = None;
+        let mut auto = false;
+
+        loop {
+            if lines.is_none() {
+                if let Ok(value) = input.try_parse(|i| PositiveInteger::parse(context, i)) {
+                    lines = Some(value);
+                    continue;
+                }
+            }
+
+            if !auto && input.try_parse(|i| i.expect_ident_matching("auto")).is_ok() {
+                auto = true;
+                continue;
+            }
+
+            break;
+        }
+
+        match (lines, auto) {
+            (Some(value), true) => Ok(MaxLines::lines(value, true)),
+            (Some(value), false) => Ok(MaxLines::lines(value, false)),
+            (None, true) => Ok(MaxLines::auto()),
+            (None, false) => Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+        }
+    }
+}
+
+impl Parse for LineClamp {
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        if input.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
+            return Ok(Self::none());
+        }
+
+        let mut max_lines = None;
+        let mut block_ellipsis = None;
+
+        loop {
+            if max_lines.is_none() {
+                if let Ok(value) = input.try_parse(|i| MaxLines::parse(context, i)) {
+                    max_lines = Some(value);
+                    continue;
+                }
+            }
+            if block_ellipsis.is_none() {
+                if let Ok(value) = input.try_parse(|i| BlockEllipsis::parse(context, i)) {
+                    block_ellipsis = Some(value);
+                    continue;
+                }
+            }
+
+            break;
+        }
+
+        if max_lines.is_none() && block_ellipsis.is_none() {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
+
+        let webkit_legacy = input
+            .try_parse(|i| i.expect_ident_matching("-webkit-legacy"))
+            .is_ok();
+
+        let block_ellipsis = block_ellipsis.unwrap_or(BlockEllipsis::Ellipsis);
+        let max_lines = max_lines.unwrap_or_else(MaxLines::auto);
+
+        Ok(Self {
+            max_lines,
+            block_ellipsis,
+            webkit_legacy,
+            serialize_webkit_legacy: true,
+        })
+    }
+}
+
+impl LineClamp {
+    /// Parses the legacy `-webkit-line-clamp` syntax.
+    pub fn parse_legacy<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError<'i>> {
+        if let Ok(value) =
             input.try_parse(|i| crate::values::specified::PositiveInteger::parse(context, i))
         {
-            return Ok(Self(i.0));
+            return Ok(Self {
+                max_lines: MaxLines::lines(value, false),
+                block_ellipsis: BlockEllipsis::Ellipsis,
+                webkit_legacy: true,
+                serialize_webkit_legacy: false,
+            });
         }
         input.expect_ident_matching("none")?;
         Ok(Self::none())

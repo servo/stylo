@@ -42,7 +42,7 @@ pub use self::border::{
 pub use self::box_::{
     AlignmentBaseline, Appearance, BaselineShift, BaselineSource, BreakBetween, BreakWithin, Clear,
     Contain, ContainIntrinsicSize, ContainerName, ContainerType, ContentVisibility, Display,
-    DominantBaseline, Float, LineClamp, Overflow, OverflowAnchor, OverflowClipMargin,
+    DominantBaseline, Float, LineClamp, MarginTrim, Overflow, OverflowAnchor, OverflowClipMargin,
     OverscrollBehavior, Perspective, PositionProperty, Resize, ScrollSnapAlign, ScrollSnapAxis,
     ScrollSnapStop, ScrollSnapStrictness, ScrollSnapType, ScrollbarGutter, TouchAction, WillChange,
     WillChangeBits, WritingModeProperty, Zoom,

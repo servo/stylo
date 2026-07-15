@@ -668,6 +668,7 @@ class Longhand(Property):
                 "SelfAlignment",
                 "JustifyItems",
                 "LineBreak",
+                "MarginTrim",
                 "MasonryAutoFlow",
                 "MozTheme",
                 "BoolInteger",

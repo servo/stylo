@@ -3,8 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 #![allow(unsafe_code)]
-// This is needed for the constants in atom_macro.rs, because we have some
-// atoms whose names differ only by case, e.g. datetime and dateTime.
+// This is needed because we have some atoms whose names differ only by case,
+// e.g. datetime and dateTime.
 #![allow(non_upper_case_globals)]
 
 //! A drop-in replacement for string_cache, but backed by Gecko `nsAtom`s.
@@ -13,8 +13,8 @@ use crate::gecko_bindings::bindings::Gecko_AddRefAtom;
 use crate::gecko_bindings::bindings::Gecko_Atomize;
 use crate::gecko_bindings::bindings::Gecko_Atomize16;
 use crate::gecko_bindings::bindings::Gecko_ReleaseAtom;
-use crate::gecko_bindings::structs::root::mozilla::detail::gGkAtoms;
-use crate::gecko_bindings::structs::root::mozilla::detail::GkAtoms_Atoms_AtomsCount;
+use crate::gecko_bindings::structs::root::nsGkAtoms::detail::gGkAtoms;
+use crate::gecko_bindings::structs::root::nsGkAtoms::kStaticAtomCount;
 use crate::gecko_bindings::structs::{nsAtom, nsDynamicAtom, nsStaticAtom};
 use nsstring::{nsAString, nsStr};
 use precomputed_hash::PrecomputedHash;
@@ -31,10 +31,18 @@ use std::{slice, str};
 use style_traits::SpecifiedValueInfo;
 use to_shmem::{SharedMemoryBuilder, ToShmem};
 
-#[macro_use]
-#[allow(improper_ctypes, non_camel_case_types, missing_docs)]
-pub mod atom_macro {
-    include!(concat!(env!("OUT_DIR"), "/gecko/atom_macro.rs"));
+include!(mozbuild::objdir_path!("xpcom/ds/static_atoms.rs"));
+
+/// Returns a static atom by passing the literal string it represents.
+#[macro_export]
+macro_rules! atom {
+    ($s:tt) => {{
+        #[allow(unsafe_code)]
+        #[allow(unused_unsafe)]
+        unsafe {
+            $crate::string_cache::Atom::from_index_unchecked(static_atom_index!($s))
+        }
+    }};
 }
 
 #[macro_use]
@@ -96,7 +104,7 @@ impl<'de> Deserialize<'de> for Atom {
 pub struct WeakAtom(nsAtom);
 
 /// The number of static atoms we have.
-const STATIC_ATOM_COUNT: usize = GkAtoms_Atoms_AtomsCount as usize;
+const STATIC_ATOM_COUNT: usize = kStaticAtomCount as usize;
 
 impl Deref for Atom {
     type Target = WeakAtom;
@@ -191,7 +199,7 @@ impl WeakAtom {
             let string_offset = -(string_offset as isize);
             let u8_ptr = atom_ptr as *const u8;
             // It is safe to use offset() here because both addresses are within
-            // the same struct, e.g. mozilla::detail::gGkAtoms.
+            // the same struct, e.g. nsGkAtoms::detail::gGkAtoms.
             unsafe { u8_ptr.offset(string_offset) as *const u16 }
         } else {
             let atom_ptr = self.as_ptr() as *const nsDynamicAtom;

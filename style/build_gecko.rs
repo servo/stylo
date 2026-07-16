@@ -367,14 +367,13 @@ fn setup_logging() -> bool {
     }
 }
 
-fn generate_atoms() {
+fn generate_pseudo_elements() {
     let script = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap())
         .join("gecko")
-        .join("regen_atoms.py");
+        .join("regen_pseudo_elements.py");
     println!("cargo:rerun-if-changed={}", script.display());
     let status = Command::new(&*PYTHON)
         .arg(&script)
-        .arg(DISTDIR_PATH.as_os_str())
         .arg(OUTDIR_PATH.as_os_str())
         .status()
         .unwrap();
@@ -388,7 +387,7 @@ pub fn generate() {
     fs::create_dir_all(&*OUTDIR_PATH).unwrap();
     setup_logging();
     generate_structs();
-    generate_atoms();
+    generate_pseudo_elements();
 
     for path in ADDED_PATHS.lock().unwrap().iter() {
         println!("cargo:rerun-if-changed={}", path.to_str().unwrap());

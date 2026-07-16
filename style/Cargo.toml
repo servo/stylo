@@ -69,6 +69,7 @@ itoa = "1.0"
 log = "0.4"
 malloc_size_of = { path = "../malloc_size_of" }
 malloc_size_of_derive = { path = "../../../xpcom/rust/malloc_size_of_derive" }
+mozbuild = {version = "0.1", optional = true}
 web_atoms = { version = "0.1", optional = true }
 nsstring = {path = "../../../xpcom/rust/nsstring/", optional = true}
 num_cpus = {version = "1.1.0"}

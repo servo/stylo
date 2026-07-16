@@ -1129,8 +1129,11 @@ bitflags! {
 #[derive(
     Clone,
     Debug,
+    Deserialize,
+    Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToCss,
     ToComputedValue,
@@ -1138,7 +1141,6 @@ bitflags! {
     ToShmem,
 )]
 #[repr(C, u8)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 /// Set of variant alternates
 pub enum VariantAlternates {
     /// Enables display of stylistic alternates
@@ -1167,8 +1169,11 @@ pub enum VariantAlternates {
     Clone,
     Debug,
     Default,
+    Deserialize,
+    Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -1178,7 +1183,6 @@ pub enum VariantAlternates {
 )]
 #[repr(transparent)]
 #[typed(todo_derive_fields)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Hash, Serialize))]
 /// List of Variant Alternates
 pub struct FontVariantAlternates(
     #[css(if_empty = "normal", iterable)] crate::OwnedSlice<VariantAlternates>,

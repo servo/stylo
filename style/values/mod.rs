@@ -535,10 +535,12 @@ impl<A: Debug, B: Debug> Debug for Either<A, B> {
     Clone,
     Debug,
     Default,
+    Deserialize,
     Eq,
     Hash,
     MallocSizeOf,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToComputedValue,
@@ -546,7 +548,6 @@ impl<A: Debug, B: Debug> Debug for Either<A, B> {
     ToShmem,
 )]
 #[repr(C)]
-#[cfg_attr(feature = "servo", derive(Deserialize, Serialize))]
 pub struct CustomIdent(pub Atom);
 
 impl CustomIdent {

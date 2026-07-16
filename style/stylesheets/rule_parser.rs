@@ -736,7 +736,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 }).unwrap_or_default();
                 AtRulePrelude::Layer(names)
             },
-            "font-feature-values" if cfg!(feature = "gecko") => {
+            "font-feature-values" => {
                 let family_names = parse_family_name_list(&self.context, input)?;
                 AtRulePrelude::FontFeatureValues(family_names)
             },

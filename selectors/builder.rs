@@ -28,10 +28,10 @@ use crate::parser::{
 };
 use crate::sink::Push;
 use bitflags::bitflags;
-use derive_more::{Add, AddAssign};
 use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::cmp;
+use std::ops::{Add, AddAssign};
 use std::slice;
 
 #[cfg(feature = "to_shmem")]
@@ -242,7 +242,7 @@ pub struct SpecificityAndFlags {
 
 const MAX_10BIT: u32 = (1u32 << 10) - 1;
 
-#[derive(Add, AddAssign, Clone, Copy, Default, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Default, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) struct Specificity {
     id_selectors: u32,
     class_like_selectors: u32,
@@ -258,6 +258,24 @@ impl Specificity {
             class_like_selectors: 1,
             element_selectors: 0,
         }
+    }
+}
+
+impl Add for Specificity {
+    type Output = Self;
+    #[inline]
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            id_selectors: self.id_selectors + rhs.id_selectors,
+            class_like_selectors: self.class_like_selectors + rhs.class_like_selectors,
+            element_selectors: self.element_selectors + rhs.id_selectors,
+        }
+    }
+}
+impl AddAssign for Specificity {
+    #[inline]
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
     }
 }
 

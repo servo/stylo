@@ -169,11 +169,17 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         if box_style.clone__webkit_line_clamp().is_none() {
             return;
         }
+        let line_clamp = box_style.clone_line_clamp();
         let disp = box_style.clone_display();
-        if disp.inside() != DisplayInside::WebkitBox {
+        // In non-legacy case, display: -webkit-box with box-orient: horizontal should not be line clamped.
+        if disp.inside() != DisplayInside::WebkitBox && line_clamp.webkit_legacy
+            || disp.inside() == DisplayInside::WebkitBox
+                && self.style.get_xul().clone__moz_box_orient() != BoxOrient::Vertical
+        {
             return;
         }
-        if self.style.get_xul().clone__moz_box_orient() != BoxOrient::Vertical {
+        // Inline elements should not have line-clamp applied, unlike -webkit-inline-box which should.
+        if disp.inside() == DisplayInside::Flow && disp.outside() == DisplayOutside::Inline {
             return;
         }
         let new_display = if disp.outside() == DisplayOutside::Block {

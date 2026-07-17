@@ -1760,12 +1760,7 @@ pub mod position_try {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Longhands, ParseError<'i>> {
-        let order =
-            if static_prefs::pref!("layout.css.anchor-positioning.position-try-order.enabled") {
-                input.try_parse(PositionTryOrder::parse).ok()
-            } else {
-                None
-            };
+        let order = input.try_parse(PositionTryOrder::parse).ok();
         let fallbacks = PositionTryFallbacks::parse(context, input)?;
         Ok(expanded! {
             position_try_order: order.unwrap_or(PositionTryOrder::normal()),
@@ -1778,11 +1773,9 @@ pub mod position_try {
         where
             W: fmt::Write,
         {
-            if let Some(o) = self.position_try_order {
-                if *o != PositionTryOrder::Normal {
-                    o.to_css(dest)?;
-                    dest.write_char(' ')?;
-                }
+            if !self.position_try_order.is_normal() {
+                self.position_try_order.to_css(dest)?;
+                dest.write_char(' ')?;
             }
             self.position_try_fallbacks.to_css(dest)
         }

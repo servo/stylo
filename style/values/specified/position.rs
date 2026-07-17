@@ -831,12 +831,12 @@ pub enum PositionTryOrder {
 
 impl PositionTryOrder {
     #[inline]
-    /// Return the `auto` value.
+    /// Return the `normal` value.
     pub fn normal() -> Self {
         Self::Normal
     }
 
-    /// Returns whether this is the `auto` value.
+    /// Returns whether this is the `normal` value.
     pub fn is_normal(&self) -> bool {
         *self == Self::Normal
     }

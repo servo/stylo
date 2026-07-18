@@ -872,6 +872,38 @@ impl specified::CalcLengthPercentage {
         }
     }
 
+    /// Computes the value without a style context, returning None if any leaf
+    /// needs a one to resolve (e.g. a font- or viewport-relative length).
+    /// Absolute lengths and percentages (and calc() combining them) resolve
+    /// correctly.
+    pub fn compute_without_context(&self) -> Option<LengthPercentage> {
+        use crate::values::specified::calc::Leaf;
+
+        let mut resolvable = true;
+        let node = self.0.node.map_leaves(|leaf| match *leaf {
+            Leaf::Percentage(p) => ComputedLeaf::Percentage(Percentage(p.get())),
+            Leaf::Length(l) => {
+                ComputedLeaf::Length(match l.to_computed_pixel_length_without_context() {
+                    Ok(px) => Length::new(px),
+                    Err(()) => {
+                        resolvable = false;
+                        Length::new(0.)
+                    },
+                })
+            },
+            Leaf::Number(n) => ComputedLeaf::Number(n.get()),
+            _ => {
+                resolvable = false;
+                ComputedLeaf::Number(0.)
+            },
+        });
+
+        if !resolvable {
+            return None;
+        }
+        Some(LengthPercentage::new_calc(node, self.0.clamping_mode))
+    }
+
     /// Compute the value into pixel length as CSSFloat, using the get_font_metrics function
     /// if provided to resolve font-relative dimensions.
     #[cfg(feature = "gecko")]

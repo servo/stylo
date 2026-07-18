@@ -351,9 +351,14 @@ impl<T: ?Sized> Arc<T> {
     ///
     /// It's a logic error to call this more than once, but it's not unsafe, as
     /// it'd just report negative leaks.
+    ///
+    /// The allocation is expected to live for the rest of the process, so this
+    /// also marks it static: clone()/drop() then skip the atomic refcount
+    /// updates.
     #[inline(always)]
     pub fn mark_as_intentionally_leaked(&self) {
         self.record_drop();
+        self.inner().count.store(STATIC_REFCOUNT, Relaxed);
     }
 
     // Non-inlined part of `drop`. Just invokes the destructor and calls the

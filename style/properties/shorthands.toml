@@ -508,11 +508,11 @@ sub_properties = [
   "font-variation-settings",
   "font-kerning",
   "font-feature-settings",
+  "font-language-override",
 ]
 extra_gecko_sub_properties = [
   "font-size-adjust",
   "font-variant-emoji",
-  "font-language-override"
 ]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font"
 derive_value_info = false

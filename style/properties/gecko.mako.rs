@@ -393,7 +393,7 @@ def set_gecko_property(ffi_name, expr):
         use crate::properties::longhands::${ident}::computed_value::T as Keyword;
         // FIXME(bholley): Align binary representations and ditch |match| for cast + static_asserts
 
-        // Some constant macros in the gecko are defined as negative integer(e.g. font-width).
+        // Some constant macros in the gecko are defined as negative integer(e.g. font-stretch).
         // And they are convert to signed integer in Rust bindings. We need to cast then
         // as signed type when we have both signed/unsigned integer in order to use them
         // as match's arms.
@@ -1514,7 +1514,7 @@ pub mod system_font {
                     keyword_info: KeywordInfo::none()
                 },
                 font_weight: system.weight,
-                font_width: system.width,
+                font_stretch: system.stretch,
                 font_style: system.style,
                 system_font: *self,
             };

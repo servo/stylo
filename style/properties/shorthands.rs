@@ -2552,14 +2552,14 @@ pub mod font {
         font_variant_emoji,
     };
     use crate::properties::longhands::{
-        font_feature_settings, font_kerning, font_optical_sizing, font_style, font_variant_caps,
-        font_variant_east_asian, font_variant_ligatures, font_variant_numeric,
-        font_variant_position, font_variation_settings, font_weight, font_width,
+        font_feature_settings, font_kerning, font_optical_sizing, font_stretch, font_style,
+        font_variant_caps, font_variant_east_asian, font_variant_ligatures, font_variant_numeric,
+        font_variant_position, font_variation_settings, font_weight,
     };
     #[cfg(feature = "gecko")]
     use crate::values::specified::font::SystemFont;
     use crate::values::specified::font::{
-        FontFamily, FontSize, FontStyle, FontWeight, FontWidth, FontWidthKeyword, LineHeight,
+        FontFamily, FontSize, FontStretch, FontStretchKeyword, FontStyle, FontWeight, LineHeight,
     };
 
     pub fn parse_value<'i, 't>(
@@ -2570,14 +2570,14 @@ pub mod font {
         let mut style = None;
         let mut variant_caps = None;
         let mut weight = None;
-        let mut width = None;
+        let mut stretch = None;
         #[cfg(feature = "gecko")]
         if let Ok(sys) = input.try_parse(|i| SystemFont::parse(context, i)) {
             return Ok(Longhands {
                 font_family: font_family::SpecifiedValue::system_font(sys),
                 font_size: font_size::SpecifiedValue::system_font(sys),
                 font_style: font_style::SpecifiedValue::system_font(sys),
-                font_width: font_width::SpecifiedValue::system_font(sys),
+                font_stretch: font_stretch::SpecifiedValue::system_font(sys),
                 font_weight: font_weight::SpecifiedValue::system_font(sys),
                 line_height: LineHeight::normal(),
                 font_kerning: font_kerning::get_initial_specified_value(),
@@ -2616,7 +2616,7 @@ pub mod font {
                     continue;
                 }
             }
-            try_parse_one!(input, width, FontWidthKeyword::parse);
+            try_parse_one!(input, stretch, FontStretchKeyword::parse);
             size = FontSize::parse(context, input)?;
             break;
         }
@@ -2636,17 +2636,18 @@ pub mod font {
             }
         }
 
-        if (count(&style) + count(&weight) + count(&variant_caps) + count(&width) + nb_normals) > 4
+        if (count(&style) + count(&weight) + count(&variant_caps) + count(&stretch) + nb_normals)
+            > 4
         {
             return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
         }
 
         let family = FontFamily::parse(context, input)?;
-        let width = width.map(FontWidth::Keyword);
+        let stretch = stretch.map(FontStretch::Keyword);
         Ok(Longhands {
             font_style: unwrap_or_initial!(font_style, style),
             font_weight: unwrap_or_initial!(font_weight, weight),
-            font_width: unwrap_or_initial!(font_width, width),
+            font_stretch: unwrap_or_initial!(font_stretch, stretch),
             font_variant_caps: unwrap_or_initial!(font_variant_caps, variant_caps),
             font_size: size,
             line_height: line_height.unwrap_or(LineHeight::normal()),
@@ -2743,19 +2744,19 @@ pub mod font {
                 return Ok(());
             }
 
-            let font_width = match self.font_width {
-                FontWidth::Keyword(kw) => *kw,
-                FontWidth::Width(percentage) => {
+            let font_stretch = match self.font_stretch {
+                FontStretch::Keyword(kw) => *kw,
+                FontStretch::Stretch(percentage) => {
                     let computed = match percentage.compute() {
                         Some(v) => v,
                         None => return Ok(()),
                     };
-                    match FontWidthKeyword::from_percentage(computed.0) {
+                    match FontStretchKeyword::from_percentage(computed.0) {
                         Some(kw) => kw,
                         None => return Ok(()),
                     }
                 },
-                FontWidth::System(..) => return Ok(()),
+                FontStretch::System(..) => return Ok(()),
             };
 
             if self.font_variant_caps != &font_variant_caps::get_initial_specified_value()
@@ -2780,8 +2781,8 @@ pub mod font {
                 dest.write_char(' ')?;
             }
 
-            if font_width != FontWidthKeyword::Normal {
-                font_width.to_css(dest)?;
+            if font_stretch != FontStretchKeyword::Normal {
+                font_stretch.to_css(dest)?;
                 dest.write_char(' ')?;
             }
 
@@ -2824,7 +2825,7 @@ pub mod font {
                 self.font_family,
                 self.font_size,
                 self.font_style,
-                self.font_width,
+                self.font_stretch,
                 self.font_weight
             );
 
@@ -2844,7 +2845,7 @@ pub mod font {
     impl SpecifiedValueInfo for Longhands {
         const SUPPORTED_TYPES: u8 = FontStyle::SUPPORTED_TYPES
             | FontWeight::SUPPORTED_TYPES
-            | FontWidth::SUPPORTED_TYPES
+            | FontStretch::SUPPORTED_TYPES
             | font_variant_caps::SpecifiedValue::SUPPORTED_TYPES
             | FontSize::SUPPORTED_TYPES
             | FontFamily::SUPPORTED_TYPES;
@@ -2852,7 +2853,7 @@ pub mod font {
         fn collect_completion_keywords(f: KeywordsCollectFn) {
             FontStyle::collect_completion_keywords(f);
             FontWeight::collect_completion_keywords(f);
-            FontWidth::collect_completion_keywords(f);
+            FontStretch::collect_completion_keywords(f);
             font_variant_caps::SpecifiedValue::collect_completion_keywords(f);
             FontSize::collect_completion_keywords(f);
             FontFamily::collect_completion_keywords(f);

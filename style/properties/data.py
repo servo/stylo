@@ -20,7 +20,7 @@ LOGICAL_SIZES = ["block-size", "inline-size"]
 LOGICAL_AXES = ["block", "inline"]
 
 SYSTEM_FONT_LONGHANDS = """font_family font_size font_style
-                           font_width font_weight""".split()
+                           font_stretch font_weight""".split()
 
 PRIORITARY_PROPERTIES = set(
     [
@@ -48,7 +48,7 @@ PRIORITARY_PROPERTIES = set(
         "font-size",
         "font-size-adjust",
         "font-weight",
-        "font-width",
+        "font-stretch",
         "font-style",
         "font-family",
         # color-scheme affects how system colors and light-dark() resolve.
@@ -110,7 +110,7 @@ PRIORITARY_PROPERTY_DEPENDENCIES = {
     # lengths (other than font-size) via font-relative units.
     "font-size-adjust": ["appearance"],
     "font-weight": ["appearance"],
-    "font-width": ["appearance"],
+    "font-stretch": ["appearance"],
     "font-style": ["appearance"],
     # Writing-mode properties affect logical -> physical property conversions, but also
     # font metrics.
@@ -125,7 +125,7 @@ PRIORITARY_PROPERTY_DEPENDENCIES = {
         "text-orientation",
         "font-size",
         "font-weight",
-        "font-width",
+        "font-stretch",
         "font-style",
         "font-size-adjust",
     ],
@@ -861,9 +861,8 @@ class StyleStruct(object):
 
 
 class Descriptor(object):
-    def __init__(self, name, type, parser=None, gecko_pref=None, ignore_malloc_size_of=None, aliases=[]):
+    def __init__(self, name, type, parser=None, gecko_pref=None, ignore_malloc_size_of=None):
         self.name = name
-        self.aliases = aliases
         self.type = type
         self.parser = parser
         self.gecko_pref = gecko_pref

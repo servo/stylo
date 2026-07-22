@@ -3282,14 +3282,12 @@ pub mod text_decoration {
         where
             W: fmt::Write,
         {
-            use crate::values::generics::text::GenericTextDecorationLength;
             use crate::values::specified::Color;
             use crate::values::specified::TextDecorationLine;
 
             let is_solid_style =
                 *self.text_decoration_style == text_decoration_style::SpecifiedValue::Solid;
             let is_current_color = *self.text_decoration_color == Color::CurrentColor;
-
             let is_auto_thickness = self.text_decoration_thickness.is_auto();
             let is_none = *self.text_decoration_line == TextDecorationLine::none();
 

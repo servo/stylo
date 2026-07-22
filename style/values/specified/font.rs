@@ -407,26 +407,26 @@ impl ToComputedValue for FontStyle {
     }
 }
 
-/// A value for the `font-stretch` property.
+/// A value for the `font-width` property.
 ///
-/// https://drafts.csswg.org/css-fonts-4/#font-stretch-prop
+/// https://drafts.csswg.org/css-fonts-4/#font-width-prop
 #[allow(missing_docs)]
 #[derive(
     Clone, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
-pub enum FontStretch {
-    Stretch(NonNegativePercentage),
-    Keyword(FontStretchKeyword),
+pub enum FontWidth {
+    Width(NonNegativePercentage),
+    Keyword(FontWidthKeyword),
     #[css(skip)]
     System(SystemFont),
 }
 
-/// A keyword value for `font-stretch`.
+/// A keyword value for `font-width`.
 #[derive(
     Clone, Copy, Debug, MallocSizeOf, Parse, PartialEq, SpecifiedValueInfo, ToCss, ToShmem, ToTyped,
 )]
 #[allow(missing_docs)]
-pub enum FontStretchKeyword {
+pub enum FontWidthKeyword {
     Normal,
     Condensed,
     UltraCondensed,
@@ -438,44 +438,44 @@ pub enum FontStretchKeyword {
     UltraExpanded,
 }
 
-impl FontStretchKeyword {
+impl FontWidthKeyword {
     /// Turns the keyword into a computed value.
-    pub fn compute(&self) -> computed::FontStretch {
-        computed::FontStretch::from_keyword(*self)
+    pub fn compute(&self) -> computed::FontWidth {
+        computed::FontWidth::from_keyword(*self)
     }
 
     /// Does the opposite operation to `compute`, in order to serialize keywords
     /// if possible.
     pub fn from_percentage(p: f32) -> Option<Self> {
-        computed::FontStretch::from_percentage(p).as_keyword()
+        computed::FontWidth::from_percentage(p).as_keyword()
     }
 }
 
-impl FontStretch {
+impl FontWidth {
     /// `normal`.
     pub fn normal() -> Self {
-        FontStretch::Keyword(FontStretchKeyword::Normal)
+        FontWidth::Keyword(FontWidthKeyword::Normal)
     }
 
-    system_font_methods!(FontStretch, font_stretch);
+    system_font_methods!(FontWidth, font_width);
 }
 
-impl ToComputedValue for FontStretch {
-    type ComputedValue = computed::FontStretch;
+impl ToComputedValue for FontWidth {
+    type ComputedValue = computed::FontWidth;
 
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         match *self {
-            FontStretch::Stretch(ref percentage) => {
+            FontWidth::Width(ref percentage) => {
                 let percentage = percentage.to_computed_value(context).0;
-                computed::FontStretch::from_percentage(percentage.0)
+                computed::FontWidth::from_percentage(percentage.0)
             },
-            FontStretch::Keyword(ref kw) => kw.compute(),
-            FontStretch::System(_) => self.compute_system(context),
+            FontWidth::Keyword(ref kw) => kw.compute(),
+            FontWidth::System(_) => self.compute_system(context),
         }
     }
 
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
-        FontStretch::Stretch(NonNegativePercentage::from_computed_value(&NonNegative(
+        FontWidth::Width(NonNegativePercentage::from_computed_value(&NonNegative(
             computed.to_percentage(),
         )))
     }

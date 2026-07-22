@@ -1003,7 +1003,7 @@ impl<'a> Cascade<'a> {
                 context.builder.color_scheme =
                     context.builder.get_inherited_ui().color_scheme_bits();
             },
-            MozDefaultAppearance | MathDepth | FontWeight | FontStretch | FontStyle
+            MozDefaultAppearance | MathDepth | FontWeight | FontWidth | FontStyle
             | FontSizeAdjust | ForcedColorAdjust | LineHeight => {},
         }
     }

@@ -921,13 +921,14 @@ spec = "https://drafts.csswg.org/css-fonts/#propdef-font-size-adjust"
 gecko_ffi_name = "mFont.sizeAdjust"
 affects = "layout"
 
-[font-stretch]
-type = "FontStretch"
-initial = "computed::FontStretch::hundred()"
+[font-width]
+type = "FontWidth"
+initial = "computed::FontWidth::hundred()"
 struct = "font"
-initial_specified_value = "specified::FontStretch::normal()"
-gecko_ffi_name = "mFont.stretch"
-spec = "https://drafts.csswg.org/css-fonts/#propdef-font-stretch"
+initial_specified_value = "specified::FontWidth::normal()"
+gecko_ffi_name = "mFont.width"
+spec = "https://drafts.csswg.org/css-fonts/#propdef-font-width"
+aliases = ["font-stretch"]
 servo_restyle_damage = "rebuild_box"
 affects = "layout"
 

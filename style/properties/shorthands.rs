@@ -3244,18 +3244,6 @@ pub mod text_decoration {
         text_decoration_color, text_decoration_line, text_decoration_style,
     };
 
-    #[cfg(feature = "gecko")]
-    #[inline(always)]
-    fn parse_thickness() -> bool {
-        true
-    }
-
-    #[cfg(feature = "servo")]
-    #[inline(always)]
-    fn parse_thickness() -> bool {
-        static_prefs::pref!("layout.unimplemented")
-    }
-
     pub fn parse_value<'i, 't>(
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
@@ -3271,9 +3259,7 @@ pub mod text_decoration {
             try_parse_one!(context, input, line, text_decoration_line::parse);
             try_parse_one!(context, input, style, text_decoration_style::parse);
             try_parse_one!(context, input, color, text_decoration_color::parse);
-            if parse_thickness() {
-                try_parse_one!(context, input, thickness, text_decoration_thickness::parse);
-            }
+            try_parse_one!(context, input, thickness, text_decoration_thickness::parse);
             parsed -= 1;
             break;
         }
@@ -3304,14 +3290,7 @@ pub mod text_decoration {
                 *self.text_decoration_style == text_decoration_style::SpecifiedValue::Solid;
             let is_current_color = *self.text_decoration_color == Color::CurrentColor;
 
-            #[cfg(feature = "gecko")]
-            let thickness = self.text_decoration_thickness;
-            #[cfg(feature = "servo")]
-            let thickness = self
-                .text_decoration_thickness
-                .unwrap_or(&GenericTextDecorationLength::Auto);
-
-            let is_auto_thickness = thickness.is_auto();
+            let is_auto_thickness = self.text_decoration_thickness.is_auto();
             let is_none = *self.text_decoration_line == TextDecorationLine::none();
 
             let mut writer = SequenceWriter::new(dest, " ");
@@ -3319,7 +3298,7 @@ pub mod text_decoration {
                 writer.item(self.text_decoration_line)?;
             }
             if !is_auto_thickness {
-                writer.item(thickness)?;
+                writer.item(self.text_decoration_thickness)?;
             }
             if !is_solid_style {
                 writer.item(self.text_decoration_style)?;

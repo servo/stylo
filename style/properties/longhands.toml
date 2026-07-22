@@ -2647,7 +2647,7 @@ initial = "computed::LengthPercentageOrAuto::auto()"
 struct = "inherited_text"
 servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-text-decor-4/#underline-offset"
-servo_restyle_damage = "repaint"
+servo_restyle_damage = "rebuild_stacking_context"
 affects = "overflow"
 
 [text-underline-position]
@@ -2657,7 +2657,7 @@ struct = "inherited_text"
 servo_pref = "layout.unimplemented"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-decor-3/#text-underline-position-property"
-servo_restyle_damage = "repaint"
+servo_restyle_damage = "rebuild_stacking_context"
 affects = "overflow"
 
 [writing-mode]
@@ -2771,7 +2771,7 @@ gecko_pref = "layout.css.text-decoration-inset.enabled"
 servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-text-decor-4/#text-decoration-inset-property"
 boxed = true
-servo_restyle_damage = "recalculate_overflow"
+servo_restyle_damage = "rebuild_stacking_context"
 affects = "overflow"
 
 [initial-letter]
@@ -2789,7 +2789,7 @@ type = "TextDecorationLength"
 initial = "generics::text::GenericTextDecorationLength::Auto"
 struct = "text"
 spec = "https://drafts.csswg.org/css-text-decor-4/#text-decoration-width-property"
-servo_restyle_damage = "repaint"
+servo_restyle_damage = "rebuild_stacking_context"
 affects = "overflow"
 
 [-x-span]

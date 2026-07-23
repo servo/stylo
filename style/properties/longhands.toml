@@ -2645,17 +2645,19 @@ affects = "overflow"
 type = "LengthPercentageOrAuto"
 initial = "computed::LengthPercentageOrAuto::auto()"
 struct = "inherited_text"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-text-decor-4/#underline-offset"
+servo_restyle_damage = "rebuild_stacking_context"
 affects = "overflow"
 
 [text-underline-position]
 type = "TextUnderlinePosition"
 initial = "computed::TextUnderlinePosition::AUTO"
 struct = "inherited_text"
-engine = "gecko"
+servo_pref = "layout.unimplemented"
 animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-text-decor-3/#text-underline-position-property"
+servo_restyle_damage = "rebuild_stacking_context"
 affects = "overflow"
 
 [writing-mode]
@@ -2765,10 +2767,11 @@ affects = "paint"
 type = "TextDecorationInset"
 initial = "computed::text::TextDecorationInset::get_initial_value()"
 struct = "text"
-engine = "gecko"
 gecko_pref = "layout.css.text-decoration-inset.enabled"
+servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-text-decor-4/#text-decoration-inset-property"
 boxed = true
+servo_restyle_damage = "rebuild_stacking_context"
 affects = "overflow"
 
 [initial-letter]
@@ -2785,8 +2788,8 @@ affects = "layout"
 type = "TextDecorationLength"
 initial = "generics::text::GenericTextDecorationLength::Auto"
 struct = "text"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-text-decor-4/#text-decoration-width-property"
+servo_restyle_damage = "rebuild_stacking_context"
 affects = "overflow"
 
 [-x-span]

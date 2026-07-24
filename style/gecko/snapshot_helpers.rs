@@ -7,7 +7,7 @@
 use crate::dom::TElement;
 use crate::gecko::wrapper::namespace_id_to_atom;
 use crate::gecko_bindings::bindings;
-use crate::gecko_bindings::structs::{self, nsAtom};
+use crate::gecko_bindings::structs::{self, nsAtom, AttrAtomArray};
 use crate::invalidation::element::element_wrapper::ElementSnapshot;
 use crate::selector_parser::{AttrValue, SnapshotMap};
 use crate::string_cache::WeakAtom;
@@ -22,8 +22,8 @@ use smallvec::SmallVec;
 /// class or a class list.
 enum Class<'a> {
     None,
-    One(*const nsAtom),
-    More(&'a [structs::RefPtr<nsAtom>]),
+    One(&'a nsAtom),
+    More(&'a AttrAtomArray),
 }
 
 #[inline(always)]
@@ -41,7 +41,7 @@ unsafe fn get_class_or_part_from_attr(attr: &structs::nsAttrValue) -> Class<'_> 
     debug_assert!(bindings::Gecko_AssertClassAttrValueIsSane(attr));
     let base_type = base_type(attr);
     if base_type == structs::nsAttrValue_ValueBaseType_eAtomBase {
-        return Class::One(ptr::<nsAtom>(attr));
+        return Class::One(&*ptr::<nsAtom>(attr));
     }
     if base_type == structs::nsAttrValue_ValueBaseType_eOtherBase {
         let container = ptr::<structs::MiscContainer>(attr);
@@ -49,17 +49,14 @@ unsafe fn get_class_or_part_from_attr(attr: &structs::nsAttrValue) -> Class<'_> 
             (*container).mType,
             structs::nsAttrValue_ValueType_eAtomArray
         );
-        // NOTE: Bindgen doesn't deal with AutoTArray, so cast it below.
-        let attr_array: *const _ = *(*container)
+        let atom_array: *const _ = *(*container)
             .__bindgen_anon_1
             .mValue
             .as_ref()
             .__bindgen_anon_1
             .mAtomArray
             .as_ref();
-        let array =
-            (*attr_array).mArray.0.as_ptr() as *const structs::nsTArray<structs::RefPtr<nsAtom>>;
-        return Class::More(&**array);
+        return Class::More(&*atom_array);
     }
     debug_assert_eq!(base_type, structs::nsAttrValue_ValueBaseType_eStringBase);
     Class::None
@@ -159,6 +156,20 @@ pub(super) fn imported_part(
     Some(AtomIdent(unsafe { Atom::from_raw(atom) }))
 }
 
+#[inline(always)]
+fn atom_array_atoms(atom_array: &AttrAtomArray) -> &[structs::RefPtr<nsAtom>] {
+    // NOTE: Bindgen doesn't deal with AutoTArray, so we cast it here...
+    let array = atom_array.mArray.0.as_ptr() as *const structs::nsTArray<structs::RefPtr<nsAtom>>;
+    unsafe { &**array }
+}
+
+#[inline(always)]
+fn atom_array_may_contain(atom_array: &AttrAtomArray, atom: &AtomIdent) -> bool {
+    // NOTE(emilio): Keep in sync with AttrAtomArray::MayContain().
+    let bit = 1 << ((atom.get_hash() >> 27) & 31);
+    atom_array.mBloomFilter & bit != 0
+}
+
 /// Given a class or part name, a case sensitivity, and an array of attributes,
 /// returns whether the attribute has that name.
 #[inline(always)]
@@ -170,13 +181,18 @@ pub fn has_class_or_part(
     match unsafe { get_class_or_part_from_attr(attr) } {
         Class::None => false,
         Class::One(atom) => unsafe { case_sensitivity.eq_atom(name, WeakAtom::new(atom)) },
-        Class::More(atoms) => match case_sensitivity {
+        Class::More(atom_array) => match case_sensitivity {
             CaseSensitivity::CaseSensitive => {
+                if !atom_array_may_contain(atom_array, name) {
+                    return false;
+                }
                 let name_ptr = name.as_ptr();
-                atoms.iter().any(|atom| atom.mRawPtr == name_ptr)
+                atom_array_atoms(atom_array)
+                    .iter()
+                    .any(|atom| atom.mRawPtr == name_ptr)
             },
             CaseSensitivity::AsciiCaseInsensitive => unsafe {
-                atoms
+                atom_array_atoms(atom_array)
                     .iter()
                     .any(|atom| WeakAtom::new(atom.mRawPtr).eq_ignore_ascii_case(name))
             },
@@ -195,8 +211,8 @@ where
         match get_class_or_part_from_attr(attr) {
             Class::None => {},
             Class::One(atom) => AtomIdent::with(atom, callback),
-            Class::More(atoms) => {
-                for atom in atoms {
+            Class::More(atom_array) => {
+                for atom in atom_array_atoms(atom_array) {
                     AtomIdent::with(atom.mRawPtr, &mut callback)
                 }
             },

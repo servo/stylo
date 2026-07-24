@@ -966,7 +966,7 @@ pub trait MatchMethods: TElement {
     /// as it involves locking and font metrics access, we consider that line-height may have
     /// changed if the font-size or line-height property itself has changed, or if the value
     /// is 'normal' and one of the properties that affects font selection (family, style,
-    /// weight, width) has changed.
+    /// weight, stretch) has changed.
     fn line_height_likely_changed(
         old_style: Option<&Arc<ComputedValues>>,
         new_style: &Arc<ComputedValues>,
@@ -993,7 +993,7 @@ pub trait MatchMethods: TElement {
         font_property_changed!(clone_font_family)
             || font_property_changed!(clone_font_style)
             || font_property_changed!(clone_font_weight)
-            || font_property_changed!(clone_font_width)
+            || font_property_changed!(clone_font_stretch)
     }
 
     /// Updates the styles with the new ones, diffs them, and stores the restyle

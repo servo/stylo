@@ -1277,11 +1277,14 @@ class PropertyRestrictions:
     # https://drafts.csswg.org/css-pseudo/#placeholder
     #
     # The spec says that placeholder and first-line have the same restrictions,
-    # but that's not true in Gecko and we also allow a handful other properties
-    # for ::placeholder.
+    # except those defined in css-inline.
+    # We also allow a handful other properties for ::placeholder, which is allowed by
+    # the spec.
     @staticmethod
     def placeholder(data):
         props = PropertyRestrictions.first_line(data)
+        for p in PropertyRestrictions.spec(data, "css-inline"):
+            props.discard(p)
         props.add("opacity")
         props.add("text-overflow")
         props.add("text-align")

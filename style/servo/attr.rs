@@ -528,6 +528,9 @@ pub fn parse_legacy_color(mut input: &str) -> Result<AbsoluteColor, ()> {
 
     // Step 3.
     input = input.trim_matches(HTML_SPACE_CHARACTERS);
+    if input.is_empty() {
+        return Err(());
+    }
 
     // Step 4.
     if input.eq_ignore_ascii_case("transparent") {
@@ -571,8 +574,8 @@ pub fn parse_legacy_color(mut input: &str) -> Result<AbsoluteColor, ()> {
     }
 
     // Step 9.
-    if input.as_bytes()[0] == b'#' {
-        input = &input[1..]
+    if let Some(stripped) = input.strip_prefix('#') {
+        input = stripped
     }
 
     // Step 10.
@@ -711,4 +714,13 @@ pub struct AttrIdentifier {
     pub name: LocalName,
     pub namespace: Namespace,
     pub prefix: Option<Prefix>,
+}
+
+#[cfg(test)]
+mod test {
+    use crate::attr::parse_legacy_color;
+    #[test]
+    fn parsing_whitespace_only_color_does_not_panic() {
+        assert!(parse_legacy_color(" ").is_err());
+    }
 }

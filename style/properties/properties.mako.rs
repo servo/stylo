@@ -968,8 +968,7 @@ impl ShorthandId {
         % endfor
         ];
         NonCustomPropertyIterator {
-            filter: NonCustomPropertyId::from(self).enabled_for_all_content() &&
-                !self.allows_disabled_subproperties(),
+            filter: NonCustomPropertyId::from(self).enabled_for_all_content(),
             iter: MAP[self as usize].iter(),
         }
     }

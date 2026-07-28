@@ -166,7 +166,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         use crate::properties::longhands::_moz_box_orient::computed_value::T as BoxOrient;
         use crate::values::specified::box_::{DisplayInside, DisplayOutside};
         let box_style = self.style.get_box();
-        if box_style.clone__webkit_line_clamp().is_none() {
+        if box_style.clone_line_clamp().is_none() {
             return;
         }
         let line_clamp = box_style.clone_line_clamp();

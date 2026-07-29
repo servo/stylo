@@ -228,11 +228,13 @@ where
             && inputs.included_cascade_flags.is_empty();
 
         if may_reuse {
+            let dom_depth = self.context.thread_local.bloom_filter.matching_depth();
             let cached = self.context.thread_local.sharing_cache.lookup_by_rules(
                 self.context.shared,
                 parent_style.unwrap(),
                 &inputs,
                 self.element,
+                dom_depth,
             );
             if let Some(mut primary_style) = cached {
                 self.context.thread_local.statistics.styles_reused += 1;

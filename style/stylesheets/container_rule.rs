@@ -18,12 +18,10 @@ use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet};
 use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
 };
-use crate::stylesheets::bindings::nsAtom;
 use crate::stylesheets::{CssRules, CustomMediaEvaluator};
 use crate::stylist::Stylist;
 use crate::values::computed::{CSSPixelLength, ContainerType, Context, Ratio};
 use crate::values::specified::ContainerName;
-use crate::values::AtomIdent;
 use crate::{derives::*, LocalName};
 use app_units::Au;
 use cssparser::{Parser, SourceLocation};
@@ -112,19 +110,15 @@ impl ContainerAttributeDependencyKind {
     /// would require us to invalidate more.
     pub fn element_container_dependency_kind<E: TElement>(
         element: E,
-        local_name: *mut nsAtom,
+        local_name: &LocalName,
         stylist: &Stylist,
     ) -> Self {
         let mut name_kind = ContainerAttributeDependencyKind::None;
-        unsafe {
-            AtomIdent::with(local_name, |atom| {
-                stylist.any_applicable_rule_data(element, |data| {
-                    let value = data.might_have_attribute_dependency_in_container(atom);
-                    name_kind = std::cmp::max(name_kind, value);
-                    name_kind == ContainerAttributeDependencyKind::NamedContainer
-                });
-            })
-        }
+        stylist.any_applicable_rule_data(element, |data| {
+            let value = data.might_have_attribute_dependency_in_container(local_name);
+            name_kind = std::cmp::max(name_kind, value);
+            name_kind == ContainerAttributeDependencyKind::NamedContainer
+        });
         name_kind
     }
 }

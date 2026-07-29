@@ -27,8 +27,7 @@ use crate::typed_om::{
 use crate::values::computed;
 use crate::values::generics::calc::SortKey as AttrUnit;
 use crate::values::specified::{param::LinkParamValueOrNone, NoCalcLength, ParsedNamespace};
-use crate::{derives::*, Namespace, Prefix};
-use crate::{Atom, LocalName};
+use crate::{derives::*, Atom, LocalName, Namespace, Prefix};
 use cssparser::{
     CowRcStr, Delimiter, Parser, ParserInput, SourcePosition, Token, TokenSerializationType,
 };
@@ -243,6 +242,30 @@ impl CssEnvironment {
 ///
 /// Note that this does not include the `--` prefix
 pub type Name = Atom;
+
+impl LocalName {
+    #[cfg(feature = "gecko")]
+    fn with_name<'a, R>(name: &'a Name, callback: impl FnOnce(&Self) -> R) -> R {
+        callback(Self::cast(name))
+    }
+
+    #[cfg(feature = "servo")]
+    fn with_name<'a, R>(name: &'a Name, callback: impl FnOnce(&Self) -> R) -> R {
+        callback(&name.as_ref().into())
+    }
+}
+
+impl From<Name> for LocalName {
+    #[cfg(feature = "gecko")]
+    fn from(name: Name) -> Self {
+        Self::new(name)
+    }
+
+    #[cfg(feature = "servo")]
+    fn from(name: Name) -> Self {
+        name.as_ref().into()
+    }
+}
 
 /// Parse a custom property name.
 ///
@@ -1061,9 +1084,10 @@ impl VariableValue {
                 // matching against is an HTML element in an HTML document.
                 // So to simplify invalidation we collect both potential
                 // references here.
-                references.insert(LocalName::new(r.name.clone()));
-                if !r.name.is_ascii_lowercase() {
-                    references.insert(LocalName::new(r.name.to_ascii_lowercase()));
+                references.insert(r.name.clone().into());
+                let lowercase = r.name.to_ascii_lowercase();
+                if r.name != lowercase {
+                    references.insert(lowercase.into());
                 }
             }
         })
@@ -1385,20 +1409,18 @@ fn parse_attr_type<'i, 't>(input: &mut Parser<'i, 't>) -> AttributeType {
 /// Attribute values may reference other substitution functions we may need to process.
 /// See step 6: https://drafts.csswg.org/css-values-5/#attr-substitution
 pub fn get_attr_value_for_cycle_resolution(
-    name: &Atom,
+    name: &Name,
     attribute_data: &AttributeData,
     url_data: &UrlExtraData,
     attribute_tracker: &mut AttributeTracker,
 ) -> Result<ComputedRegisteredValue, ()> {
-    #[cfg(feature = "gecko")]
-    let local_name = LocalName::cast(name);
-    #[cfg(feature = "servo")]
-    let local_name = &LocalName::from(name.as_ref());
     let namespace = match attribute_data.namespace {
         ParsedNamespace::Known(ref ns) => ns,
         ParsedNamespace::Unknown => return Err(()),
     };
-    let attr = attribute_tracker.query(local_name, namespace).ok_or(())?;
+    let attr = LocalName::with_name(name, |local_name| {
+        attribute_tracker.query(local_name, namespace).ok_or(())
+    })?;
     let mut input = ParserInput::new(&attr);
     let mut parser = Parser::new(&mut input);
     // TODO(Bug 2021110): Support namespaced attributes in chained references.
@@ -1852,16 +1874,16 @@ fn substitute_one_reference<'a>(
         },
         // https://drafts.csswg.org/css-values-5/#attr-substitution
         SubstitutionFunctionKind::Attr => {
-            #[cfg(feature = "gecko")]
-            let local_name = LocalName::cast(&reference.name);
-            #[cfg(feature = "servo")]
-            let local_name = LocalName::from(reference.name.as_ref());
             let namespace = match reference.attribute_data.namespace {
                 ParsedNamespace::Known(ref ns) => Some(ns),
                 ParsedNamespace::Unknown => None,
             };
             namespace
-                .and_then(|namespace| attribute_tracker.query(&local_name, namespace))
+                .and_then(|namespace| {
+                    LocalName::with_name(&reference.name, |local_name| {
+                        attribute_tracker.query(local_name, namespace)
+                    })
+                })
                 .map_or_else(
                     || {
                         // Special case when fallback and <attr-type> are omitted.

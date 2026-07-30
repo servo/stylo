@@ -41,6 +41,12 @@ impl ListStyleType {
         Self(CounterStyle::None)
     }
 
+    /// Returns whether `self` is a particular identifier.
+    #[inline]
+    pub fn is_name(&self, n: &crate::Atom) -> bool {
+        self.0.is_name(n)
+    }
+
     /// Convert from gecko keyword to list-style-type.
     ///
     /// This should only be used for mapping type attribute to list-style-type, and thus only

@@ -1252,7 +1252,9 @@ pub mod list_style {
             use list_style_type::SpecifiedValue as ListStyleType;
 
             let mut writer = SequenceWriter::new(dest, " ");
-            if *self.list_style_position != ListStylePosition::Outside {
+            if *self.list_style_position != ListStylePosition::Outside
+                || self.list_style_type.is_name(&atom!("outside"))
+            {
                 writer.item(self.list_style_position)?;
             }
             if *self.list_style_image != ListStyleImage::None {

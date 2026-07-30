@@ -109,6 +109,14 @@ impl CounterStyle {
             _ => false,
         }
     }
+
+    /// Returns whether this is a particular name.
+    pub fn is_name(&self, name: &Atom) -> bool {
+        match *self {
+            CounterStyle::Name(CustomIdent(ref n)) => n == name,
+            _ => false,
+        }
+    }
 }
 
 bitflags! {

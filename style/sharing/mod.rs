@@ -82,6 +82,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ops::Deref;
 use std::ptr::NonNull;
+use thin_vec::ThinVec;
 use uluru::LRUCache;
 
 mod checks;
@@ -161,24 +162,28 @@ impl PartialEq for RevalidationResult {
     }
 }
 
-/// Some data we want to avoid recomputing all the time while trying to share
-/// style.
+/// We use this as an inline capacity for the class_list member below, but also as a reasonable cap
+/// to avoid sorting too large class lists.
+const REASONABLE_CLASS_LIST_SIZE: usize = 5;
+
+/// Some data we want to avoid recomputing all the time while trying to share style.
 #[derive(Debug, Default)]
 pub struct ValidationData {
     /// The class list of this element.
     ///
-    /// TODO(emilio): Maybe check whether rules for these classes apply to the
-    /// element?
-    class_list: Option<SmallVec<[AtomIdent; 5]>>,
+    /// TODO(emilio): Maybe check whether rules for these classes apply to the element?
+    /// TODO(emilio): Maybe this should be another ThinVec... But classes are definitely more common
+    /// than everything else on this struct.
+    class_list: Option<SmallVec<[AtomIdent; REASONABLE_CLASS_LIST_SIZE]>>,
 
     /// The part list of this element.
     ///
     /// TODO(emilio): Maybe check whether rules with these part names apply to
     /// the element?
-    part_list: Option<SmallVec<[AtomIdent; 5]>>,
+    part_list: Option<ThinVec<AtomIdent>>,
 
     /// The list of presentational attributes of the element.
-    pres_hints: Option<SmallVec<[ApplicableDeclarationBlock; 5]>>,
+    pres_hints: Option<ThinVec<ApplicableDeclarationBlock>>,
 
     /// The pointer identity of the parent ComputedValues.
     parent_style_identity: Option<OpaqueComputedValues>,
@@ -201,12 +206,13 @@ impl ValidationData {
         E: TElement,
     {
         self.pres_hints.get_or_insert_with(|| {
-            let mut pres_hints = SmallVec::new();
+            // This should basically never spill.
+            let mut pres_hints = SmallVec::<[_; 5]>::new();
             element.synthesize_presentational_hints_for_legacy_attributes(
                 VisitedHandlingMode::AllLinksUnvisited,
                 &mut pres_hints,
             );
-            pres_hints
+            ThinVec::from_iter(pres_hints.drain(..))
         })
     }
 
@@ -219,10 +225,10 @@ impl ValidationData {
             return &[];
         }
         self.part_list.get_or_insert_with(|| {
-            let mut list = SmallVec::<[_; 5]>::new();
+            let mut list = ThinVec::new();
             element.each_part(|p| list.push(p.clone()));
             // See below for the reasoning.
-            if !list.spilled() {
+            if list.len() <= REASONABLE_CLASS_LIST_SIZE {
                 list.sort_unstable_by_key(|a| a.get_hash());
             }
             list
@@ -235,13 +241,12 @@ impl ValidationData {
         E: TElement,
     {
         self.class_list.get_or_insert_with(|| {
-            let mut list = SmallVec::<[_; 5]>::new();
+            let mut list = SmallVec::<[_; REASONABLE_CLASS_LIST_SIZE]>::new();
             element.each_class(|c| list.push(c.clone()));
-            // Assuming there are a reasonable number of classes (we use the
-            // inline capacity as "reasonable number"), sort them to so that
-            // we don't mistakenly reject sharing candidates when one element
-            // has "foo bar" and the other has "bar foo".
-            if !list.spilled() {
+            // Assuming there are a reasonable number of classes, sort them to so that we don't
+            // mistakenly reject sharing candidates when one element has "foo bar" and the other has
+            // "bar foo".
+            if list.len() <= REASONABLE_CLASS_LIST_SIZE {
                 list.sort_unstable_by_key(|a| a.get_hash());
             }
             list
@@ -288,12 +293,10 @@ impl ValidationData {
             let bloom_to_use = if bloom_known_valid {
                 debug_assert_eq!(bloom.current_parent(), element.traversal_parent());
                 Some(bloom.filter())
+            } else if bloom.current_parent() == element.traversal_parent() {
+                Some(bloom.filter())
             } else {
-                if bloom.current_parent() == element.traversal_parent() {
-                    Some(bloom.filter())
-                } else {
-                    None
-                }
+                None
             };
             stylist.match_revalidation_selectors(
                 element,

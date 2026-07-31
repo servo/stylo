@@ -740,7 +740,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 let family_names = parse_family_name_list(&self.context, input)?;
                 AtRulePrelude::FontFeatureValues(family_names)
             },
-            "font-palette-values" if static_prefs::pref!("layout.css.font-palette.enabled") => {
+            "font-palette-values" => {
                 let name = DashedIdent::parse(&self.context, input)?;
                 AtRulePrelude::FontPaletteValues(name)
             },

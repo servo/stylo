@@ -897,8 +897,6 @@ initial = "computed::FontPalette::normal()"
 struct = "font"
 engine = "gecko"
 animation_type = "discrete"
-gecko_pref = "layout.css.font-palette.enabled"
-has_effect_on_gecko_scrollbars = false
 spec = "https://drafts.csswg.org/css-fonts/#font-palette-prop"
 affects = "layout"
 

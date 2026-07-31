@@ -2692,13 +2692,15 @@ pub mod font {
                 CheckSystemResult::None => {},
             }
 
-            if self.font_optical_sizing != &font_optical_sizing::get_initial_specified_value() {
-                return Ok(());
+            if let Some(v) = self.font_optical_sizing {
+                if v != &font_optical_sizing::get_initial_specified_value() {
+                    return Ok(());
+                }
             }
-            if self.font_variation_settings
-                != &font_variation_settings::get_initial_specified_value()
-            {
-                return Ok(());
+            if let Some(v) = self.font_variation_settings {
+                if v != &font_variation_settings::get_initial_specified_value() {
+                    return Ok(());
+                }
             }
             #[cfg(feature = "gecko")]
             if let Some(v) = self.font_variant_emoji {

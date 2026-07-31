@@ -3800,8 +3800,6 @@ spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-emoji"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.variantEmoji"
-gecko_pref = "layout.css.font-variant-emoji.enabled"
-has_effect_on_gecko_scrollbars = false
 keyword = { values = ["normal", "text", "emoji", "unicode"] }
 
 [font-variant-position]

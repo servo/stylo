@@ -148,11 +148,11 @@ impl SupportsCondition {
                     input.slice_from(pos).to_owned()
                 )))
             },
-            "font-format" if static_prefs::pref!("layout.css.font-tech.enabled") => {
+            "font-format" => {
                 let kw = FontFaceSourceFormatKeyword::parse(input)?;
                 Ok(SupportsCondition::FontFormat(kw))
             },
-            "font-tech" if static_prefs::pref!("layout.css.font-tech.enabled") => {
+            "font-tech" => {
                 let flag = FontFaceSourceTechFlags::parse_one(input)?;
                 Ok(SupportsCondition::FontTech(flag))
             },

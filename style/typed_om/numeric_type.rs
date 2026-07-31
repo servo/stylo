@@ -259,6 +259,79 @@ impl NumericType {
         }
     }
 
+    #[inline]
+    fn has_null_percent_hint(&self) -> bool {
+        self.percent_hint.is_none()
+    }
+
+    #[inline]
+    fn only_non_zero_entry_is(&self, base_type: NumericBaseType, exponent: i32) -> bool {
+        self.non_zero_count == 1 && self.exponent(base_type) == exponent
+    }
+
+    #[inline]
+    fn has_no_non_zero_entries(&self) -> bool {
+        self.non_zero_count == 0
+    }
+
+    #[inline]
+    fn matches_length_in_percentage_context(&self) -> bool {
+        self.only_non_zero_entry_is(NumericBaseType::Length, 1)
+            && (self.has_null_percent_hint()
+                || self.percent_hint == Optional::Some(NumericBaseType::Length))
+    }
+
+    // Grammar matching for CSSNumericValue types.
+    //
+    // See <https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-match>.
+    //
+    // The spec defines "matches <length>" (similarly for <angle>, <time>,
+    // <frequency>, <resolution>, <flex>), and separately "matches <number>",
+    // as context-sensitive predicates on numeric types. We generally
+    // implement only the strictest context (percentages disallowed, percent
+    // hint must be null), which is what is currently needed for validating
+    // arguments in some CSSTransformComponent subclasses.
+    //
+    // The only exception is <length-percentage>, whose grammar explicitly
+    // permits percentages resolved against <length>, so it accepts both a null
+    // percent hint and a <length> percent hint.
+    //
+    // StylePropertyMap.set() would use these predicates too if it ever switches
+    // from parser based validation to a FromTyped style path, at which point
+    // the remaining context-sensitive cases would need to be added.
+
+    /// Matches <length>.
+    #[export_name = "Servo_NumericType_MatchesLength"]
+    pub extern "C" fn matches_length(&self) -> bool {
+        self.only_non_zero_entry_is(NumericBaseType::Length, 1) && self.has_null_percent_hint()
+    }
+
+    /// Matches <angle>.
+    #[export_name = "Servo_NumericType_MatchesAngle"]
+    pub extern "C" fn matches_angle(&self) -> bool {
+        self.only_non_zero_entry_is(NumericBaseType::Angle, 1) && self.has_null_percent_hint()
+    }
+
+    /// Matches <percentage>.
+    #[export_name = "Servo_NumericType_MatchesPercentage"]
+    pub extern "C" fn matches_percentage(&self) -> bool {
+        self.only_non_zero_entry_is(NumericBaseType::Percent, 1)
+            && (self.has_null_percent_hint()
+                || self.percent_hint == Optional::Some(NumericBaseType::Percent))
+    }
+
+    /// Matches <length-percentage>.
+    #[export_name = "Servo_NumericType_MatchesLengthPercentage"]
+    pub extern "C" fn matches_length_percentage(&self) -> bool {
+        self.matches_length_in_percentage_context() || self.matches_percentage()
+    }
+
+    /// Matches <number>.
+    #[export_name = "Servo_NumericType_MatchesNumber"]
+    pub extern "C" fn matches_number(&self) -> bool {
+        self.has_no_non_zero_entries() && self.has_null_percent_hint()
+    }
+
     /// <https://drafts.css-houdini.org/css-typed-om-1/#apply-the-percent-hint>
     fn apply_percent_hint(&mut self, hint: NumericBaseType) {
         // Step 1.

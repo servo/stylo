@@ -308,8 +308,6 @@ impl NonTSPseudoClass {
 }
 
 impl ::selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
-    type Impl = SelectorImpl;
-
     #[inline]
     fn is_active_or_hover(&self) -> bool {
         matches!(*self, NonTSPseudoClass::Active | NonTSPseudoClass::Hover)

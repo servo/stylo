@@ -216,8 +216,6 @@ impl ToCss for PtNameAndClassSelector {
 }
 
 impl PseudoElementTrait for PseudoElement {
-    type Impl = SelectorImpl;
-
     // ::slotted() should support all tree-abiding pseudo-elements, see
     // https://drafts.csswg.org/css-scoping/#slotted-pseudo
     // https://drafts.csswg.org/css-pseudo-4/#treelike

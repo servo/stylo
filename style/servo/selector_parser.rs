@@ -39,7 +39,7 @@ use style_traits::{ParseError, StyleParseErrorKind};
     Clone, Copy, Debug, Deserialize, Eq, Hash, MallocSizeOf, PartialEq, Serialize, ToShmem,
 )]
 #[allow(missing_docs)]
-#[repr(usize)]
+#[repr(u8)]
 pub enum PseudoElement {
     // Eager pseudos. Keep these first so that eager_index() works.
     After = 0,
@@ -151,8 +151,9 @@ impl PseudoElement {
     /// Creates a pseudo-element from an eager index.
     #[inline]
     pub fn from_eager_index(i: usize) -> Self {
+        const _: () = assert!(EAGER_PSEUDO_COUNT <= (u8::MAX as usize));
         assert!(i < EAGER_PSEUDO_COUNT);
-        let result: PseudoElement = unsafe { mem::transmute(i) };
+        let result: PseudoElement = unsafe { mem::transmute(i as u8) };
         debug_assert!(result.is_eager());
         result
     }

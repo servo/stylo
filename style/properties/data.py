@@ -557,11 +557,6 @@ class Longhand(Property):
         ]
 
     def may_be_disabled_in(self, shorthand, engine):
-        if "ALLOWS_DISABLED_SUBPROPERTIES" in shorthand.flags:
-            assert "IS_LEGACY_SHORTHAND" in shorthand.flags
-            assert len(shorthand.sub_properties) == 1
-            return False
-
         if engine == "gecko":
             return self.gecko_pref and self.gecko_pref != shorthand.gecko_pref
         elif engine == "servo":

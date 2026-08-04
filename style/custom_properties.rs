@@ -26,7 +26,7 @@ use crate::typed_om::{
 };
 use crate::values::computed;
 use crate::values::generics::calc::SortKey as AttrUnit;
-use crate::values::specified::{param::LinkParamValueOrNone, NoCalcLength, ParsedNamespace};
+use crate::values::specified::{NoCalcLength, ParsedNamespace};
 use crate::{derives::*, Atom, LocalName, Namespace, Prefix};
 use cssparser::{
     CowRcStr, Delimiter, Parser, ParserInput, SourcePosition, Token, TokenSerializationType,
@@ -215,14 +215,10 @@ impl CssEnvironment {
                 .0
                 .iter()
                 .find(|p| p.name.0 == *name)?;
-            if let LinkParamValueOrNone::Specified(val) = &param.value {
-                let mut input = cssparser::ParserInput::new(val.as_ref());
-                let mut parser = cssparser::Parser::new(&mut input);
-
-                // need to carry around full variable value https://bugzilla.mozilla.org/show_bug.cgi?id=2028998
-                return VariableValue::parse(&mut parser, None, url_data).ok();
-            }
-            return None;
+            let mut input = cssparser::ParserInput::new(param.value.0.as_ref());
+            let mut parser = cssparser::Parser::new(&mut input);
+            // need to carry around full variable value https://bugzilla.mozilla.org/show_bug.cgi?id=2028998
+            return VariableValue::parse(&mut parser, None, url_data).ok();
         }
 
         if let Some(var) = ENVIRONMENT_VARIABLES.iter().find(|var| var.name == *name) {

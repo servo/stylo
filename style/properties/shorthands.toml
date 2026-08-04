@@ -347,7 +347,6 @@ spec = "https://drafts.csswg.org/css-align/#place-items-property"
 engine = "gecko"
 sub_properties = ["position-try-order", "position-try-fallbacks"]
 spec = "https://drafts.csswg.org/css-anchor-position-1/#position-try-prop"
-gecko_pref = "layout.css.anchor-positioning.enabled"
 
 [marker]
 engine = "gecko"

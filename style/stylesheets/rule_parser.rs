@@ -792,7 +792,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 // browser_parsable_css.js checks UA sheets properly.
                 AtRulePrelude::AppearanceBase
             },
-            "position-try" if static_prefs::pref!("layout.css.anchor-positioning.enabled") => {
+            "position-try" => {
                 let name = DashedIdent::parse(&self.context, input)?;
                 AtRulePrelude::PositionTry(name)
             },

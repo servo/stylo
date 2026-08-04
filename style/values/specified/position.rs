@@ -2151,13 +2151,9 @@ impl Inset {
         {
             return Ok(Self::LengthPercentage(l));
         }
-        match input.try_parse(|i| i.expect_ident_matching("auto")) {
-            Ok(_) => return Ok(Self::Auto),
-            Err(e) if !static_prefs::pref!("layout.css.anchor-positioning.enabled") => {
-                return Err(e.into());
-            },
-            Err(_) => (),
-        };
+        if input.try_parse(|i| i.expect_ident_matching("auto")).is_ok() {
+            return Ok(Self::Auto);
+        }
         Self::parse_anchor_functions_quirky(context, input, allow_quirks)
     }
 
@@ -2178,10 +2174,6 @@ impl Inset {
         input: &mut Parser<'i, 't>,
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError<'i>> {
-        debug_assert!(
-            static_prefs::pref!("layout.css.anchor-positioning.enabled"),
-            "How are we parsing with pref off?"
-        );
         if let Ok(inner) = input.try_parse(|i| AnchorFunction::parse(context, i)) {
             return Ok(Self::AnchorFunction(Box::new(inner)));
         }
@@ -2213,9 +2205,6 @@ impl Parse for AnchorFunction {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        if !static_prefs::pref!("layout.css.anchor-positioning.enabled") {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-        }
         input.expect_function_matching("anchor")?;
         input.parse_nested_block(|i| {
             let target_element = i.try_parse(|i| DashedIdent::parse(context, i)).ok();

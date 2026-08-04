@@ -677,7 +677,7 @@ fn parse_self_position<'i, 't>(
         "self-end" => AlignFlags::SELF_END,
         "left" if axis == AxisDirection::Inline => AlignFlags::LEFT,
         "right" if axis == AxisDirection::Inline => AlignFlags::RIGHT,
-        "anchor-center" if static_prefs::pref!("layout.css.anchor-positioning.enabled") => AlignFlags::ANCHOR_CENTER,
+        "anchor-center" => AlignFlags::ANCHOR_CENTER,
     })
 }
 
@@ -690,11 +690,8 @@ fn list_self_position_keywords(f: KeywordsCollectFn, axis: AxisDirection) {
         "center",
         "self-start",
         "self-end",
+        "anchor-center",
     ]);
-
-    if static_prefs::pref!("layout.css.anchor-positioning.enabled") {
-        f(&["anchor-center"]);
-    }
 
     if axis == AxisDirection::Inline {
         f(&["left", "right"]);

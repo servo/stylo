@@ -762,9 +762,6 @@ impl GenericAnchorFunction<Box<CalcNode>, Box<GenericAnchorFunctionFallback<Leaf
         additional_functions: AdditionalFunctions,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        if !static_prefs::pref!("layout.css.anchor-positioning.enabled") {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-        }
         input.parse_nested_block(|i| {
             let target_element = i.try_parse(|i| DashedIdent::parse(context, i)).ok();
             let side = GenericAnchorSide::parse_in_calc(context, i)?;
@@ -795,9 +792,6 @@ impl GenericAnchorSizeFunction<Box<GenericAnchorFunctionFallback<Leaf>>> {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        if !static_prefs::pref!("layout.css.anchor-positioning.enabled") {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
-        }
         GenericAnchorSizeFunction::parse_inner(context, input, |i| {
             parse_anchor_function_fallback(context, AdditionalFunctions::ANCHOR_SIZE, i)
         })

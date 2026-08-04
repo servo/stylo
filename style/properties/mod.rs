@@ -66,6 +66,8 @@ bitflags! {
         ///
         /// https://drafts.csswg.org/css-cascade/#legacy-shorthand
         const IS_LEGACY_SHORTHAND = 1 << 6;
+       /// This shorthand remains enabled even if some subproperties are pref-disabled.
+        const ALLOWS_DISABLED_SUBPROPERTIES = 1 << 7;
 
         /* The following flags are currently not used in Rust code, they
          * only need to be listed in corresponding properties so that
@@ -731,6 +733,13 @@ impl ShorthandId {
     #[inline]
     pub fn is_legacy_shorthand(self) -> bool {
         self.flags().contains(PropertyFlags::IS_LEGACY_SHORTHAND)
+    }
+
+    /// Returns whether this shorthand remains enabled even if some subproperties are pref-disabled.
+    #[inline]
+    pub fn allows_disabled_subproperties(self) -> bool {
+        self.flags()
+            .contains(PropertyFlags::ALLOWS_DISABLED_SUBPROPERTIES)
     }
 }
 

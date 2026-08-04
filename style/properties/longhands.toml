@@ -96,16 +96,6 @@ enabled_in = "ua"
 spec = "Nonstandard (Internal-only)"
 affects = "layout"
 
-[-webkit-line-clamp]
-type = "LineClamp"
-initial = "computed::LineClamp::none()"
-struct = "box"
-boxed = true
-engine = "gecko"
-parse_method = "parse_legacy"
-spec = "https://drafts.csswg.org/css-overflow-4/#webkit-line-clamp"
-affects = "layout"
-
 [line-clamp]
 type = "LineClamp"
 initial = "computed::LineClamp::none()"

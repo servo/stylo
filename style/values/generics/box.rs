@@ -306,9 +306,6 @@ pub struct GenericLineClamp<I> {
     /// Whether legacy line clamping behavior is used.
     #[animation(constant)]
     pub webkit_legacy: bool,
-    /// Whether the `-webkit-legacy` keyword is printed during serialization.
-    #[animation(constant)]
-    pub serialize_webkit_legacy: bool,
 }
 
 pub use self::GenericLineClamp as LineClamp;
@@ -320,7 +317,6 @@ impl<I> LineClamp<I> {
             max_lines: MaxLines::none(),
             block_ellipsis: BlockEllipsis::Ellipsis,
             webkit_legacy: false,
-            serialize_webkit_legacy: false,
         }
     }
 
@@ -346,10 +342,7 @@ impl<I: ToCss> ToCss for LineClamp<I> {
         if !self.block_ellipsis.is_ellipsis() {
             writer.item(&self.block_ellipsis)?;
         }
-        if self.webkit_legacy
-            && self.serialize_webkit_legacy
-            && static_prefs::pref!("layout.css.line-clamp.enabled")
-        {
+        if self.webkit_legacy && static_prefs::pref!("layout.css.line-clamp.enabled") {
             writer.raw_item("-webkit-legacy")?;
         }
         Ok(())

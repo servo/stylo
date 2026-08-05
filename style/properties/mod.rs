@@ -776,10 +776,14 @@ fn parse_non_custom_property_declaration_value_into<'i>(
     input.reset(&start);
     input.look_for_arbitrary_substitution_functions(enabled_arbitrary_substitution_functions());
 
+    let mut saw_arbitrary_substitution_functions = false;
     let err = match parse_entirely_into(declarations, input) {
         Ok(()) => {
-            input.seen_arbitrary_substitution_functions();
-            return Ok(());
+            saw_arbitrary_substitution_functions = input.seen_arbitrary_substitution_functions();
+            if !saw_arbitrary_substitution_functions {
+                return Ok(());
+            }
+            input.new_custom_error(style_traits::StyleParseErrorKind::UnspecifiedError)
         },
         Err(e) => e,
     };
@@ -800,7 +804,9 @@ fn parse_non_custom_property_declaration_value_into<'i>(
         }
         at_start = false;
     }
-    if !input.seen_arbitrary_substitution_functions() || invalid {
+    saw_arbitrary_substitution_functions =
+        saw_arbitrary_substitution_functions || input.seen_arbitrary_substitution_functions();
+    if !saw_arbitrary_substitution_functions || invalid {
         return Err(err);
     }
     input.reset(start);

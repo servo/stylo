@@ -15,8 +15,7 @@ use style_traits::arc_slice::ArcSlice;
 use style_traits::owned_str::OwnedStr;
 use style_traits::{ParseError, ToCss};
 
-/// A struct to hold a specific '<declaration-value>?', since an empty value (param(--a, )) serializes differently than
-/// a non-provided value (param(--a))
+/// A struct to hold a specific '<declaration-value>'.
 #[derive(
     Clone,
     Debug,
@@ -27,13 +26,8 @@ use style_traits::{ParseError, ToCss};
     ToResolvedValue,
     ToShmem,
 )]
-#[repr(C, u8)]
-pub enum LinkParamValueOrNone {
-    /// Handles the case when no value is provided at all: param(--a)
-    None,
-    /// Handles the cases for provided, or provided but empty, e.g. param(--a, blue) and param(--a, )
-    Specified(OwnedStr),
-}
+#[repr(transparent)]
+pub struct LinkParamValue(pub OwnedStr);
 
 /// A single param(--ident, value) entry: https://drafts.csswg.org/css-link-params-1/#funcdef-param
 #[derive(
@@ -51,7 +45,7 @@ pub struct LinkParam {
     /// link-parameters' param name, in the form of an <dashed-ident>: https://drafts.csswg.org/css-values-4/#typedef-dashed-ident
     pub name: DashedIdent,
     /// link-parameters' value, in the form of a <declaration-value>: https://drafts.csswg.org/css-syntax-3/#typedef-declaration-value
-    pub value: LinkParamValueOrNone,
+    pub value: LinkParamValue,
 }
 
 /// A struct to hold all specified link-parameters: https://drafts.csswg.org/css-link-params-1/
@@ -100,14 +94,11 @@ impl Parse for LinkParameters {
             input.expect_function_matching("param")?;
             input.parse_nested_block(|input| {
                 let name = DashedIdent::parse(context, input)?;
+                input.expect_comma()?;
                 // if a comma exists then parse it and set value as specified, even if no value provided
                 // need to handle url references properly https://bugzilla.mozilla.org/show_bug.cgi?id=2028998
-                let value = if input.try_parse(|i| i.expect_comma()).is_ok() {
-                    let parsed = VariableValue::parse(input, None, &context.url_data)?;
-                    LinkParamValueOrNone::Specified(OwnedStr::from(parsed.css))
-                } else {
-                    LinkParamValueOrNone::None
-                };
+                let parsed = VariableValue::parse(input, None, &context.url_data)?;
+                let value = LinkParamValue(OwnedStr::from(parsed.css));
                 Ok(LinkParam { name, value })
             })
         })?;
@@ -123,12 +114,10 @@ impl ToCss for LinkParam {
     {
         dest.write_str("param(")?;
         self.name.to_css(dest)?;
-        if let LinkParamValueOrNone::Specified(param) = &self.value {
-            dest.write_str(", ")?;
-            if !param.is_empty() {
-                // Don't use to_css, instead write the raw CSS value without extra quoting, else serialization will include un-de-serializable quotes
-                dest.write_str(&param)?;
-            }
+        dest.write_str(", ")?;
+        if !self.value.0.is_empty() {
+            // Don't use to_css, instead write the raw CSS value without extra quoting.
+            dest.write_str(&self.value.0)?;
         }
         dest.write_char(')')
     }

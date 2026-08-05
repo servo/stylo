@@ -4339,3 +4339,29 @@ pub mod grid {
         }
     }
 }
+
+#[cfg(feature = "gecko")]
+pub mod _webkit_line_clamp {
+    use super::*;
+    pub use crate::properties::generated::shorthands::_webkit_line_clamp::*;
+
+    use crate::values::specified::LineClamp;
+
+    pub fn parse_value<'i>(
+        context: &ParserContext,
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Longhands, ParseError<'i>> {
+        Ok(expanded! {
+            line_clamp: LineClamp::parse_legacy(context, input)?,
+        })
+    }
+
+    impl<'a> ToCss for LonghandsToSerialize<'a> {
+        fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+        where
+            W: fmt::Write,
+        {
+            self.line_clamp.to_css_legacy(dest)
+        }
+    }
+}

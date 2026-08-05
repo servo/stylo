@@ -8,10 +8,11 @@
 
 use super::{
     property_counts, AllShorthand, ComputedValues, LogicalGroupSet, LonghandIdSet,
-    LonghandIdSetIterator, NonCustomPropertyIdSet, PropertyDeclaration, PropertyDeclarationId,
-    PropertyId, ShorthandId, SourcePropertyDeclaration, SourcePropertyDeclarationDrain,
-    SubpropertiesVec,
+    LonghandIdSetIterator, NonCustomPropertyId, NonCustomPropertyIdSet, PropertyDeclaration,
+    PropertyDeclarationId, PropertyId, ShorthandId, SourcePropertyDeclaration,
+    SourcePropertyDeclarationDrain, SubpropertiesVec,
 };
+
 use crate::context::{QuirksMode, TreeCountingCaches};
 use crate::custom_properties;
 use crate::derives::*;
@@ -1141,7 +1142,11 @@ impl PropertyDeclarationBlock {
                 }
                 already_serialized.insert(shorthand.into());
 
-                if shorthand.is_legacy_shorthand() {
+                if shorthand.is_legacy_shorthand()
+                    && !(shorthand.allows_disabled_subproperties()
+                        && !NonCustomPropertyId::from(longhand_id).enabled_for_all_content())
+                {
+                    // TODO(Bug 1540681): Remove when shipping line-clamp.
                     continue;
                 }
 

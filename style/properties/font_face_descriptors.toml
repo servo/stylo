@@ -16,8 +16,9 @@ type = "FontStyleRange"
 [font-weight]
 type = "FontWeightRange"
 
-[font-stretch]
-type = "FontStretchRange"
+[font-width]
+type = "FontWidthRange"
+aliases = ["font-stretch"]
 
 [font-display]
 type = "FontDisplay"

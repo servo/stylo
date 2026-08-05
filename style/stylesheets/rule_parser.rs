@@ -17,10 +17,11 @@ use crate::properties::declaration_block::{
 use crate::properties_and_values::rule::{parse_property_block, PropertyRuleName};
 use crate::selector_parser::{SelectorImpl, SelectorParser};
 use crate::shared_lock::{Locked, SharedRwLock};
-use crate::str::starts_with_ignore_ascii_case;
 use crate::stylesheets::container_rule::{ContainerCondition, ContainerConditions, ContainerRule};
 use crate::stylesheets::document_rule::DocumentCondition;
-use crate::stylesheets::font_feature_values_rule::parse_family_name_list;
+use crate::stylesheets::font_feature_values_rule::{
+    parse_family_name_list, FontFeatureValuesBlockType,
+};
 use crate::stylesheets::import_rule::{ImportLayer, ImportRule, ImportSupportsCondition};
 use crate::stylesheets::keyframes_rule::parse_keyframe_list;
 use crate::stylesheets::layer_rule::{LayerBlockRule, LayerName, LayerStatementRule};
@@ -246,6 +247,83 @@ pub enum VendorPrefix {
     WebKit,
 }
 
+#[allow(missing_docs)]
+pub enum AtRuleType {
+    FontFace,
+    FontFeatureValues,
+    FontFeatureValuesBlock,
+    FontPaletteValues,
+    CounterStyle,
+    Media,
+    CustomMedia,
+    Container,
+    Supports,
+    Keyframes(Option<VendorPrefix>),
+    Page,
+    Property,
+    Document,
+    Import,
+    Namespace,
+    Layer,
+    Scope,
+    StartingStyle,
+    AppearanceBase,
+    PositionTry,
+    ViewTransition,
+    Margin(MarginRuleType),
+}
+
+impl AtRuleType {
+    fn from_name(name: &str, context: &ParserContext) -> Option<Self> {
+        Some(match_ignore_ascii_case! { name,
+            "font-face" => Self::FontFace,
+            "font-feature-values" if cfg!(feature = "gecko") => Self::FontFeatureValues,
+            "font-palette-values" => Self::FontPaletteValues,
+            "counter-style" if cfg!(feature = "gecko") => Self::CounterStyle,
+            "media" => Self::Media,
+            "custom-media" if static_prefs::pref!("layout.css.custom-media.enabled") => Self::CustomMedia,
+            "container" if cfg!(feature = "gecko") => Self::Container,
+            "supports" => Self::Supports,
+            "keyframes" => Self::Keyframes(None),
+            "-webkit-keyframes" => Self::Keyframes(Some(VendorPrefix::WebKit)),
+            "-moz-keyframes" if cfg!(feature = "gecko") => Self::Keyframes(Some(VendorPrefix::Moz)),
+            "page" if cfg!(feature = "gecko") => Self::Page,
+            "property" if static_prefs::pref!("layout.css.properties-and-values.enabled") => Self::Property,
+            "-moz-document" if cfg!(feature = "gecko") => Self::Document,
+            "import" => Self::Import,
+            "namespace" => Self::Namespace,
+            "layer" => Self::Layer,
+            "scope" if static_prefs::pref!("layout.css.at-scope.enabled") => Self::Scope,
+            "starting-style" if static_prefs::pref!("layout.css.starting-style-at-rules.enabled") => Self::StartingStyle,
+            "appearance-base" if context.chrome_rules_enabled() => Self::AppearanceBase,
+            "position-try" => Self::PositionTry,
+            "view-transition" if static_prefs::pref!("dom.viewTransitions.cross-document.enabled") => Self::ViewTransition,
+            _ => {
+                // The margin at-rules supported within @page.
+                if cfg!(feature = "gecko") && static_prefs::pref!("layout.css.margin-rules.enabled") {
+                    if let Some(rule_type) = MarginRuleType::from_name(name) {
+                        return Some(Self::Margin(rule_type));
+                    }
+                }
+
+                // The font feature value at-rules supported within @font-feature-values.
+                if cfg!(feature = "gecko") && FontFeatureValuesBlockType::from_name(name).is_some() {
+                    return Some(Self::FontFeatureValuesBlock);
+                }
+
+                return None;
+            },
+        })
+    }
+
+    /// Returns whether the given at-rule is supported in any context.
+    ///
+    /// https://drafts.csswg.org/css-conditional-5/#support-definition-at-rules
+    pub fn is_supported(name: &str, context: &ParserContext) -> bool {
+        AtRuleType::from_name(name, context).is_some()
+    }
+}
+
 /// A rule prelude for at-rule with block.
 pub enum AtRulePrelude {
     /// A @font-face rule prelude.
@@ -335,8 +413,19 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
     ) -> Result<AtRulePrelude, ParseError<'i>> {
-        match_ignore_ascii_case! { &*name,
-            "import" => {
+        // @charset is removed by rust-cssparser if it’s the first rule in the stylesheet
+        // anything left is invalid.
+        if name.eq_ignore_ascii_case("charset") {
+            self.dom_error = Some(RulesMutateError::HierarchyRequest);
+            return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedCharsetRule));
+        }
+
+        let Some(rule_type) = AtRuleType::from_name(&name, &self.context) else {
+            return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name)));
+        };
+
+        match rule_type {
+            AtRuleType::Import => {
                 if !self.check_state(State::Imports) {
                     return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedImportRule))
                 }
@@ -362,7 +451,7 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
 
                 return Ok(AtRulePrelude::Import(url, media, supports, layer));
             },
-            "namespace" => {
+            AtRuleType::Namespace => {
                 if !self.check_state(State::Namespaces) {
                     return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedNamespaceRule))
                 }
@@ -379,13 +468,7 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
                 let url = Namespace::from(maybe_namespace.as_ref());
                 return Ok(AtRulePrelude::Namespace(prefix, url));
             },
-            // @charset is removed by rust-cssparser if it’s the first rule in the stylesheet
-            // anything left is invalid.
-            "charset" => {
-                self.dom_error = Some(RulesMutateError::HierarchyRequest);
-                return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedCharsetRule))
-            },
-            "layer" => {
+            AtRuleType::Layer => {
                 let state_to_check = if self.state <= State::EarlyLayers {
                     // The real state depends on whether there's a block or not.
                     // We don't know that yet, but the parse_block check deals
@@ -404,7 +487,7 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
             }
         }
 
-        AtRuleParser::parse_prelude(self.nested(), name, input)
+        self.nested().parse_at_rule_prelude(rule_type, name, input)
     }
 
     #[inline]
@@ -518,6 +601,108 @@ struct NestedParseResult {
 }
 
 impl<'a, 'i> NestedRuleParser<'a, 'i> {
+    fn parse_at_rule_prelude<'t>(
+        &mut self,
+        rule_type: AtRuleType,
+        name: CowRcStr<'i>,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<AtRulePrelude, ParseError<'i>> {
+        Ok(match rule_type {
+            AtRuleType::Media => {
+                let media_queries = MediaList::parse(&mut self.context, input);
+                let arc = Arc::new(self.shared_lock.wrap(media_queries));
+                AtRulePrelude::Media(arc)
+            },
+            AtRuleType::Supports => {
+                let cond = SupportsCondition::parse(input)?;
+                AtRulePrelude::Supports(cond)
+            },
+            AtRuleType::FontFace => AtRulePrelude::FontFace,
+            AtRuleType::Container => {
+                let conditions = input.parse_comma_separated(|input| {
+                    ContainerCondition::parse(&self.context, input)
+                })?;
+                // Container rules must have at least one condition.
+                debug_assert!(!conditions.is_empty());
+                let conditions = ArcSlice::from_iter(conditions.into_iter());
+                AtRulePrelude::Container(conditions)
+            },
+            AtRuleType::Layer => {
+                let names = input
+                    .try_parse(|input| {
+                        input.parse_comma_separated(|input| LayerName::parse(&self.context, input))
+                    })
+                    .unwrap_or_default();
+                AtRulePrelude::Layer(names)
+            },
+            AtRuleType::FontFeatureValues => {
+                let family_names = parse_family_name_list(&self.context, input)?;
+                AtRulePrelude::FontFeatureValues(family_names)
+            },
+            AtRuleType::FontPaletteValues => {
+                let name = DashedIdent::parse(&self.context, input)?;
+                AtRulePrelude::FontPaletteValues(name)
+            },
+            AtRuleType::CounterStyle => {
+                let name = parse_counter_style_name_definition(input)?;
+                AtRulePrelude::CounterStyle(name)
+            },
+            AtRuleType::Keyframes(prefix) => {
+                let name = KeyframesName::parse(&self.context, input)?;
+                AtRulePrelude::Keyframes(name, prefix)
+            },
+            AtRuleType::Page => AtRulePrelude::Page(
+                input
+                    .try_parse(|i| PageSelectors::parse(&self.context, i))
+                    .unwrap_or_default(),
+            ),
+            AtRuleType::Property => {
+                let name = input.expect_ident_cloned()?;
+                let name = parse_custom_property_name(&name).map_err(|_| {
+                    input.new_custom_error(StyleParseErrorKind::UnexpectedIdent(name.clone()))
+                })?;
+                AtRulePrelude::Property(PropertyRuleName(Atom::from(name)))
+            },
+            AtRuleType::Document => {
+                let cond = DocumentCondition::parse(&self.context, input)?;
+                AtRulePrelude::Document(cond)
+            },
+            AtRuleType::Scope => {
+                let bounds = ScopeBounds::parse(&self.context, input, self.parse_relative())?;
+                AtRulePrelude::Scope(bounds)
+            },
+            AtRuleType::StartingStyle => AtRulePrelude::StartingStyle,
+            AtRuleType::AppearanceBase => {
+                // We allow parsing this in chrome sheets mostly just so that
+                // browser_parsable_css.js checks UA sheets properly.
+                AtRulePrelude::AppearanceBase
+            },
+            AtRuleType::PositionTry => {
+                let name = DashedIdent::parse(&self.context, input)?;
+                AtRulePrelude::PositionTry(name)
+            },
+            AtRuleType::CustomMedia => {
+                let name = DashedIdent::parse(&self.context, input)?;
+                let condition = input
+                    .try_parse(CustomMediaCondition::parse_keyword)
+                    .unwrap_or_else(|_| {
+                        CustomMediaCondition::MediaList(Arc::new(
+                            self.shared_lock
+                                .wrap(MediaList::parse(&mut self.context, input)),
+                        ))
+                });
+                AtRulePrelude::CustomMedia(name, condition)
+            },
+            AtRuleType::ViewTransition => AtRulePrelude::ViewTransition,
+            AtRuleType::Margin(rule_type) => AtRulePrelude::Margin(rule_type),
+            AtRuleType::Import | AtRuleType::Namespace | AtRuleType::FontFeatureValuesBlock => {
+                // @import and @namespace are only valid and handled at the
+                // top level, and @font-feature-values uses its own parser.
+                return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name.into())));
+            },
+        })
+    }
+
     #[inline]
     fn parse_relative(&self) -> ParseRelative {
         self.context.nesting_context.parse_relative
@@ -706,117 +891,11 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
         name: CowRcStr<'i>,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self::Prelude, ParseError<'i>> {
-        Ok(match_ignore_ascii_case! { &*name,
-            "media" => {
-                let media_queries = MediaList::parse(&mut self.context, input);
-                let arc = Arc::new(self.shared_lock.wrap(media_queries));
-                AtRulePrelude::Media(arc)
-            },
-            "supports" => {
-                let cond = SupportsCondition::parse(input)?;
-                AtRulePrelude::Supports(cond)
-            },
-            "font-face" => {
-                AtRulePrelude::FontFace
-            },
-            "container" if cfg!(feature = "gecko") => {
-                let conditions = input.parse_comma_separated(|input| {
-                    ContainerCondition::parse(&self.context, input)
-                })?;
-                // Container rules must have at least one condition.
-                debug_assert!(!conditions.is_empty());
-                let conditions = ArcSlice::from_iter(conditions.into_iter());
-                AtRulePrelude::Container(conditions)
-            },
-            "layer" => {
-                let names = input.try_parse(|input| {
-                    input.parse_comma_separated(|input| {
-                        LayerName::parse(&self.context, input)
-                    })
-                }).unwrap_or_default();
-                AtRulePrelude::Layer(names)
-            },
-            "font-feature-values" if cfg!(feature = "gecko") => {
-                let family_names = parse_family_name_list(&self.context, input)?;
-                AtRulePrelude::FontFeatureValues(family_names)
-            },
-            "font-palette-values" => {
-                let name = DashedIdent::parse(&self.context, input)?;
-                AtRulePrelude::FontPaletteValues(name)
-            },
-            "counter-style" if cfg!(feature = "gecko") => {
-                let name = parse_counter_style_name_definition(input)?;
-                AtRulePrelude::CounterStyle(name)
-            },
-            "keyframes" | "-webkit-keyframes" | "-moz-keyframes" => {
-                let prefix = if starts_with_ignore_ascii_case(&*name, "-webkit-") {
-                    Some(VendorPrefix::WebKit)
-                } else if starts_with_ignore_ascii_case(&*name, "-moz-") {
-                    Some(VendorPrefix::Moz)
-                } else {
-                    None
-                };
-                if cfg!(feature = "servo") &&
-                   prefix.as_ref().map_or(false, |p| matches!(*p, VendorPrefix::Moz)) {
-                    // Servo should not support @-moz-keyframes.
-                    return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name.clone())))
-                }
-                let name = KeyframesName::parse(&self.context, input)?;
-                AtRulePrelude::Keyframes(name, prefix)
-            },
-            "page" if cfg!(feature = "gecko") => {
-                AtRulePrelude::Page(
-                    input.try_parse(|i| PageSelectors::parse(&self.context, i)).unwrap_or_default()
-                )
-            },
-            "property" if static_prefs::pref!("layout.css.properties-and-values.enabled") => {
-                let name = input.expect_ident_cloned()?;
-                let name = parse_custom_property_name(&name).map_err(|_| {
-                    input.new_custom_error(StyleParseErrorKind::UnexpectedIdent(name.clone()))
-                })?;
-                AtRulePrelude::Property(PropertyRuleName(Atom::from(name)))
-            },
-            "-moz-document" if cfg!(feature = "gecko") => {
-                let cond = DocumentCondition::parse(&self.context, input)?;
-                AtRulePrelude::Document(cond)
-            },
-            "scope" if static_prefs::pref!("layout.css.at-scope.enabled") => {
-                let bounds = ScopeBounds::parse(&self.context, input, self.parse_relative())?;
-                AtRulePrelude::Scope(bounds)
-            },
-            "starting-style" if static_prefs::pref!("layout.css.starting-style-at-rules.enabled") => {
-                AtRulePrelude::StartingStyle
-            },
-            "appearance-base" if self.context.chrome_rules_enabled() => {
-                // We allow parsing this in chrome sheets mostly just so that
-                // browser_parsable_css.js checks UA sheets properly.
-                AtRulePrelude::AppearanceBase
-            },
-            "position-try" => {
-                let name = DashedIdent::parse(&self.context, input)?;
-                AtRulePrelude::PositionTry(name)
-            },
-            "custom-media" if static_prefs::pref!("layout.css.custom-media.enabled") => {
-                let name = DashedIdent::parse(&self.context, input)?;
-                let condition = input.try_parse(CustomMediaCondition::parse_keyword).unwrap_or_else(|_| {
-                    CustomMediaCondition::MediaList(Arc::new(self.shared_lock.wrap(
-                        MediaList::parse(&mut self.context, input)
-                    )))
-                });
-                AtRulePrelude::CustomMedia(name, condition)
-            },
-            "view-transition" if static_prefs::pref!("dom.viewTransitions.cross-document.enabled") => {
-                AtRulePrelude::ViewTransition
-            },
-            _ => {
-                if static_prefs::pref!("layout.css.margin-rules.enabled") {
-                    if let Some(margin_rule_type) = MarginRuleType::match_name(&name) {
-                        return Ok(AtRulePrelude::Margin(margin_rule_type));
-                    }
-                }
-                return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name.clone())))
-            },
-        })
+        let Some(rule_type) = AtRuleType::from_name(&name, &self.context) else {
+            return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name)));
+        };
+
+        self.parse_at_rule_prelude(rule_type, name, input)
     }
 
     fn parse_block<'t>(

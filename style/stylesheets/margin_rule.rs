@@ -39,7 +39,7 @@ macro_rules! margin_rule_types {
         impl MarginRuleType {
             /// Matches the rule type for this name. This does not expect a
             /// leading '@'.
-            pub fn match_name(name: &str) -> Option<Self> {
+            pub fn from_name(name: &str) -> Option<Self> {
                 Some(match_ignore_ascii_case! { name,
                     $( $val => MarginRuleType::$id, )+
                     _ => return None,

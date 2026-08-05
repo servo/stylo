@@ -11,8 +11,9 @@ use crate::properties::{PropertyDeclaration, PropertyId, SourcePropertyDeclarati
 use crate::selector_parser::{SelectorImpl, SelectorParser};
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
+use crate::stylesheets::rule_parser::AtRuleType;
 use crate::stylesheets::{CssRuleType, CssRules};
-use cssparser::parse_important;
+use cssparser::{parse_important, serialize_identifier};
 use cssparser::{match_ignore_ascii_case, ParseError as CssParseError, ParserInput};
 use cssparser::{Delimiter, Parser, SourceLocation, Token};
 #[cfg(feature = "gecko")]
@@ -83,6 +84,8 @@ pub enum SupportsCondition {
     Or(Vec<SupportsCondition>),
     /// `property-ident: value` (value can be any tokens)
     Declaration(Declaration),
+    /// `at-rule(<at-keyword-token>)`
+    AtRule(AtRuleKeyword),
     /// A `selector()` function.
     Selector(RawSelector),
     /// `font-format(<font-format>)`
@@ -141,6 +144,10 @@ impl SupportsCondition {
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
         match_ignore_ascii_case! { function,
+            "at-rule" if static_prefs::pref!("layout.css.supports.at-rule.enabled") => {
+                let kw = AtRuleKeyword::parse(input)?;
+                Ok(SupportsCondition::AtRule(kw))
+            },
             "selector" => {
                 let pos = input.position();
                 consume_any_value(input)?;
@@ -210,6 +217,7 @@ impl SupportsCondition {
             SupportsCondition::Parenthesized(ref cond) => cond.eval(cx),
             SupportsCondition::And(ref vec) => vec.iter().all(|c| c.eval(cx)),
             SupportsCondition::Or(ref vec) => vec.iter().any(|c| c.eval(cx)),
+            SupportsCondition::AtRule(ref kw) => kw.eval(cx),
             SupportsCondition::Declaration(ref decl) => decl.eval(cx),
             SupportsCondition::Selector(ref selector) => selector.eval(cx),
             SupportsCondition::FontFormat(ref format) => eval_font_format(format),
@@ -289,6 +297,11 @@ impl ToCss for SupportsCondition {
                     cond.to_css(dest)?;
                 }
                 Ok(())
+            },
+            SupportsCondition::AtRule(ref kw) => {
+                dest.write_str("at-rule(")?;
+                kw.to_css(dest)?;
+                dest.write_char(')')
             },
             SupportsCondition::Declaration(ref decl) => decl.to_css(dest),
             SupportsCondition::Selector(ref selector) => {
@@ -400,5 +413,38 @@ impl Declaration {
                 Ok(())
             })
             .is_ok()
+    }
+}
+
+/// A possibly-invalid at-rule keyword
+#[derive(Clone, Debug, ToShmem)]
+pub struct AtRuleKeyword(pub Box<str>);
+
+impl AtRuleKeyword {
+    /// Parse an <at-keyword-token>.
+    pub fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
+        let location = input.current_source_location();
+        match input.next()? {
+            Token::AtKeyword(kw) => Ok(Self(kw.as_ref().into())),
+            token => Err(location
+                .new_basic_unexpected_token_error(token.clone())
+                .into()),
+        }
+    }
+
+    /// Determine if an at-rule is supported.
+    /// https://drafts.csswg.org/css-conditional-5/#dfn-support-at-rule
+    pub fn eval(&self, context: &ParserContext) -> bool {
+        AtRuleType::is_supported(&self.0, context)
+    }
+}
+
+impl ToCss for AtRuleKeyword {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        dest.write_char('@')?;
+        serialize_identifier(&self.0, dest)
     }
 }

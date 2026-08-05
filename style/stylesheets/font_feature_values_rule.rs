@@ -364,10 +364,23 @@ macro_rules! font_feature_values_blocks {
         }
 
         /// Keeps the information about block type like @swash, @styleset etc.
-        enum BlockType {
+        #[derive(Clone, Copy, Eq, PartialEq)]
+        pub enum FontFeatureValuesBlockType {
             $(
+                #[$doc]
                 $ident_camel,
             )*
+        }
+
+        impl FontFeatureValuesBlockType {
+            /// Matches the rule type for this name. This does not expect a
+            /// leading '@'.
+            pub fn from_name(name: &str) -> Option<Self> {
+                Some(match_ignore_ascii_case! { name,
+                    $( $name => Self::$ident_camel, )*
+                    _ => return None,
+                })
+            }
         }
 
         /// Parser for `FontFeatureValuesRule`. Parses all blocks
@@ -389,7 +402,7 @@ macro_rules! font_feature_values_blocks {
         }
 
         impl<'a, 'i> AtRuleParser<'i> for FontFeatureValuesRuleParser<'a> {
-            type Prelude = BlockType;
+            type Prelude = FontFeatureValuesBlockType;
             type AtRule = ();
             type Error = StyleParseErrorKind<'i>;
 
@@ -397,25 +410,21 @@ macro_rules! font_feature_values_blocks {
                 &mut self,
                 name: CowRcStr<'i>,
                 input: &mut Parser<'i, 't>,
-            ) -> Result<BlockType, ParseError<'i>> {
-                match_ignore_ascii_case! { &*name,
-                    $(
-                        $name => Ok(BlockType::$ident_camel),
-                    )*
-                    _ => Err(input.new_error(BasicParseErrorKind::AtRuleBodyInvalid)),
-                }
+            ) -> Result<FontFeatureValuesBlockType, ParseError<'i>> {
+                FontFeatureValuesBlockType::from_name(&name)
+                    .ok_or_else(|| input.new_error(BasicParseErrorKind::AtRuleBodyInvalid))
             }
 
             fn parse_block<'t>(
                 &mut self,
-                prelude: BlockType,
+                prelude: FontFeatureValuesBlockType,
                 _: &ParserState,
                 input: &mut Parser<'i, 't>
             ) -> Result<Self::AtRule, ParseError<'i>> {
                 debug_assert!(self.context.rule_types().contains(CssRuleType::FontFeatureValues));
                 match prelude {
                     $(
-                        BlockType::$ident_camel => {
+                        FontFeatureValuesBlockType::$ident_camel => {
                             let mut parser = FFVDeclarationsParser {
                                 context: &self.context,
                                 declarations: &mut self.rule.$ident,

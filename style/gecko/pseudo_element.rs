@@ -11,7 +11,7 @@
 use crate::gecko_bindings::structs::PseudoStyleType;
 use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::{ComputedValues, PropertyFlags};
-use crate::selector_parser::{PseudoElementCascadeType, SelectorImpl};
+use crate::selector_parser::PseudoElementCascadeType;
 use crate::str::{starts_with_ignore_ascii_case, string_as_ascii_lowercase};
 use crate::string_cache::Atom;
 use crate::values::serialize_atom_identifier;
@@ -216,8 +216,6 @@ impl ToCss for PtNameAndClassSelector {
 }
 
 impl PseudoElementTrait for PseudoElement {
-    type Impl = SelectorImpl;
-
     // ::slotted() should support all tree-abiding pseudo-elements, see
     // https://drafts.csswg.org/css-scoping/#slotted-pseudo
     // https://drafts.csswg.org/css-pseudo-4/#treelike

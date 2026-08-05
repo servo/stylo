@@ -26,7 +26,6 @@ use dom::{DocumentState, ElementState};
 use rustc_hash::FxHashMap;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::parser::SelectorParseErrorKind;
-use selectors::visitor::SelectorVisitor;
 use std::fmt;
 use std::mem;
 use std::ops::{Deref, DerefMut};
@@ -119,8 +118,6 @@ impl ToCss for PseudoElement {
 }
 
 impl ::selectors::parser::PseudoElement for PseudoElement {
-    type Impl = SelectorImpl;
-
     fn parses_as_element_backed(&self) -> bool {
         matches!(self, Self::DetailsContent)
     }
@@ -406,8 +403,6 @@ pub enum NonTSPseudoClass {
 }
 
 impl ::selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
-    type Impl = SelectorImpl;
-
     #[inline]
     fn is_active_or_hover(&self) -> bool {
         matches!(*self, NonTSPseudoClass::Active | NonTSPseudoClass::Hover)
@@ -421,10 +416,7 @@ impl ::selectors::parser::NonTSPseudoClass for NonTSPseudoClass {
         )
     }
 
-    fn visit<V>(&self, _: &mut V) -> bool
-    where
-        V: SelectorVisitor<Impl = Self::Impl>,
-    {
+    fn visit<V>(&self, _: &mut V) -> bool {
         true
     }
 }

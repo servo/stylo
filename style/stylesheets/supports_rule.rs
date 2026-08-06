@@ -148,11 +148,11 @@ impl SupportsCondition {
                     input.slice_from(pos).to_owned()
                 )))
             },
-            "font-format" => {
+            "font-format" if crate::pref!("layout.css.font-tech.enabled", gecko = true) => {
                 let kw = FontFaceSourceFormatKeyword::parse(input)?;
                 Ok(SupportsCondition::FontFormat(kw))
             },
-            "font-tech" => {
+            "font-tech" if crate::pref!("layout.css.font-tech.enabled", gecko = true) => {
                 let flag = FontFaceSourceTechFlags::parse_one(input)?;
                 Ok(SupportsCondition::FontTech(flag))
             },

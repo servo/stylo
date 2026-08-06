@@ -16,6 +16,7 @@ use crate::values::generics::position::IsTreeScoped;
 use crate::Atom;
 pub use cssparser::{serialize_identifier, serialize_name, CowRcStr, Parser};
 pub use cssparser::{SourceLocation, Token};
+use num_traits::Zero;
 use precomputed_hash::PrecomputedHash;
 use selectors::parser::SelectorParseErrorKind;
 use std::fmt::{self, Debug, Write};
@@ -44,6 +45,47 @@ pub fn normalize(v: CSSFloat) -> CSSFloat {
         0.0
     } else {
         v
+    }
+}
+
+/// Computes the minimum value of the two floats. The CSS Values and Units definition
+/// for min() considers -0 to be less than +0 (whereas Rust considers them equal).
+/// https://drafts.csswg.org/css-values-4/#css-signed-zero
+#[inline]
+pub fn calc_min(a: CSSFloat, b: CSSFloat) -> CSSFloat {
+    match (a.is_sign_negative(), b.is_sign_negative()) {
+        (true, false) => a,
+        (false, true) => b,
+        _ => a.min(b),
+    }
+}
+
+/// Computes the maximum value of the two floats. The CSS Values and Units definition
+/// for max() considers +0 to be greater than -0 (whereas Rust considers them equal).
+/// https://drafts.csswg.org/css-values-4/#css-signed-zero
+#[inline]
+pub fn calc_max(a: CSSFloat, b: CSSFloat) -> CSSFloat {
+    match (a.is_sign_negative(), b.is_sign_negative()) {
+        (true, false) => b,
+        (false, true) => a,
+        _ => a.max(b),
+    }
+}
+
+/// Computes the sign of the given value. The CSS Values and Units definition for
+/// sign() returns +0 or -0 for an input of +0 or -0, respectively (whereas the
+/// Rust f32::signum() function returns +1 or -1, respectively).
+/// https://drafts.csswg.org/css-values-4/#funcdef-sign
+#[inline]
+pub fn calc_sign(value: CSSFloat) -> CSSFloat {
+    if value.is_nan() {
+        f32::NAN
+    } else if value.is_zero() {
+        value
+    } else if value.is_sign_negative() {
+        -1.0
+    } else {
+        1.0
     }
 }
 

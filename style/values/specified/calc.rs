@@ -391,6 +391,24 @@ impl generic::CalcNodeLeaf for Leaf {
         })
     }
 
+    fn canonical_value(&self) -> Option<f32> {
+        Some(match *self {
+            Self::Length(ref l) => l.to_px_if_absolute()?,
+            Self::Percentage(ref p) => match p.hint {
+                // Percentages that are relative to some other value (indicated by a
+                // percent hint other than "percent") cannot yet resolve to a numeric
+                // value, as the percentage's basis is not available.
+                Optional::Some(NumericBaseType::Percent) => p.get(),
+                _ => return None,
+            },
+            Self::Number(ref n) => n.value(),
+            Self::Resolution(ref r) => r.dppx(),
+            Self::Angle(ref a) => a.degrees(),
+            Self::Time(ref t) => t.seconds(),
+            Self::ColorComponent(_) | Self::TreeCountingFunction(_) => return None,
+        })
+    }
+
     fn is_same_unit_as(&self, other: &Self) -> bool {
         use self::Leaf::*;
 
@@ -446,6 +464,19 @@ impl generic::CalcNodeLeaf for Leaf {
 
     fn new_number(value: f32) -> Self {
         Self::Number(NoCalcNumber::new(value))
+    }
+
+    fn new_from_typed_value(value: f32, numeric_type: NumericType) -> Result<Self, ()> {
+        let calc_type = numeric_type.as_calc_type()?;
+        let percent_hint = numeric_type.percent_hint();
+        Ok(match calc_type {
+            CalcType::Number => Self::new_number(value),
+            CalcType::Length => Self::Length(NoCalcLength::from_px(value)),
+            CalcType::Angle => Self::Angle(NoCalcAngle::from_degrees(value)),
+            CalcType::Time => Self::Time(NoCalcTime::from_seconds(value)),
+            CalcType::Resolution => Self::Resolution(NoCalcResolution::from_dppx(value)),
+            CalcType::Percentage => Self::Percentage(CalcPercentageLeaf::new(value, percent_hint)),
+        })
     }
 
     fn compare(&self, other: &Self) -> Option<cmp::Ordering> {
@@ -1318,8 +1349,8 @@ impl CalcNode {
                         /// The right is not a number or could not be resolved, so the left is
                         /// unchanged.
                         Unchanged,
-                        /// The right was resolved, but was not a number, so the calculation is
-                        /// invalid.
+                        /// The division should have been applied in-place, but could not due
+                        /// to an error, making the calculation invalid.
                         Invalid,
                     }
 
@@ -1340,23 +1371,15 @@ impl CalcNode {
                                     }
                                     return InPlaceDivisionResult::Merged;
                                 }
-                            } else {
-                                // Unresolved components that are numbers are valid denominators,
-                                // but they can't resolve right now.
-                                return if resolved.numeric_type().is_number() {
-                                    InPlaceDivisionResult::Unchanged
-                                } else {
-                                    InPlaceDivisionResult::Invalid
-                                };
                             }
                         }
                         InPlaceDivisionResult::Unchanged
                     }
 
-                    // The right hand side of a division *must* be a number, so if we can
-                    // already resolve it, then merge it with the last node on the product list.
-                    // We can unwrap here, becuase we start the function by adding a node to
-                    // the list.
+                    // If the left-hand side supported in-place division and the right-hand
+                    // side was a resolved number, then the division was already applied
+                    // and merged, so no further work is required. Otherwise, the right-hand
+                    // side is emitted as an Invert node.
                     match try_division_in_place(
                         &mut product.last_mut().unwrap(),
                         &rhs,

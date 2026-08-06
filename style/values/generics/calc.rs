@@ -18,7 +18,7 @@ use num_traits::Zero;
 use smallvec::SmallVec;
 use std::convert::AsRef;
 use std::fmt::{self, Write};
-use std::ops::{Add, Mul, Neg, Rem, Sub};
+use std::ops::{Add, Mul, Rem, Sub};
 use std::{cmp, mem};
 use strum_macros::AsRefStr;
 use style_traits::{CssWriter, ToCss};
@@ -398,6 +398,10 @@ pub enum GenericCalcNode<L> {
 
 pub use self::GenericCalcNode as CalcNode;
 
+fn typed_arithmetic_enabled() -> bool {
+    static_prefs::pref!("layout.css.calc-typed-arithmetic.enabled")
+}
+
 /// The non-mixed types that a math function can return. Note that
 /// <integer> is not represented in this list as a separate type from
 /// <number>, as "math functions that resolve to <number> can be used
@@ -524,6 +528,11 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped + fmt::Debug
     /// Returns the value and percent hint if this leaf is a percentage.
     fn as_percentage(&self) -> Option<(f32, Optional<NumericBaseType>)>;
 
+    /// Returns the canonical value of this leaf in the type's canonical unit,
+    /// if there is enough information to determine its numeric value.
+    /// https://drafts.csswg.org/css-values-4/#simplify-a-calculation-tree
+    fn canonical_value(&self) -> Option<f32>;
+
     /// Returns the angle value in radians if this leaf is an angle.
     fn as_angle_radians(&self) -> Option<f32>;
 
@@ -550,6 +559,10 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped + fmt::Debug
     fn as_number_or_angle_radians(&self) -> Option<f32> {
         self.as_number().or_else(|| self.as_angle_radians())
     }
+
+    /// Create a new leaf with `value` in the canonical unit of the given type.
+    /// Returns Err(()) if the type cannot be constructed as a leaf.
+    fn new_from_typed_value(value: f32, numeric_type: NumericType) -> Result<Self, ()>;
 
     /// Whether this value is known-negative.
     fn is_negative(&self) -> Result<bool, ()> {
@@ -615,15 +628,7 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped + fmt::Debug
             return Err(());
         };
 
-        Ok(Self::new_number(if value.is_nan() {
-            f32::NAN
-        } else if value.is_zero() {
-            value
-        } else if value.is_sign_negative() {
-            -1.0
-        } else {
-            1.0
-        }))
+        Ok(Self::new_number(crate::values::calc_sign(value)))
     }
 
     /// Whether this leaf node should serialize with a `calc()` wrapper
@@ -680,7 +685,9 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         }
     }
 
-    /// If the node has a valid type outcome, then return it, otherwise fail.
+    /// If the node has a valid type outcome, then return it, otherwise fail. Note that this
+    /// type may not represent a valid CSS production and it is the responsibility of the caller
+    /// to determine whether this type is acceptable (see NumericType::as_calc_type).
     pub fn numeric_type(&self) -> Result<NumericType, ()> {
         Ok(match self {
             CalcNode::Leaf(l) => l.numeric_type(),
@@ -694,26 +701,21 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 ty
             },
             CalcNode::Product(children) => {
-                // Only one node is allowed to have a unit, the rest must be numbers.
-                let mut ty: Option<NumericType> = None;
-                for child in children.iter() {
-                    let child_ty = child.numeric_type()?;
-                    if child_ty.is_number() {
-                        // Numbers are always allowed in a product, so continue with the next.
-                        continue;
-                    }
+                let mut ty = children.first().unwrap().numeric_type()?;
 
-                    if ty.is_some() {
-                        // We already have a unit for the node, so another unit node is invalid.
+                for child in children.iter().skip(1) {
+                    let child_ty = child.numeric_type()?;
+
+                    // When typed arithmetic is not enabled, at most one side of the multiplication
+                    // operation can have a non-number type.
+                    if !typed_arithmetic_enabled() && !ty.is_number() && !child_ty.is_number() {
                         return Err(());
                     }
 
-                    // We have the unit for the node.
-                    ty = Some(child_ty);
+                    ty = NumericType::multiply_two_types(&ty, &child_ty)?;
                 }
-                // We only keep track of specified units, so if we end up with a None and no failure
-                // so far, then we have a number.
-                ty.unwrap_or_else(NumericType::number)
+
+                ty
             },
             CalcNode::MinMax(children, _) | CalcNode::Hypot(children) => {
                 let mut ty = children.first().unwrap().numeric_type()?;
@@ -781,7 +783,19 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
                 NumericType::number()
             },
-            CalcNode::Invert(ref c) | CalcNode::Sqrt(ref c) | CalcNode::Exp(ref c) => {
+            CalcNode::Invert(ref c) => {
+                if typed_arithmetic_enabled() {
+                    let mut ty = c.numeric_type()?;
+                    ty.invert();
+                    ty
+                } else {
+                    if c.numeric_type_as_calc_type()? != CalcType::Number {
+                        return Err(());
+                    }
+                    NumericType::number()
+                }
+            },
+            CalcNode::Sqrt(ref c) | CalcNode::Exp(ref c) => {
                 if c.numeric_type_as_calc_type()? != CalcType::Number {
                     return Err(());
                 }
@@ -1236,191 +1250,166 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
     where
         F: FnMut(&L) -> Result<L, ()>,
     {
-        self.resolve_internal(&mut leaf_to_output_fn)
+        let (value, ty) = self.resolve_internal(&mut leaf_to_output_fn)?;
+        L::new_from_typed_value(value, ty)
     }
 
-    fn resolve_internal<F>(&self, leaf_to_output_fn: &mut F) -> Result<L, ()>
+    fn resolve_internal<F>(&self, leaf_to_output_fn: &mut F) -> Result<(f32, NumericType), ()>
     where
         F: FnMut(&L) -> Result<L, ()>,
     {
         match self {
-            Self::Leaf(l) => leaf_to_output_fn(l),
+            Self::Leaf(l) => {
+                let result = leaf_to_output_fn(l)?;
+                let value = result.canonical_value().ok_or(())?;
+                let ty = result.numeric_type();
+                Ok((value, ty))
+            },
             Self::Negate(child) => {
-                let mut result = child.resolve_internal(leaf_to_output_fn)?;
-                result.map(|v| v.neg())?;
-                Ok(result)
+                let (value, ty) = child.resolve_internal(leaf_to_output_fn)?;
+                Ok((-value, ty))
             },
             Self::Invert(child) => {
-                let mut result = child.resolve_internal(leaf_to_output_fn)?;
-                result.map(|v| 1.0 / v)?;
-                Ok(result)
+                let (value, mut ty) = child.resolve_internal(leaf_to_output_fn)?;
+                if !typed_arithmetic_enabled() && !ty.is_number() {
+                    return Err(());
+                }
+                ty.invert();
+                Ok((1.0 / value, ty))
             },
             Self::Sum(children) => {
-                let mut result = children[0].resolve_internal(leaf_to_output_fn)?;
+                let (mut value, mut ty) = children[0].resolve_internal(leaf_to_output_fn)?;
 
                 for child in children.iter().skip(1) {
-                    let right = child.resolve_internal(leaf_to_output_fn)?;
-                    // try_op will make sure we only sum leaves with the same type.
-                    result = result.try_op(&right, |left, right| left + right)?;
+                    let (right, right_ty) = child.resolve_internal(leaf_to_output_fn)?;
+                    value += right;
+                    ty = NumericType::add_two_types(&ty, &right_ty)?;
                 }
 
-                Ok(result)
+                Ok((value, ty))
             },
             Self::Product(children) => {
-                let mut result = children[0].resolve_internal(leaf_to_output_fn)?;
+                let (mut value, mut ty) = children[0].resolve_internal(leaf_to_output_fn)?;
 
                 for child in children.iter().skip(1) {
-                    let right = child.resolve_internal(leaf_to_output_fn)?;
-                    // Mutliply only allowed when either side is a number.
-                    match result.as_number() {
-                        Some(left) => {
-                            // Left side is a number, so we use the right node as the result.
-                            result = right;
-                            result.map(|v| v * left)?;
-                        },
-                        None => {
-                            // Left side is not a number, so check if the right side is.
-                            match right.as_number() {
-                                Some(right) => {
-                                    result.map(|v| v * right)?;
-                                },
-                                None => {
-                                    // Multiplying with both sides having units.
-                                    return Err(());
-                                },
-                            }
-                        },
-                    }
-                }
+                    let (leaf, leaf_ty) = child.resolve_internal(leaf_to_output_fn)?;
 
-                Ok(result)
-            },
-            Self::MinMax(children, op) => {
-                let mut result = children[0].resolve_internal(leaf_to_output_fn)?;
-
-                if result.is_nan()? {
-                    return Ok(result);
-                }
-
-                for child in children.iter().skip(1) {
-                    let candidate = child.resolve_internal(leaf_to_output_fn)?;
-
-                    // Leaf types must match for each child.
-                    if !result.is_same_unit_as(&candidate) {
+                    // When typed arithmetic is not enabled, at most one side of the multiplication
+                    // operation can have a non-number type.
+                    if !typed_arithmetic_enabled() && !ty.is_number() && !leaf_ty.is_number() {
                         return Err(());
                     }
 
-                    if candidate.is_nan()? {
-                        result = candidate;
+                    value *= leaf;
+                    ty = NumericType::multiply_two_types(&ty, &leaf_ty)?;
+                }
+
+                Ok((value, ty))
+            },
+            Self::MinMax(children, op) => {
+                let (mut value, mut ty) = children[0].resolve_internal(leaf_to_output_fn)?;
+
+                if value.is_nan() {
+                    return Ok((value, ty));
+                }
+
+                for child in children.iter().skip(1) {
+                    let (candidate, candidate_ty) = child.resolve_internal(leaf_to_output_fn)?;
+
+                    // Determine the consistent type (bailing out if the types are not consistent).
+                    ty = NumericType::add_two_types(&ty, &candidate_ty)?;
+
+                    if candidate.is_nan() {
+                        value = candidate;
                         break;
                     }
 
-                    let candidate_wins = match op {
-                        MinMaxOp::Min => candidate.lt(&result),
-                        MinMaxOp::Max => candidate.gt(&result),
+                    value = match op {
+                        MinMaxOp::Min => crate::values::calc_min(value, candidate),
+                        MinMaxOp::Max => crate::values::calc_max(value, candidate),
                     };
-
-                    if candidate_wins {
-                        result = candidate;
-                    }
                 }
 
-                Ok(result)
+                Ok((value, ty))
             },
             Self::Clamp { min, center, max } => {
-                let min = min.resolve_internal(leaf_to_output_fn)?;
-                let center = center.resolve_internal(leaf_to_output_fn)?;
-                let max = max.resolve_internal(leaf_to_output_fn)?;
+                let (min, min_ty) = min.resolve_internal(leaf_to_output_fn)?;
+                let (center, center_ty) = center.resolve_internal(leaf_to_output_fn)?;
+                let (max, max_ty) = max.resolve_internal(leaf_to_output_fn)?;
 
-                if !min.is_same_unit_as(&center) || !max.is_same_unit_as(&center) {
-                    return Err(());
+                let mut ty = NumericType::add_two_types(&min_ty, &center_ty)?;
+                ty = NumericType::add_two_types(&ty, &max_ty)?;
+
+                if min.is_nan() {
+                    return Ok((min, ty));
                 }
 
-                if min.is_nan()? {
-                    return Ok(min);
+                if center.is_nan() {
+                    return Ok((center, ty));
                 }
 
-                if center.is_nan()? {
-                    return Ok(center);
+                if max.is_nan() {
+                    return Ok((max, ty));
                 }
 
-                if max.is_nan()? {
-                    return Ok(max);
-                }
-
-                let mut result = center;
-                if result.gt(&max) {
-                    result = max;
-                }
-                if result.lt(&min) {
-                    result = min
-                }
-
-                Ok(result)
+                // NOTE: clamp is max(min, min(center, max))
+                let value = crate::values::calc_max(min, crate::values::calc_min(center, max));
+                Ok((value, ty))
             },
             Self::Round {
                 strategy,
                 value,
                 step,
             } => {
-                let mut value = value.resolve_internal(leaf_to_output_fn)?;
-                let step = step.resolve_internal(leaf_to_output_fn)?;
+                let (mut value, value_ty) = value.resolve_internal(leaf_to_output_fn)?;
+                let (step, step_ty) = step.resolve_internal(leaf_to_output_fn)?;
+                let ty = NumericType::add_two_types(&value_ty, &step_ty)?;
 
-                if !value.is_same_unit_as(&step) {
-                    return Err(());
-                }
-
-                let Some(step) = step.unitless_value() else {
-                    return Err(());
-                };
                 let step = step.abs();
 
-                value.map(|value| {
-                    // TODO(emilio): Seems like at least a few of these
-                    // special-cases could be removed if we do the math in a
-                    // particular order.
-                    if step.is_zero() {
-                        return f32::NAN;
-                    }
-
-                    if value.is_infinite() {
-                        if step.is_infinite() {
-                            return f32::NAN;
-                        }
-                        return value;
-                    }
-
+                // TODO(emilio): Seems like at least a few of these
+                // special-cases could be removed if we do the math in a
+                // particular order.
+                if step.is_zero() {
+                    value = f32::NAN;
+                } else if value.is_infinite() {
                     if step.is_infinite() {
-                        match strategy {
-                            RoundingStrategy::Nearest | RoundingStrategy::ToZero => {
-                                return if value.is_sign_negative() { -0.0 } else { 0.0 }
-                            },
-                            RoundingStrategy::Up => {
-                                return if !value.is_sign_negative() && !value.is_zero() {
-                                    f32::INFINITY
-                                } else if !value.is_sign_negative() && value.is_zero() {
-                                    value
-                                } else {
-                                    -0.0
-                                }
-                            },
-                            RoundingStrategy::Down => {
-                                return if value.is_sign_negative() && !value.is_zero() {
-                                    -f32::INFINITY
-                                } else if value.is_sign_negative() && value.is_zero() {
-                                    value
-                                } else {
-                                    0.0
-                                }
-                            },
-                        }
+                        value = f32::NAN
                     }
-
+                } else if step.is_infinite() {
+                    value = match strategy {
+                        RoundingStrategy::Nearest | RoundingStrategy::ToZero => {
+                            if value.is_sign_negative() {
+                                -0.0
+                            } else {
+                                0.0
+                            }
+                        },
+                        RoundingStrategy::Up => {
+                            if !value.is_sign_negative() && !value.is_zero() {
+                                f32::INFINITY
+                            } else if !value.is_sign_negative() && value.is_zero() {
+                                value
+                            } else {
+                                -0.0
+                            }
+                        },
+                        RoundingStrategy::Down => {
+                            if value.is_sign_negative() && !value.is_zero() {
+                                -f32::INFINITY
+                            } else if value.is_sign_negative() && value.is_zero() {
+                                value
+                            } else {
+                                0.0
+                            }
+                        },
+                    };
+                } else {
                     let div = value / step;
                     let lower_bound = div.floor() * step;
                     let upper_bound = div.ceil() * step;
 
-                    match strategy {
+                    value = match strategy {
                         RoundingStrategy::Nearest => {
                             // In case of a tie, use the upper bound
                             if value - lower_bound < upper_bound - value {
@@ -1440,128 +1429,134 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                             }
                         },
                     }
-                })?;
+                }
 
-                Ok(value)
+                Ok((value, ty))
             },
             Self::ModRem {
                 dividend,
                 divisor,
                 op,
             } => {
-                let mut dividend = dividend.resolve_internal(leaf_to_output_fn)?;
-                let divisor = divisor.resolve_internal(leaf_to_output_fn)?;
-
-                if !dividend.is_same_unit_as(&divisor) {
-                    return Err(());
-                }
-
-                let Some(divisor) = divisor.unitless_value() else {
-                    return Err(());
-                };
-                dividend.map(|dividend| op.apply(dividend, divisor))?;
-                Ok(dividend)
+                let (dividend, dividend_ty) = dividend.resolve_internal(leaf_to_output_fn)?;
+                let (divisor, divisor_ty) = divisor.resolve_internal(leaf_to_output_fn)?;
+                let ty = NumericType::add_two_types(&dividend_ty, &divisor_ty)?;
+                let value = op.apply(dividend, divisor);
+                Ok((value, ty))
             },
             Self::Sin(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                let radians = result.as_number_or_angle_radians().ok_or(())?;
-                Ok(L::new_number(radians.sin()))
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                let radians = match ty.as_calc_type()? {
+                    CalcType::Number => value,
+                    CalcType::Angle => value.to_radians(),
+                    _ => return Err(()),
+                };
+                Ok((radians.sin(), NumericType::number()))
             },
             Self::Cos(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                let radians = result.as_number_or_angle_radians().ok_or(())?;
-                Ok(L::new_number(radians.cos()))
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                let radians = match ty.as_calc_type()? {
+                    CalcType::Number => value,
+                    CalcType::Angle => value.to_radians(),
+                    _ => return Err(()),
+                };
+                Ok((radians.cos(), NumericType::number()))
             },
             Self::Tan(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                let radians = result.as_number_or_angle_radians().ok_or(())?;
-                Ok(L::new_number(radians.tan()))
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                let radians = match ty.as_calc_type()? {
+                    CalcType::Number => value,
+                    CalcType::Angle => value.to_radians(),
+                    _ => return Err(()),
+                };
+                Ok((radians.tan(), NumericType::number()))
             },
             Self::Asin(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                let value = result.as_number().ok_or(())?;
-                Ok(L::new_angle_from_radians(value.asin()))
-            },
-            Self::Acos(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                let value = result.as_number().ok_or(())?;
-                Ok(L::new_angle_from_radians(value.acos()))
-            },
-            Self::Atan(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                let value = result.as_number().ok_or(())?;
-                Ok(L::new_angle_from_radians(value.atan()))
-            },
-            Self::Atan2(ref a, ref b) => {
-                let a = a.resolve_internal(leaf_to_output_fn)?;
-                let b = b.resolve_internal(leaf_to_output_fn)?;
-                if !a.is_same_unit_as(&b) {
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                if !ty.is_number() {
                     return Err(());
                 }
-                let a_val = a.unitless_value().ok_or(())?;
-                let b_val = b.unitless_value().ok_or(())?;
-                Ok(L::new_angle_from_radians(a_val.atan2(b_val)))
+                Ok((value.asin().to_degrees(), NumericType::angle()))
+            },
+            Self::Acos(ref c) => {
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                if !ty.is_number() {
+                    return Err(());
+                }
+                Ok((value.acos().to_degrees(), NumericType::angle()))
+            },
+            Self::Atan(ref c) => {
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                if !ty.is_number() {
+                    return Err(());
+                }
+                Ok((value.atan().to_degrees(), NumericType::angle()))
+            },
+            Self::Atan2(ref a, ref b) => {
+                let (a, a_ty) = a.resolve_internal(leaf_to_output_fn)?;
+                let (b, b_ty) = b.resolve_internal(leaf_to_output_fn)?;
+                let _ = NumericType::add_two_types(&a_ty, &b_ty)?;
+                Ok((a.atan2(b).to_degrees(), NumericType::angle()))
             },
             Self::Pow(ref a, ref b) => {
-                let a = a.resolve_internal(leaf_to_output_fn)?;
-                let b = b.resolve_internal(leaf_to_output_fn)?;
-                let a_val = a.as_number().ok_or(())?;
-                let b_val = b.as_number().ok_or(())?;
-                Ok(L::new_number(a_val.powf(b_val)))
+                let (a, a_ty) = a.resolve_internal(leaf_to_output_fn)?;
+                let (b, b_ty) = b.resolve_internal(leaf_to_output_fn)?;
+                if !a_ty.is_number() || !b_ty.is_number() {
+                    return Err(());
+                }
+                Ok((a.powf(b), NumericType::number()))
             },
             Self::Sqrt(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                let value = result.as_number().ok_or(())?;
-                Ok(L::new_number(value.sqrt()))
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                if !ty.is_number() {
+                    return Err(());
+                }
+                Ok((value.sqrt(), NumericType::number()))
             },
             Self::Hypot(children) => {
-                let mut result = children[0].resolve_internal(leaf_to_output_fn)?;
-                result.map(|v| v.powi(2))?;
+                let (mut value, mut ty) = children[0].resolve_internal(leaf_to_output_fn)?;
+                value = value.powi(2);
 
                 for child in children.iter().skip(1) {
-                    let child_value = child.resolve_internal(leaf_to_output_fn)?;
-
-                    if !result.is_same_unit_as(&child_value) {
-                        return Err(());
-                    }
-
-                    let Some(child_value) = child_value.unitless_value() else {
-                        return Err(());
-                    };
-                    result.map(|v| v + child_value.powi(2))?;
+                    let (child_value, child_ty) = child.resolve_internal(leaf_to_output_fn)?;
+                    ty = NumericType::add_two_types(&ty, &child_ty)?;
+                    value += child_value.powi(2);
                 }
 
-                result.map(|v| v.sqrt())?;
-                Ok(result)
+                Ok((value.sqrt(), ty))
             },
             Self::Log(ref a, ref b) => {
-                let a = a.resolve_internal(leaf_to_output_fn)?;
-                let a_val = a.as_number().ok_or(())?;
-                let result = match b {
+                let (a, a_ty) = a.resolve_internal(leaf_to_output_fn)?;
+                if !a_ty.is_number() {
+                    return Err(());
+                }
+                let value = match b {
                     Optional::Some(ref b) => {
-                        let b = b.resolve_internal(leaf_to_output_fn)?;
-                        let b_val = b.as_number().ok_or(())?;
-                        a_val.log(b_val)
+                        let (b, b_ty) = b.resolve_internal(leaf_to_output_fn)?;
+                        if !b_ty.is_number() {
+                            return Err(());
+                        }
+                        a.log(b)
                     },
-                    Optional::None => a_val.ln(),
+                    Optional::None => a.ln(),
                 };
-                Ok(L::new_number(result))
+                Ok((value, NumericType::number()))
             },
             Self::Exp(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                let value = result.as_number().ok_or(())?;
-                Ok(L::new_number(value.exp()))
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                if !ty.is_number() {
+                    return Err(());
+                }
+                Ok((value.exp(), NumericType::number()))
             },
             Self::Abs(ref c) => {
-                let mut result = c.resolve_internal(leaf_to_output_fn)?;
-
-                result.map(|v| v.abs())?;
-
-                Ok(result)
+                let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
+                Ok((value.abs(), ty))
             },
             Self::Sign(ref c) => {
-                let result = c.resolve_internal(leaf_to_output_fn)?;
-                Ok(L::sign_from(&result)?)
+                let (value, _) = c.resolve_internal(leaf_to_output_fn)?;
+                let sign = crate::values::calc_sign(value);
+                Ok((sign, NumericType::number()))
             },
             Self::Progress {
                 clamping_mode,
@@ -1569,17 +1564,16 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 ref start,
                 ref end,
             } => {
-                let value = value.resolve_internal(leaf_to_output_fn)?;
-                let start = start.resolve_internal(leaf_to_output_fn)?;
-                let end = end.resolve_internal(leaf_to_output_fn)?;
-                if !value.is_same_unit_as(&start) || !value.is_same_unit_as(&end) {
-                    return Err(());
-                }
+                let (value, value_ty) = value.resolve_internal(leaf_to_output_fn)?;
+                let (start, start_ty) = start.resolve_internal(leaf_to_output_fn)?;
+                let (end, end_ty) = end.resolve_internal(leaf_to_output_fn)?;
 
-                let value = value.unitless_value().ok_or(())?;
-                let start = start.unitless_value().ok_or(())?;
-                let end = end.unitless_value().ok_or(())?;
-                Ok(L::new_number(clamping_mode.evaluate(value, start, end)))
+                let _ = NumericType::add_two_types(&value_ty, &start_ty)?;
+                let _ = NumericType::add_two_types(&value_ty, &end_ty)?;
+                let _ = NumericType::add_two_types(&start_ty, &end_ty)?;
+
+                let progress = clamping_mode.evaluate(value, start, end);
+                Ok((progress, NumericType::number()))
             },
             Self::Anchor(_) | Self::AnchorSize(_) => Err(()),
         }
@@ -2142,10 +2136,58 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     // If only one children remains, lift it up, and carry on.
                     replace_self_with!(&mut children[0]);
                     return SimplificationResult::Simplified;
-                } else {
-                    // Else put our simplified children back.
-                    *children_slot = children.into_boxed_slice().into();
                 }
+
+                if typed_arithmetic_enabled() {
+                    // "If root contains only numeric values and/or Invert nodes containing numeric values,
+                    // and multiplying the types of all the children (noting that the type of an Invert
+                    // node is the inverse of its child’s type) results in a type that matches any of the
+                    // types that a math function can resolve to, return the result of multiplying all the
+                    // values of the children (noting that the value of an Invert node is the reciprocal of
+                    // its child’s value), expressed in the result’s canonical unit."
+                    //
+                    // https://drafts.csswg.org/css-values-4/#simplify-a-calculation-tree
+                    let mut result = 1.0;
+                    let mut ty = Ok(NumericType::number());
+
+                    for child in children.iter() {
+                        let (leaf, is_inverted) = match child {
+                            Self::Leaf(leaf) => (leaf, false),
+                            Self::Invert(inner) if inner.as_leaf().is_some() => {
+                                (inner.as_leaf().unwrap(), true)
+                            },
+                            _ => {
+                                ty = Err(());
+                                break;
+                            },
+                        };
+
+                        // Only multiply values that are in that type's canonical unit.
+                        let Some(value) = leaf.canonical_value() else {
+                            ty = Err(());
+                            break;
+                        };
+                        let (multiplicand, child_ty) = if is_inverted {
+                            let mut ty = leaf.numeric_type();
+                            ty.invert();
+                            (1.0 / value, ty)
+                        } else {
+                            (value, leaf.numeric_type())
+                        };
+
+                        result *= multiplicand;
+                        ty = ty.and_then(|ty| NumericType::multiply_two_types(&ty, &child_ty));
+                    }
+
+                    if let Ok(leaf) = ty.and_then(|ty| L::new_from_typed_value(result, ty)) {
+                        let mut result = Self::Leaf(leaf);
+                        replace_self_with!(&mut result);
+                        return SimplificationResult::Simplified;
+                    }
+                }
+
+                // Else put our simplified children back.
+                *children_slot = children.into_boxed_slice().into();
                 return SimplificationResult::Unchanged;
             },
             Self::Sin(ref mut child) => {

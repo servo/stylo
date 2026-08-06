@@ -7,7 +7,7 @@
 use super::{Angle, Length, Number, Percentage, Resolution, Time};
 use crate::derives::*;
 use crate::typed_om::{NumericBaseType, NumericType};
-use crate::values::generics::calc::{self, GenericCalcPercentageLeaf, SimplificationResult};
+use crate::values::generics::calc::{self, CalcType, GenericCalcPercentageLeaf, SimplificationResult};
 use crate::values::generics::Optional;
 use crate::Zero;
 use debug_unreachable::debug_unreachable;
@@ -76,6 +76,23 @@ impl calc::CalcNodeLeaf for ComputedLeaf {
         })
     }
 
+    fn canonical_value(&self) -> Option<f32> {
+        Some(match *self {
+            Self::Length(ref l) => l.px(),
+            Self::Percentage(ref p) => match p.hint {
+                // Percentages that are relative to some other value (indicated by a
+                // percent hint other than "percent") cannot yet resolve to a numeric
+                // value, as the percentage's basis is not available.
+                Optional::Some(NumericBaseType::Percent) => p.get(),
+                _ => return None,
+            },
+            Self::Number(n) => n,
+            Self::Angle(ref a) => a.degrees(),
+            Self::Time(ref t) => t.seconds(),
+            Self::Resolution(ref r) => r.dppx(),
+        })
+    }
+
     fn new_number(value: f32) -> Self {
         Self::Number(value)
     }
@@ -107,6 +124,19 @@ impl calc::CalcNodeLeaf for ComputedLeaf {
 
     fn new_angle_from_radians(radians: f32) -> Self {
         Self::Angle(Angle::from_radians(radians))
+    }
+
+    fn new_from_typed_value(value: f32, numeric_type: NumericType) -> Result<Self, ()> {
+        let calc_type = numeric_type.as_calc_type()?;
+        let percent_hint = numeric_type.percent_hint();
+        Ok(match calc_type {
+            CalcType::Number => Self::new_number(value),
+            CalcType::Length => Self::Length(Length::new(value)),
+            CalcType::Angle => Self::Angle(Angle::from_degrees(value)),
+            CalcType::Time => Self::Time(Time::from_seconds(value)),
+            CalcType::Resolution => Self::Resolution(Resolution::from_dppx(value)),
+            CalcType::Percentage => Self::Percentage(CalcPercentageLeaf::new(value, percent_hint)),
+        })
     }
 
     fn compare(&self, other: &Self) -> Option<std::cmp::Ordering> {

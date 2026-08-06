@@ -9,7 +9,7 @@ use crate::parser::{Parse, ParserContext};
 use crate::typed_om::{NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::computed::angle::Angle as ComputedAngle;
 use crate::values::computed::{Context, ToComputedValue};
-use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
+use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf, PercentageContext};
 use crate::values::tagged_numeric::{Extracted, NumericUnion, Unpacked};
 use crate::values::CSSFloat;
 use crate::Zero;
@@ -382,7 +382,7 @@ impl Angle {
             },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
-                CalcNode::parse_angle(context, input, function)
+                CalcNode::parse_angle(context, input, function, PercentageContext::not_allowed())
                     .map(Box::new)
                     .map(Self::new_calc)
             },

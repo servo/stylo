@@ -4,6 +4,8 @@
 
 //! Typed OM Numeric Type.
 
+use crate::derives::*;
+use crate::values::generics::calc::CalcType;
 use crate::values::generics::grid::FlexUnit;
 use crate::values::generics::Optional;
 use crate::values::specified::angle::AngleUnit;
@@ -13,7 +15,18 @@ use crate::values::specified::resolution::ResolutionUnit;
 use crate::values::specified::time::TimeUnit;
 
 /// https://drafts.css-houdini.org/css-typed-om-1/#cssnumericvalue-base-type
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToAnimatedZero,
+    ToResolvedValue,
+    ToShmem,
+)]
 #[repr(u8)]
 pub enum NumericBaseType {
     /// A `<length>` unit.
@@ -223,6 +236,18 @@ impl NumericType {
         result.unwrap_or(Self::number())
     }
 
+    /// Consumes the type and constructs a new type, applying the given percent hint.
+    pub fn with_percent_hint(self, hint: NumericBaseType) -> Self {
+        let mut ty = self;
+        ty.apply_percent_hint(hint);
+        ty
+    }
+
+    /// Returns the percent hint for this type.
+    pub fn percent_hint(&self) -> Optional<NumericBaseType> {
+        self.percent_hint
+    }
+
     fn exponent(&self, base_type: NumericBaseType) -> i32 {
         self.exponents[base_type as usize]
     }
@@ -332,8 +357,16 @@ impl NumericType {
         self.has_no_non_zero_entries() && self.has_null_percent_hint()
     }
 
+    /// Applies the given percent hint to this type. Note that the spec algorithm
+    /// specifically says "to a type without a percent hint", so this will not
+    /// modify the type if it alreay has a percent hint.
+    ///
     /// <https://drafts.css-houdini.org/css-typed-om-1/#apply-the-percent-hint>
-    fn apply_percent_hint(&mut self, hint: NumericBaseType) {
+    pub fn apply_percent_hint(&mut self, hint: NumericBaseType) {
+        if self.percent_hint.is_some() {
+            return;
+        }
+
         // Step 1.
         self.percent_hint = Optional::Some(hint);
 
@@ -357,7 +390,7 @@ impl NumericType {
     /// numbered sub-steps, so the implementation below quotes spec text
     /// inline. This is more verbose than usual, but should help map each
     /// branch back to the spec when reviewing or debugging.
-    fn add_two_types(type1: &NumericType, type2: &NumericType) -> Result<Self, ()> {
+    pub fn add_two_types(type1: &NumericType, type2: &NumericType) -> Result<Self, ()> {
         // Step 1.
         // "Replace type1 with a fresh copy of type1, and type2 with a fresh
         // copy of type2."
@@ -467,7 +500,7 @@ impl NumericType {
     ///
     /// Spec text is quoted inline to make each step easy to map back to the
     /// algorithm during review.
-    fn multiply_two_types(type1: &NumericType, type2: &NumericType) -> Result<Self, ()> {
+    pub fn multiply_two_types(type1: &NumericType, type2: &NumericType) -> Result<Self, ()> {
         // Step 1.
         // "Replace type1 with a fresh copy of type1, and type2 with a fresh
         // copy of type2."
@@ -564,5 +597,44 @@ impl NumericType {
         I: Iterator<Item = &'a NumericType>,
     {
         Self::combine_types(types, Self::multiply_two_types)
+    }
+
+    /// Returns whether this type is a dimensionless number.
+    pub fn is_number(&self) -> bool {
+        self.non_zero_count == 0
+    }
+
+    /// Returns a `CalcType` if this type represents a single data type,
+    /// like <length> or <number>.
+    pub fn as_calc_type(&self) -> Result<CalcType, ()> {
+        match self.non_zero_count {
+            0 => return Ok(CalcType::Number),
+            1 => {},
+            _ => return Err(()),
+        };
+
+        for base_type in ALL_NUMERIC_BASE_TYPES.iter() {
+            let exponent = self.exponent(*base_type);
+            if exponent == 0 {
+                continue;
+            }
+            if exponent != 1 {
+                return Err(());
+            }
+
+            // We checked before the loop that there is only one numeric
+            // base type with a non-zero exponent.
+            return Ok(match base_type {
+                NumericBaseType::Length => CalcType::Length,
+                NumericBaseType::Angle => CalcType::Angle,
+                NumericBaseType::Time => CalcType::Time,
+                NumericBaseType::Resolution => CalcType::Resolution,
+                NumericBaseType::Percent => CalcType::Percentage,
+                NumericBaseType::Frequency | NumericBaseType::Flex => return Err(()),
+            });
+        }
+
+        debug_assert!(false, "non_zero_count was 1 but all exponents were 0");
+        Ok(CalcType::Number)
     }
 }

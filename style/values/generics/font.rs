@@ -341,13 +341,13 @@ impl<Factor: ToTyped> ToTyped for GenericFontSizeAdjust<Factor> {
     Debug,
     Deserialize,
     MallocSizeOf,
+    Parse,
     PartialEq,
     Serialize,
     SpecifiedValueInfo,
     ToAnimatedValue,
     ToCss,
     ToShmem,
-    Parse,
     ToTyped,
 )]
 #[repr(C, u8)]

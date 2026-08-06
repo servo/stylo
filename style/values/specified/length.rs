@@ -22,7 +22,7 @@ use crate::values::generics::length::{
 };
 use crate::values::generics::NonNegative;
 use crate::values::specified::calc::{
-    AllowAnchorPositioningFunctions, CalcLengthPercentage, CalcNode,
+    AllowAnchorPositioningFunctions, CalcLengthPercentage, CalcNode, PercentageContext,
 };
 use crate::values::specified::font::QueryFontMetricsFlags;
 use crate::values::specified::percentage::NoCalcPercentage;
@@ -1183,7 +1183,13 @@ impl Length {
             },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
-                let calc = CalcNode::parse_length(context, input, num_context, function)?;
+                let calc = CalcNode::parse_length(
+                    context,
+                    input,
+                    num_context,
+                    function,
+                    PercentageContext::not_allowed(),
+                )?;
                 Ok(Self::new_calc(Box::new(calc)))
             },
             ref token => return Err(location.new_unexpected_token_error(token.clone())),

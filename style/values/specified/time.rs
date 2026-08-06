@@ -9,7 +9,7 @@ use crate::parser::{Parse, ParserContext};
 use crate::typed_om::{NumericType, NumericValue, ToTyped, TypedValue, UnitValue};
 use crate::values::computed::time::Time as ComputedTime;
 use crate::values::computed::{Context, ToComputedValue};
-use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
+use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf, PercentageContext};
 use crate::values::tagged_numeric::{NumericUnion, Unpacked};
 use crate::values::CSSFloat;
 use crate::Zero;
@@ -240,9 +240,15 @@ impl Time {
             },
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
-                CalcNode::parse_time(context, input, clamping_mode, function)
-                    .map(Box::new)
-                    .map(Self::new_calc)
+                CalcNode::parse_time(
+                    context,
+                    input,
+                    clamping_mode,
+                    function,
+                    PercentageContext::not_allowed(),
+                )
+                .map(Box::new)
+                .map(Self::new_calc)
             },
             ref t => return Err(location.new_unexpected_token_error(t.clone())),
         }

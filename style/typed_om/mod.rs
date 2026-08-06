@@ -22,7 +22,7 @@ pub mod numeric_declaration;
 pub mod numeric_type;
 pub mod sum_value;
 
-pub use numeric_type::NumericType;
+pub use numeric_type::{NumericBaseType, NumericType};
 
 /// A single segment of an unparsed Typed OM value.
 ///

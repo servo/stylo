@@ -10,7 +10,7 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::computed::resolution::Resolution as ComputedResolution;
 use crate::values::computed::{Context, ToComputedValue};
-use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
+use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf, PercentageContext};
 use crate::values::tagged_numeric::{NumericUnion, Unpacked};
 use crate::values::CSSFloat;
 use cssparser::{match_ignore_ascii_case, Parser, Token};
@@ -226,9 +226,14 @@ impl Parse for Resolution {
                 .map_err(|()| location.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
-                CalcNode::parse_resolution(context, input, function)
-                    .map(Box::new)
-                    .map(Self::new_calc)
+                CalcNode::parse_resolution(
+                    context,
+                    input,
+                    function,
+                    PercentageContext::not_allowed(),
+                )
+                .map(Box::new)
+                .map(Self::new_calc)
             },
             ref t => return Err(location.new_unexpected_token_error(t.clone())),
         }

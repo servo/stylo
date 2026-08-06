@@ -7,8 +7,7 @@
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::typed_om::numeric::NoCalcNumeric;
-use crate::values::generics::calc::CalcUnits;
-use crate::values::specified::calc::{CalcNode, CalcParseFlags};
+use crate::values::specified::calc::{CalcNode, CalcParseFlags, PercentageContext};
 use crate::values::specified::{
     NoCalcAngle, NoCalcLength, NoCalcNumber, NoCalcPercentage, NoCalcTime,
 };
@@ -75,8 +74,12 @@ impl Parse for NumericDeclaration {
 
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
-                let allow_all_units = CalcParseFlags::new(CalcUnits::ALL);
-                let node = CalcNode::parse(context, input, function, allow_all_units)?;
+                let node = CalcNode::parse(
+                    context,
+                    input,
+                    function,
+                    CalcParseFlags::new(PercentageContext::allowed()),
+                )?;
 
                 let allow_all_types = AllowedNumericType::All;
                 let _ = node

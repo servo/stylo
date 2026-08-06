@@ -9,7 +9,7 @@
 use crate::derives::*;
 use crate::typed_om::{
     MathClamp, MathInvert, MathMax, MathMin, MathNegate, MathProduct, MathSum, MathValue,
-    NumericValue, ToTyped, TypedValue,
+    NumericBaseType, NumericType, NumericValue, ToTyped, TypedValue,
 };
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
@@ -398,78 +398,112 @@ pub enum GenericCalcNode<L> {
 
 pub use self::GenericCalcNode as CalcNode;
 
-bitflags! {
-    /// Expected units we allow parsing within a `calc()` expression.
-    ///
-    /// This is used as a hint for the parser to fast-reject invalid
-    /// expressions. Numbers are always allowed because they multiply other
-    /// units.
-    #[derive(Clone, Copy, PartialEq, Eq)]
-    pub struct CalcUnits: u8 {
-        /// <length>
-        const LENGTH = 1 << 0;
-        /// <percentage>
-        const PERCENTAGE = 1 << 1;
-        /// <angle>
-        const ANGLE = 1 << 2;
-        /// <time>
-        const TIME = 1 << 3;
-        /// <resolution>
-        const RESOLUTION = 1 << 4;
-        /// <length-percentage>
-        const LENGTH_PERCENTAGE = Self::LENGTH.bits() | Self::PERCENTAGE.bits();
-        // NOTE: When you add to this, make sure to make Atan2 deal with these.
-        /// Allow all units.
-        const ALL = Self::LENGTH.bits() | Self::PERCENTAGE.bits() | Self::ANGLE.bits() |
-            Self::TIME.bits() | Self::RESOLUTION.bits();
-    }
+/// The non-mixed types that a math function can return. Note that
+/// <integer> is not represented in this list as a separate type from
+/// <number>, as "math functions that resolve to <number> can be used
+/// in any place that only accepts <integer>". CSS Typed OM also does
+/// not distinguish between numbers and integers.
+///
+/// https://drafts.csswg.org/css-values-4/#math-function
+/// https://drafts.csswg.org/css-values-4/#calc-type-checking
+///
+/// TODO(Bug 1866236) - Add the <flex> type.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum CalcType {
+    /// <length>
+    Length,
+    /// <percentage>
+    Percentage,
+    /// <angle>
+    Angle,
+    /// <time>
+    Time,
+    /// <resolution>
+    Resolution,
+    /// <number>
+    Number,
 }
 
-impl CalcUnits {
-    /// Returns whether the flags only represent a single unit. This will return true for 0, which
-    /// is a "number" this is also fine.
-    #[inline]
-    fn is_single_unit(&self) -> bool {
-        self.bits() == 0 || self.bits() & (self.bits() - 1) == 0
-    }
+/// The value of a percentage leaf node that contains an associated percent hint.
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    MallocSizeOf,
+    PartialEq,
+    Serialize,
+    ToAnimatedZero,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(C)]
+pub struct GenericCalcPercentageLeaf<P> {
+    /// The percentage value.
+    pub value: P,
+    /// The base type the percentage resolves against, or None if there is
+    /// no specific percent hint (this is used by CSS Typed OM when parsing
+    /// an expression without the context of a property).
+    #[css(skip)]
+    pub hint: Optional<NumericBaseType>,
+}
 
-    /// Returns true if this unit is allowed to be summed with the given unit, otherwise false.
-    #[inline]
-    fn can_sum_with(&self, other: Self) -> bool {
-        match *self {
-            Self::LENGTH => other.intersects(Self::LENGTH | Self::PERCENTAGE),
-            Self::PERCENTAGE => other.intersects(Self::LENGTH | Self::PERCENTAGE),
-            Self::LENGTH_PERCENTAGE => other.intersects(Self::LENGTH | Self::PERCENTAGE),
-            u => u.is_single_unit() && other == u,
+impl<P> GenericCalcPercentageLeaf<P>
+where
+    P: From<f32> + Copy,
+    f32: From<P>,
+{
+    /// Builds a percentage leaf with the given percent hint.
+    pub fn new(value: f32, hint: Optional<NumericBaseType>) -> Self {
+        Self {
+            value: P::from(value),
+            hint,
         }
     }
-}
 
-/// For percentage resolution, sometimes we can't assume that the percentage basis is positive (so
-/// we don't know whether a percentage is larger than another).
-pub enum PositivePercentageBasis {
-    /// The percent basis is not known-positive, we can't compare percentages.
-    Unknown,
-    /// The percent basis is known-positive, we assume larger percentages are larger.
-    Yes,
+    /// Returns the percentage value as a float.
+    pub fn get(&self) -> f32 {
+        f32::from(self.value)
+    }
+
+    /// Returns the numeric type of this percentage.
+    pub fn numeric_type(&self) -> NumericType {
+        match self.hint {
+            Optional::Some(hint) => NumericType::percent().with_percent_hint(hint),
+            Optional::None => NumericType::percent(),
+        }
+    }
+
+    /// Returns the percent hint to use when merging two percentages with an arithmetic
+    /// operation. Mismatched hints should be impossible after type checking.
+    pub fn combined_hint(&self, other: &Self) -> Optional<NumericBaseType> {
+        debug_assert_eq!(
+            self.hint, other.hint,
+            "Merging percentages with mismatched hints"
+        );
+        self.hint
+    }
 }
 
 macro_rules! compare_helpers {
     () => {
         /// Return whether a leaf is greater than another.
         #[allow(unused)]
-        fn gt(&self, other: &Self, basis_positive: PositivePercentageBasis) -> bool {
-            self.compare(other, basis_positive) == Some(cmp::Ordering::Greater)
+        fn gt(&self, other: &Self) -> bool {
+            self.compare(other) == Some(cmp::Ordering::Greater)
         }
 
         /// Return whether a leaf is less than another.
-        fn lt(&self, other: &Self, basis_positive: PositivePercentageBasis) -> bool {
-            self.compare(other, basis_positive) == Some(cmp::Ordering::Less)
+        fn lt(&self, other: &Self) -> bool {
+            self.compare(other) == Some(cmp::Ordering::Less)
         }
 
         /// Return whether a leaf is smaller or equal than another.
-        fn lte(&self, other: &Self, basis_positive: PositivePercentageBasis) -> bool {
-            match self.compare(other, basis_positive) {
+        fn lte(&self, other: &Self) -> bool {
+            match self.compare(other) {
                 Some(cmp::Ordering::Less) => true,
                 Some(cmp::Ordering::Equal) => true,
                 Some(cmp::Ordering::Greater) => false,
@@ -480,12 +514,15 @@ macro_rules! compare_helpers {
 }
 
 /// A trait that represents all the stuff a valid leaf of a calc expression.
-pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped {
-    /// Returns the unit of the leaf.
-    fn unit(&self) -> CalcUnits;
+pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped + fmt::Debug {
+    /// Returns the type of the leaf.
+    fn numeric_type(&self) -> NumericType;
 
     /// Returns the unitless value of this leaf if one is available.
     fn unitless_value(&self) -> Option<f32>;
+
+    /// Returns the value and percent hint if this leaf is a percentage.
+    fn as_percentage(&self) -> Option<(f32, Optional<NumericBaseType>)>;
 
     /// Returns the angle value in radians if this leaf is an angle.
     fn as_angle_radians(&self) -> Option<f32>;
@@ -500,11 +537,7 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped {
     }
 
     /// Do a partial comparison of these values.
-    fn compare(
-        &self,
-        other: &Self,
-        base_is_positive: PositivePercentageBasis,
-    ) -> Option<cmp::Ordering>;
+    fn compare(&self, other: &Self) -> Option<cmp::Ordering>;
     compare_helpers!();
 
     /// Create a new leaf with a number value.
@@ -569,6 +602,15 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped {
 
     /// Create a new leaf containing the sign() result of the given leaf.
     fn sign_from(leaf: &impl CalcNodeLeaf) -> Result<Self, ()> {
+        // Percentages with a non-<percent> hint are relative to some basis value, and since the basis value is
+        // unknown at this stage, the actual sign of the percentage value is also unknown.
+        if leaf
+            .as_percentage()
+            .is_some_and(|(_, hint)| hint != Optional::Some(NumericBaseType::Percent))
+        {
+            return Err(());
+        }
+
         let Some(value) = leaf.unitless_value() else {
             return Err(());
         };
@@ -638,156 +680,143 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         }
     }
 
-    /// If the node has a valid unit outcome, then return it, otherwise fail.
-    pub fn unit(&self) -> Result<CalcUnits, ()> {
+    /// If the node has a valid type outcome, then return it, otherwise fail.
+    pub fn numeric_type(&self) -> Result<NumericType, ()> {
         Ok(match self {
-            CalcNode::Leaf(l) => l.unit(),
-            CalcNode::Negate(child) | CalcNode::Abs(child) => child.unit()?,
+            CalcNode::Leaf(l) => l.numeric_type(),
+            CalcNode::Negate(child) | CalcNode::Abs(child) => child.numeric_type()?,
             CalcNode::Sum(children) => {
-                let mut unit = children.first().unwrap().unit()?;
+                let mut ty = children.first().unwrap().numeric_type()?;
                 for child in children.iter().skip(1) {
-                    let child_unit = child.unit()?;
-                    if !child_unit.can_sum_with(unit) {
-                        return Err(());
-                    }
-                    unit |= child_unit;
+                    let child_ty = child.numeric_type()?;
+                    ty = NumericType::add_two_types(&ty, &child_ty)?;
                 }
-                unit
+                ty
             },
             CalcNode::Product(children) => {
                 // Only one node is allowed to have a unit, the rest must be numbers.
-                let mut unit = None;
+                let mut ty: Option<NumericType> = None;
                 for child in children.iter() {
-                    let child_unit = child.unit()?;
-                    if child_unit.is_empty() {
+                    let child_ty = child.numeric_type()?;
+                    if child_ty.is_number() {
                         // Numbers are always allowed in a product, so continue with the next.
                         continue;
                     }
 
-                    if unit.is_some() {
+                    if ty.is_some() {
                         // We already have a unit for the node, so another unit node is invalid.
                         return Err(());
                     }
 
                     // We have the unit for the node.
-                    unit = Some(child_unit);
+                    ty = Some(child_ty);
                 }
                 // We only keep track of specified units, so if we end up with a None and no failure
                 // so far, then we have a number.
-                unit.unwrap_or(CalcUnits::empty())
+                ty.unwrap_or_else(NumericType::number)
             },
             CalcNode::MinMax(children, _) | CalcNode::Hypot(children) => {
-                let mut unit = children.first().unwrap().unit()?;
+                let mut ty = children.first().unwrap().numeric_type()?;
                 for child in children.iter().skip(1) {
-                    let child_unit = child.unit()?;
-                    if !child_unit.can_sum_with(unit) {
-                        return Err(());
-                    }
-                    unit |= child_unit;
+                    let child_ty = child.numeric_type()?;
+                    ty = NumericType::add_two_types(&ty, &child_ty)?;
                 }
-                unit
+                ty
             },
             CalcNode::Clamp { min, center, max } => {
-                let min_unit = min.unit()?;
-                let center_unit = center.unit()?;
+                let min_ty = min.numeric_type()?;
+                let center_ty = center.numeric_type()?;
+                let max_ty = max.numeric_type()?;
 
-                if !min_unit.can_sum_with(center_unit) {
-                    return Err(());
-                }
-
-                let max_unit = max.unit()?;
-
-                if !center_unit.can_sum_with(max_unit) {
-                    return Err(());
-                }
-
-                min_unit | center_unit | max_unit
+                let mut ty = NumericType::add_two_types(&min_ty, &center_ty)?;
+                ty = NumericType::add_two_types(&ty, &max_ty)?;
+                ty
             },
             CalcNode::Round { value, step, .. } => {
-                let value_unit = value.unit()?;
-                let step_unit = step.unit()?;
-                if !step_unit.can_sum_with(value_unit) {
-                    return Err(());
-                }
-                value_unit | step_unit
+                let value_ty = value.numeric_type()?;
+                let step_ty = step.numeric_type()?;
+                NumericType::add_two_types(&value_ty, &step_ty)?
             },
             CalcNode::ModRem {
                 dividend, divisor, ..
             } => {
-                let dividend_unit = dividend.unit()?;
-                let divisor_unit = divisor.unit()?;
-                if !divisor_unit.can_sum_with(dividend_unit) {
-                    return Err(());
-                }
-                dividend_unit | divisor_unit
+                let dividend_ty = dividend.numeric_type()?;
+                let divisor_ty = divisor.numeric_type()?;
+                NumericType::add_two_types(&dividend_ty, &divisor_ty)?
             },
             CalcNode::Sign(ref child) => {
                 // sign() always resolves to a number, but we still need to make sure that the
                 // child units make sense.
-                let _ = child.unit()?;
-                CalcUnits::empty()
+                let _ = child.numeric_type()?;
+                NumericType::number()
             },
-            CalcNode::Anchor(..) | CalcNode::AnchorSize(..) => CalcUnits::LENGTH_PERCENTAGE,
+            CalcNode::Anchor(..) | CalcNode::AnchorSize(..) => {
+                NumericType::length().with_percent_hint(NumericBaseType::Length)
+            },
             CalcNode::Sin(ref child) | CalcNode::Cos(ref child) | CalcNode::Tan(ref child) => {
-                let child_unit = child.unit()?;
-                if !child_unit.is_empty() && !child_unit.intersects(CalcUnits::ANGLE) {
+                let child_ty = child.numeric_type_as_calc_type()?;
+                if child_ty != CalcType::Number && child_ty != CalcType::Angle {
                     return Err(());
                 }
-                CalcUnits::empty()
+                NumericType::number()
             },
             CalcNode::Asin(ref child) | CalcNode::Acos(ref child) | CalcNode::Atan(ref child) => {
-                let child_unit = child.unit()?;
-                if !child_unit.is_empty() {
+                if child.numeric_type_as_calc_type()? != CalcType::Number {
                     return Err(());
                 }
-                CalcUnits::ANGLE
+                NumericType::angle()
             },
             CalcNode::Atan2(ref a, ref b) => {
-                let a_unit = a.unit()?;
-                let b_unit = b.unit()?;
-                if !a_unit.can_sum_with(b_unit) {
-                    return Err(());
-                }
-                CalcUnits::ANGLE
+                // Ensure that the types of a and b can be made consistent
+                let a_ty = a.numeric_type()?;
+                let b_ty = b.numeric_type()?;
+                let _ = NumericType::add_two_types(&a_ty, &b_ty)?;
+                NumericType::angle()
             },
             CalcNode::Pow(ref a, ref b) => {
-                let a_unit = a.unit()?;
-                let b_unit = b.unit()?;
-                if !a_unit.is_empty() || !b_unit.is_empty() {
+                let a_ty = a.numeric_type_as_calc_type()?;
+                let b_ty = b.numeric_type_as_calc_type()?;
+                if a_ty != CalcType::Number || b_ty != CalcType::Number {
                     return Err(());
                 }
-                CalcUnits::empty()
+                NumericType::number()
             },
             CalcNode::Invert(ref c) | CalcNode::Sqrt(ref c) | CalcNode::Exp(ref c) => {
-                let child_unit = c.unit()?;
-                if !child_unit.is_empty() {
+                if c.numeric_type_as_calc_type()? != CalcType::Number {
                     return Err(());
                 }
-                CalcUnits::empty()
+                NumericType::number()
             },
             CalcNode::Log(ref a, ref b) => {
-                let a_unit = a.unit()?;
-                let b_unit = match b {
-                    Optional::Some(b) => b.unit()?,
-                    Optional::None => CalcUnits::empty(),
+                let a_ty = a.numeric_type_as_calc_type()?;
+                let b_ty = match b {
+                    Optional::Some(b) => b.numeric_type_as_calc_type()?,
+                    Optional::None => CalcType::Number,
                 };
-                if !a_unit.is_empty() || !b_unit.is_empty() {
+                if a_ty != CalcType::Number || b_ty != CalcType::Number {
                     return Err(());
                 }
-                CalcUnits::empty()
+                NumericType::number()
             },
             CalcNode::Progress {
                 value, start, end, ..
             } => {
-                let value_unit = value.unit()?;
-                let start_unit = start.unit()?;
-                let end_unit = end.unit()?;
-                if !value_unit.can_sum_with(start_unit) || !value_unit.can_sum_with(end_unit) {
-                    return Err(());
-                }
-                CalcUnits::empty()
+                let value_ty = value.numeric_type()?;
+                let start_ty = start.numeric_type()?;
+                let end_ty = end.numeric_type()?;
+
+                // Ensure that the types of the arguments are consistent.
+                let _ = NumericType::add_two_types(&value_ty, &start_ty)?;
+                let _ = NumericType::add_two_types(&value_ty, &end_ty)?;
+                NumericType::number()
             },
         })
+    }
+
+    /// If the node has a valid type outcome that matches one of the types that a calculation
+    /// can produce, then return it, otherwise fail.
+    pub fn numeric_type_as_calc_type(&self) -> Result<CalcType, ()> {
+        self.numeric_type()?.as_calc_type()
     }
 
     /// Negate the node inline.  If the node is distributive, it is replaced by the result,
@@ -839,7 +868,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 ref mut center,
                 ref mut max,
             } => {
-                if min.lte(max, PositivePercentageBasis::Unknown) {
+                if min.lte(max) {
                     min.negate();
                     center.negate();
                     max.negate();
@@ -1287,8 +1316,8 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     }
 
                     let candidate_wins = match op {
-                        MinMaxOp::Min => candidate.lt(&result, PositivePercentageBasis::Yes),
-                        MinMaxOp::Max => candidate.gt(&result, PositivePercentageBasis::Yes),
+                        MinMaxOp::Min => candidate.lt(&result),
+                        MinMaxOp::Max => candidate.gt(&result),
                     };
 
                     if candidate_wins {
@@ -1320,10 +1349,10 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
 
                 let mut result = center;
-                if result.gt(&max, PositivePercentageBasis::Yes) {
+                if result.gt(&max) {
                     result = max;
                 }
-                if result.lt(&min, PositivePercentageBasis::Yes) {
+                if result.lt(&min) {
                     result = min
                 }
 
@@ -1788,7 +1817,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 ref mut max,
             } => {
                 // NOTE: clamp() is max(min, min(center, max))
-                let min_cmp_center = match min.compare(&center, PositivePercentageBasis::Unknown) {
+                let min_cmp_center = match min.compare(&center) {
                     Some(o) => o,
                     None => return SimplificationResult::Unchanged,
                 };
@@ -1801,7 +1830,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
 
                 // Otherwise try with max.
-                let max_cmp_center = match max.compare(&center, PositivePercentageBasis::Unknown) {
+                let max_cmp_center = match max.compare(&center) {
                     Some(o) => o,
                     None => return SimplificationResult::Unchanged,
                 };
@@ -1809,7 +1838,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 if matches!(max_cmp_center, cmp::Ordering::Less) {
                     // max is less than center, so we need to return effectively
                     // `max(min, max)`.
-                    let max_cmp_min = match max.compare(&min, PositivePercentageBasis::Unknown) {
+                    let max_cmp_min = match max.compare(&min) {
                         Some(o) => o,
                         None => return SimplificationResult::Unchanged,
                     };
@@ -1925,7 +1954,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         let lower_diff = value_or_stop!(value.try_op(&lower_bound, Sub::sub));
                         let upper_diff = value_or_stop!(upper_bound.try_op(value, Sub::sub));
                         // In case of a tie, use the upper bound
-                        if lower_diff.lt(&upper_diff, PositivePercentageBasis::Unknown) {
+                        if lower_diff.lt(&upper_diff) {
                             replace_self_with!(&mut lower_bound);
                         } else {
                             replace_self_with!(&mut upper_bound);
@@ -1950,7 +1979,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         }
 
                         // In case of a tie, use the upper bound
-                        if lower_diff.lt(&upper_diff, PositivePercentageBasis::Unknown) {
+                        if lower_diff.lt(&upper_diff) {
                             replace_self_with!(&mut lower_bound);
                         } else {
                             replace_self_with!(&mut upper_bound);
@@ -1985,9 +2014,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         replace_self_with!(&mut children[i]);
                         return SimplificationResult::Simplified;
                     }
-                    let o = match children[i]
-                        .compare(&children[result], PositivePercentageBasis::Unknown)
-                    {
+                    let o = match children[i].compare(&children[result]) {
                         // We can't compare all the children, so we can't
                         // know which one will actually win. Bail out and
                         // keep ourselves as a min / max function.
@@ -2304,7 +2331,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     CalcNode::Leaf(leaf) => {
                         // 1. If root’s child is a number (not a percentage or dimension) return the
                         // reciprocal of the child’s value.
-                        if leaf.unit().is_empty() {
+                        if leaf.numeric_type().is_number() {
                             value_or_stop!(child.map(|v| 1.0 / v));
                             replace_self_with!(&mut **child);
                             return SimplificationResult::Simplified;
@@ -2863,15 +2890,9 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         }
     }
 
-    fn compare(
-        &self,
-        other: &Self,
-        basis_positive: PositivePercentageBasis,
-    ) -> Option<cmp::Ordering> {
+    fn compare(&self, other: &Self) -> Option<cmp::Ordering> {
         match (self, other) {
-            (&CalcNode::Leaf(ref one), &CalcNode::Leaf(ref other)) => {
-                one.compare(other, basis_positive)
-            },
+            (&CalcNode::Leaf(ref one), &CalcNode::Leaf(ref other)) => one.compare(other),
             _ => None,
         }
     }
@@ -2925,34 +2946,5 @@ impl<'a, L> CalcNodeWithLevel<'a, L> {
 impl<'a, L: CalcNodeLeaf> ToTyped for CalcNodeWithLevel<'a, L> {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         self.node.to_typed_impl(dest, self.level.clone())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn can_sum_with_checks() {
-        assert!(CalcUnits::LENGTH.can_sum_with(CalcUnits::LENGTH));
-        assert!(CalcUnits::LENGTH.can_sum_with(CalcUnits::PERCENTAGE));
-        assert!(CalcUnits::LENGTH.can_sum_with(CalcUnits::LENGTH_PERCENTAGE));
-
-        assert!(CalcUnits::PERCENTAGE.can_sum_with(CalcUnits::LENGTH));
-        assert!(CalcUnits::PERCENTAGE.can_sum_with(CalcUnits::PERCENTAGE));
-        assert!(CalcUnits::PERCENTAGE.can_sum_with(CalcUnits::LENGTH_PERCENTAGE));
-
-        assert!(CalcUnits::LENGTH_PERCENTAGE.can_sum_with(CalcUnits::LENGTH));
-        assert!(CalcUnits::LENGTH_PERCENTAGE.can_sum_with(CalcUnits::PERCENTAGE));
-        assert!(CalcUnits::LENGTH_PERCENTAGE.can_sum_with(CalcUnits::LENGTH_PERCENTAGE));
-
-        assert!(!CalcUnits::ANGLE.can_sum_with(CalcUnits::TIME));
-        assert!(CalcUnits::ANGLE.can_sum_with(CalcUnits::ANGLE));
-
-        assert!(!(CalcUnits::ANGLE | CalcUnits::TIME).can_sum_with(CalcUnits::ANGLE));
-        assert!(!CalcUnits::ANGLE.can_sum_with(CalcUnits::ANGLE | CalcUnits::TIME));
-        assert!(
-            !(CalcUnits::ANGLE | CalcUnits::TIME).can_sum_with(CalcUnits::ANGLE | CalcUnits::TIME)
-        );
     }
 }

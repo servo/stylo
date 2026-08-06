@@ -9,8 +9,8 @@ use crate::parser::{Parse, ParserContext};
 use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::computed::percentage::Percentage as ComputedPercentage;
 use crate::values::computed::{Context, ToComputedValue};
-use crate::values::generics::NonNegative;
-use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
+use crate::values::generics::{NonNegative, Optional};
+use crate::values::specified::calc::{CalcNode, CalcNumeric, CalcPercentageLeaf, Leaf};
 use crate::values::specified::{CalcLengthPercentage, LengthPercentage, NoCalcNumber, Number};
 use crate::values::tagged_numeric::{Extracted, NumericUnion, Unpacked, UnpackedMut};
 use crate::values::{normalize, reify_percentage, serialize_percentage, CSSFloat};
@@ -95,6 +95,18 @@ impl ToComputedValue for NoCalcPercentage {
 
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
         Self::new(computed.0)
+    }
+}
+
+impl From<f32> for NoCalcPercentage {
+    fn from(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<NoCalcPercentage> for f32 {
+    fn from(percentage: NoCalcPercentage) -> f32 {
+        percentage.0
     }
 }
 
@@ -206,9 +218,10 @@ impl Percentage {
             },
             UnpackedMut::Boxed(calc) => {
                 let mut sum = smallvec::SmallVec::<[CalcNode; 2]>::new();
-                sum.push(CalcNode::Leaf(
-                    Leaf::Percentage(NoCalcPercentage::hundred()),
-                ));
+                sum.push(CalcNode::Leaf(Leaf::Percentage(CalcPercentageLeaf::new(
+                    1.,
+                    Optional::None,
+                ))));
                 let mut node = calc.node.clone();
                 node.negate();
                 sum.push(node);

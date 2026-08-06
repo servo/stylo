@@ -13,7 +13,7 @@ use crate::derives::*;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{AnchorPosOffsetResolutionParams, GeckoFontMetrics};
 use crate::logical_geometry::{PhysicalAxis, PhysicalSide};
-use crate::typed_om::{ToTyped, TypedValue};
+use crate::typed_om::{NumericBaseType, ToTyped, TypedValue};
 use crate::values::animated::{
     Animate, Context as AnimatedContext, Procedure, ToAnimatedValue, ToAnimatedZero,
 };
@@ -23,6 +23,7 @@ use crate::values::generics::calc::GenericAnchorFunctionFallback;
 #[cfg(feature = "gecko")]
 use crate::values::generics::length::AnchorResolutionResult;
 use crate::values::generics::position::GenericAnchorSide;
+use crate::values::generics::Optional;
 use crate::values::generics::{calc, ClampToNonNegative, NonNegative};
 use crate::values::resolved::{Context as ResolvedContext, ToResolvedValue};
 use crate::values::specified::length::{EqualsPercentage, FontBaseSize, LineHeightBase};
@@ -38,7 +39,7 @@ use style_traits::values::specified::AllowedNumericType;
 use style_traits::{CssWriter, ToCss};
 use thin_vec::ThinVec;
 
-pub use super::calc::ComputedLeaf;
+pub use super::calc::{CalcPercentageLeaf, ComputedLeaf};
 
 /// The discriminator used for inline LengthPercentage variants.
 #[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, ToShmem)]
@@ -151,7 +152,9 @@ impl LengthPercentage {
     fn to_calc_node(&self) -> CalcNode {
         match self.unpack() {
             Unpacked::Length(l) => CalcNode::Leaf(ComputedLeaf::Length(l)),
-            Unpacked::Percentage(p) => CalcNode::Leaf(ComputedLeaf::Percentage(p)),
+            Unpacked::Percentage(p) => CalcNode::Leaf(ComputedLeaf::Percentage(
+                CalcPercentageLeaf::new(p.0, Optional::Some(NumericBaseType::Length)),
+            )),
             Unpacked::Calc(p) => p.node.clone(),
         }
     }
@@ -198,7 +201,10 @@ impl LengthPercentage {
 
         let new_node = CalcNode::Sum(
             vec![
-                CalcNode::Leaf(ComputedLeaf::Percentage(Percentage::hundred())),
+                CalcNode::Leaf(ComputedLeaf::Percentage(CalcPercentageLeaf::new(
+                    1.,
+                    Optional::Some(NumericBaseType::Length),
+                ))),
                 node,
             ]
             .into(),
@@ -211,7 +217,7 @@ impl LengthPercentage {
     /// `calc(100% - the sum of the list)`.
     pub fn hundred_percent_minus_list(list: &[&Self], clamping_mode: AllowedNumericType) -> Self {
         let mut new_list = vec![CalcNode::Leaf(ComputedLeaf::Percentage(
-            Percentage::hundred(),
+            CalcPercentageLeaf::new(1., Optional::Some(NumericBaseType::Length)),
         ))];
 
         for lp in list.iter() {
@@ -235,7 +241,7 @@ impl LengthPercentage {
                         Self::new_length(Length::new(clamping_mode.clamp(l.px())).normalized())
                     },
                     ComputedLeaf::Percentage(p) => Self::new_percent(Percentage(
-                        clamping_mode.clamp(crate::values::normalize(p.0)),
+                        clamping_mode.clamp(crate::values::normalize(p.get())),
                     )),
                     ComputedLeaf::Number(number) => {
                         debug_assert!(
@@ -628,7 +634,7 @@ impl From<&CalcAnchorSide> for AnchorSide {
             CalcAnchorSide::Keyword(k) => Self::Keyword(*k),
             CalcAnchorSide::Percentage(p) => {
                 if let CalcNode::Leaf(ComputedLeaf::Percentage(p)) = **p {
-                    Self::Percentage(p)
+                    Self::Percentage(p.value)
                 } else {
                     unreachable!("Should have parsed simplified percentage.");
                 }
@@ -646,7 +652,7 @@ impl CalcLengthPercentage {
             .node
             .resolve_map(|leaf| {
                 Ok(if let ComputedLeaf::Percentage(p) = leaf {
-                    ComputedLeaf::Length(Length::new(basis.px() * p.0))
+                    ComputedLeaf::Length(Length::new(basis.px() * p.get()))
                 } else {
                     leaf.clone()
                 })
@@ -815,7 +821,9 @@ impl specified::CalcLengthPercentage {
         use crate::values::specified::calc::Leaf;
 
         let node = self.0.node.map_leaves(|leaf| match *leaf {
-            Leaf::Percentage(p) => ComputedLeaf::Percentage(Percentage(p.get())),
+            Leaf::Percentage(p) => {
+                ComputedLeaf::Percentage(CalcPercentageLeaf::new(p.get(), p.hint))
+            },
             Leaf::Length(l) => ComputedLeaf::Length({
                 let result =
                     l.to_computed_value_with_base_size(context, base_size, line_height_base);
@@ -881,7 +889,9 @@ impl specified::CalcLengthPercentage {
 
         let mut resolvable = true;
         let node = self.0.node.map_leaves(|leaf| match *leaf {
-            Leaf::Percentage(p) => ComputedLeaf::Percentage(Percentage(p.get())),
+            Leaf::Percentage(p) => {
+                ComputedLeaf::Percentage(CalcPercentageLeaf::new(p.get(), p.hint))
+            },
             Leaf::Length(l) => {
                 ComputedLeaf::Length(match l.to_computed_pixel_length_without_context() {
                     Ok(px) => Length::new(px),
@@ -934,7 +944,9 @@ impl specified::CalcLengthPercentage {
     #[inline]
     fn from_computed_value(computed: &CalcLengthPercentage) -> Self {
         use crate::values::specified::angle::NoCalcAngle;
-        use crate::values::specified::calc::Leaf;
+        use crate::values::specified::calc::{
+            CalcPercentageLeaf as SpecifiedCalcPercentageLeaf, Leaf,
+        };
         use crate::values::specified::length::NoCalcLength;
         use crate::values::specified::resolution::NoCalcResolution;
         use crate::values::specified::time::NoCalcTime;
@@ -943,7 +955,9 @@ impl specified::CalcLengthPercentage {
             clamping_mode: computed.clamping_mode,
             node: computed.node.map_leaves(|l| match l {
                 ComputedLeaf::Length(l) => Leaf::Length(NoCalcLength::from_px(l.px())),
-                ComputedLeaf::Percentage(p) => Leaf::Percentage(NoCalcPercentage::new(p.0)),
+                ComputedLeaf::Percentage(p) => {
+                    Leaf::Percentage(SpecifiedCalcPercentageLeaf::new(p.get(), p.hint))
+                },
                 ComputedLeaf::Number(n) => Leaf::Number(NoCalcNumber::new(*n)),
                 ComputedLeaf::Angle(a) => Leaf::Angle(NoCalcAngle::from_degrees(a.degrees())),
                 ComputedLeaf::Time(t) => Leaf::Time(NoCalcTime::from_seconds(t.seconds())),
@@ -1034,7 +1048,9 @@ impl TryTacticAdjustment for GenericAnchorFunctionFallback<ComputedLeaf> {
 impl TryTacticAdjustment for CalcNode {
     fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
         self.visit_depth_first(|node| match node {
-            Self::Leaf(ComputedLeaf::Percentage(p)) => p.try_tactic_adjustment(old_side, new_side),
+            Self::Leaf(ComputedLeaf::Percentage(p)) => {
+                p.value.try_tactic_adjustment(old_side, new_side)
+            },
             Self::Anchor(a) => a.try_tactic_adjustment(old_side, new_side),
             Self::AnchorSize(a) => a.try_tactic_adjustment(old_side, new_side),
             _ => {},

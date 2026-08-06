@@ -6,13 +6,16 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use crate::typed_om::{ToTyped, TypedValue};
+use crate::typed_om::{NumericBaseType, ToTyped, TypedValue};
 use crate::values::computed::transform::DirectionVector;
 use crate::values::computed::{Context, ToComputedValue};
 use crate::values::generics::transform::IsParallelTo;
+use crate::values::generics::Optional;
 use crate::values::generics::{GreaterThanOrEqualToOne, NonNegative};
-use crate::values::specified::calc::{CalcNode, CalcNumeric, Leaf};
-use crate::values::specified::{NoCalcPercentage, Percentage};
+use crate::values::specified::calc::{
+    CalcNode, CalcNumeric, CalcPercentageLeaf, Leaf, PercentageContext,
+};
+use crate::values::specified::Percentage;
 use crate::values::tagged_numeric::{NumericUnion, Unpacked, UnpackedMut};
 use crate::values::{serialize_number, CSSFloat, CSSInteger};
 use crate::{One, Zero};
@@ -27,6 +30,7 @@ pub fn parse_number_with_clamping_mode<'i, 't>(
     context: &ParserContext,
     input: &mut Parser<'i, 't>,
     clamping_mode: AllowedNumericType,
+    percentage_context: PercentageContext,
 ) -> Result<Number, ParseError<'i>> {
     let location = input.current_source_location();
     Ok(Number(match *input.next()? {
@@ -35,7 +39,13 @@ pub fn parse_number_with_clamping_mode<'i, 't>(
         },
         Token::Function(ref name) => {
             let function = CalcNode::math_function(context, name, location)?;
-            let number = CalcNode::parse_number(context, input, clamping_mode, function)?;
+            let number = CalcNode::parse_number(
+                context,
+                input,
+                clamping_mode,
+                function,
+                percentage_context,
+            )?;
             NumericUnion::boxed(Box::new(number))
         },
         ref t => return Err(location.new_unexpected_token_error(t.clone())),
@@ -47,6 +57,7 @@ pub fn parse_integer_with_clamping_mode<'i, 't>(
     context: &ParserContext,
     input: &mut Parser<'i, 't>,
     clamping_mode: AllowedNumericType,
+    percentage_context: PercentageContext,
 ) -> Result<Integer, ParseError<'i>> {
     let location = input.current_source_location();
     Ok(Integer(match *input.next()? {
@@ -55,7 +66,13 @@ pub fn parse_integer_with_clamping_mode<'i, 't>(
         } if clamping_mode.is_ok(context.parsing_mode, v as f32) => NumericUnion::inline((), v),
         Token::Function(ref name) => {
             let function = CalcNode::math_function(context, name, location)?;
-            let calc = CalcNode::parse_number(context, input, clamping_mode, function)?;
+            let calc = CalcNode::parse_number(
+                context,
+                input,
+                clamping_mode,
+                function,
+                percentage_context,
+            )?;
             NumericUnion::boxed(Box::new(calc))
         },
         ref t => return Err(location.new_unexpected_token_error(t.clone())),
@@ -170,7 +187,12 @@ impl Parse for Number {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        parse_number_with_clamping_mode(context, input, AllowedNumericType::All)
+        parse_number_with_clamping_mode(
+            context,
+            input,
+            AllowedNumericType::All,
+            PercentageContext::not_allowed(),
+        )
     }
 }
 
@@ -199,9 +221,9 @@ impl Number {
             Unpacked::Inline((), n) => Percentage::new(n),
             Unpacked::Boxed(ref calc) => {
                 let n = calc.as_number()?.get();
-                Percentage::new_calc(Box::new(
-                    calc.with_leaf_node(Leaf::Percentage(NoCalcPercentage::new(n))),
-                ))
+                Percentage::new_calc(Box::new(calc.with_leaf_node(Leaf::Percentage(
+                    CalcPercentageLeaf::new(n, Optional::Some(NumericBaseType::Percent)),
+                ))))
             },
         })
     }
@@ -231,7 +253,12 @@ impl Number {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Number, ParseError<'i>> {
-        parse_number_with_clamping_mode(context, input, AllowedNumericType::NonNegative)
+        parse_number_with_clamping_mode(
+            context,
+            input,
+            AllowedNumericType::NonNegative,
+            PercentageContext::not_allowed(),
+        )
     }
 
     #[allow(missing_docs)]
@@ -239,7 +266,12 @@ impl Number {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Number, ParseError<'i>> {
-        parse_number_with_clamping_mode(context, input, AllowedNumericType::AtLeastOne)
+        parse_number_with_clamping_mode(
+            context,
+            input,
+            AllowedNumericType::AtLeastOne,
+            PercentageContext::not_allowed(),
+        )
     }
 
     /// Clamp to 1.0 if the value is over 1.0.
@@ -318,8 +350,13 @@ impl Parse for NonNegativeNumber {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        parse_number_with_clamping_mode(context, input, AllowedNumericType::NonNegative)
-            .map(NonNegative::<Number>)
+        parse_number_with_clamping_mode(
+            context,
+            input,
+            AllowedNumericType::NonNegative,
+            PercentageContext::not_allowed(),
+        )
+        .map(NonNegative::<Number>)
     }
 }
 
@@ -370,8 +407,13 @@ impl Parse for GreaterThanOrEqualToOneNumber {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        parse_number_with_clamping_mode(context, input, AllowedNumericType::AtLeastOne)
-            .map(GreaterThanOrEqualToOne::<Number>)
+        parse_number_with_clamping_mode(
+            context,
+            input,
+            AllowedNumericType::AtLeastOne,
+            PercentageContext::not_allowed(),
+        )
+        .map(GreaterThanOrEqualToOne::<Number>)
     }
 }
 
@@ -465,7 +507,12 @@ impl Parse for Integer {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        parse_integer_with_clamping_mode(context, input, AllowedNumericType::All)
+        parse_integer_with_clamping_mode(
+            context,
+            input,
+            AllowedNumericType::All,
+            PercentageContext::not_allowed(),
+        )
     }
 }
 
@@ -475,7 +522,12 @@ impl Integer {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Integer, ParseError<'i>> {
-        parse_integer_with_clamping_mode(context, input, AllowedNumericType::NonNegative)
+        parse_integer_with_clamping_mode(
+            context,
+            input,
+            AllowedNumericType::NonNegative,
+            PercentageContext::not_allowed(),
+        )
     }
 
     /// Parse a positive integer (>= 1).
@@ -483,7 +535,12 @@ impl Integer {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Integer, ParseError<'i>> {
-        parse_integer_with_clamping_mode(context, input, AllowedNumericType::AtLeastOne)
+        parse_integer_with_clamping_mode(
+            context,
+            input,
+            AllowedNumericType::AtLeastOne,
+            PercentageContext::not_allowed(),
+        )
     }
 }
 

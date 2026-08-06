@@ -11,13 +11,13 @@ use super::{
     AbsoluteColor,
 };
 use crate::derives::*;
+use crate::typed_om::NumericType;
 use crate::{
     parser::ParserContext,
     values::{
         animated::ToAnimatedValue,
         computed,
-        generics::calc::CalcUnits,
-        specified::calc::{CalcNode, CalcParseFlags, Leaf},
+        specified::calc::{CalcNode, CalcParseFlags, Leaf, PercentageContext},
     },
 };
 use cssparser::{color::OPAQUE, Parser, Token};
@@ -56,8 +56,8 @@ pub trait ColorComponentType: Sized + Clone {
     /// Construct a new component from a single value.
     fn from_value(value: f32) -> Self;
 
-    /// Return the [CalcUnits] flags that the impl can handle.
-    fn units() -> CalcUnits;
+    /// Returns whether the given numeric type is valid for this color component.
+    fn is_valid_type(ty: &NumericType) -> bool;
 
     /// Try to create a new component from the given token.
     fn try_from_token(token: &Token) -> Result<Self, ()>;
@@ -74,6 +74,7 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
         input: &mut Parser<'i, 't>,
         allow_none: bool,
         allowed_channel_keywords: ChannelKeyword,
+        percentage_context: PercentageContext,
     ) -> Result<Self, ParseError<'i>> {
         let location = input.current_source_location();
 
@@ -89,7 +90,7 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
             }),
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
-                let mut flags = CalcParseFlags::new(ValueType::units());
+                let mut flags = CalcParseFlags::new(percentage_context);
                 flags.color_components = if rcs_enabled() {
                     allowed_channel_keywords
                 } else {
@@ -97,7 +98,10 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
                 };
                 let mut node = CalcNode::parse(context, input, function, flags)?;
                 node.simplify_and_sort();
-                if node.unit().is_err() {
+                if !node
+                    .numeric_type()
+                    .is_ok_and(|ty| ValueType::is_valid_type(&ty))
+                {
                     return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
                 }
                 Ok(Self::Calc(Box::new(node)))

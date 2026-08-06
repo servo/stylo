@@ -14,12 +14,17 @@ use super::{
     AbsoluteColor,
 };
 use crate::derives::*;
+use crate::typed_om::{NumericBaseType, NumericType};
 use crate::{
     parser::{Parse, ParserContext},
     values::{
         computed::Color as ComputedColor,
-        generics::{calc::CalcUnits, Optional},
-        specified::{angle::NoCalcAngle, calc::Leaf, color::Color as SpecifiedColor},
+        generics::{calc::CalcType, Optional},
+        specified::{
+            angle::NoCalcAngle,
+            calc::{Leaf, PercentageContext},
+            color::Color as SpecifiedColor,
+        },
     },
 };
 use cssparser::{
@@ -535,8 +540,9 @@ impl ColorComponentType for NumberOrPercentageComponent {
         Self::Number(value)
     }
 
-    fn units() -> CalcUnits {
-        CalcUnits::PERCENTAGE
+    fn is_valid_type(ty: &NumericType) -> bool {
+        ty.as_calc_type()
+            .is_ok_and(|ty| ty == CalcType::Number || ty == CalcType::Percentage)
     }
 
     fn try_from_token(token: &Token) -> Result<Self, ()> {
@@ -551,7 +557,7 @@ impl ColorComponentType for NumberOrPercentageComponent {
 
     fn try_from_leaf(leaf: &Leaf) -> Result<Self, ()> {
         Ok(match *leaf {
-            Leaf::Percentage(p) => Self::Percentage(p.get()),
+            Leaf::Percentage(ref p) => Self::Percentage(p.get()),
             Leaf::Number(n) => Self::Number(n.value()),
             _ => return Err(()),
         })
@@ -585,8 +591,9 @@ impl ColorComponentType for NumberOrAngleComponent {
         Self::Number(value)
     }
 
-    fn units() -> CalcUnits {
-        CalcUnits::ANGLE
+    fn is_valid_type(ty: &NumericType) -> bool {
+        ty.as_calc_type()
+            .is_ok_and(|ty| ty == CalcType::Number || ty == CalcType::Angle)
     }
 
     fn try_from_token(token: &Token) -> Result<Self, ()> {
@@ -619,8 +626,8 @@ impl ColorComponentType for f32 {
         value
     }
 
-    fn units() -> CalcUnits {
-        CalcUnits::empty()
+    fn is_valid_type(ty: &NumericType) -> bool {
+        matches!(ty.as_calc_type(), Ok(CalcType::Number))
     }
 
     fn try_from_token(token: &Token) -> Result<Self, ()> {
@@ -647,7 +654,13 @@ fn parse_number_or_angle<'i, 't>(
     allow_none: bool,
     allowed_channel_keywords: ChannelKeyword,
 ) -> Result<ColorComponent<NumberOrAngleComponent>, ParseError<'i>> {
-    ColorComponent::parse(context, input, allow_none, allowed_channel_keywords)
+    ColorComponent::parse(
+        context,
+        input,
+        allow_none,
+        allowed_channel_keywords,
+        PercentageContext::not_allowed(),
+    )
 }
 
 /// Parse a `<percentage>` value.
@@ -664,6 +677,7 @@ fn parse_percentage<'i, 't>(
         input,
         allow_none,
         allowed_channel_keywords,
+        PercentageContext::allowed_with_hint(NumericBaseType::Percent),
     )?;
     if !value.could_be_percentage() {
         return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
@@ -686,6 +700,7 @@ fn parse_number<'i, 't>(
         input,
         allow_none,
         allowed_channel_keywords,
+        PercentageContext::not_allowed(),
     )?;
 
     if !value.could_be_number() {
@@ -702,7 +717,13 @@ fn parse_number_or_percentage<'i, 't>(
     allow_none: bool,
     allowed_channel_keywords: ChannelKeyword,
 ) -> Result<ColorComponent<NumberOrPercentageComponent>, ParseError<'i>> {
-    ColorComponent::parse(context, input, allow_none, allowed_channel_keywords)
+    ColorComponent::parse(
+        context,
+        input,
+        allow_none,
+        allowed_channel_keywords,
+        PercentageContext::allowed_with_hint(NumericBaseType::Percent),
+    )
 }
 
 fn parse_legacy_alpha<'i, 't>(
@@ -741,13 +762,9 @@ impl ColorComponent<NumberOrPercentageComponent> {
                 // Channel keywords always resolve to numbers.
                 true
             },
-            Self::Calc(node) => {
-                if let Ok(unit) = node.unit() {
-                    unit.is_empty()
-                } else {
-                    false
-                }
-            },
+            Self::Calc(node) => node
+                .numeric_type_as_calc_type()
+                .is_ok_and(|ty| ty == CalcType::Number),
         }
     }
 
@@ -761,13 +778,9 @@ impl ColorComponent<NumberOrPercentageComponent> {
                 // Channel keywords always resolve to numbers.
                 false
             },
-            Self::Calc(node) => {
-                if let Ok(unit) = node.unit() {
-                    unit == CalcUnits::PERCENTAGE
-                } else {
-                    false
-                }
-            },
+            Self::Calc(node) => node
+                .numeric_type_as_calc_type()
+                .is_ok_and(|ty| ty == CalcType::Percentage),
         }
     }
 }

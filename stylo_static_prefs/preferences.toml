@@ -1,5 +1,6 @@
 "dom.select.customizable_select.enabled" = false
 "dom.viewTransitions.cross-document.enabled" = false
+"gfx.font_rendering.opentype_svg.enabled" = false
 "layout.columns.enabled" = false
 "layout.container-queries.enabled" = false
 "layout.css.alpha-color-function.enabled" = false
@@ -12,12 +13,14 @@
 "layout.css.color-mix-multi-color.enabled" = true
 "layout.css.content.alt-text.enabled" = false
 "layout.css.contrast-color.enabled" = true
+"layout.css.cross-fade.enabled" = false
 "layout.css.custom-media.enabled" = false
 "layout.css.ellipse-corners.enabled" = false
 "layout.css.fit-content-function.enabled" = true
 "layout.css.font-palette.enabled" = false
 "layout.css.font-tech.enabled" = false
 "layout.css.gradient-color-interpolation-method.enabled" = true
+"layout.css.grid-template-masonry-value.enabled" = false
 "layout.css.has-selector.enabled" = false
 "layout.css.light-dark.images.enabled" = false
 "layout.css.line-clamp.enabled" = false
@@ -26,6 +29,7 @@
 "layout.css.motion-path-url.enabled" = false
 "layout.css.nth-child-of.enabled" = false
 "layout.css.outline-offset.snapping" = 1
+"layout.css.overflow-moz-hidden-unscrollable.enabled" = false
 "layout.css.progress-function.enabled" = false
 "layout.css.properties-and-values.enabled" = true
 "layout.css.relative-color-syntax.enabled" = true

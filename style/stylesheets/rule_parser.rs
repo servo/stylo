@@ -740,7 +740,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 let family_names = parse_family_name_list(&self.context, input)?;
                 AtRulePrelude::FontFeatureValues(family_names)
             },
-            "font-palette-values" => {
+            "font-palette-values" if crate::pref!("layout.css.font-palette.enabled", gecko = true) => {
                 let name = DashedIdent::parse(&self.context, input)?;
                 AtRulePrelude::FontPaletteValues(name)
             },

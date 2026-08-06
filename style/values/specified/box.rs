@@ -24,14 +24,9 @@ use style_traits::{CssWriter, KeywordsCollectFn, ParseError /*CssString*/};
 use style_traits::{SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;
 
-#[cfg(not(feature = "servo"))]
+#[inline]
 fn grid_enabled() -> bool {
-    true
-}
-
-#[cfg(feature = "servo")]
-fn grid_enabled() -> bool {
-    static_prefs::pref!("layout.grid.enabled")
+    crate::pref!("layout.grid.enabled", gecko = true)
 }
 
 #[inline]
@@ -2136,7 +2131,6 @@ impl Parse for Overflow {
             "scroll" => Self::Scroll,
             "auto" | "overlay" => Self::Auto,
             "clip" => Self::Clip,
-            #[cfg(feature = "gecko")]
             "-moz-hidden-unscrollable" if static_prefs::pref!("layout.css.overflow-moz-hidden-unscrollable.enabled") => {
                 Overflow::Clip
             },

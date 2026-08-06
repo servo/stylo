@@ -300,16 +300,9 @@ fn allow_grid_template_subgrids() -> bool {
     false
 }
 
-#[cfg(feature = "gecko")]
 #[inline]
 fn allow_grid_template_masonry() -> bool {
     static_prefs::pref!("layout.css.grid-template-masonry-value.enabled")
-}
-
-#[cfg(feature = "servo")]
-#[inline]
-fn allow_grid_template_masonry() -> bool {
-    false
 }
 
 impl Parse for GridTemplateComponent<LengthPercentage, Integer> {

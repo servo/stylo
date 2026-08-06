@@ -132,14 +132,8 @@ fn image_light_dark_enabled(context: &ParserContext) -> bool {
     context.chrome_rules_enabled() || static_prefs::pref!("layout.css.light-dark.images.enabled")
 }
 
-#[cfg(feature = "gecko")]
 fn cross_fade_enabled() -> bool {
     static_prefs::pref!("layout.css.cross-fade.enabled")
-}
-
-#[cfg(feature = "servo")]
-fn cross_fade_enabled() -> bool {
-    false
 }
 
 impl SpecifiedValueInfo for Gradient {

@@ -510,6 +510,10 @@ fn parse_relative_alpha<'i, 't>(
     origin_color: SpecifiedColor,
 ) -> Result<ColorFunction<SpecifiedColor>, ParseError<'i>> {
     let alpha = parse_modern_alpha(context, arguments, ChannelKeyword::ALPHA)?;
+    if matches!(alpha, ColorComponent::AlphaOmitted) {
+        // An alpha is required as it is the only controllable component.
+        return Err(arguments.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+    }
     Ok(ColorFunction::Alpha(origin_color.into(), alpha))
 }
 

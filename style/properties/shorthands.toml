@@ -372,7 +372,7 @@ gecko_pref = "layout.css.scroll-driven-animations.enabled"
 
 [view-timeline]
 engine = "gecko"
-sub_properties = ["view-timeline-name", "view-timeline-axis", "view-timeline-inset"]
+sub_properties = ["view-timeline-name", "view-timeline-axis"]
 spec = "https://drafts.csswg.org/scroll-animations-1/#view-timeline-shorthand"
 gecko_pref = "layout.css.scroll-driven-animations.enabled"
 

@@ -193,7 +193,7 @@ pub use self::GenericViewTimelineInset as ViewTimelineInset;
 impl<LengthPercent> ViewTimelineInset<LengthPercent> {
     /// Returns true if it is auto.
     #[inline]
-    pub fn is_auto(&self) -> bool {
+    fn is_auto(&self) -> bool {
         self.start.is_auto() && self.end.is_auto()
     }
 }

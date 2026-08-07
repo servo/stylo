@@ -481,7 +481,9 @@ fn has_animated_properties(
         for declaration in block.normal_declaration_iter() {
             let declaration_id = declaration.id();
 
-            if declaration_id == PropertyDeclarationId::Longhand(LonghandId::Display) {
+            if declaration_id == PropertyDeclarationId::Longhand(LonghandId::Display)
+                && !static_prefs::pref!("layout.css.display-animations.enabled")
+            {
                 continue;
             }
 

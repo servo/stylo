@@ -1528,7 +1528,9 @@ impl<'le> TElement for GeckoElement<'le> {
         let after_change_ui_style = after_change_style.get_ui();
         let existing_transitions = self.css_transitions_info();
 
-        if after_change_style.get_box().clone_display().is_none() {
+        if after_change_style.get_box().clone_display().is_none()
+            && !static_prefs::pref!("layout.css.display-animations.enabled")
+        {
             // We need to cancel existing transitions.
             return !existing_transitions.is_empty();
         }

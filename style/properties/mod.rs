@@ -626,7 +626,8 @@ impl LonghandId {
     /// Returns whether this property is animatable in a discrete way.
     #[inline]
     pub fn is_discrete_animatable(self) -> bool {
-        LonghandIdSet::discrete_animatable().contains(self)
+        // `display` is discrete but has a custom Animate impl, so it's not in the set.
+        LonghandIdSet::discrete_animatable().contains(self) || self == LonghandId::Display
     }
 
     /// Converts from a LonghandId to an adequate NonCustomCSSPropertyId.

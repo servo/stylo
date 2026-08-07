@@ -12,7 +12,8 @@
 #[cfg(feature = "gecko")] use crate::gecko_bindings::structs::NonCustomCSSPropertyId;
 use crate::properties::{
     longhands::{
-        self, visibility::computed_value::T as Visibility,
+        self, display::computed_value::T as Display,
+        visibility::computed_value::T as Visibility,
     },
     CSSWideKeyword, LonghandId,
     PropertyDeclaration, PropertyDeclarationId,
@@ -644,6 +645,42 @@ impl ComputeSquaredDistance for Visibility {
 }
 
 impl ToAnimatedZero for Visibility {
+    #[inline]
+    fn to_animated_zero(&self) -> Result<Self, ()> {
+        Err(())
+    }
+}
+
+/// https://drafts.csswg.org/css-display-4/#display-animation
+impl Animate for Display {
+    #[inline]
+    fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
+        match procedure {
+            Procedure::Interpolate { progress } => {
+                debug_assert!(
+                    static_prefs::pref!("layout.css.display-animations.enabled"),
+                    "animating display with the pref disabled",
+                );
+                let (this_weight, other_weight) = procedure.weights();
+                match (*self, *other) {
+                    (_, Display::None) => Ok(if this_weight > 0.0 { *self } else { *other }),
+                    (Display::None, _) => Ok(if other_weight > 0.0 { *other } else { *self }),
+                    _ => Ok(if progress >= 0.5 { *other } else { *self }),
+                }
+            },
+            _ => Err(()),
+        }
+    }
+}
+
+impl ComputeSquaredDistance for Display {
+    #[inline]
+    fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
+        Ok(SquaredDistance::from_sqrt(if *self == *other { 0. } else { 1. }))
+    }
+}
+
+impl ToAnimatedZero for Display {
     #[inline]
     fn to_animated_zero(&self) -> Result<Self, ()> {
         Err(())

@@ -1785,31 +1785,6 @@ pub mod position_try {
 }
 
 #[cfg(feature = "gecko")]
-fn timeline_to_css<W>(
-    name: &[specified::TimelineName],
-    axes: &[specified::ScrollAxis],
-    dest: &mut CssWriter<W>,
-) -> fmt::Result
-where
-    W: fmt::Write,
-{
-    if name.len() != axes.len() {
-        return Ok(());
-    }
-    for (i, (name, axis)) in std::iter::zip(name.iter(), axes.iter()).enumerate() {
-        if i != 0 {
-            dest.write_str(", ")?;
-        }
-        name.to_css(dest)?;
-        if !axis.is_default() {
-            dest.write_char(' ')?;
-            axis.to_css(dest)?;
-        }
-    }
-    Ok(())
-}
-
-#[cfg(feature = "gecko")]
 pub mod scroll_timeline {
     pub use crate::properties::generated::shorthands::scroll_timeline::*;
 
@@ -1843,11 +1818,25 @@ pub mod scroll_timeline {
         where
             W: fmt::Write,
         {
-            super::timeline_to_css(
-                &self.scroll_timeline_name.0,
-                &self.scroll_timeline_axis.0,
-                dest,
-            )
+            if self.scroll_timeline_name.0.len() != self.scroll_timeline_axis.0.len() {
+                return Ok(());
+            }
+            let mut first = true;
+            for (name, axis) in std::iter::zip(
+                self.scroll_timeline_name.0.iter(),
+                self.scroll_timeline_axis.0.iter(),
+            ) {
+                if !first {
+                    dest.write_str(", ")?;
+                }
+                name.to_css(dest)?;
+                if !axis.is_default() {
+                    dest.write_char(' ')?;
+                    axis.to_css(dest)?;
+                }
+                first = false;
+            }
+            Ok(())
         }
     }
 }
@@ -1857,7 +1846,9 @@ pub mod view_timeline {
     pub use crate::properties::generated::shorthands::view_timeline::*;
 
     use super::*;
-    use crate::properties::longhands::{view_timeline_axis, view_timeline_name};
+    use crate::properties::longhands::{
+        view_timeline_axis, view_timeline_inset, view_timeline_name,
+    };
 
     pub fn parse_value<'i>(
         context: &ParserContext,
@@ -1865,12 +1856,31 @@ pub mod view_timeline {
     ) -> Result<Longhands, ParseError<'i>> {
         let mut names = Vec::with_capacity(1);
         let mut axes = Vec::with_capacity(1);
+        let mut insets = Vec::with_capacity(1);
         input.parse_comma_separated(|input| {
             let name = view_timeline_name::single_value::parse(context, input)?;
-            let axis = input.try_parse(|i| view_timeline_axis::single_value::parse(context, i));
+            let mut axis = None;
+            let mut inset = None;
+
+            loop {
+                try_parse_one!(
+                    context,
+                    input,
+                    axis,
+                    view_timeline_axis::single_value::parse
+                );
+                try_parse_one!(
+                    context,
+                    input,
+                    inset,
+                    view_timeline_inset::single_value::parse
+                );
+                break;
+            }
 
             names.push(name);
             axes.push(axis.unwrap_or_default());
+            insets.push(inset.unwrap_or_default());
 
             Ok(())
         })?;
@@ -1878,6 +1888,7 @@ pub mod view_timeline {
         Ok(expanded! {
             view_timeline_name: view_timeline_name::SpecifiedValue(names.into()),
             view_timeline_axis: view_timeline_axis::SpecifiedValue(axes.into()),
+            view_timeline_inset: view_timeline_inset::SpecifiedValue(insets.into()),
         })
     }
 
@@ -1886,7 +1897,33 @@ pub mod view_timeline {
         where
             W: fmt::Write,
         {
-            super::timeline_to_css(&self.view_timeline_name.0, &self.view_timeline_axis.0, dest)
+            use itertools::izip;
+            if self.view_timeline_name.0.len() != self.view_timeline_axis.0.len()
+                || self.view_timeline_name.0.len() != self.view_timeline_inset.0.len()
+            {
+                return Ok(());
+            }
+            let mut first = true;
+            for (name, axis, inset) in izip!(
+                self.view_timeline_name.0.iter(),
+                self.view_timeline_axis.0.iter(),
+                self.view_timeline_inset.0.iter(),
+            ) {
+                if !first {
+                    dest.write_str(", ")?;
+                }
+                name.to_css(dest)?;
+                if !axis.is_default() {
+                    dest.write_char(' ')?;
+                    axis.to_css(dest)?;
+                }
+                if !inset.is_auto() {
+                    dest.write_char(' ')?;
+                    inset.to_css(dest)?;
+                }
+                first = false;
+            }
+            Ok(())
         }
     }
 }

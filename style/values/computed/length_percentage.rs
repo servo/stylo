@@ -238,7 +238,7 @@ impl LengthPercentage {
             CalcNode::Leaf(l) => {
                 return match l {
                     ComputedLeaf::Length(l) => {
-                        Self::new_length(Length::new(clamping_mode.clamp(l.px())).normalized())
+                        Self::new_length(Length::new(clamping_mode.clamp(l.px())).finite())
                     },
                     ComputedLeaf::Percentage(p) => Self::new_percent(Percentage(
                         clamping_mode.clamp(crate::values::normalize(p.get())),

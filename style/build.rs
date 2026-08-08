@@ -3,7 +3,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 use std::env;
-use std::path::Path;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::{exit, Command};
 use std::sync::LazyLock;
 use walkdir::WalkDir;
@@ -72,6 +73,47 @@ fn generate_properties(engine: &str) {
     }
 }
 
+fn copy_prebuilt_servo_properties() {
+    let manifest_dir =
+        PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR must be set"));
+    let out_dir = PathBuf::from(env::var_os("OUT_DIR").expect("OUT_DIR must be set"));
+    let source_dir = manifest_dir.join("properties/generated/servo");
+
+    for filename in [
+        "properties.rs",
+        "css-properties.html",
+        "css-properties.json",
+    ] {
+        let source = source_dir.join(filename);
+        let destination = out_dir.join(filename);
+        println!("cargo:rerun-if-changed={}", source.display());
+        fs::copy(&source, &destination).unwrap_or_else(|error| {
+            panic!(
+                "failed to copy {} to {}: {error}",
+                source.display(),
+                destination.display()
+            )
+        });
+    }
+
+    // Keep the generated rustdoc property inventory in the same place as the
+    // upstream generator. OUT_DIR is target/<profile>/build/stylo-*/out.
+    let doc_dir = out_dir.join("../../../../doc/stylo");
+    fs::create_dir_all(&doc_dir)
+        .unwrap_or_else(|error| panic!("failed to create {}: {error}", doc_dir.display()));
+    for filename in ["css-properties.html", "css-properties.json"] {
+        let source = source_dir.join(filename);
+        let destination = doc_dir.join(filename);
+        fs::copy(&source, &destination).unwrap_or_else(|error| {
+            panic!(
+                "failed to copy {} to {}: {error}",
+                source.display(),
+                destination.display()
+            )
+        });
+    }
+}
+
 fn main() {
     let gecko = cfg!(feature = "gecko");
     let servo = cfg!(feature = "servo");
@@ -86,6 +128,10 @@ fn main() {
     };
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:out_dir={}", env::var("OUT_DIR").unwrap());
-    generate_properties(engine);
+    if servo {
+        copy_prebuilt_servo_properties();
+    } else {
+        generate_properties(engine);
+    }
     build_gecko::generate();
 }

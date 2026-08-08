@@ -10,6 +10,18 @@ Stylo
 
 Stylo is a high-performance, browser-grade CSS style engine written in Rust that powers [Servo](https://servo.org) and [Firefox](https://firefox.com). This repo contains Servo’s downstream version of Stylo. The upstream version lives in mozilla-central with the rest of the Gecko/Firefox codebase.
 
+## About this fork
+
+`pathscale/stylo-less-py` keeps the Servo build usable without a Python interpreter. The
+generated Servo CSS property sources are committed under
+`style/properties/generated/servo`, and the Rust build script copies those fixed artifacts
+into Cargo's output directory. The default `servo` feature therefore does not execute
+`python3`, Mako, or TOML Python tooling.
+
+The upstream `gecko` feature retains its original generator because it is not used by the
+Blitz renderer. This fork is based on the exact Stylo revision pinned by Blitz rather than a
+newer upstream revision, avoiding unrelated CSS behavior changes.
+
 Coordination of Stylo development happens:
 
 - Here in Github Issues

@@ -1,0 +1,5 @@
+# Preserve the property generator's output byte-for-byte. Its Mako templates
+# intentionally emit whitespace-only lines that Git would otherwise flag.
+style/properties/generated/servo/properties.rs -whitespace linguist-generated=true
+style/properties/generated/servo/css-properties.html linguist-generated=true
+style/properties/generated/servo/css-properties.json linguist-generated=true

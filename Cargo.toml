@@ -9,6 +9,7 @@ members = [
     "servo_arc",
     "style",
     "style_derive",
+    "stylo_property_model",
     "stylo_static_prefs",
     "style_traits",
     "to_shmem",

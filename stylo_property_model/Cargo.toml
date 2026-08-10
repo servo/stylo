@@ -1,0 +1,14 @@
+[package]
+name = "stylo_property_model"
+version.workspace = true
+authors = ["The Servo Project Developers"]
+license = "MPL-2.0"
+edition = "2021"
+description = "The CSS property database, parsed from TOML into typed Rust"
+
+# No build-time dependency on the style crate, and none on a Python interpreter.
+# This is the model `data.py` builds, expressed as types, so the generator that
+# consumes it can be an ordinary build script.
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"

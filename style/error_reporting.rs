@@ -114,6 +114,9 @@ impl<'a> fmt::Display for ContextualParseError<'a> {
                     write!(f, "found unexpected ")?;
                     token_to_str(t, f)
                 },
+                ParseErrorKind::Basic(BasicParseErrorKind::TooManyNestedBlocks) => {
+                    write!(f, "too many nested blocks")
+                },
                 ParseErrorKind::Basic(BasicParseErrorKind::EndOfInput) => {
                     write!(f, "unexpected end of input")
                 },

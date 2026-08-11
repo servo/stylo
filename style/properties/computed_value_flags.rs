@@ -127,10 +127,10 @@ bitflags! {
 
         /// Whether this style has used font relative units. Note that this is different than the
         /// FONT_METRICS bits, which don't include rem / em etc.
-        const USES_FONT_RELATIVE_UNITS = 1 << 24;
+        const USES_FONT_OR_WM_RELATIVE_UNITS = 1 << 24;
 
-        /// Whether this style depends on font relative units in container queries.
-        const USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES = 1 << 25;
+        /// Whether this style depends on font or writing mode relative units in container queries.
+        const USES_FONT_OR_WM_RELATIVE_UNITS_ON_CONTAINER_QUERIES = 1 << 25;
 
         /// Whether this style uses `sibling-count()`.
         const USES_SIBLING_COUNT = 1 << 26;
@@ -174,7 +174,7 @@ impl ComputedValueFlags {
         Self::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES
             | Self::CONSIDERED_NONTRIVIAL_SCOPED_STYLE
             | Self::DEPENDS_ON_CONTAINER_STYLE_QUERY
-            | Self::USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES
+            | Self::USES_FONT_OR_WM_RELATIVE_UNITS_ON_CONTAINER_QUERIES
     }
 
     /// Flags corresponding to usage of tree-counting functions.

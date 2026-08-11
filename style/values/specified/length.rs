@@ -760,7 +760,7 @@ impl NoCalcLength {
 
         context
             .builder
-            .add_flags(ComputedValueFlags::USES_FONT_RELATIVE_UNITS);
+            .add_flags(ComputedValueFlags::USES_FONT_OR_WM_RELATIVE_UNITS);
 
         let reference_font_size = base_size.resolve(context);
         let length = self.value;
@@ -931,6 +931,9 @@ impl NoCalcLength {
             ViewportUnit::Vmin => cmp::min(size.width, size.height),
             ViewportUnit::Vmax => cmp::max(size.width, size.height),
             ViewportUnit::Vi | ViewportUnit::Vb => {
+                context
+                    .builder
+                    .add_flags(ComputedValueFlags::USES_FONT_OR_WM_RELATIVE_UNITS);
                 context
                     .rule_cache_conditions
                     .borrow_mut()

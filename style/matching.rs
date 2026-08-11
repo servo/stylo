@@ -1065,12 +1065,12 @@ pub trait MatchMethods: TElement {
             // font metrics can be an expensive call, they are only updated if these
             // units are used in the document.
             if device.used_root_font_metrics() && device.update_root_font_metrics() {
-                child_restyle_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT;
+                child_restyle_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_WM_OR_ANCESTOR_FONT;
             }
         }
 
         if font_size_changed || line_height_likely_changed {
-            child_restyle_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT;
+            child_restyle_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_WM_OR_ANCESTOR_FONT;
         }
 
         if context.shared.stylist.quirks_mode() == QuirksMode::Quirks {
@@ -1101,6 +1101,13 @@ pub trait MatchMethods: TElement {
             Some(s) => s,
             None => return RestyleHint::RECASCADE_SELF,
         };
+
+        // Check for changes in writing mode here because we don't care
+        // if the old style didn't exist because that should be resolved
+        // when computing the style from scratch.
+        if !old_primary_style.writing_mode_equals(new_primary_style) {
+            child_restyle_hint |= RestyleHint::RESTYLE_IF_AFFECTED_BY_WM_OR_ANCESTOR_FONT;
+        }
 
         let old_container_type = old_primary_style.clone_container_type();
         if old_container_type != new_container_type && !new_container_type.is_size_container_type()

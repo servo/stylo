@@ -398,10 +398,10 @@ fn needs_to_match_self(hint: RestyleHint, style: &ComputedValues) -> bool {
     if hint.intersects(RestyleHint::RESTYLE_SELF_IF_PSEUDO) && style.is_pseudo_style() {
         return true;
     }
-    if hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT)
+    if hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_WM_OR_ANCESTOR_FONT)
         && style
             .flags
-            .intersects(ComputedValueFlags::USES_FONT_RELATIVE_UNITS_ON_CONTAINER_QUERIES)
+            .intersects(ComputedValueFlags::USES_FONT_OR_WM_RELATIVE_UNITS_ON_CONTAINER_QUERIES)
     {
         return true;
     }
@@ -424,10 +424,10 @@ fn needs_to_recascade_self(hint: RestyleHint, style: &ComputedValues) -> bool {
     {
         return true;
     }
-    if hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_ANCESTOR_FONT)
+    if hint.intersects(RestyleHint::RESTYLE_IF_AFFECTED_BY_WM_OR_ANCESTOR_FONT)
         && style
             .flags
-            .contains(ComputedValueFlags::USES_FONT_RELATIVE_UNITS)
+            .contains(ComputedValueFlags::USES_FONT_OR_WM_RELATIVE_UNITS)
     {
         return true;
     }

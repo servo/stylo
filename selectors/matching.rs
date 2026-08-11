@@ -1464,11 +1464,11 @@ where
         } else {
             ElementSelectorFlags::HAS_SLOW_SELECTOR_LATER_SIBLINGS
         };
-        flags |= if has_selectors {
-            ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH_OF
-        } else {
-            ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH
-        };
+        if has_selectors {
+            flags |= ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH_OF;
+        } else if !is_edge_child_selector {
+            flags |= ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH;
+        }
         element.apply_selector_flags(flags);
     }
 

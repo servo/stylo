@@ -26,12 +26,18 @@ use std::hash::{BuildHasherDefault, Hash, Hasher};
 /// A hasher implementation that doesn't hash anything, because it expects its
 /// input to be a suitable u32 hash.
 pub struct PrecomputedHasher {
-    hash: Option<u32>,
+    hash: u32,
+    #[cfg(debug_assertions)]
+    initialized: bool,
 }
 
 impl Default for PrecomputedHasher {
     fn default() -> Self {
-        Self { hash: None }
+        Self {
+            hash: 0,
+            #[cfg(debug_assertions)]
+            initialized: false,
+        }
     }
 }
 
@@ -75,13 +81,22 @@ impl Hasher for PrecomputedHasher {
 
     #[inline]
     fn write_u32(&mut self, i: u32) {
-        debug_assert!(self.hash.is_none());
-        self.hash = Some(i);
+        #[cfg(debug_assertions)]
+        debug_assert!(!self.initialized);
+        debug_assert_eq!(self.hash, 0);
+        self.hash = i;
+        #[cfg(debug_assertions)]
+        {
+            self.initialized = true;
+        }
     }
 
     #[inline]
     fn finish(&self) -> u64 {
-        self.hash.expect("PrecomputedHasher wasn't fed?") as u64
+        #[cfg(debug_assertions)]
+        debug_assert!(self.initialized);
+        let extended = self.hash as u64;
+        (extended << 32) | extended
     }
 }
 

@@ -1939,7 +1939,7 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
         let self_flags = flags.for_self();
         if !self_flags.is_empty() {
             self.as_node()
-                .set_selector_flags(selector_flags_to_node_flags(flags))
+                .set_selector_flags(selector_flags_to_node_flags(self_flags))
         }
 
         // Handle flags that apply to the parent.

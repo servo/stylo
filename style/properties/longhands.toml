@@ -1873,6 +1873,16 @@ boxed = true
 ignored_when_colors_disabled = true
 affects = "paint"
 
+[-moz-line-scroll-amount]
+type = "length::NonNegativeLengthOrAuto"
+initial = "computed::length::NonNegativeLengthOrAuto::auto()"
+struct = "ui"
+engine = "gecko"
+animation_type = "discrete"
+spec = "None (Nonstandard internal property)"
+enabled_in = "chrome"
+affects = ""
+
 [-moz-inert]
 type = "Inert"
 initial = "specified::Inert::None"

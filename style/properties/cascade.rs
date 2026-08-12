@@ -246,6 +246,9 @@ pub enum CascadeMode<'a, 'b> {
     Visited {
         /// The cascade for our unvisited style.
         unvisited_context: &'a computed::Context<'b>,
+        /// The properties set on the unvisited style. These are useful if we can prove that the
+        /// visited rules are the same as the unvisited declarations.
+        unvisited_properties: &'a LonghandIdSet,
     },
 }
 
@@ -349,7 +352,10 @@ where
     let mut attribute_tracker = AttributeTracker::new(element_context);
 
     let properties_to_apply = match cascade_mode {
-        CascadeMode::Visited { unvisited_context } => {
+        CascadeMode::Visited {
+            unvisited_context,
+            unvisited_properties,
+        } => {
             context.builder.substitution_functions =
                 unvisited_context.builder.substitution_functions.clone();
             context.builder.writing_mode = unvisited_context.builder.writing_mode;
@@ -358,14 +364,18 @@ where
             // It also wouldn't be super-profitable, only a handful :visited properties are
             // non-inherited.
             using_cached_reset_properties = false;
-            // TODO(bug 1859385): If we match the same rules when visited and unvisited, we could
-            // try to avoid gathering the declarations. That'd be:
-            //      unvisited_context.builder.rules.as_ref() == Some(rules)
-            iter_declarations(iter, &mut declarations, None, &mut attribute_tracker);
-
-            LonghandIdSet::visited_dependent()
+            let visited_dependent_props = LonghandIdSet::visited_dependent();
+            // If we match the same rules when visited and unvisited, and we know there isn't any
+            // visited-dependent properties, we can avoid gathering the declarations, we know none
+            // would be relevant.
+            if unvisited_context.builder.rules.as_ref() != Some(rules)
+                || unvisited_properties.contains_any(&visited_dependent_props)
+            {
+                iter_declarations(iter, &mut declarations, None, &mut attribute_tracker);
+            }
+            visited_dependent_props
         },
-        CascadeMode::Unvisited { visited_rules } => {
+        CascadeMode::Unvisited { .. } => {
             cascade.init_custom_properties(&mut context);
             iter_declarations(
                 iter,
@@ -383,18 +393,6 @@ where
                 &mut shorthand_cache,
                 &mut attribute_tracker,
             );
-
-            if let Some(visited_rules) = visited_rules {
-                cascade.compute_visited_style_if_needed(
-                    &mut context,
-                    element,
-                    parent_style,
-                    layout_parent_style,
-                    try_tactic,
-                    visited_rules,
-                    guards,
-                );
-            }
 
             using_cached_reset_properties =
                 cascade.try_to_use_cached_reset_properties(&mut context, rule_cache, guards);
@@ -421,7 +419,19 @@ where
 
     context.builder.clear_modified_reset();
 
-    if matches!(cascade_mode, CascadeMode::Unvisited { .. }) {
+    if let CascadeMode::Unvisited { visited_rules } = cascade_mode {
+        if let Some(visited_rules) = visited_rules {
+            cascade.compute_visited_style_if_needed(
+                &mut context,
+                element,
+                parent_style,
+                layout_parent_style,
+                try_tactic,
+                visited_rules,
+                guards,
+            );
+        }
+
         StyleAdjuster::new(&mut context.builder).adjust(
             layout_parent_style.unwrap_or(inherited_style),
             element,
@@ -1215,6 +1225,7 @@ impl<'a> Cascade<'a> {
             try_tactic,
             CascadeMode::Visited {
                 unvisited_context: &*context,
+                unvisited_properties: &self.seen.longhands,
             },
             // Cascade input flags don't matter for the visited style, they are
             // in the main (unvisited) style.

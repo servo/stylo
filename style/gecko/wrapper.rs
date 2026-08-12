@@ -743,7 +743,12 @@ impl<'le> GeckoElement<'le> {
     /// Returns a reference to the DOM slots for this Element, if they exist.
     #[inline]
     fn dom_slots(&self) -> Option<&structs::FragmentOrElement_nsDOMSlots> {
-        let slots = self.as_node().0.mSlots as *const structs::FragmentOrElement_nsDOMSlots;
+        // For the bit usage, see nsINode::mSlotsOrListenerManager.
+        let slots_or_elm = self.as_node().0.mSlotsOrListenerManager;
+        if slots_or_elm & structs::nsINode_kListenerManagerBit != 0 {
+            return None;
+        }
+        let slots = slots_or_elm as *const structs::FragmentOrElement_nsDOMSlots;
         unsafe { slots.as_ref() }
     }
 

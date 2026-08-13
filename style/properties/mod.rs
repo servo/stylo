@@ -75,6 +75,8 @@ bitflags! {
 
         /// This property can be animated on the compositor.
         const CAN_ANIMATE_ON_COMPOSITOR = 0;
+        /// This property can produce a scroll-linked effect.
+        const SCROLL_LINKED_EFFECTIVE = 0;
         /// See data.py's documentation about the affects_flags.
         const AFFECTS_LAYOUT = 0;
         #[allow(missing_docs)]

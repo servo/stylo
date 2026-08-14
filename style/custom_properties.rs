@@ -1763,7 +1763,7 @@ fn do_substitute_chunk<'a>(
         // Optimize the property: var(--...) case to avoid allocating at all.
         if reference.start == start && reference.end == end {
             if let Some(taint) = attr_taint.filter(|_| substitution.attr_tainted) {
-                taint.push(start, end);
+                taint.push(start, substitution.css.len());
             }
             return Ok(substitution);
         }

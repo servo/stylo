@@ -372,9 +372,6 @@ pub enum TextTransformCase {
     Lowercase,
     /// Capitalize each word.
     Capitalize,
-    /// Automatic italicization of math variables.
-    #[cfg(feature = "gecko")]
-    MathAuto,
 }
 
 #[derive(
@@ -393,22 +390,11 @@ pub enum TextTransformCase {
     ToShmem,
     ToTyped,
 )]
-#[cfg_attr(
-    feature = "gecko",
-    css(bitflags(
-        single = "none,math-auto",
-        mixed = "uppercase,lowercase,capitalize,full-width,full-size-kana",
-        validate_mixed = "Self::validate_mixed_flags",
-    ))
-)]
-#[cfg_attr(
-    not(feature = "gecko"),
-    css(bitflags(
-        single = "none",
-        mixed = "uppercase,lowercase,capitalize,full-width,full-size-kana",
-        validate_mixed = "Self::validate_mixed_flags",
-    ))
-)]
+#[css(bitflags(
+    single = "none,math-auto",
+    mixed = "uppercase,lowercase,capitalize,full-width,full-size-kana",
+    validate_mixed = "Self::validate_mixed_flags",
+))]
 #[repr(C)]
 /// Specified value for the text-transform property.
 /// (The spec grammar gives
@@ -425,17 +411,13 @@ bitflags! {
         const LOWERCASE = 1 << 1;
         /// Capitalize each word.
         const CAPITALIZE = 1 << 2;
-        /// Automatic italicization of math variables.
-        #[cfg(feature = "gecko")]
-        const MATH_AUTO = 1 << 3;
 
-        /// All the case transforms, which are exclusive with each other.
-        #[cfg(feature = "gecko")]
-        const CASE_TRANSFORMS = Self::UPPERCASE.0 | Self::LOWERCASE.0 | Self::CAPITALIZE.0 | Self::MATH_AUTO.0;
-        /// All the case transforms, which are exclusive with each other.
-        #[cfg(feature = "servo")]
+        /// The case transforms can be mixed with full-width or full-size-kana
+        /// but are exclusive with each other.
         const CASE_TRANSFORMS = Self::UPPERCASE.0 | Self::LOWERCASE.0 | Self::CAPITALIZE.0;
 
+        /// Automatic italicization of math variables.
+        const MATH_AUTO = 1 << 3;
         /// full-width
         const FULL_WIDTH = 1 << 4;
         /// full-size-kana
@@ -469,8 +451,6 @@ impl TextTransform {
             Self::UPPERCASE => TextTransformCase::Uppercase,
             Self::LOWERCASE => TextTransformCase::Lowercase,
             Self::CAPITALIZE => TextTransformCase::Capitalize,
-            #[cfg(feature = "gecko")]
-            Self::MATH_AUTO => TextTransformCase::MathAuto,
             _ => unreachable!("Case bits are exclusive with each other"),
         }
     }

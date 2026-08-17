@@ -7,7 +7,7 @@
 use crate::context::{SharedStyleContext, StyleContext};
 use crate::dom::{TElement, TNode};
 use crate::gecko::wrapper::{GeckoElement, GeckoNode};
-use crate::traversal::{recalc_style_at, DomTraversal, PerLevelTraversalData};
+use crate::traversal::{recalc_style_at, DomTraversal};
 
 /// This is the simple struct that Gecko uses to encapsulate a DOM traversal for
 /// styling.
@@ -25,7 +25,6 @@ impl<'a> RecalcStyleOnly<'a> {
 impl<'recalc, 'le> DomTraversal<GeckoElement<'le>> for RecalcStyleOnly<'recalc> {
     fn process_preorder<F>(
         &self,
-        traversal_data: &PerLevelTraversalData,
         context: &mut StyleContext<GeckoElement<'le>>,
         node: GeckoNode<'le>,
         note_child: F,
@@ -34,7 +33,7 @@ impl<'recalc, 'le> DomTraversal<GeckoElement<'le>> for RecalcStyleOnly<'recalc> 
     {
         if let Some(el) = node.as_element() {
             let mut data = unsafe { el.ensure_data() };
-            recalc_style_at(self, traversal_data, context, el, &mut data, note_child);
+            recalc_style_at(self, context, el, &mut data, note_child);
         }
     }
 

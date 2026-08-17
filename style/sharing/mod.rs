@@ -68,7 +68,7 @@ use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::StyleBloom;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::{CascadeInputs, SharedStyleContext, StyleContext};
-use crate::dom::{SendElement, TElement};
+use crate::dom::{SendElement, TElement, TNode};
 use crate::properties::ComputedValues;
 use crate::selector_map::RelevantAttributes;
 use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles};
@@ -658,6 +658,7 @@ impl<E: TElement> StyleSharingCache<E> {
             "Inserting into cache: {:?} with parent {:?}",
             element, parent
         );
+        debug_assert_eq!(element.as_node().depth(), dom_depth);
 
         let cache = self.cache_mut_at(dom_depth);
         if cache.dom_depth != dom_depth {
@@ -715,6 +716,7 @@ impl<E: TElement> StyleSharingCache<E> {
         }
 
         let dom_depth = bloom_filter.matching_depth();
+        debug_assert_eq!(target.element.as_node().depth(), dom_depth);
         let cache = self.cache_mut_at(dom_depth);
         if cache.dom_depth != dom_depth {
             debug!(
@@ -898,6 +900,7 @@ impl<E: TElement> StyleSharingCache<E> {
         target: E,
         dom_depth: usize,
     ) -> Option<PrimaryStyle> {
+        debug_assert_eq!(target.as_node().depth(), dom_depth);
         if shared_context.options.disable_style_sharing_cache {
             return None;
         }

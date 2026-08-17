@@ -25,7 +25,7 @@
 use crate::context::{StyleContext, ThreadLocalStyleContext};
 use crate::dom::{OpaqueNode, SendNode, TElement};
 use crate::scoped_tls::ScopedTLS;
-use crate::traversal::{DomTraversal, PerLevelTraversalData};
+use crate::traversal::DomTraversal;
 use std::collections::VecDeque;
 
 /// The minimum stack size for a thread in the styling pool, in kilobytes.
@@ -84,7 +84,7 @@ fn distribute_one_chunk<'a, 'scope, E, D>(
     items: VecDeque<SendNode<E::ConcreteNode>>,
     traversal_root: OpaqueNode,
     work_unit_max: usize,
-    traversal_data: PerLevelTraversalData,
+    dom_depth: usize,
     scope: &'a rayon::ScopeFifo<'scope>,
     traversal: &'scope D,
     tls: &'scope ScopedTLS<'scope, ThreadLocalStyleContext<E>>,
@@ -96,6 +96,7 @@ fn distribute_one_chunk<'a, 'scope, E, D>(
         #[cfg(feature = "gecko")]
         gecko_profiler_label!(Layout, StyleComputation);
         let mut tlc = tls.ensure(create_thread_local_context);
+        tlc.current_dom_depth = dom_depth;
         let mut context = StyleContext {
             shared: traversal.shared_context(),
             thread_local: &mut *tlc,
@@ -105,7 +106,6 @@ fn distribute_one_chunk<'a, 'scope, E, D>(
             items,
             traversal_root,
             work_unit_max,
-            traversal_data,
             Some(scope),
             traversal,
             tls,
@@ -118,7 +118,7 @@ fn distribute_work<'a, 'scope, E, D>(
     mut items: impl Iterator<Item = SendNode<E::ConcreteNode>>,
     traversal_root: OpaqueNode,
     work_unit_max: usize,
-    traversal_data: PerLevelTraversalData,
+    dom_depth: usize,
     scope: &'a rayon::ScopeFifo<'scope>,
     traversal: &'scope D,
     tls: &'scope ScopedTLS<'scope, ThreadLocalStyleContext<E>>,
@@ -136,7 +136,7 @@ fn distribute_work<'a, 'scope, E, D>(
             chunk,
             traversal_root,
             work_unit_max,
-            traversal_data,
+            dom_depth,
             scope,
             traversal,
             tls,
@@ -151,7 +151,6 @@ pub fn style_trees<'a, 'scope, E, D>(
     mut discovered: VecDeque<SendNode<E::ConcreteNode>>,
     traversal_root: OpaqueNode,
     work_unit_max: usize,
-    mut traversal_data: PerLevelTraversalData,
     scope: Option<&'a rayon::ScopeFifo<'scope>>,
     traversal: &'scope D,
     tls: &'scope ScopedTLS<'scope, ThreadLocalStyleContext<E>>,
@@ -168,7 +167,7 @@ pub fn style_trees<'a, 'scope, E, D>(
     let mut nodes_remaining_at_current_depth = discovered.len();
     while let Some(node) = discovered.pop_front() {
         let mut children_to_process = 0isize;
-        traversal.process_preorder(&traversal_data, context, *node, |n| {
+        traversal.process_preorder(context, *node, |n| {
             children_to_process += 1;
             discovered.push_back(unsafe { SendNode::new(n) });
         });
@@ -186,13 +185,11 @@ pub fn style_trees<'a, 'scope, E, D>(
             && scope.is_some()
         {
             let kept_work = std::cmp::max(nodes_remaining_at_current_depth, local_queue_size);
-            let mut traversal_data_copy = traversal_data.clone();
-            traversal_data_copy.current_dom_depth += 1;
             distribute_work(
                 discovered.range(kept_work..).cloned(),
                 traversal_root,
                 work_unit_max,
-                traversal_data_copy,
+                context.thread_local.current_dom_depth + 1,
                 scope.unwrap(),
                 traversal,
                 tls,
@@ -201,7 +198,7 @@ pub fn style_trees<'a, 'scope, E, D>(
         }
 
         if nodes_remaining_at_current_depth == 0 {
-            traversal_data.current_dom_depth += 1;
+            context.thread_local.current_dom_depth += 1;
             nodes_remaining_at_current_depth = discovered.len();
         }
     }

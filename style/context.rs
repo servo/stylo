@@ -644,6 +644,8 @@ pub struct ThreadLocalStyleContext<E: TElement> {
     pub rule_cache: RuleCache,
     /// The bloom filter used to fast-reject selector-matching.
     pub bloom_filter: StyleBloom<E>,
+    /// The DOM depth of the element we're currently styling.
+    pub current_dom_depth: usize,
     /// A set of tasks to be run (on the parent thread) in sequential mode after
     /// the rest of the styling is complete. This is useful for
     /// infrequently-needed non-threadsafe operations.
@@ -670,6 +672,7 @@ impl<E: TElement> ThreadLocalStyleContext<E> {
             sharing_cache: StyleSharingCache::new(),
             rule_cache: RuleCache::new(),
             bloom_filter: StyleBloom::new(),
+            current_dom_depth: 0,
             tasks: SequentialTaskList(Vec::new()),
             statistics: PerThreadTraversalStatistics::default(),
             stack_limit_checker: StackLimitChecker::new(

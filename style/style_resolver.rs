@@ -8,7 +8,7 @@ use crate::applicable_declarations::ApplicableDeclarationList;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::{CascadeInputs, ElementCascadeInputs, StyleContext};
 use crate::data::{EagerPseudoStyles, ElementStyles};
-use crate::dom::TElement;
+use crate::dom::{TElement, TNode};
 use crate::matching::MatchMethods;
 use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::{ComputedValues, FirstLineReparenting};
@@ -173,6 +173,7 @@ where
         rule_inclusion: RuleInclusion,
         pseudo_resolution: PseudoElementResolution,
     ) -> Self {
+        debug_assert_eq!(element.as_node().depth(), context.thread_local.current_dom_depth);
         Self {
             element,
             context,
@@ -228,13 +229,12 @@ where
             && inputs.included_cascade_flags.is_empty();
 
         if may_reuse {
-            let dom_depth = self.context.thread_local.bloom_filter.matching_depth();
             let cached = self.context.thread_local.sharing_cache.lookup_by_rules(
                 self.context.shared,
                 parent_style.unwrap(),
                 &inputs,
                 self.element,
-                dom_depth,
+                self.context.thread_local.current_dom_depth,
             );
             if let Some(mut primary_style) = cached {
                 self.context.thread_local.statistics.styles_reused += 1;

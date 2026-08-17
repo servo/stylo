@@ -538,7 +538,7 @@ struct = "svg"
 extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-clip-path"
 affects = "paint"
-servo_restyle_damage = "repaint"
+servo_restyle_damage = "rebuild_stacking_context"
 
 [clip-rule]
 type = "FillRule"

@@ -170,15 +170,13 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             return;
         }
         let line_clamp = box_style.clone_line_clamp();
-        let disp = box_style.clone_display();
-        if disp.inside() != DisplayInside::WebkitBox && line_clamp.webkit_legacy
-            || disp.inside() == DisplayInside::WebkitBox
-                && self.style.get_xul().clone__moz_box_orient() != BoxOrient::Vertical
-        {
+        if !line_clamp.webkit_legacy {
             return;
         }
-        // Inline elements should not have line-clamp applied.
-        if disp.inside() == DisplayInside::Flow && disp.outside() == DisplayOutside::Inline {
+        let disp = box_style.clone_display();
+        if disp.inside() != DisplayInside::WebkitBox
+            || self.style.get_xul().clone__moz_box_orient() != BoxOrient::Vertical
+        {
             return;
         }
         let new_display = if disp.outside() == DisplayOutside::Block {

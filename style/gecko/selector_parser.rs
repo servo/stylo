@@ -224,6 +224,9 @@ impl NonTSPseudoClass {
         if matches!(*self, Self::PictureInPicture) {
             return static_prefs::pref!("dom.media-pip.enabled");
         }
+        if matches!(*self, NonTSPseudoClass::MozPlaceholder) {
+            return static_prefs::pref!("layout.css.moz-placeholder.content.enabled");
+        }
         if matches!(
             *self,
             Self::Playing

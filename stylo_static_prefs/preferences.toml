@@ -43,6 +43,7 @@
 "layout.css.tree-counting-functions.enabled" = false
 "layout.css.webkit-fill-available.all-size-properties.enabled" = true
 "layout.css.webkit-fill-available.enabled" = true
+"layout.flexbox.balance" = false
 "layout.grid.enabled" = false
 # Negative means auto, 0 disables the thread-pool (main-thread styling),
 # other numbers override as specified.

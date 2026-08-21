@@ -6,10 +6,7 @@
 
 use std::fmt::Write;
 
-use super::{
-    parsing::{rcs_enabled, ChannelKeyword},
-    AbsoluteColor,
-};
+use super::{parsing::ChannelKeyword, AbsoluteColor};
 use crate::derives::*;
 use crate::typed_om::NumericType;
 use crate::{
@@ -91,11 +88,7 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name, location)?;
                 let mut flags = CalcParseFlags::new(percentage_context);
-                flags.color_components = if rcs_enabled() {
-                    allowed_channel_keywords
-                } else {
-                    ChannelKeyword::empty()
-                };
+                flags.color_components = allowed_channel_keywords;
                 let mut node = CalcNode::parse(context, input, function, flags)?;
                 node.simplify_and_sort();
                 if !node

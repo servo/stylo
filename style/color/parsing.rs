@@ -33,12 +33,6 @@ use cssparser::{
 };
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 
-/// Returns true if the relative color syntax pref is enabled.
-#[inline]
-pub fn rcs_enabled() -> bool {
-    static_prefs::pref!("layout.css.relative-color-syntax.enabled")
-}
-
 /// Represents a channel keyword inside a color.
 #[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq, PartialOrd, ToShmem)]
 #[repr(C)]
@@ -262,10 +256,6 @@ fn parse_origin_color<'i, 't>(
     context: &ParserContext,
     arguments: &mut Parser<'i, 't>,
 ) -> Result<Option<SpecifiedColor>, ParseError<'i>> {
-    if !rcs_enabled() {
-        return Ok(None);
-    }
-
     // Not finding the from keyword is not an error, it just means we don't
     // have an origin color.
     if arguments
@@ -275,7 +265,7 @@ fn parse_origin_color<'i, 't>(
         return Ok(None);
     }
 
-    SpecifiedColor::parse(context, arguments).map(Option::Some)
+    SpecifiedColor::parse(context, arguments).map(Some)
 }
 
 #[inline]

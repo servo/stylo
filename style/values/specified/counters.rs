@@ -9,7 +9,6 @@ use crate::parser::{Parse, ParserContext};
 use crate::values::generics::counters as generics;
 use crate::values::generics::counters::CounterPair;
 use crate::values::specified::image::Image;
-use crate::values::specified::Attr;
 use crate::values::specified::Integer;
 use crate::values::CustomIdent;
 use cssparser::{match_ignore_ascii_case, Parser, Token};
@@ -160,7 +159,6 @@ impl Content {
 impl Parse for Content {
     // normal | none | [ <string> | <counter> | open-quote | close-quote | no-open-quote |
     // no-close-quote ]+
-    // TODO: <uri>, attr(<identifier>)
     #[cfg_attr(feature = "servo", allow(unused_mut))]
     fn parse<'i, 't>(
         context: &ParserContext,
@@ -212,9 +210,6 @@ impl Parse for Content {
                             let style = Content::parse_counter_style(context, input);
                             Ok(generics::ContentItem::Counters(name, separator, style))
                         }),
-                        "attr" if !static_prefs::pref!("layout.css.attr.enabled") => input.parse_nested_block(|input| {
-                            Ok(generics::ContentItem::Attr(Attr::parse_function(context, input)?))
-                        }),
                         _ => {
                             use style_traits::StyleParseErrorKind;
                             let name = name.clone();
@@ -247,11 +242,7 @@ impl Parse for Content {
                         }
                     });
                 },
-                Token::Delim('/')
-                    if alt_start.is_none()
-                        && !items.is_empty()
-                        && static_prefs::pref!("layout.css.content.alt-text.enabled") =>
-                {
+                Token::Delim('/') if alt_start.is_none() && !items.is_empty() => {
                     alt_start = Some(items.len());
                 },
                 ref t => {

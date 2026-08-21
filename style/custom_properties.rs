@@ -1199,16 +1199,7 @@ fn parse_declaration_value_block<'i, 't>(
                 return Err(input.new_custom_error(e));
             },
             Token::Function(ref name) => {
-                let substitution_kind = match SubstitutionFunctionKind::from_ident(name).ok() {
-                    Some(SubstitutionFunctionKind::Attr) => {
-                        if static_prefs::pref!("layout.css.attr.enabled") {
-                            Some(SubstitutionFunctionKind::Attr)
-                        } else {
-                            None
-                        }
-                    },
-                    kind => kind,
-                };
+                let substitution_kind = SubstitutionFunctionKind::from_ident(name).ok();
                 if let Some(substitution_kind) = substitution_kind {
                     let our_ref_index = references.refs.len();
                     let mut input_end_position = None;

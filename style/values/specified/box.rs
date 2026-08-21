@@ -1734,8 +1734,8 @@ impl Perspective {
         context: &ParserContext,
         input: &mut Parser<'i, '_>,
     ) -> Result<Self, ParseError<'i>> {
-        use crate::values::specified::{AllowQuirks, Length};
         use crate::values::generics::NonNegative;
+        use crate::values::specified::{AllowQuirks, Length};
         if let Ok(l) = input.try_parse(|input| {
             Length::parse_non_negative_quirky(context, input, AllowQuirks::Always)
         }) {

@@ -92,6 +92,8 @@ pub enum SupportsCondition {
     FontFormat(FontFaceSourceFormatKeyword),
     /// `font-tech(<font-tech>)`
     FontTech(FontFaceSourceTechFlags),
+    /// `named-feature(<ident>)`
+    NamedFeature(NamedFeature),
     /// `(any tokens)` or `func(any tokens)`
     FutureSyntax(String),
 }
@@ -163,6 +165,10 @@ impl SupportsCondition {
                 let flag = FontFaceSourceTechFlags::parse_one(input)?;
                 Ok(SupportsCondition::FontTech(flag))
             },
+            "named-feature" => {
+                let feature = NamedFeature::parse(input)?;
+                Ok(SupportsCondition::NamedFeature(feature))
+            },
             _ => {
                 Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
             },
@@ -222,6 +228,7 @@ impl SupportsCondition {
             SupportsCondition::Selector(ref selector) => selector.eval(cx),
             SupportsCondition::FontFormat(ref format) => eval_font_format(format),
             SupportsCondition::FontTech(ref tech) => eval_font_tech(tech),
+            SupportsCondition::NamedFeature(ref feature) => feature.eval(),
             SupportsCondition::FutureSyntax(_) => false,
         }
     }
@@ -317,6 +324,11 @@ impl ToCss for SupportsCondition {
             SupportsCondition::FontTech(ref flag) => {
                 dest.write_str("font-tech(")?;
                 flag.to_css(dest)?;
+                dest.write_char(')')
+            },
+            SupportsCondition::NamedFeature(ref feature) => {
+                dest.write_str("named-feature(")?;
+                feature.to_css(dest)?;
                 dest.write_char(')')
             },
             SupportsCondition::FutureSyntax(ref s) => dest.write_str(&s),
@@ -446,5 +458,31 @@ impl ToCss for AtRuleKeyword {
     {
         dest.write_char('@')?;
         serialize_identifier(&self.0, dest)
+    }
+}
+
+/// List of named features.
+///
+/// <https://drafts.csswg.org/css-conditional-5/#support-definition-named-features>
+#[derive(Clone, Copy, Debug, Parse, ToCss, ToShmem)]
+#[repr(u8)]
+pub enum NamedFeature {
+    /// Anchoring to a transformed element takes the anchor's transforms into account.
+    AnchorPositionFollowsTransforms,
+    /// A scroll container that scrolls in one axis and clips in the other.
+    SingleAxisScrollContainer,
+}
+
+impl NamedFeature {
+    /// Determine if a named feature is supported.
+    ///
+    /// <https://drafts.csswg.org/css-conditional-5/#typedef-supports-named-feature-fn>
+    pub fn eval(self) -> bool {
+        match self {
+            // Not implemented. See Bug 2055354.
+            Self::AnchorPositionFollowsTransforms => false,
+            // Not implemented. See Bug 2044147.
+            Self::SingleAxisScrollContainer => false,
+        }
     }
 }

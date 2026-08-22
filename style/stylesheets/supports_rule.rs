@@ -479,8 +479,9 @@ impl NamedFeature {
     /// <https://drafts.csswg.org/css-conditional-5/#typedef-supports-named-feature-fn>
     pub fn eval(self) -> bool {
         match self {
-            // Not implemented. See Bug 2055354.
-            Self::AnchorPositionFollowsTransforms => false,
+            Self::AnchorPositionFollowsTransforms => {
+                static_prefs::pref!("layout.css.anchor-positioning.follows-transforms.enabled")
+            },
             // Not implemented. See Bug 2044147.
             Self::SingleAxisScrollContainer => false,
         }

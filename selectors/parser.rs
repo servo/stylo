@@ -3213,6 +3213,68 @@ enum AttributeFlags {
     CaseSensitivityDependsOnName,
 }
 
+/// Whether `name`, which must already be ASCII-lowercased, is an attribute that HTML matches
+/// ASCII-case-insensitively, as per[1].
+///
+/// A `matches!` over string literals lowers to a jump table on the string length followed by
+/// inlined constant-width comparisons [2]. For a set this small that measures several times faster
+/// than either a perfect hash (which has to hash the name first) or a binary search (which spends
+/// its time on mispredicted branches).
+///
+/// [1]: https://html.spec.whatwg.org/multipage/#selectors
+/// [2]: https://rust.godbolt.org/z/9jxPnbos6
+fn is_ascii_case_insensitive_html_attribute(name: &str) -> bool {
+    matches!(
+        name,
+        "accept"
+            | "accept-charset"
+            | "align"
+            | "alink"
+            | "axis"
+            | "bgcolor"
+            | "charset"
+            | "checked"
+            | "clear"
+            | "codetype"
+            | "color"
+            | "compact"
+            | "declare"
+            | "defer"
+            | "dir"
+            | "direction"
+            | "disabled"
+            | "enctype"
+            | "face"
+            | "frame"
+            | "hreflang"
+            | "http-equiv"
+            | "lang"
+            | "language"
+            | "link"
+            | "media"
+            | "method"
+            | "multiple"
+            | "nohref"
+            | "noresize"
+            | "noshade"
+            | "nowrap"
+            | "readonly"
+            | "rel"
+            | "rev"
+            | "rules"
+            | "scope"
+            | "scrolling"
+            | "selected"
+            | "shape"
+            | "target"
+            | "text"
+            | "type"
+            | "valign"
+            | "valuetype"
+            | "vlink"
+    )
+}
+
 impl AttributeFlags {
     fn to_case_sensitivity(
         self,
@@ -3223,13 +3285,7 @@ impl AttributeFlags {
             AttributeFlags::CaseSensitive => ParsedCaseSensitivity::ExplicitCaseSensitive,
             AttributeFlags::AsciiCaseInsensitive => ParsedCaseSensitivity::AsciiCaseInsensitive,
             AttributeFlags::CaseSensitivityDependsOnName => {
-                if !have_namespace
-                    && include!(concat!(
-                        env!("OUT_DIR"),
-                        "/ascii_case_insensitive_html_attributes.rs"
-                    ))
-                    .contains(local_name_lower)
-                {
+                if !have_namespace && is_ascii_case_insensitive_html_attribute(local_name_lower) {
                     ParsedCaseSensitivity::AsciiCaseInsensitiveIfInHtmlElementInHtmlDocument
                 } else {
                     ParsedCaseSensitivity::CaseSensitive

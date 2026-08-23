@@ -123,10 +123,6 @@ fn default_color_interpolation_method<T>(
     }
 }
 
-fn image_light_dark_enabled(context: &ParserContext) -> bool {
-    context.chrome_rules_enabled() || static_prefs::pref!("layout.css.light-dark.images.enabled")
-}
-
 #[cfg(feature = "gecko")]
 fn cross_fade_enabled() -> bool {
     static_prefs::pref!("layout.css.cross-fade.enabled")
@@ -259,7 +255,7 @@ impl Image {
             "paint" => Self::PaintWorklet(Box::new(<PaintWorklet>::parse_args(context, input)?)),
             "cross-fade" if cross_fade_enabled() => Self::CrossFade(Box::new(CrossFade::parse_args(context, input, cors_mode, flags)?)),
             "image" => Self::Image(Box::new(Color::parse(context, input)?)),
-            "light-dark" if image_light_dark_enabled(context) => Self::LightDark(Box::new(GenericLightDark::parse_args_with(input, |input| {
+            "light-dark" => Self::LightDark(Box::new(GenericLightDark::parse_args_with(input, |input| {
                 // `none` in `light-dark()` has a special meaning.
                 Self::parse_with_cors_mode(context, input, cors_mode, flags & !ParseImageFlags::FORBID_NONE)
             })?)),

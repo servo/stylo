@@ -600,15 +600,11 @@ impl Color {
                     return Ok(Color::LightDark(Box::new(ld)));
                 }
 
-                if static_prefs::pref!("layout.css.contrast-color.enabled") {
-                    if let Ok(c) = input.try_parse(|i| {
-                        i.expect_function_matching("contrast-color")?;
-                        i.parse_nested_block(|i| {
-                            Self::parse_internal(context, i, preserve_authored)
-                        })
-                    }) {
-                        return Ok(Color::ContrastColor(Box::new(c)));
-                    }
+                if let Ok(c) = input.try_parse(|i| {
+                    i.expect_function_matching("contrast-color")?;
+                    i.parse_nested_block(|i| Self::parse_internal(context, i, preserve_authored))
+                }) {
+                    return Ok(Color::ContrastColor(Box::new(c)));
                 }
 
                 match e.kind {

@@ -173,7 +173,10 @@ where
         rule_inclusion: RuleInclusion,
         pseudo_resolution: PseudoElementResolution,
     ) -> Self {
-        debug_assert_eq!(element.as_node().depth(), context.thread_local.current_dom_depth);
+        debug_assert_eq!(
+            element.as_node().depth(),
+            context.thread_local.current_dom_depth
+        );
         Self {
             element,
             context,
@@ -221,21 +224,28 @@ where
         )
     }
 
-    /// Whether matching again with the relevant link treated as visited can
-    /// give a different rule node than the pass we already did.
+    /// Whether matching again with the relevant link treated as visited can give a different rule
+    /// node than the pass we already did.
     ///
-    /// `:link` and `:visited` only match links, so for anything else this needs
-    /// a selector testing link state from a position that reaches a non-link,
-    /// like `a:visited span`.
+    /// `:link` and `:visited` only match links, so for anything else other than them (and their
+    /// pseudo-elements), this needs a selector testing link state from a position that reaches a
+    /// non-link, like `a:visited span`.
     fn needs_visited_matching(&self) -> bool {
-        self.element.is_link()
-            || self
-                .context
-                .shared
-                .stylist
-                .any_applicable_rule_data(self.element, |data| {
-                    data.has_non_link_visited_dependency()
-                })
+        if self.element.is_link() {
+            return true;
+        }
+        if self.element.implemented_pseudo_element().is_some()
+            && self
+                .element
+                .pseudo_element_originating_element()
+                .is_some_and(|e| e.is_link())
+        {
+            return true;
+        }
+        self.context
+            .shared
+            .stylist
+            .any_applicable_rule_data(self.element, |data| data.has_non_link_visited_dependency())
     }
 
     fn cascade_primary_style(

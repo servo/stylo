@@ -2562,6 +2562,10 @@ struct StylistSelectorVisitor<'a> {
     /// Whether the selector needs revalidation for the style sharing cache.
     needs_revalidation: &'a mut bool,
 
+    /// Whether any selector can make the match result of an element that isn't
+    /// itself a link depend on the visitedness of a link.
+    non_link_visited_dependency: &'a mut bool,
+
     /// Flags for which selector list-containing components the visitor is
     /// inside of, if any
     in_selector_list_of: SelectorListKind,
@@ -2716,6 +2720,12 @@ impl<'a> SelectorVisitor for StylistSelectorVisitor<'a> {
 
                 if self.in_selector_list_of.relevant_to_nth_of_dependencies() {
                     self.nth_of_state_dependencies.insert(p.state_flag());
+                }
+
+                if self.passed_rightmost_selector
+                    && matches!(*p, NonTSPseudoClass::Link | NonTSPseudoClass::Visited)
+                {
+                    *self.non_link_visited_dependency = true;
                 }
             },
             Component::ID(ref id) => {
@@ -3292,6 +3302,10 @@ pub struct CascadeData {
     /// when an irrelevant element state bit changes.
     state_dependencies: ElementState,
 
+    /// Whether some selector tests `:link` / `:visited` from a position that
+    /// can change the match result of an element that isn't itself a link.
+    non_link_visited_dependency: bool,
+
     /// The element state bits that are relied on by selectors that appear in
     /// the selector list of :nth-child(... of <selector list>).
     nth_of_state_dependencies: ElementState,
@@ -3411,6 +3425,7 @@ impl CascadeData {
             nth_of_state_dependencies: ElementState::empty(),
             attribute_dependencies: PrecomputedHashSet::default(),
             state_dependencies: ElementState::empty(),
+            non_link_visited_dependency: false,
             document_state_dependencies: DocumentState::empty(),
             mapped_ids: PrecomputedHashSet::default(),
             selectors_for_cache_revalidation: SelectorMap::new(),
@@ -3537,6 +3552,13 @@ impl CascadeData {
     #[inline]
     pub fn might_have_attribute_dependency(&self, local_name: &LocalName) -> bool {
         self.attribute_dependencies.contains(local_name)
+    }
+
+    /// Whether matching an element that isn't itself a link can depend on
+    /// whether a link is visited. Note this doesn't account for pseudo-element
+    /// rules, whose originating element is the one `:visited` would match.
+    pub fn has_non_link_visited_dependency(&self) -> bool {
+        self.non_link_visited_dependency
     }
 
     /// Returns whether the given attribute might appear in an attribute
@@ -3912,6 +3934,7 @@ impl CascadeData {
                 let mut visitor = StylistSelectorVisitor {
                     passed_rightmost_selector: false,
                     needs_revalidation: &mut needs_revalidation,
+                    non_link_visited_dependency: &mut self.non_link_visited_dependency,
                     in_selector_list_of: SelectorListKind::default(),
                     mapped_ids: &mut self.mapped_ids,
                     nth_of_mapped_ids: &mut self.nth_of_mapped_ids,
@@ -4450,6 +4473,7 @@ impl CascadeData {
                     let visitor = StylistSelectorVisitor {
                         passed_rightmost_selector: true,
                         needs_revalidation: &mut _unused,
+                        non_link_visited_dependency: &mut self.non_link_visited_dependency,
                         in_selector_list_of: SelectorListKind::default(),
                         mapped_ids: &mut self.mapped_ids,
                         nth_of_mapped_ids: &mut self.nth_of_mapped_ids,
@@ -4729,6 +4753,7 @@ impl CascadeData {
         self.nth_of_class_dependencies.clear();
         self.state_dependencies = ElementState::empty();
         self.nth_of_state_dependencies = ElementState::empty();
+        self.non_link_visited_dependency = false;
         self.document_state_dependencies = DocumentState::empty();
         self.mapped_ids.clear();
         self.nth_of_mapped_ids.clear();
@@ -4979,9 +5004,11 @@ pub fn needs_revalidation_for_testing(s: &Selector<SelectorImpl>) -> bool {
     let mut state_dependencies = ElementState::empty();
     let mut nth_of_state_dependencies = ElementState::empty();
     let mut document_state_dependencies = DocumentState::empty();
+    let mut non_link_visited_dependency = false;
     let mut visitor = StylistSelectorVisitor {
         passed_rightmost_selector: false,
         needs_revalidation: &mut needs_revalidation,
+        non_link_visited_dependency: &mut non_link_visited_dependency,
         in_selector_list_of: SelectorListKind::default(),
         mapped_ids: &mut mapped_ids,
         nth_of_mapped_ids: &mut nth_of_mapped_ids,

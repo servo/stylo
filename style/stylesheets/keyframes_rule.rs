@@ -129,7 +129,7 @@ impl KeyframePercentage {
         KeyframePercentage(value)
     }
 
-    fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<KeyframePercentage, ParseError<'i>> {
+    fn parse(input: &mut Parser) -> Result<KeyframePercentage, ParseError> {
         let token = input.next()?.clone();
         match token {
             Token::Ident(ref identifier) if identifier.as_ref().eq_ignore_ascii_case("from") => {
@@ -142,7 +142,7 @@ impl KeyframePercentage {
                 unit_value: percentage,
                 ..
             } if percentage >= 0. && percentage <= 1. => Ok(KeyframePercentage::new(percentage)),
-            _ => Err(input.new_unexpected_token_error(token)),
+            _ => Err(ParseError::unexpected_token()),
         }
     }
 }
@@ -173,7 +173,7 @@ impl KeyframeSelector {
     }
 
     /// Parse a keyframe selector from CSS input.
-    pub fn parse_internal<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
+    pub fn parse_internal(input: &mut Parser) -> Result<Self, ParseError> {
         // `from | to | <percentage [0,100]>`
         if let Ok(percentage) = input.try_parse(KeyframePercentage::parse) {
             return Ok(Self::from_percentage(percentage));
@@ -181,8 +181,7 @@ impl KeyframeSelector {
 
         // We parse the the extension of keyframe selector for scroll-driven animation.
         if !static_prefs::pref!("layout.css.scroll-driven-animations.enabled") {
-            let location = input.current_source_location();
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         // `<timeline-range-name> <percentage>`
@@ -195,10 +194,7 @@ impl KeyframeSelector {
 }
 
 impl Parse for KeyframeSelector {
-    fn parse<'i, 't>(
-        _context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         KeyframeSelector::parse_internal(input)
     }
 }
@@ -220,7 +216,7 @@ impl KeyframeSelectors {
     }
 
     /// Parse the keyframe selectors from CSS input.
-    pub fn parse<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
+    pub fn parse(input: &mut Parser) -> Result<Self, ParseError> {
         input
             .parse_comma_separated(KeyframeSelector::parse_internal)
             .map(KeyframeSelectors)
@@ -259,7 +255,7 @@ impl Keyframe {
         css: &'i str,
         parent_stylesheet_contents: &StylesheetContents,
         lock: &SharedRwLock,
-    ) -> Result<Arc<Locked<Self>>, ParseError<'i>> {
+    ) -> Result<Arc<Locked<Self>>, ParseError> {
         let url_data = &parent_stylesheet_contents.url_data;
         let namespaces = &parent_stylesheet_contents.namespaces;
         let mut context = ParserContext::new(
@@ -585,41 +581,38 @@ pub fn parse_keyframe_list<'a>(
 impl<'a, 'b, 'i> AtRuleParser<'i> for KeyframeListParser<'a, 'b> {
     type Prelude = ();
     type AtRule = Arc<Locked<Keyframe>>;
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 }
 
 impl<'a, 'b, 'i> DeclarationParser<'i> for KeyframeListParser<'a, 'b> {
     type Declaration = Arc<Locked<Keyframe>>;
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 }
 
 impl<'a, 'b, 'i> QualifiedRuleParser<'i> for KeyframeListParser<'a, 'b> {
     type Prelude = KeyframeSelectors;
     type QualifiedRule = Arc<Locked<Keyframe>>;
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 
-    fn parse_prelude<'t>(
-        &mut self,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self::Prelude, ParseError<'i>> {
+    fn parse_prelude(&mut self, input: &mut Parser<'i, '_>) -> Result<Self::Prelude, ParseError> {
         let start_position = input.position();
+        let start_location = input.current_source_location();
         KeyframeSelectors::parse(input).map_err(|e| {
-            let location = e.location;
             let error = ContextualParseError::InvalidKeyframeRule(
                 input.slice_from(start_position),
                 e.clone(),
             );
-            self.context.log_css_error(location, error);
+            self.context.log_css_error(start_location, error);
             e
         })
     }
 
-    fn parse_block<'t>(
+    fn parse_block(
         &mut self,
         selector: Self::Prelude,
         start: &ParserState,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self::QualifiedRule, ParseError<'i>> {
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self::QualifiedRule, ParseError> {
         let block = self.context.nest_for_rule(CssRuleType::Keyframe, |p| {
             parse_property_declaration_list(&p, input, &[])
         });
@@ -631,7 +624,7 @@ impl<'a, 'b, 'i> QualifiedRuleParser<'i> for KeyframeListParser<'a, 'b> {
     }
 }
 
-impl<'a, 'b, 'i> RuleBodyItemParser<'i, Arc<Locked<Keyframe>>, StyleParseErrorKind<'i>>
+impl<'a, 'b, 'i> RuleBodyItemParser<'i, Arc<Locked<Keyframe>>, StyleParseErrorKind>
     for KeyframeListParser<'a, 'b>
 {
     fn parse_qualified(&self) -> bool {

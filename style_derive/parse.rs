@@ -58,7 +58,7 @@ fn parse_bitflags(bitflags: &CssBitflagAttrs) -> TokenStream {
         let mut result = Self::empty();
         loop {
             let mut single_flag = false;
-            let flag: Result<_, style_traits::ParseError<'i>> = input.try_parse(|input| {
+            let flag: Result<_, style_traits::ParseError> = input.try_parse(|input| {
                 Ok(try_match_ident_ignore_ascii_case! { input,
                     #match_arms
                 })
@@ -74,7 +74,7 @@ fn parse_bitflags(bitflags: &CssBitflagAttrs) -> TokenStream {
             }
 
             if result.intersects(flag) {
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                return Err(style_traits::ParseError::custom(style_traits::StyleParseErrorKind::UnspecifiedError));
             }
 
             result.insert(flag);
@@ -82,7 +82,7 @@ fn parse_bitflags(bitflags: &CssBitflagAttrs) -> TokenStream {
         if #validate_condition {
             Ok(result)
         } else {
-            Err(input.new_custom_error(style_traits::StyleParseErrorKind::UnspecifiedError))
+            Err(style_traits::ParseError::custom(style_traits::StyleParseErrorKind::UnspecifiedError))
         }
     }
 }
@@ -160,7 +160,7 @@ fn parse_non_keyword_variant(
             // condition clause. If that happens, we need to return an error.
             parse = quote! {
                 #parse
-                Err(input.new_custom_error(style_traits::StyleParseErrorKind::UnspecifiedError))
+                Err(style_traits::ParseError::custom(style_traits::StyleParseErrorKind::UnspecifiedError))
             };
         }
     }
@@ -252,13 +252,11 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
     let parse_body = if needs_context {
         let parse_keywords = if has_keywords {
             quote! {
-                let location = input.current_source_location();
+                let location = input.position();
                 let ident = input.expect_ident()?;
                 cssparser::match_ignore_ascii_case! { &ident,
                     #match_keywords
-                    _ => Err(location.new_unexpected_token_error(
-                        cssparser::Token::Ident(ident.clone())
-                    ))
+                    _ => Err(style_traits::ParseError::unexpected_token())
                 }
             }
         } else {
@@ -281,10 +279,10 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
     let parse_trait_impl = quote! {
         impl #impl_generics crate::parser::Parse for #name #ty_generics #where_clause {
             #[inline]
-            fn parse<'i, 't>(
+            fn parse(
                 #context_ident: &crate::parser::ParserContext,
-                input: &mut cssparser::Parser<'i, 't>,
-            ) -> Result<Self, style_traits::ParseError<'i>> {
+                input: &mut cssparser::Parser,
+            ) -> Result<Self, style_traits::ParseError> {
                 #parse_body
             }
         }
@@ -302,16 +300,13 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
         impl #name {
             /// Parse this keyword.
             #[inline]
-            pub fn parse<'i, 't>(
-                input: &mut cssparser::Parser<'i, 't>,
-            ) -> Result<Self, style_traits::ParseError<'i>> {
-                let location = input.current_source_location();
+            pub fn parse(
+                input: &mut cssparser::Parser,
+            ) -> Result<Self, style_traits::ParseError> {
+                let location = input.position();
                 let ident = input.expect_ident()?;
-                Self::from_ident(ident.as_ref()).map_err(|()| {
-                    location.new_unexpected_token_error(
-                        cssparser::Token::Ident(ident.clone())
-                    )
-                })
+                Self::from_ident(ident.as_ref())
+                    .map_err(|()| style_traits::ParseError::unexpected_token())
             }
 
             /// Parse this keyword from a string slice.

@@ -135,10 +135,7 @@ where
 }
 
 impl Parse for GridLine<specified::Integer> {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input.try_parse(|i| i.expect_ident_matching("auto")).is_ok() {
             return Ok(Self::auto());
         }
@@ -155,10 +152,9 @@ impl Parse for GridLine<specified::Integer> {
 
         for _ in 0..3 {
             // Maximum possible entities for <grid-line>
-            let location = input.current_source_location();
             if input.try_parse(|i| i.expect_ident_matching("span")).is_ok() {
                 if is_span {
-                    return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
 
                 if line_num.is_some() || ident.is_some() {
@@ -168,17 +164,17 @@ impl Parse for GridLine<specified::Integer> {
                 is_span = true;
             } else if let Ok(i) = input.try_parse(|i| specified::Integer::parse(context, i)) {
                 if val_before_span || line_num.is_some() {
-                    return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
 
                 if matches!(i.get(), Some(0)) {
-                    return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
 
                 line_num = Some(i);
             } else if let Ok(name) = input.try_parse(|i| CustomIdent::parse(i, &["auto"])) {
                 if val_before_span || ident.is_some() {
-                    return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
                 // NOTE(emilio): `span` is consumed above, so we only need to
                 // reject `auto`.
@@ -189,7 +185,7 @@ impl Parse for GridLine<specified::Integer> {
         }
 
         if line_num.is_none() && ident.is_none() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         let mut grid_line = Self::auto();
@@ -201,7 +197,7 @@ impl Parse for GridLine<specified::Integer> {
                     .is_err()
             {
                 // Disallow negative integers for grid spans.
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             }
             grid_line.line_num = line_num;
         }
@@ -525,10 +521,7 @@ pub enum RepeatCount<Integer> {
 }
 
 impl Parse for RepeatCount<specified::Integer> {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(i) = input.try_parse(|i| specified::Integer::parse_positive(context, i)) {
             return Ok(RepeatCount::Number(i));
         }

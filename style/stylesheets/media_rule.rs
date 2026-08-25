@@ -83,7 +83,7 @@ pub enum CustomMediaCondition {
 
 impl CustomMediaCondition {
     /// Parses the possible keywords for this condition.
-    pub(crate) fn parse_keyword<'i>(input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+    pub(crate) fn parse_keyword(input: &mut Parser) -> Result<Self, ParseError> {
         Ok(try_match_ident_ignore_ascii_case! { input,
             "true" => Self::True,
             "false" => Self::False,

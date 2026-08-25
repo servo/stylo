@@ -81,10 +81,7 @@ impl ListStyleType {
 }
 
 impl Parse for ListStyleType {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let flags = CounterStyleParsingFlags::ALLOW_NONE | CounterStyleParsingFlags::ALLOW_STRING;
         Ok(Self(CounterStyle::parse(context, input, flags)?))
     }
@@ -155,10 +152,7 @@ pub enum Quotes {
 }
 
 impl Parse for Quotes {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Quotes, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Quotes, ParseError> {
         if input
             .try_parse(|input| input.expect_ident_matching("auto"))
             .is_ok()
@@ -175,10 +169,9 @@ impl Parse for Quotes {
 
         let mut quotes = Vec::new();
         loop {
-            let location = input.current_source_location();
             let opening = match input.next() {
                 Ok(&Token::QuotedString(ref value)) => value.as_ref().to_owned().into(),
-                Ok(t) => return Err(location.new_unexpected_token_error(t.clone())),
+                Ok(_) => return Err(ParseError::unexpected_token()),
                 Err(_) => break,
             };
 
@@ -191,7 +184,7 @@ impl Parse for Quotes {
                 quotes.into_iter(),
             ))))
         } else {
-            Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+            Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
         }
     }
 }

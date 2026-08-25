@@ -130,10 +130,7 @@ impl MediaQuery {
     /// Parse a media query given css input.
     ///
     /// Returns an error if any of the expressions is unknown.
-    pub fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let (qualifier, explicit_media_type) = input
             .try_parse(|input| -> Result<_, ()> {
                 let qualifier = input.try_parse(Qualifier::parse).ok();

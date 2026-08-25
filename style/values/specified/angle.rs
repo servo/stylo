@@ -252,10 +252,7 @@ pub enum AllowUnitlessZeroAngle {
 
 impl Parse for Angle {
     /// Parses an angle according to CSS-VALUES § 6.1.
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Self::parse_internal(context, input, AllowUnitlessZeroAngle::No)
     }
 }
@@ -355,19 +352,18 @@ impl Angle {
     ///
     /// See the comment in `AllowUnitlessZeroAngle` for why.
     #[inline]
-    pub fn parse_with_unitless<'i, 't>(
+    pub fn parse_with_unitless(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         Self::parse_internal(context, input, AllowUnitlessZeroAngle::Yes)
     }
 
-    pub(super) fn parse_internal<'i, 't>(
+    pub(super) fn parse_internal(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         allow_unitless_zero: AllowUnitlessZeroAngle,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    ) -> Result<Self, ParseError> {
         let t = input.next()?;
         let allow_unitless_zero = matches!(allow_unitless_zero, AllowUnitlessZeroAngle::Yes);
         match *t {
@@ -376,20 +372,20 @@ impl Angle {
             } => match NoCalcAngle::parse_dimension(value, unit) {
                 Ok(angle) => Ok(Self::new(angle)),
                 Err(()) => {
-                    let t = t.clone();
-                    Err(input.new_unexpected_token_error(t))
+                    let _ = t.clone();
+                    Err(ParseError::unexpected_token())
                 },
             },
             Token::Function(ref name) => {
-                let function = CalcNode::math_function(context, name, location)?;
+                let function = CalcNode::math_function(context, name)?;
                 CalcNode::parse_angle(context, input, function, PercentageContext::not_allowed())
                     .map(Box::new)
                     .map(Self::new_calc)
             },
             Token::Number { value, .. } if value == 0. && allow_unitless_zero => Ok(Angle::zero()),
             ref t => {
-                let t = t.clone();
-                Err(input.new_unexpected_token_error(t))
+                let _ = t.clone();
+                Err(ParseError::unexpected_token())
             },
         }
     }

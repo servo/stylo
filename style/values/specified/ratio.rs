@@ -17,10 +17,7 @@ use style_traits::ParseError;
 pub type Ratio = GenericRatio<NonNegativeNumber>;
 
 impl Parse for Ratio {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let a = NonNegativeNumber::parse(context, input)?;
         let b = match input.try_parse(|input| input.expect_delim('/')) {
             Ok(()) => NonNegativeNumber::parse(context, input)?,

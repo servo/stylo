@@ -54,11 +54,7 @@ impl ToCss for TransitionProperty {
 impl ToTyped for TransitionProperty {}
 
 impl Parse for TransitionProperty {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let ident = input.expect_ident()?;
 
         let id = match PropertyId::parse_ignoring_rule_type(&ident, context) {
@@ -66,7 +62,6 @@ impl Parse for TransitionProperty {
             Err(..) => {
                 // None is not acceptable as a single transition-property.
                 return Ok(TransitionProperty::Unsupported(CustomIdent::from_ident(
-                    location,
                     ident,
                     &["none"],
                 )?));
@@ -160,10 +155,7 @@ impl TransitionBehavior {
 pub type AnimationDuration = generics::GenericAnimationDuration<Time>;
 
 impl Parse for AnimationDuration {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if static_prefs::pref!("layout.css.scroll-driven-animations.enabled")
             && input.try_parse(|i| i.expect_ident_matching("auto")).is_ok()
         {
@@ -239,10 +231,7 @@ impl AnimationName {
 }
 
 impl Parse for AnimationName {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(name) = input.try_parse(|input| KeyframesName::parse(context, input)) {
             return Ok(AnimationName(name));
         }
@@ -505,7 +494,7 @@ pub struct ScrollFunction {
 
 impl ScrollFunction {
     /// Parse the inner function arguments of `scroll()`.
-    fn parse_arguments<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
+    fn parse_arguments(input: &mut Parser) -> Result<Self, ParseError> {
         // <scroll()> = scroll( [ <scroller> || <axis> ]? )
         // https://drafts.csswg.org/scroll-animations-1/#funcdef-scroll
         let mut scroller = None;
@@ -533,10 +522,7 @@ impl ScrollFunction {
 
 impl generics::ViewFunction<LengthPercentage> {
     /// Parse the inner function arguments of `view()`.
-    fn parse_arguments<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse_arguments(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         // <view()> = view( [ <axis> || <'view-timeline-inset'> ]? )
         // https://drafts.csswg.org/scroll-animations-1/#funcdef-view
         let mut axis = None;
@@ -612,10 +598,7 @@ impl IsTreeScoped for TimelineIdent {
 }
 
 impl Parse for TimelineIdent {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
             return Ok(Self::none());
         }
@@ -643,10 +626,7 @@ impl ToTyped for TimelineName {}
 pub type AnimationTimeline = generics::GenericAnimationTimeline<LengthPercentage>;
 
 impl Parse for AnimationTimeline {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         use crate::values::generics::animation::ViewFunction;
 
         // <single-animation-timeline> = auto | none | <dashed-ident> | <scroll()> | <view()>
@@ -662,15 +642,14 @@ impl Parse for AnimationTimeline {
         }
 
         // Parse <scroll()> or <view()>.
-        let location = input.current_source_location();
         let function = input.expect_function()?.clone();
         input.parse_nested_block(move |i| {
             match_ignore_ascii_case! { &function,
                 "scroll" => ScrollFunction::parse_arguments(i).map(Self::Scroll),
                 "view" => ViewFunction::parse_arguments(context, i).map(Self::View),
                 _ => {
-                    Err(location.new_custom_error(
-                        StyleParseErrorKind::UnexpectedFunction(function.clone())
+                    Err(ParseError::custom(
+                        StyleParseErrorKind::UnexpectedFunction
                     ))
                 },
             }
@@ -682,10 +661,7 @@ impl Parse for AnimationTimeline {
 pub type ViewTimelineInset = generics::GenericViewTimelineInset<LengthPercentage>;
 
 impl Parse for ViewTimelineInset {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         use crate::values::specified::LengthPercentageOrAuto;
 
         let start = LengthPercentageOrAuto::parse(context, input)?;
@@ -736,11 +712,7 @@ impl IsTreeScoped for ViewTransitionNameKeyword {
 }
 
 impl Parse for ViewTransitionNameKeyword {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let ident = input.expect_ident()?;
         if ident.eq_ignore_ascii_case("none") {
             return Ok(Self::none());
@@ -752,7 +724,7 @@ impl Parse for ViewTransitionNameKeyword {
 
         // We check none already, so don't need to exclude none here.
         // Note: "auto" is not supported yet so we exclude it.
-        CustomIdent::from_ident(location, ident, &["auto"]).map(|i| Self(AtomIdent::new(i.0)))
+        CustomIdent::from_ident(ident, &["auto"]).map(|i| Self(AtomIdent::new(i.0)))
     }
 }
 
@@ -818,10 +790,7 @@ impl ViewTransitionClassList {
 }
 
 impl Parse for ViewTransitionClassList {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         use style_traits::{Separator, Space};
 
         if input.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
@@ -910,11 +879,11 @@ impl TimelineRangeName {
 /// The internal value for `animation-range-start` and `animation-range-end`.
 pub type AnimationRangeValue = generics::GenericAnimationRangeValue<LengthPercentage>;
 
-fn parse_animation_range<'i, 't>(
+fn parse_animation_range(
     context: &ParserContext,
-    input: &mut Parser<'i, 't>,
+    input: &mut Parser,
     default: LengthPercentage,
-) -> Result<AnimationRangeValue, ParseError<'i>> {
+) -> Result<AnimationRangeValue, ParseError> {
     if input
         .try_parse(|i| i.expect_ident_matching("normal"))
         .is_ok()
@@ -937,10 +906,7 @@ fn parse_animation_range<'i, 't>(
 pub type AnimationRangeStart = generics::GenericAnimationRangeStart<LengthPercentage>;
 
 impl Parse for AnimationRangeStart {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         parse_animation_range(context, input, LengthPercentage::zero_percent()).map(Self)
     }
 }
@@ -949,10 +915,7 @@ impl Parse for AnimationRangeStart {
 pub type AnimationRangeEnd = generics::GenericAnimationRangeEnd<LengthPercentage>;
 
 impl Parse for AnimationRangeEnd {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         parse_animation_range(context, input, LengthPercentage::hundred_percent()).map(Self)
     }
 }

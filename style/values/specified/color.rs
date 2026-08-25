@@ -22,12 +22,12 @@ use crate::values::generics::Optional;
 use crate::values::specified::percentage::ToPercentage;
 use crate::values::specified::Percentage;
 use crate::values::{normalize, CustomIdent};
-use cssparser::{match_ignore_ascii_case, BasicParseErrorKind, ParseErrorKind, Parser, Token};
+use cssparser::{match_ignore_ascii_case, Parser, Token};
 use std::fmt::{self, Write};
 use std::io::Write as IoWrite;
 use style_traits::{
     owned_slice::OwnedSlice, CssString, CssType, CssWriter, KeywordsCollectFn, ParseError,
-    SpecifiedValueInfo, StyleParseErrorKind, ToCss, ValueParseErrorKind,
+    SpecifiedValueInfo, StyleParseErrorKind, ToCss,
 };
 use thin_vec::ThinVec;
 
@@ -35,18 +35,18 @@ use thin_vec::ThinVec;
 pub type ColorMix = GenericColorMix<Color, Percentage>;
 
 impl ColorMix {
-    fn parse<'i, 't>(
+    fn parse(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         preserve_authored: PreserveAuthored,
-    ) -> Result<Self, ParseError<'i>> {
+    ) -> Result<Self, ParseError> {
         input.expect_function_matching("color-mix")?;
 
         input.parse_nested_block(|input| {
             // If the color interpolation method is omitted, default to "in oklab".
             // See: https://github.com/web-platform-tests/interop/issues/1166
             let interpolation = input
-                .try_parse(|input| -> Result<_, ParseError<'i>> {
+                .try_parse(|input| -> Result<_, ParseError> {
                     let interpolation = ColorInterpolationMethod::parse(context, input)?;
                     input.expect_comma()?;
                     Ok(interpolation)
@@ -76,7 +76,7 @@ impl ColorMix {
                 // TODO(Bug 2037742) - Enable calc()-expressions that can only be resolved at
                 // computed value time (due to relative lengths, sibling-index(), etc.).
                 if matches!(percentage, Some(ref p) if p.to_percentage().is_none()) {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
 
                 items.push((color, percentage));
@@ -95,7 +95,7 @@ impl ColorMix {
             // <https://drafts.csswg.org/css-color-5/#color-mix>
             let min_item_count = if allow_multiple_items { 1 } else { 2 };
             if items.len() < min_item_count {
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             }
 
             // Normalize percentages per:
@@ -540,20 +540,17 @@ enum PreserveAuthored {
 }
 
 impl Parse for Color {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Self::parse_internal(context, input, PreserveAuthored::Yes)
     }
 }
 
 impl Color {
-    fn parse_internal<'i, 't>(
+    fn parse_internal(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         preserve_authored: PreserveAuthored,
-    ) -> Result<Self, ParseError<'i>> {
+    ) -> Result<Self, ParseError> {
         let authored = match preserve_authored {
             PreserveAuthored::No => None,
             PreserveAuthored::Yes => {
@@ -607,14 +604,7 @@ impl Color {
                     return Ok(Color::ContrastColor(Box::new(c)));
                 }
 
-                match e.kind {
-                    ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken(t)) => {
-                        Err(e.location.new_custom_error(StyleParseErrorKind::ValueError(
-                            ValueParseErrorKind::InvalidColor(t),
-                        )))
-                    },
-                    _ => Err(e),
-                }
+                Err(e)
             },
         }
     }
@@ -632,31 +622,12 @@ impl Color {
         input: &mut Parser,
         device: Option<&Device>,
     ) -> Result<ComputedColor, ()> {
-        use crate::error_reporting::ContextualParseError;
-        let start = input.position();
         let result = input
             .parse_entirely(|input| Self::parse_internal(context, input, PreserveAuthored::No));
 
         let specified = match result {
             Ok(s) => s,
-            Err(e) => {
-                if context.error_reporting_enabled() {
-                    // Ignore other kinds of errors that might be reported, such as
-                    // ParseErrorKind::Basic(BasicParseErrorKind::UnexpectedToken),
-                    // since Gecko didn't use to report those to the error console.
-                    //
-                    // TODO(emilio): Revise whether we want to keep this at all, we
-                    // use this only for canvas, this warnings are disabled by
-                    // default and not available on OffscreenCanvas anyways...
-                    if let ParseErrorKind::Custom(StyleParseErrorKind::ValueError(..)) = e.kind {
-                        let location = e.location.clone();
-                        let error =
-                            ContextualParseError::UnsupportedValue(input.slice_from(start), e);
-                        context.log_css_error(location, error);
-                    }
-                }
-                return Err(());
-            },
+            Err(..) => return Err(()),
         };
 
         match device {
@@ -769,11 +740,11 @@ impl Color {
     /// Parse a color, with quirks.
     ///
     /// <https://quirks.spec.whatwg.org/#the-hashless-hex-color-quirk>
-    pub fn parse_quirky<'i, 't>(
+    pub fn parse_quirky(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         allow_quirks: AllowQuirks,
-    ) -> Result<Self, ParseError<'i>> {
+    ) -> Result<Self, ParseError> {
         input.try_parse(|i| Self::parse(context, i)).or_else(|e| {
             if !allow_quirks.allowed(context.quirks_mode) {
                 return Err(e);
@@ -782,23 +753,19 @@ impl Color {
         })
     }
 
-    fn parse_hash<'i>(
-        bytes: &[u8],
-        loc: &cssparser::SourceLocation,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse_hash(bytes: &[u8]) -> Result<Self, ParseError> {
         match cssparser::color::parse_hash_color(bytes) {
             Ok((r, g, b, a)) => Ok(Self::from_absolute_color(AbsoluteColor::srgb_legacy(
                 r, g, b, a,
             ))),
-            Err(()) => Err(loc.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+            Err(()) => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
         }
     }
 
     /// Parse a <quirky-color> value.
     ///
     /// <https://quirks.spec.whatwg.org/#the-hashless-hex-color-quirk>
-    fn parse_quirky_color<'i, 't>(input: &mut Parser<'i, 't>) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    fn parse_quirky_color(input: &mut Parser) -> Result<Self, ParseError> {
         let (value, unit) = match *input.next()? {
             Token::Number {
                 int_value: Some(integer),
@@ -811,16 +778,16 @@ impl Color {
             } => (integer, Some(unit)),
             Token::Ident(ref ident) => {
                 if ident.len() != 3 && ident.len() != 6 {
-                    return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
-                return Self::parse_hash(ident.as_bytes(), &location);
+                return Self::parse_hash(ident.as_bytes());
             },
-            ref t => {
-                return Err(location.new_unexpected_token_error(t.clone()));
+            _ => {
+                return Err(ParseError::unexpected_token());
             },
         };
         if value < 0 {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         let length = if value <= 9 {
             1
@@ -835,11 +802,11 @@ impl Color {
         } else if value <= 999999 {
             6
         } else {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         };
         let total = length + unit.as_ref().map_or(0, |d| d.len());
         if total > 6 {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         let mut serialization = [b'0'; 6];
         let space_padding = 6 - total;
@@ -856,7 +823,7 @@ impl Color {
                 .unwrap();
         }
         debug_assert_eq!(written, 6);
-        Self::parse_hash(&serialization, &location)
+        Self::parse_hash(&serialization)
     }
 }
 
@@ -1019,10 +986,7 @@ impl ToComputedValue for ColorPropertyValue {
 }
 
 impl Parse for ColorPropertyValue {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Color::parse_quirky(context, input, AllowQuirks::Yes).map(ColorPropertyValue)
     }
 }
@@ -1034,10 +998,7 @@ pub type ColorOrAuto = GenericColorOrAuto<Color>;
 pub type CaretColor = GenericCaretColor<Color>;
 
 impl Parse for CaretColor {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         ColorOrAuto::parse(context, input).map(GenericCaretColor)
     }
 }
@@ -1110,14 +1071,10 @@ impl ColorScheme {
 }
 
 impl Parse for ColorScheme {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let mut idents = vec![];
         let mut bits = ColorSchemeFlags::empty();
 
-        let mut location = input.current_source_location();
         while let Ok(ident) = input.try_parse(|i| i.expect_ident_cloned()) {
             let mut is_only = false;
             match_ignore_ascii_case! { &ident,
@@ -1125,13 +1082,13 @@ impl Parse for ColorScheme {
                     if idents.is_empty() && bits.is_empty() {
                         return Ok(Self::normal());
                     }
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 },
                 "light" => bits.insert(ColorSchemeFlags::LIGHT),
                 "dark" => bits.insert(ColorSchemeFlags::DARK),
                 "only" => {
                     if bits.intersects(ColorSchemeFlags::ONLY) {
-                        return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                        return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                     }
                     bits.insert(ColorSchemeFlags::ONLY);
                     is_only = true;
@@ -1146,13 +1103,12 @@ impl Parse for ColorScheme {
                     break;
                 }
             } else {
-                idents.push(CustomIdent::from_ident(location, &ident, &[])?);
+                idents.push(CustomIdent::from_ident(&ident, &[])?);
             }
-            location = input.current_source_location();
         }
 
         if idents.is_empty() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         Ok(Self {

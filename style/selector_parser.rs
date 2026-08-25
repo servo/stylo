@@ -60,7 +60,7 @@ impl<'a> SelectorParser<'a> {
     pub fn parse_author_origin_no_namespace<'i>(
         input: &'i str,
         url_data: &UrlExtraData,
-    ) -> Result<SelectorList<SelectorImpl>, ParseError<'i>> {
+    ) -> Result<SelectorList<SelectorImpl>, ParseError> {
         let namespaces = Namespaces::default();
         let parser = SelectorParser {
             stylesheet_origin: Origin::Author,
@@ -228,7 +228,7 @@ pub enum HorizontalDirection {
 
 impl Direction {
     /// Parse a direction value.
-    pub fn parse<'i, 't>(parser: &mut CssParser<'i, 't>) -> Result<Self, ParseError<'i>> {
+    pub fn parse(parser: &mut CssParser) -> Result<Self, ParseError> {
         let ident = parser.expect_ident()?;
         Ok(Direction(match_ignore_ascii_case! { &ident,
             "rtl" => atom!("rtl"),

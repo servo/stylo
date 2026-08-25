@@ -40,14 +40,13 @@ pub struct FontPaletteOverrideColor {
 }
 
 impl Parse for FontPaletteOverrideColor {
-    fn parse<'i, 't>(
+    fn parse(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<FontPaletteOverrideColor, ParseError<'i>> {
-        let location = input.current_source_location();
+        input: &mut Parser,
+    ) -> Result<FontPaletteOverrideColor, ParseError> {
         let index = NonNegativeInteger::parse(context, input)?;
         if index.0.resolve().is_none() {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         let color = SpecifiedColor::parse(context, input)?;
@@ -61,7 +60,7 @@ impl Parse for FontPaletteOverrideColor {
             // because that is what the rule exposes to authors.
             return Ok(FontPaletteOverrideColor { index, color });
         }
-        Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
     }
 }
 
@@ -94,14 +93,10 @@ pub enum FontPaletteBase {
 
 impl Parse for FontPaletteBase {
     #[inline]
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(v) = input.try_parse(|input| NonNegativeInteger::parse(context, input)) {
             if v.0.resolve().is_none() {
-                return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             }
             return Ok(FontPaletteBase::Index(v));
         }
@@ -110,7 +105,7 @@ impl Parse for FontPaletteBase {
         match_ignore_ascii_case! { &ident,
             "light" => Ok(FontPaletteBase::Light),
             "dark" => Ok(FontPaletteBase::Dark),
-            _ => Err(location.new_unexpected_token_error(cssparser::Token::Ident(ident.clone())))
+            _ => Err(ParseError::unexpected_token())
         }
     }
 }
@@ -160,8 +155,7 @@ impl FontPaletteValuesRule {
         };
         let mut iter = RuleBodyParser::new(input, &mut parser);
         while let Some(declaration) = iter.next() {
-            if let Err((error, slice)) = declaration {
-                let location = error.location;
+            if let Err((error, slice, location)) = declaration {
                 let error =
                     ContextualParseError::UnsupportedFontPaletteValuesDescriptor(slice, error);
                 context.log_css_error(location, error);
@@ -256,32 +250,32 @@ struct FontPaletteValuesDeclarationParser<'a> {
 impl<'a, 'i> AtRuleParser<'i> for FontPaletteValuesDeclarationParser<'a> {
     type Prelude = ();
     type AtRule = ();
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 }
 
 impl<'a, 'i> QualifiedRuleParser<'i> for FontPaletteValuesDeclarationParser<'a> {
     type Prelude = ();
     type QualifiedRule = ();
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 }
 
-fn parse_override_colors<'i, 't>(
+fn parse_override_colors(
     context: &ParserContext,
-    input: &mut Parser<'i, 't>,
-) -> Result<Vec<FontPaletteOverrideColor>, ParseError<'i>> {
+    input: &mut Parser,
+) -> Result<Vec<FontPaletteOverrideColor>, ParseError> {
     input.parse_comma_separated(|i| FontPaletteOverrideColor::parse(context, i))
 }
 
 impl<'a, 'b, 'i> DeclarationParser<'i> for FontPaletteValuesDeclarationParser<'a> {
     type Declaration = ();
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 
-    fn parse_value<'t>(
+    fn parse_value(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser<'i, '_>,
         _declaration_start: &ParserState,
-    ) -> Result<(), ParseError<'i>> {
+    ) -> Result<(), ParseError> {
         match_ignore_ascii_case! { &*name,
             "font-family" => {
                 self.rule.family_names = parse_family_name_list(self.context, input)?
@@ -292,13 +286,13 @@ impl<'a, 'b, 'i> DeclarationParser<'i> for FontPaletteValuesDeclarationParser<'a
             "override-colors" => {
                 self.rule.override_colors = parse_override_colors(self.context, input)?
             },
-            _ => return Err(input.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(name.clone()))),
+            _ => return Err(ParseError::custom(SelectorParseErrorKind::UnexpectedIdent)),
         }
         Ok(())
     }
 }
 
-impl<'a, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind<'i>>
+impl<'a, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind>
     for FontPaletteValuesDeclarationParser<'a>
 {
     fn parse_declarations(&self) -> bool {

@@ -375,76 +375,60 @@ pub enum AtRulePrelude {
     ViewTransition,
 }
 
-impl AtRulePrelude {
-    fn name(&self) -> &'static str {
-        match *self {
-            Self::FontFace => "font-face",
-            Self::FontFeatureValues(..) => "font-feature-values",
-            Self::FontPaletteValues(..) => "font-palette-values",
-            Self::CounterStyle(..) => "counter-style",
-            Self::Media(..) => "media",
-            Self::CustomMedia(..) => "custom-media",
-            Self::Container(..) => "container",
-            Self::Supports(..) => "supports",
-            Self::Keyframes(..) => "keyframes",
-            Self::Page(..) => "page",
-            Self::Property(..) => "property",
-            Self::Document(..) => "-moz-document",
-            Self::Import(..) => "import",
-            Self::Margin(..) => "margin",
-            Self::Namespace(..) => "namespace",
-            Self::Layer(..) => "layer",
-            Self::Scope(..) => "scope",
-            Self::StartingStyle => "starting-style",
-            Self::AppearanceBase => "appearance-base",
-            Self::PositionTry(..) => "position-try",
-            Self::ViewTransition => "view-transition",
-        }
-    }
-}
-
 impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
     type Prelude = AtRulePrelude;
     type AtRule = SourcePosition;
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 
-    fn parse_prelude<'t>(
+    fn parse_prelude(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<AtRulePrelude, ParseError<'i>> {
+        input: &mut Parser<'i, '_>,
+    ) -> Result<AtRulePrelude, ParseError> {
         // @charset is removed by rust-cssparser if it’s the first rule in the stylesheet
         // anything left is invalid.
         if name.eq_ignore_ascii_case("charset") {
             self.dom_error = Some(RulesMutateError::HierarchyRequest);
-            return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedCharsetRule));
+            return Err(ParseError::custom(
+                StyleParseErrorKind::UnexpectedCharsetRule,
+            ));
         }
 
         let Some(rule_type) = AtRuleType::from_name(&name, &self.context) else {
-            return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name)));
+            return Err(ParseError::from_basic_kind(
+                BasicParseErrorKind::AtRuleInvalid,
+            ));
         };
 
         match rule_type {
             AtRuleType::Import => {
                 if !self.check_state(State::Imports) {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedImportRule))
+                    return Err(ParseError::custom(
+                        StyleParseErrorKind::UnexpectedImportRule,
+                    ));
                 }
 
                 if let AllowImportRules::No = self.allow_import_rules {
-                    return Err(input.new_custom_error(StyleParseErrorKind::DisallowedImportRule))
+                    return Err(ParseError::custom(
+                        StyleParseErrorKind::DisallowedImportRule,
+                    ));
                 }
 
                 // FIXME(emilio): We should always be able to have a loader
                 // around! See bug 1533783.
                 if self.loader.is_none() {
                     error!("Saw @import rule, but no way to trigger the load");
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedImportRule))
+                    return Err(ParseError::custom(
+                        StyleParseErrorKind::UnexpectedImportRule,
+                    ));
                 }
 
                 let url_string = input.expect_url_or_string()?.as_ref().to_owned();
-                let url = CssUrl::new_from_untainted_string(url_string, &self.context, CorsMode::None);
+                let url =
+                    CssUrl::new_from_untainted_string(url_string, &self.context, CorsMode::None);
 
-                let (layer, supports) = ImportRule::parse_layer_and_supports(input, &mut self.context);
+                let (layer, supports) =
+                    ImportRule::parse_layer_and_supports(input, &mut self.context);
 
                 let media = MediaList::parse(&mut self.context, input);
                 let media = Arc::new(self.shared_lock.wrap(media));
@@ -453,16 +437,24 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
             },
             AtRuleType::Namespace => {
                 if !self.check_state(State::Namespaces) {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnexpectedNamespaceRule))
+                    return Err(ParseError::custom(
+                        StyleParseErrorKind::UnexpectedNamespaceRule,
+                    ));
                 }
 
-                let prefix = input.try_parse(|i| i.expect_ident_cloned())
-                                  .map(|s| Prefix::from(s.as_ref())).ok();
+                let prefix = input
+                    .try_parse(|i| i.expect_ident_cloned())
+                    .map(|s| Prefix::from(s.as_ref()))
+                    .ok();
                 let maybe_namespace = match input.expect_url_or_string() {
                     Ok(url_or_string) => url_or_string,
-                    Err(BasicParseError { kind: BasicParseErrorKind::UnexpectedToken(t), location }) => {
-                        return Err(location.new_custom_error(StyleParseErrorKind::UnexpectedTokenWithinNamespace(t)))
-                    }
+                    Err(BasicParseError {
+                        kind: BasicParseErrorKind::UnexpectedToken,
+                    }) => {
+                        return Err(ParseError::custom(
+                            StyleParseErrorKind::UnexpectedTokenWithinNamespace,
+                        ))
+                    },
                     Err(e) => return Err(e.into()),
                 };
                 let url = Namespace::from(maybe_namespace.as_ref());
@@ -478,27 +470,27 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
                     State::Body
                 };
                 if !self.check_state(state_to_check) {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
             },
             _ => {
                 // All other rules have blocks, so we do this check early in
                 // parse_block instead.
-            }
+            },
         }
 
-        self.nested().parse_at_rule_prelude(rule_type, name, input)
+        self.nested().parse_at_rule_prelude(rule_type, input)
     }
 
     #[inline]
-    fn parse_block<'t>(
+    fn parse_block(
         &mut self,
         prelude: AtRulePrelude,
         start: &ParserState,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self::AtRule, ParseError<'i>> {
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self::AtRule, ParseError> {
         if !self.check_state(State::Body) {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         AtRuleParser::parse_block(self.nested(), prelude, start, input)?;
         self.state = State::Body;
@@ -564,27 +556,24 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
 impl<'a, 'i> QualifiedRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
     type Prelude = SelectorList<SelectorImpl>;
     type QualifiedRule = SourcePosition;
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 
     #[inline]
-    fn parse_prelude<'t>(
-        &mut self,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self::Prelude, ParseError<'i>> {
+    fn parse_prelude(&mut self, input: &mut Parser<'i, '_>) -> Result<Self::Prelude, ParseError> {
         if !self.check_state(State::Body) {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         QualifiedRuleParser::parse_prelude(self.nested(), input)
     }
 
     #[inline]
-    fn parse_block<'t>(
+    fn parse_block(
         &mut self,
         prelude: Self::Prelude,
         start: &ParserState,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self::QualifiedRule, ParseError<'i>> {
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self::QualifiedRule, ParseError> {
         QualifiedRuleParser::parse_block(self.nested(), prelude, start, input)?;
         self.state = State::Body;
         Ok(start.position())
@@ -601,12 +590,11 @@ struct NestedParseResult {
 }
 
 impl<'a, 'i> NestedRuleParser<'a, 'i> {
-    fn parse_at_rule_prelude<'t>(
+    fn parse_at_rule_prelude(
         &mut self,
         rule_type: AtRuleType,
-        name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<AtRulePrelude, ParseError<'i>> {
+        input: &mut Parser<'i, '_>,
+    ) -> Result<AtRulePrelude, ParseError> {
         Ok(match rule_type {
             AtRuleType::Media => {
                 let media_queries = MediaList::parse(&mut self.context, input);
@@ -658,9 +646,8 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
             ),
             AtRuleType::Property => {
                 let name = input.expect_ident_cloned()?;
-                let name = parse_custom_property_name(&name).map_err(|_| {
-                    input.new_custom_error(StyleParseErrorKind::UnexpectedIdent(name.clone()))
-                })?;
+                let name = parse_custom_property_name(&name)
+                    .map_err(|_| ParseError::custom(StyleParseErrorKind::UnexpectedIdent))?;
                 AtRulePrelude::Property(PropertyRuleName(Atom::from(name)))
             },
             AtRuleType::Document => {
@@ -690,7 +677,7 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
                             self.shared_lock
                                 .wrap(MediaList::parse(&mut self.context, input)),
                         ))
-                });
+                    });
                 AtRulePrelude::CustomMedia(name, condition)
             },
             AtRuleType::ViewTransition => AtRulePrelude::ViewTransition,
@@ -698,7 +685,9 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
             AtRuleType::Import | AtRuleType::Namespace | AtRuleType::FontFeatureValuesBlock => {
                 // @import and @namespace are only valid and handled at the
                 // top level, and @font-feature-values uses its own parser.
-                return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name.into())));
+                return Err(ParseError::from_basic_kind(
+                    BasicParseErrorKind::AtRuleInvalid,
+                ));
             },
         })
     }
@@ -778,13 +767,16 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
             while let Some(result) = iter.next() {
                 match result {
                     Ok(()) => {},
-                    Err((error, slice)) => {
+                    Err((error, slice, location)) => {
                         if parse_declarations {
                             let top = &mut **iter.parser;
-                            top.declaration_parser_state
-                                .did_error(&top.context, error, slice);
+                            top.declaration_parser_state.did_error(
+                                &top.context,
+                                error,
+                                slice,
+                                location,
+                            );
                         } else {
-                            let location = error.location;
                             let error = ContextualParseError::InvalidRule(slice, error);
                             iter.parser.context.log_css_error(location, error);
                         }
@@ -884,29 +876,33 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
 impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
     type Prelude = AtRulePrelude;
     type AtRule = ();
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 
-    fn parse_prelude<'t>(
+    fn parse_prelude(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self::Prelude, ParseError<'i>> {
+        input: &mut Parser<'i, '_>,
+    ) -> Result<Self::Prelude, ParseError> {
         let Some(rule_type) = AtRuleType::from_name(&name, &self.context) else {
-            return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(name)));
+            return Err(ParseError::from_basic_kind(
+                BasicParseErrorKind::AtRuleInvalid,
+            ));
         };
 
-        self.parse_at_rule_prelude(rule_type, name, input)
+        self.parse_at_rule_prelude(rule_type, input)
     }
 
-    fn parse_block<'t>(
+    fn parse_block(
         &mut self,
         prelude: AtRulePrelude,
         start: &ParserState,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<(), ParseError<'i>> {
+        input: &mut Parser<'i, '_>,
+    ) -> Result<(), ParseError> {
         if !self.at_rule_allowed(&prelude) {
             self.dom_error = Some(RulesMutateError::HierarchyRequest);
-            return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid(prelude.name().into())));
+            return Err(ParseError::from_basic_kind(
+                BasicParseErrorKind::AtRuleInvalid,
+            ));
         }
         let source_location = start.source_location();
         self.flush_declarations();
@@ -993,7 +989,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             },
             AtRulePrelude::Property(name) => self.nest_for_rule(CssRuleType::Property, |p| {
                 let rule_data = parse_property_block(&p.context, input, name, source_location)?;
-                Ok::<CssRule, ParseError<'i>>(CssRule::Property(Arc::new(rule_data)))
+                Ok::<CssRule, ParseError>(CssRule::Property(Arc::new(rule_data)))
             })?,
             AtRulePrelude::Document(condition) => {
                 if !cfg!(feature = "gecko") {
@@ -1016,7 +1012,11 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             AtRulePrelude::Layer(names) => {
                 let name = match names.len() {
                     0 | 1 => names.into_iter().next(),
-                    _ => return Err(input.new_error(BasicParseErrorKind::AtRuleBodyInvalid)),
+                    _ => {
+                        return Err(ParseError::from_basic_kind(
+                            BasicParseErrorKind::AtRuleBodyInvalid,
+                        ))
+                    },
                 };
                 CssRule::LayerBlock(Arc::new(LayerBlockRule {
                     name,
@@ -1038,7 +1038,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             | AtRulePrelude::Import(..)
             | AtRulePrelude::Namespace(..) => {
                 // These rules don't have blocks.
-                return Err(input.new_unexpected_token_error(cssparser::Token::CurlyBracketBlock));
+                return Err(ParseError::unexpected_token());
             },
             AtRulePrelude::Scope(bounds) => CssRule::Scope(Arc::new(ScopeRule {
                 bounds,
@@ -1115,12 +1115,9 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
 impl<'a, 'i> QualifiedRuleParser<'i> for NestedRuleParser<'a, 'i> {
     type Prelude = SelectorList<SelectorImpl>;
     type QualifiedRule = ();
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 
-    fn parse_prelude<'t>(
-        &mut self,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self::Prelude, ParseError<'i>> {
+    fn parse_prelude(&mut self, input: &mut Parser<'i, '_>) -> Result<Self::Prelude, ParseError> {
         let selector_parser = SelectorParser {
             stylesheet_origin: self.context.stylesheet_origin,
             namespaces: &self.context.namespaces,
@@ -1130,12 +1127,12 @@ impl<'a, 'i> QualifiedRuleParser<'i> for NestedRuleParser<'a, 'i> {
         SelectorList::parse(&selector_parser, input, self.parse_relative())
     }
 
-    fn parse_block<'t>(
+    fn parse_block(
         &mut self,
         selectors: Self::Prelude,
         start: &ParserState,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<(), ParseError<'i>> {
+        input: &mut Parser<'i, '_>,
+    ) -> Result<(), ParseError> {
         let source_location = start.source_location();
         let reporting_errors = self.context.error_reporting_enabled();
         if reporting_errors {
@@ -1165,20 +1162,20 @@ impl<'a, 'i> QualifiedRuleParser<'i> for NestedRuleParser<'a, 'i> {
 
 impl<'a, 'i> DeclarationParser<'i> for NestedRuleParser<'a, 'i> {
     type Declaration = ();
-    type Error = StyleParseErrorKind<'i>;
-    fn parse_value<'t>(
+    type Error = StyleParseErrorKind;
+    fn parse_value(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser<'i, '_>,
         declaration_start: &ParserState,
-    ) -> Result<(), ParseError<'i>> {
+    ) -> Result<(), ParseError> {
         let top = &mut **self;
         top.declaration_parser_state
             .parse_value(&top.context, name, input, declaration_start)
     }
 }
 
-impl<'a, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind<'i>> for NestedRuleParser<'a, 'i> {
+impl<'a, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind> for NestedRuleParser<'a, 'i> {
     fn parse_qualified(&self) -> bool {
         true
     }

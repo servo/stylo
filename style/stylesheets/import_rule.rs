@@ -177,8 +177,8 @@ impl ImportRule {
     ///
     /// We do this here so that the import preloader can look at this without having to parse the
     /// whole import rule or parse the media query list or what not.
-    pub fn parse_layer_and_supports<'i, 't>(
-        input: &mut Parser<'i, 't>,
+    pub fn parse_layer_and_supports(
+        input: &mut Parser,
         context: &mut ParserContext,
     ) -> (ImportLayer, Option<ImportSupportsCondition>) {
         let layer = if input

@@ -134,10 +134,10 @@ pub mod ${property.ident} {
         % endif
     }
 
-    pub fn parse_declared<'i, 't>(
+    pub fn parse_declared(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<PropertyDeclaration, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<PropertyDeclaration, ParseError> {
         parse(context, input)
         % if property.boxed:
             .map(Box::new)
@@ -176,10 +176,10 @@ pub mod ${property.ident} {
     % endif
     #[allow(unused_variables)]
     #[inline]
-    pub fn parse<'i, 't>(
+    pub fn parse(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<SpecifiedValue, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<SpecifiedValue, ParseError> {
         % if property.allow_quirks:
         specified::${property.predefined_type}::${property.parse_method}_quirky(context, input, AllowQuirks::Yes)
         % elif property.parse_method != "parse":
@@ -237,8 +237,8 @@ pub mod ${property.ident} {
         SpecifiedValue::${to_camel_case(property.keyword.values[0])}
     }
     #[inline]
-    pub fn parse<'i, 't>(_context: &ParserContext, input: &mut Parser<'i, 't>)
-                         -> Result<SpecifiedValue, ParseError<'i>> {
+    pub fn parse(_context: &ParserContext, input: &mut Parser)
+                         -> Result<SpecifiedValue, ParseError> {
         SpecifiedValue::parse(input)
     }
 
@@ -488,10 +488,10 @@ pub mod ${property.ident} {
         % endif
     }
 
-    pub fn parse<'i, 't>(
+    pub fn parse(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<SpecifiedValue, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<SpecifiedValue, ParseError> {
         use style_traits::Separator;
 
         % if allow_empty or property.vector.none_value:
@@ -643,11 +643,11 @@ pub mod ${property.ident} {
 
         /// Parse the given shorthand and fill the result into the
         /// `declarations` vector.
-        pub fn parse_into<'i, 't>(
+        pub fn parse_into(
             declarations: &mut SourcePropertyDeclaration,
             context: &ParserContext,
-            input: &mut Parser<'i, 't>,
-        ) -> Result<(), ParseError<'i>> {
+            input: &mut Parser,
+        ) -> Result<(), ParseError> {
             #[allow(unused_imports)]
             use crate::properties::{NonCustomPropertyId, LonghandId};
             % if not shorthand.kind and "IS_LEGACY_SHORTHAND" not in shorthand.flags:
@@ -696,10 +696,10 @@ pub mod ${property.ident} {
 <%def name="two_properties_shorthand(shorthand)">
     type Single = crate::properties::longhands::${shorthand.sub_properties[0].ident}::SpecifiedValue;
 
-    fn parse_value<'i, 't>(
+    fn parse_value(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Longhands, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Longhands, ParseError> {
         let first = <Single as crate::parser::Parse>::parse(context, input)?;
         let second =
             input.try_parse(|input| <Single as crate::parser::Parse>::parse(context, input)).unwrap_or_else(|_| first.clone());
@@ -728,11 +728,11 @@ pub mod ${property.ident} {
     use crate::values::generics::rect::Rect;
 
     type Single = crate::properties::longhands::${shorthand.sub_properties[0].ident}::SpecifiedValue;
-    fn parse_value<'i, 't>(
+    fn parse_value(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Longhands, ParseError<'i>> {
-        let rect = Rect::parse_with(context, input, |c, i| -> Result<Single, ParseError<'i> > {
+        input: &mut Parser,
+    ) -> Result<Longhands, ParseError> {
+        let rect = Rect::parse_with(context, input, |c, i| -> Result<Single, ParseError > {
         % if shorthand.allow_quirks:
             Single::parse_quirky(c, i, crate::values::specified::AllowQuirks::Yes)
         % else:
@@ -762,10 +762,10 @@ pub mod ${property.ident} {
 </%def>
 
 <%def name="single_border_shorthand(shorthand)">
-    fn parse_value<'i, 't>(
+    fn parse_value(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Longhands, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Longhands, ParseError> {
         let (width, style, color) = crate::properties::shorthands::parse_border(context, input)?;
         Ok(crate::properties::shorthands::expanded! {
             ${shorthand.sub_properties[0].ident}: width,
@@ -788,10 +788,10 @@ pub mod ${property.ident} {
 
 <%def name="legacy_shorthand(shorthand)">
     type Value = crate::properties::longhands::${shorthand.sub_properties[0].ident}::SpecifiedValue;
-    fn parse_value<'i, 't>(
+    fn parse_value(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Longhands, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Longhands, ParseError> {
         let v = Value::parse_legacy(context, input)?;
         Ok(crate::properties::shorthands::expanded! {
             ${shorthand.sub_properties[0].ident}: v,

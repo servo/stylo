@@ -66,27 +66,25 @@ pub trait ColorComponentType: Sized + Clone {
 
 impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
     /// Parse a single [ColorComponent].
-    pub fn parse<'i, 't>(
+    pub fn parse(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         allow_none: bool,
         allowed_channel_keywords: ChannelKeyword,
         percentage_context: PercentageContext,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
-
+    ) -> Result<Self, ParseError> {
         match *input.next()? {
             Token::Ident(ref value) if allow_none && value.eq_ignore_ascii_case("none") => {
                 Ok(ColorComponent::None)
             },
-            ref t @ Token::Ident(ref ident) => Ok(match ChannelKeyword::from_ident(ident) {
+            Token::Ident(ref ident) => Ok(match ChannelKeyword::from_ident(ident) {
                 Ok(channel_keyword) if allowed_channel_keywords.contains(channel_keyword) => {
                     ColorComponent::ChannelKeyword(channel_keyword)
                 },
-                _ => return Err(location.new_unexpected_token_error(t.clone())),
+                _ => return Err(ParseError::unexpected_token()),
             }),
             Token::Function(ref name) => {
-                let function = CalcNode::math_function(context, name, location)?;
+                let function = CalcNode::math_function(context, name)?;
                 let mut flags = CalcParseFlags::new(percentage_context);
                 flags.color_components = allowed_channel_keywords;
                 let mut node = CalcNode::parse(context, input, function, flags)?;
@@ -95,13 +93,13 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
                     .numeric_type()
                     .is_ok_and(|ty| ValueType::is_valid_type(&ty))
                 {
-                    return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
                 Ok(Self::Calc(Box::new(node)))
             },
             ref t => ValueType::try_from_token(t)
                 .map(Self::Value)
-                .map_err(|_| location.new_unexpected_token_error(t.clone())),
+                .map_err(|_| ParseError::unexpected_token()),
         }
     }
 

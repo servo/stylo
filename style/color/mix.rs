@@ -109,10 +109,7 @@ impl Default for ColorInterpolationMethod {
 }
 
 impl Parse for ColorInterpolationMethod {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         input.expect_ident_matching("in")?;
         let space = ColorSpace::parse(input)?;
         // https://drafts.csswg.org/css-color-4/#hue-interpolation
@@ -120,7 +117,7 @@ impl Parse for ColorInterpolationMethod {
         //     algorithm is selected by the host syntax, the default is shorter.
         let hue = if space.is_polar() {
             input
-                .try_parse(|input| -> Result<_, ParseError<'i>> {
+                .try_parse(|input| -> Result<_, ParseError> {
                     let hue = HueInterpolationMethod::parse(input)?;
                     input.expect_ident_matching("hue")?;
                     Ok(hue)

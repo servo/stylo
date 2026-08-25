@@ -14,11 +14,10 @@ use std::fmt;
 use style_traits::values::SequenceWriter;
 use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 
-fn parse_pixel_or_percent<'i, 't>(
+fn parse_pixel_or_percent(
     _context: &ParserContext,
-    input: &mut Parser<'i, 't>,
-) -> Result<LengthPercentage, ParseError<'i>> {
-    let location = input.current_source_location();
+    input: &mut Parser,
+) -> Result<LengthPercentage, ParseError> {
     let token = input.next()?;
     let value = match *token {
         Token::Dimension {
@@ -34,7 +33,7 @@ fn parse_pixel_or_percent<'i, 't>(
         )),
         _ => Err(()),
     };
-    value.map_err(|()| location.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+    value.map_err(|()| ParseError::custom(StyleParseErrorKind::UnspecifiedError))
 }
 
 /// The value of an IntersectionObserver's (root or scroll) margin property.
@@ -47,10 +46,7 @@ fn parse_pixel_or_percent<'i, 't>(
 pub struct IntersectionObserverMargin(pub Rect<LengthPercentage>);
 
 impl Parse for IntersectionObserverMargin {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         use crate::Zero;
         if input.is_exhausted() {
             // If there are zero elements in tokens, set tokens to ["0px"].

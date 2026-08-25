@@ -21,10 +21,7 @@ use thin_vec::ThinVec;
 pub type BackgroundSize = GenericBackgroundSize<NonNegativeLengthPercentage>;
 
 impl Parse for BackgroundSize {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(width) = input.try_parse(|i| NonNegativeLengthPercentageOrAuto::parse(context, i))
         {
             let height = input
@@ -139,10 +136,7 @@ impl ToTyped for BackgroundRepeat {
 }
 
 impl Parse for BackgroundRepeat {
-    fn parse<'i, 't>(
-        _context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let ident = input.expect_ident_cloned()?;
 
         match_ignore_ascii_case! { &ident,
@@ -158,9 +152,7 @@ impl Parse for BackgroundRepeat {
         let horizontal = match BackgroundRepeatKeyword::from_ident(&ident) {
             Ok(h) => h,
             Err(()) => {
-                return Err(
-                    input.new_custom_error(SelectorParseErrorKind::UnexpectedIdent(ident.clone()))
-                );
+                return Err(ParseError::custom(SelectorParseErrorKind::UnexpectedIdent));
             },
         };
 
@@ -256,25 +248,22 @@ impl BackgroundClip {
     }
 
     /// Parse the value of the `background-clip` property.
-    pub fn parse_for_background<'i>(
+    pub fn parse_for_background(
         context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         let clip = Self::parse(context, input)?;
         if !clip.validity().intersects(ClipValidity::BACKGROUND) {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         Ok(clip)
     }
 
     /// Parse the value of the `mask-clip` property.
-    pub fn parse_for_mask<'i>(
-        context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse_for_mask(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let clip = Self::parse(context, input)?;
         if !clip.validity().intersects(ClipValidity::MASK) {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         Ok(clip)
     }

@@ -35,10 +35,7 @@ impl CounterType {
 pub type CounterIncrement = generics::GenericCounterIncrement<Integer>;
 
 impl Parse for CounterIncrement {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(Self::new(parse_counters(
             context,
             input,
@@ -51,10 +48,7 @@ impl Parse for CounterIncrement {
 pub type CounterSet = generics::GenericCounterSet<Integer>;
 
 impl Parse for CounterSet {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(Self::new(parse_counters(context, input, CounterType::Set)?))
     }
 }
@@ -63,10 +57,7 @@ impl Parse for CounterSet {
 pub type CounterReset = generics::GenericCounterReset<Integer>;
 
 impl Parse for CounterReset {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(Self::new(parse_counters(
             context,
             input,
@@ -75,11 +66,11 @@ impl Parse for CounterReset {
     }
 }
 
-fn parse_counters<'i, 't>(
+fn parse_counters(
     context: &ParserContext,
-    input: &mut Parser<'i, 't>,
+    input: &mut Parser,
     counter_type: CounterType,
-) -> Result<Vec<CounterPair<Integer>>, ParseError<'i>> {
+) -> Result<Vec<CounterPair<Integer>>, ParseError> {
     if input
         .try_parse(|input| input.expect_ident_matching("none"))
         .is_ok()
@@ -89,20 +80,16 @@ fn parse_counters<'i, 't>(
 
     let mut counters = Vec::new();
     loop {
-        let location = input.current_source_location();
         let (name, is_reversed) = match input.next() {
-            Ok(&Token::Ident(ref ident)) => {
-                (CustomIdent::from_ident(location, ident, &["none"])?, false)
-            },
+            Ok(&Token::Ident(ref ident)) => (CustomIdent::from_ident(ident, &["none"])?, false),
             Ok(&Token::Function(ref name))
                 if counter_type == CounterType::Reset && name.eq_ignore_ascii_case("reversed") =>
             {
                 input
                     .parse_nested_block(|input| Ok((CustomIdent::parse(input, &["none"])?, true)))?
             },
-            Ok(t) => {
-                let t = t.clone();
-                return Err(location.new_unexpected_token_error(t));
+            Ok(..) => {
+                return Err(ParseError::unexpected_token());
             },
             Err(_) => break,
         };
@@ -134,7 +121,7 @@ fn parse_counters<'i, 't>(
     if !counters.is_empty() {
         Ok(counters)
     } else {
-        Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
     }
 }
 
@@ -160,10 +147,7 @@ impl Parse for Content {
     // normal | none | [ <string> | <counter> | open-quote | close-quote | no-open-quote |
     // no-close-quote ]+
     #[cfg_attr(feature = "servo", allow(unused_mut))]
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input
             .try_parse(|input| input.expect_ident_matching("normal"))
             .is_ok()
@@ -212,9 +196,8 @@ impl Parse for Content {
                         }),
                         _ => {
                             use style_traits::StyleParseErrorKind;
-                            let name = name.clone();
-                            return Err(input.new_custom_error(
-                                StyleParseErrorKind::UnexpectedFunction(name),
+                            return Err(ParseError::custom(
+                                StyleParseErrorKind::UnexpectedFunction,
                             ))
                         }
                     }?;
@@ -235,9 +218,8 @@ impl Parse for Content {
                             generics::ContentItem::MozLabelContent
                         },
                         _ =>{
-                            let ident = ident.clone();
-                            return Err(input.new_custom_error(
-                                SelectorParseErrorKind::UnexpectedIdent(ident)
+                            return Err(ParseError::custom(
+                                SelectorParseErrorKind::UnexpectedIdent
                             ));
                         }
                     });
@@ -245,14 +227,11 @@ impl Parse for Content {
                 Token::Delim('/') if alt_start.is_none() && !items.is_empty() => {
                     alt_start = Some(items.len());
                 },
-                ref t => {
-                    let t = t.clone();
-                    return Err(input.new_unexpected_token_error(t));
-                },
+                _ => return Err(ParseError::unexpected_token()),
             }
         }
         if items.is_empty() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         let alt_start = alt_start.unwrap_or(items.len());
         Ok(generics::Content::Items(generics::GenericContentItems {

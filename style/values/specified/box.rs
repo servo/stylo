@@ -89,10 +89,7 @@ pub type OverflowClipMargin = GenericOverflowClipMargin<NonNegativeLength>;
 
 impl Parse for OverflowClipMargin {
     // <visual-box> || <length [0,∞]>
-    fn parse<'i>(
-        context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         use crate::Zero;
         let mut offset = None;
         let mut visual_box = None;
@@ -111,7 +108,7 @@ impl Parse for OverflowClipMargin {
             break;
         }
         if offset.is_none() && visual_box.is_none() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         Ok(Self {
             offset: offset.unwrap_or_else(NonNegativeLength::zero),
@@ -486,7 +483,7 @@ enum DisplayKeyword {
 }
 
 impl DisplayKeyword {
-    fn parse<'i>(input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+    fn parse(input: &mut Parser) -> Result<Self, ParseError> {
         use self::DisplayKeyword::*;
         Ok(try_match_ident_ignore_ascii_case! { input,
             "none" => Full(Display::None),
@@ -607,10 +604,7 @@ impl ToTyped for Display {
 }
 
 impl Parse for Display {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Display, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Display, ParseError> {
         let mut got_list_item = false;
         let mut inside = None;
         let mut outside = None;
@@ -638,14 +632,14 @@ impl Parse for Display {
                 DisplayKeyword::Inside(i) if inside.is_none() => {
                     inside = Some(i);
                 },
-                _ => return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+                _ => return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
             }
         }
 
         let inside = inside.unwrap_or(DisplayInside::Flow);
         let outside = outside.unwrap_or_else(|| inside.default_display_outside());
         if got_list_item && !inside.is_valid_for_list_item() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         return Ok(Display::from3(outside, inside, got_list_item));
@@ -701,10 +695,7 @@ pub type LineClamp = GenericLineClamp<PositiveInteger>;
 pub type BaselineShift = GenericBaselineShift<LengthPercentage>;
 
 impl Parse for BaselineShift {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(lp) =
             input.try_parse(|i| LengthPercentage::parse_quirky(context, i, AllowQuirks::Yes))
         {
@@ -843,7 +834,7 @@ pub enum BaselineSource {
 
 impl BaselineSource {
     /// Parse baseline source, but without the auto keyword, for the shorthand.
-    pub fn parse_non_auto<'i>(input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
+    pub fn parse_non_auto(input: &mut Parser) -> Result<Self, ParseError> {
         Ok(try_match_ident_ignore_ascii_case! { input,
             "first" => Self::First,
             "last" => Self::Last,
@@ -941,10 +932,7 @@ impl ScrollSnapType {
 
 impl Parse for ScrollSnapType {
     /// none | [ x | y | block | inline | both ] [ mandatory | proximity ]?
-    fn parse<'i, 't>(
-        _context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input
             .try_parse(|input| input.expect_ident_matching("none"))
             .is_ok()
@@ -1038,10 +1026,7 @@ impl ScrollSnapAlign {
 
 impl Parse for ScrollSnapAlign {
     /// [ none | start | end | center ]{1,2}
-    fn parse<'i, 't>(
-        _context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<ScrollSnapAlign, ParseError<'i>> {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<ScrollSnapAlign, ParseError> {
         let block = ScrollSnapAlignKeyword::parse(input)?;
         let inline = input
             .try_parse(ScrollSnapAlignKeyword::parse)
@@ -1281,10 +1266,7 @@ fn change_bits_for_maybe_property(ident: &str, context: &ParserContext) -> WillC
 
 impl Parse for WillChange {
     /// auto | <animateable-feature>#
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input
             .try_parse(|input| input.expect_ident_matching("auto"))
             .is_ok()
@@ -1294,13 +1276,9 @@ impl Parse for WillChange {
 
         let mut bits = WillChangeBits::empty();
         let custom_idents = input.parse_comma_separated(|i| {
-            let location = i.current_source_location();
             let parser_ident = i.expect_ident()?;
-            let ident = CustomIdent::from_ident(
-                location,
-                parser_ident,
-                &["will-change", "none", "all", "auto"],
-            )?;
+            let ident =
+                CustomIdent::from_ident(parser_ident, &["will-change", "none", "all", "auto"])?;
 
             if context.in_ua_sheet() && ident.0 == atom!("-moz-fixed-pos-containing-block") {
                 bits |= WillChangeBits::FIXPOS_CB_NON_SVG;
@@ -1411,10 +1389,7 @@ bitflags! {
 
 impl Parse for ContainIntrinsicSize {
     /// none | <length> | auto <length>
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(l) = input.try_parse(|i| NonNegativeLength::parse(context, i)) {
             return Ok(Self::Length(l));
         }
@@ -1434,10 +1409,7 @@ impl Parse for ContainIntrinsicSize {
 }
 
 impl Parse for MaxLines<PositiveInteger> {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let mut lines = None;
         let mut auto = false;
 
@@ -1461,16 +1433,13 @@ impl Parse for MaxLines<PositiveInteger> {
             (Some(value), true) => Ok(MaxLines::lines(value, true)),
             (Some(value), false) => Ok(MaxLines::lines(value, false)),
             (None, true) => Ok(MaxLines::auto()),
-            (None, false) => Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+            (None, false) => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
         }
     }
 }
 
 impl Parse for LineClamp {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
             return Ok(Self::none());
         }
@@ -1496,7 +1465,7 @@ impl Parse for LineClamp {
         }
 
         if max_lines.is_none() && block_ellipsis.is_none() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         let webkit_legacy = input
@@ -1516,10 +1485,7 @@ impl Parse for LineClamp {
 
 impl LineClamp {
     /// Parses the legacy `-webkit-line-clamp` syntax.
-    pub fn parse_legacy<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse_legacy(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(value) =
             input.try_parse(|i| crate::values::specified::PositiveInteger::parse(context, i))
         {
@@ -1679,22 +1645,14 @@ impl ContainerName {
         self.0.is_empty()
     }
 
-    fn parse_internal<'i>(
-        input: &mut Parser<'i, '_>,
-        for_query: bool,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse_internal(input: &mut Parser, for_query: bool) -> Result<Self, ParseError> {
         let mut idents = vec![];
-        let location = input.current_source_location();
         let first = input.expect_ident()?;
         if !for_query && first.eq_ignore_ascii_case("none") {
             return Ok(Self::none());
         }
         const DISALLOWED_CONTAINER_NAMES: &'static [&'static str] = &["none", "not", "or", "and"];
-        idents.push(CustomIdent::from_ident(
-            location,
-            first,
-            DISALLOWED_CONTAINER_NAMES,
-        )?);
+        idents.push(CustomIdent::from_ident(first, DISALLOWED_CONTAINER_NAMES)?);
         if !for_query {
             while let Ok(name) =
                 input.try_parse(|input| CustomIdent::parse(input, DISALLOWED_CONTAINER_NAMES))
@@ -1708,19 +1666,13 @@ impl ContainerName {
     /// https://github.com/w3c/csswg-drafts/issues/7203
     /// Only a single name allowed in @container rule.
     /// Disallow none for container-name in @container rule.
-    pub fn parse_for_query<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse_for_query(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Self::parse_internal(input, /* for_query = */ true)
     }
 }
 
 impl Parse for ContainerName {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Self::parse_internal(input, /* for_query = */ false)
     }
 }
@@ -1730,10 +1682,10 @@ pub type Perspective = GenericPerspective<NonNegativeLength>;
 
 impl Perspective {
     /// Parses a `-webkit-perspective` value.
-    pub(crate) fn parse_legacy<'i>(
+    pub(crate) fn parse_legacy(
         context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         use crate::values::generics::NonNegative;
         use crate::values::specified::{AllowQuirks, Length};
         if let Ok(l) = input.try_parse(|input| {
@@ -2003,10 +1955,10 @@ pub enum Appearance {
 
 impl Appearance {
     /// Parses a `-moz-appearance` value.
-    pub(crate) fn parse_legacy<'i>(
+    pub(crate) fn parse_legacy(
         context: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         // TODO: Restrict the values we parse in the prefixed version.
         Self::parse(context, input)
     }
@@ -2048,19 +2000,14 @@ impl BreakBetween {
     /// See https://drafts.csswg.org/css-break/#page-break-properties.
     #[cfg_attr(feature = "servo", allow(unused))]
     #[inline]
-    pub(crate) fn parse_legacy<'i>(
-        _: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub(crate) fn parse_legacy(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let break_value = BreakBetween::parse(input)?;
         match break_value {
             BreakBetween::Always => Ok(BreakBetween::Page),
             BreakBetween::Auto | BreakBetween::Avoid | BreakBetween::Left | BreakBetween::Right => {
                 Ok(break_value)
             },
-            BreakBetween::Page => {
-                Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
-            },
+            BreakBetween::Page => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
         }
     }
 
@@ -2116,15 +2063,12 @@ impl BreakWithin {
     /// See https://drafts.csswg.org/css-break/#page-break-properties.
     #[cfg_attr(feature = "servo", allow(unused))]
     #[inline]
-    pub(crate) fn parse_legacy<'i>(
-        _: &ParserContext,
-        input: &mut Parser<'i, '_>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub(crate) fn parse_legacy(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let break_value = BreakWithin::parse(input)?;
         match break_value {
             BreakWithin::Auto | BreakWithin::Avoid => Ok(break_value),
             BreakWithin::AvoidPage | BreakWithin::AvoidColumn => {
-                Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+                Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
             },
         }
     }
@@ -2173,10 +2117,7 @@ pub enum Overflow {
 // This can be derived once we remove or keep `-moz-hidden-unscrollable`
 // indefinitely.
 impl Parse for Overflow {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(try_match_ident_ignore_ascii_case! { input,
             "visible" => Self::Visible,
             "hidden" => Self::Hidden,

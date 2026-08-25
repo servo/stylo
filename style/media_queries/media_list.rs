@@ -46,6 +46,7 @@ impl MediaList {
             let mut media_queries = vec![];
             loop {
                 let start_position = input.position();
+                let start_location = input.current_source_location();
                 match input.parse_until_before(Delimiter::Comma, |i| MediaQuery::parse(context, i))
                 {
                     Ok(mq) => {
@@ -53,12 +54,11 @@ impl MediaList {
                     },
                     Err(err) => {
                         media_queries.push(MediaQuery::never_matching());
-                        let location = err.location;
                         let error = ContextualParseError::InvalidMediaRule(
                             input.slice_from(start_position),
                             err,
                         );
-                        context.log_css_error(location, error);
+                        context.log_css_error(start_location, error);
                     },
                 }
 

@@ -214,18 +214,14 @@ impl ToComputedValue for Resolution {
 }
 
 impl Parse for Resolution {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         match *input.next()? {
             Token::Dimension {
                 value, ref unit, ..
             } if value >= 0. => Self::parse_dimension(value, unit)
-                .map_err(|()| location.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+                .map_err(|()| ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
             Token::Function(ref name) => {
-                let function = CalcNode::math_function(context, name, location)?;
+                let function = CalcNode::math_function(context, name)?;
                 CalcNode::parse_resolution(
                     context,
                     input,
@@ -235,7 +231,7 @@ impl Parse for Resolution {
                 .map(Box::new)
                 .map(Self::new_calc)
             },
-            ref t => return Err(location.new_unexpected_token_error(t.clone())),
+            _ => return Err(ParseError::unexpected_token()),
         }
     }
 }

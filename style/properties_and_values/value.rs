@@ -315,8 +315,8 @@ pub type ComputedValue = Value<ComputedValueComponent>;
 impl SpecifiedValue {
     /// Convert a registered custom property to a Computed custom property value, given input and a
     /// property registration.
-    pub fn compute<'i, 't>(
-        input: &mut CSSParser<'i, 't>,
+    pub fn compute(
+        input: &mut CSSParser,
         registration: &PropertyDescriptors,
         namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         url_data: &UrlExtraData,
@@ -344,14 +344,14 @@ impl SpecifiedValue {
 
     /// Parse and validate a registered custom property value according to its syntax descriptor,
     /// and check for computational independence.
-    pub fn parse<'i, 't>(
-        mut input: &mut CSSParser<'i, 't>,
+    pub fn parse(
+        mut input: &mut CSSParser,
         syntax: &Descriptor,
         url_data: &UrlExtraData,
         namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         allow_computationally_dependent: AllowComputationallyDependent,
         attr_taint: AttrTaint,
-    ) -> Result<Self, StyleParseError<'i>> {
+    ) -> Result<Self, StyleParseError> {
         if syntax.is_universal() {
             let parsed = ComputedPropertyValue::parse(&mut input, namespaces, url_data)?;
             return Ok(Self::new(
@@ -448,13 +448,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse<'i, 't>(
+    fn parse(
         &mut self,
-        input: &mut CSSParser<'i, 't>,
+        input: &mut CSSParser,
         url_data: &UrlExtraData,
         allow_computationally_dependent: AllowComputationallyDependent,
         attr_taint: AttrTaint,
-    ) -> Result<(), StyleParseError<'i>> {
+    ) -> Result<(), StyleParseError> {
         use self::AllowComputationallyDependent::*;
         let parsing_mode = match allow_computationally_dependent {
             No => ParsingMode::DISALLOW_COMPUTATIONALLY_DEPENDENT,
@@ -483,16 +483,18 @@ impl<'a> Parser<'a> {
             break;
         }
         if self.output.is_empty() {
-            return Err(input.new_error(BasicParseErrorKind::EndOfInput));
+            return Err(StyleParseError::from_basic_kind(
+                BasicParseErrorKind::EndOfInput,
+            ));
         }
         Ok(())
     }
 
-    fn parse_value<'i, 't>(
+    fn parse_value(
         context: &ParserContext,
-        input: &mut CSSParser<'i, 't>,
+        input: &mut CSSParser,
         component: &SyntaxComponent,
-    ) -> Result<SmallComponentVec, StyleParseError<'i>> {
+    ) -> Result<SmallComponentVec, StyleParseError> {
         let mut values = SmallComponentVec::new();
         values.push(Self::parse_component_without_multiplier(
             context, input, component,
@@ -513,17 +515,19 @@ impl<'a> Parser<'a> {
         Ok(values)
     }
 
-    fn parse_component_without_multiplier<'i, 't>(
+    fn parse_component_without_multiplier(
         context: &ParserContext,
-        input: &mut CSSParser<'i, 't>,
+        input: &mut CSSParser,
         component: &SyntaxComponent,
-    ) -> Result<SpecifiedValueComponent, StyleParseError<'i>> {
+    ) -> Result<SpecifiedValueComponent, StyleParseError> {
         let data_type = match component.name() {
             ComponentName::DataType(ty) => ty,
             ComponentName::Ident(ref name) => {
                 let ident = CustomIdent::parse(input, &[])?;
                 if ident != *name {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(StyleParseError::custom(
+                        StyleParseErrorKind::UnspecifiedError,
+                    ));
                 }
                 return Ok(SpecifiedValueComponent::CustomIdent(ident));
             },
@@ -574,11 +578,11 @@ impl<'a> Parser<'a> {
                 let mut values = vec![];
                 let Some(multiplier) = component.unpremultiplied().multiplier() else {
                     debug_assert!(false, "Unpremultiplied <transform-list> had no multiplier?");
-                    return Err(
-                        input.new_custom_error(StyleParseErrorKind::PropertySyntaxField(
+                    return Err(StyleParseError::custom(
+                        StyleParseErrorKind::PropertySyntaxField(
                             PropertySyntaxParseError::UnexpectedEOF,
-                        )),
-                    );
+                        ),
+                    ));
                 };
                 debug_assert_eq!(multiplier, Multiplier::Space);
                 loop {
@@ -605,7 +609,7 @@ impl<'a> Parser<'a> {
         Ok(value)
     }
 
-    fn expect_multiplier_yielded_eof_error<'i>(result: &Result<(), StyleParseError<'i>>) -> bool {
+    fn expect_multiplier_yielded_eof_error(result: &Result<(), StyleParseError>) -> bool {
         matches!(
             result,
             Err(StyleParseError {
@@ -615,16 +619,18 @@ impl<'a> Parser<'a> {
         )
     }
 
-    fn expect_multiplier<'i, 't>(
-        input: &mut CSSParser<'i, 't>,
+    fn expect_multiplier(
+        input: &mut CSSParser,
         multiplier: &Multiplier,
-    ) -> Result<(), StyleParseError<'i>> {
+    ) -> Result<(), StyleParseError> {
         match multiplier {
             Multiplier::Space => {
                 input.expect_whitespace()?;
                 if input.is_exhausted() {
                     // If there was trailing whitespace, do not interpret it as a multiplier
-                    return Err(input.new_error(BasicParseErrorKind::EndOfInput));
+                    return Err(StyleParseError::from_basic_kind(
+                        BasicParseErrorKind::EndOfInput,
+                    ));
                 }
                 Ok(())
             },

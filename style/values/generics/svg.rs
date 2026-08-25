@@ -120,10 +120,7 @@ pub enum GenericSVGPaintKind<C, U> {
 pub use self::GenericSVGPaintKind as SVGPaintKind;
 
 impl<C: Parse, U: Parse> Parse for SVGPaint<C, U> {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let kind = SVGPaintKind::parse(context, input)?;
         if matches!(kind, SVGPaintKind::None | SVGPaintKind::Color(..)) {
             return Ok(SVGPaint {

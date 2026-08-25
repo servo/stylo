@@ -27,10 +27,7 @@ pub struct SourceSize {
 }
 
 impl Parse for SourceSize {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let condition = QueryCondition::parse(context, input, FeatureType::Media)?;
         let value = Length::parse_non_negative(context, input)?;
         Ok(Self { condition, value })
@@ -88,10 +85,7 @@ enum SourceSizeOrLength {
 }
 
 impl Parse for SourceSizeOrLength {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(size) = input.try_parse(|input| SourceSize::parse(context, input)) {
             return Ok(SourceSizeOrLength::SourceSize(size));
         }
@@ -105,7 +99,7 @@ impl SourceSizeList {
     /// NOTE(emilio): This doesn't match the grammar in the spec, see:
     ///
     /// https://html.spec.whatwg.org/multipage/#parsing-a-sizes-attribute
-    pub fn parse<'i, 't>(context: &ParserContext, input: &mut Parser<'i, 't>) -> Self {
+    pub fn parse(context: &ParserContext, input: &mut Parser) -> Self {
         let mut source_sizes = vec![];
 
         loop {

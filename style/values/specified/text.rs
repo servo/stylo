@@ -38,10 +38,7 @@ pub enum Spacing {
 }
 
 impl Parse for Spacing {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input
             .try_parse(|i| i.expect_ident_matching("normal"))
             .is_ok()
@@ -129,10 +126,7 @@ pub enum HyphenateCharacter {
 pub type HyphenateLimitChars = GenericHyphenateLimitChars<Integer>;
 
 impl Parse for HyphenateLimitChars {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         type IntegerOrAuto = NumberOrAuto<Integer>;
 
         let total_word_length = IntegerOrAuto::parse(context, input)?;
@@ -151,10 +145,7 @@ impl Parse for HyphenateLimitChars {
 }
 
 impl Parse for InitialLetter {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input
             .try_parse(|i| i.expect_ident_matching("normal"))
             .is_ok()
@@ -225,10 +216,7 @@ pub struct TextOverflow {
 }
 
 impl Parse for TextOverflow {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<TextOverflow, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<TextOverflow, ParseError> {
         let first = TextOverflowSide::parse(context, input)?;
         Ok(
             if let Ok(second) = input.try_parse(|input| TextOverflowSide::parse(context, input)) {
@@ -768,10 +756,7 @@ impl ToComputedValue for TextEmphasisStyle {
 }
 
 impl Parse for TextEmphasisStyle {
-    fn parse<'i, 't>(
-        _context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input
             .try_parse(|input| input.expect_ident_matching("none"))
             .is_ok()
@@ -792,7 +777,7 @@ impl Parse for TextEmphasisStyle {
         }
 
         if shape.is_none() && fill.is_none() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         // If a shape keyword is specified but neither filled nor open is
@@ -1011,10 +996,7 @@ pub enum OverflowWrap {
 pub type TextIndent = GenericTextIndent<LengthPercentage>;
 
 impl Parse for TextIndent {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let mut length = None;
         let mut hanging = false;
         let mut each_line = false;
@@ -1051,7 +1033,7 @@ impl Parse for TextIndent {
                 each_line,
             })
         } else {
-            Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+            Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
         }
     }
 }
@@ -1118,10 +1100,10 @@ impl TextDecorationInset {
     }
 }
 
-fn parse_inset_endpoint<'i, 't>(
+fn parse_inset_endpoint(
     ctx: &ParserContext,
-    input: &mut Parser<'i, 't>,
-) -> Result<LengthPercentage, ParseError<'i>> {
+    input: &mut Parser,
+) -> Result<LengthPercentage, ParseError> {
     if !static_prefs::pref!("layout.css.text-decoration-inset-percentage.enabled") {
         Length::parse(ctx, input).map(|l| l.into())
     } else {
@@ -1130,10 +1112,7 @@ fn parse_inset_endpoint<'i, 't>(
 }
 
 impl Parse for TextDecorationInset {
-    fn parse<'i, 't>(
-        ctx: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(ctx: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input.try_parse(|i| i.expect_ident_matching("auto")).is_ok() {
             return Ok(TextDecorationInset::Auto);
         }
@@ -1255,10 +1234,7 @@ pub enum RubyPosition {
 }
 
 impl Parse for RubyPosition {
-    fn parse<'i, 't>(
-        _context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<RubyPosition, ParseError<'i>> {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<RubyPosition, ParseError> {
         // Parse alternate before
         let alternate = input
             .try_parse(|i| i.expect_ident_matching("alternate"))
@@ -1474,15 +1450,12 @@ pub struct TextEdge {
 }
 
 impl Parse for TextEdge {
-    fn parse<'i, 't>(
-        _context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<TextEdge, ParseError<'i>> {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<TextEdge, ParseError> {
         let first = TextEdgeKeyword::parse(input)?;
 
         if let Ok(second) = input.try_parse(TextEdgeKeyword::parse) {
             if !first.is_valid_for_over() || !second.is_valid_for_under() {
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             }
 
             return Ok(TextEdge {

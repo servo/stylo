@@ -102,10 +102,7 @@ impl<T> Parse for TreeScoped<T>
 where
     T: Parse,
 {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(TreeScoped {
             value: T::parse(context, input)?,
             scope: CascadeLevel::same_tree_author_normal(),

@@ -749,18 +749,18 @@ impl ShorthandId {
 /// The arbitrary substitution functions we support.
 pub const ARBITRARY_SUBSTITUTION_FUNCTIONS: &[&str] = &["var", "env", "attr"];
 
-fn parse_non_custom_property_declaration_value_into<'i>(
+fn parse_non_custom_property_declaration_value_into(
     declarations: &mut SourcePropertyDeclaration,
     context: &ParserContext,
-    input: &mut Parser<'i, '_>,
+    input: &mut Parser,
     start: &cssparser::ParserState,
     parse_entirely_into: impl FnOnce(
         &mut SourcePropertyDeclaration,
-        &mut Parser<'i, '_>,
-    ) -> Result<(), ParseError<'i>>,
+        &mut Parser,
+    ) -> Result<(), ParseError>,
     parsed_wide_keyword: impl FnOnce(&mut SourcePropertyDeclaration, CSSWideKeyword),
     parsed_custom: impl FnOnce(&mut SourcePropertyDeclaration, custom_properties::VariableValue),
-) -> Result<(), ParseError<'i>> {
+) -> Result<(), ParseError> {
     let mut starts_with_curly_block = false;
     if let Ok(token) = input.next() {
         match token {
@@ -789,7 +789,7 @@ fn parse_non_custom_property_declaration_value_into<'i>(
             if !saw_arbitrary_substitution_functions {
                 return Ok(());
             }
-            input.new_custom_error(style_traits::StyleParseErrorKind::UnspecifiedError)
+            ParseError::custom(style_traits::StyleParseErrorKind::UnspecifiedError)
         },
         Err(e) => e,
     };
@@ -899,12 +899,12 @@ impl PropertyDeclaration {
     /// This will not actually parse Importance values, and will always set things
     /// to Importance::Normal. Parsing Importance values is the job of PropertyDeclarationParser,
     /// we only set them here so that we don't have to reallocate
-    pub fn parse_into<'i, 't>(
+    pub fn parse_into(
         declarations: &mut SourcePropertyDeclaration,
         id: PropertyId,
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<(), ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<(), ParseError> {
         assert!(declarations.is_empty());
         debug_assert!(id.allowed_in(context), "{:?}", id);
         input.skip_whitespace();

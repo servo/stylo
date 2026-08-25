@@ -55,14 +55,14 @@ impl<L> Size2D<L> {
     }
 
     /// Parse a `Size2D` with a given parsing function.
-    pub fn parse_with<'i, 't, F>(
+    pub fn parse_with<F>(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         parse_one: F,
-    ) -> Result<Self, ParseError<'i>>
+    ) -> Result<Self, ParseError>
     where
         L: Clone,
-        F: Fn(&ParserContext, &mut Parser<'i, 't>) -> Result<L, ParseError<'i>>,
+        F: Fn(&ParserContext, &mut Parser) -> Result<L, ParseError>,
     {
         let first = parse_one(context, input)?;
         let second = input

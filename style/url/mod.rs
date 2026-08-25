@@ -6,7 +6,7 @@
 
 use crate::parser::{Parse, ParserContext};
 use crate::stylesheets::CorsMode;
-use cssparser::{Parser, SourceLocation};
+use cssparser::Parser;
 use style_traits::ParseError;
 
 #[cfg(feature = "gecko")]
@@ -20,41 +20,32 @@ pub use servo::{ComputedUrl, CssUrl, SpecifiedUrl};
 
 impl CssUrl {
     /// Parse a URL with a particular CORS mode.
-    pub fn parse_with_cors_mode<'i, 't>(
+    pub fn parse_with_cors_mode(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         cors_mode: CorsMode,
-    ) -> Result<Self, ParseError<'i>> {
+    ) -> Result<Self, ParseError> {
         let start = input.position().byte_index();
-        let location = input.current_source_location();
         let url = input.expect_url()?;
         let end = input.position().byte_index();
-        Self::parse_from_string(
-            url.as_ref().to_owned(),
-            start,
-            end,
-            context,
-            cors_mode,
-            location,
-        )
+        Self::parse_from_string(url.as_ref().to_owned(), start, end, context, cors_mode)
     }
 
     /// Parse a URL from a string value that is a valid CSS token for a URL,
     /// enforcing attr()-tainting constraints if applicable.
     /// https://drafts.csswg.org/css-values-5/#attr-security
-    pub fn parse_from_string<'i>(
+    pub fn parse_from_string(
         url: String,
         url_start: usize,
         url_end: usize,
         context: &ParserContext,
         cors_mode: CorsMode,
-        location: SourceLocation,
-    ) -> Result<Self, ParseError<'i>> {
+    ) -> Result<Self, ParseError> {
         use crate::custom_properties::AttrTaintedRange;
         use style_traits::StyleParseErrorKind;
         let range = AttrTaintedRange::new(url_start, url_end);
         if context.disallow_urls_in_range(&range) {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         Ok(Self::new_from_string(url, context, cors_mode))
     }
@@ -74,10 +65,7 @@ impl CssUrl {
 }
 
 impl Parse for CssUrl {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Self::parse_with_cors_mode(context, input, CorsMode::None)
     }
 }

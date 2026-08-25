@@ -283,10 +283,10 @@ pub struct GenericLightDark<T> {
 
 impl<T> GenericLightDark<T> {
     /// Parse the arguments of the light-dark() function.
-    pub fn parse_args_with<'i>(
-        input: &mut Parser<'i, '_>,
-        mut parse_one: impl FnMut(&mut Parser<'i, '_>) -> Result<T, ParseError<'i>>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse_args_with(
+        input: &mut Parser,
+        mut parse_one: impl FnMut(&mut Parser) -> Result<T, ParseError>,
+    ) -> Result<Self, ParseError> {
         let light = parse_one(input)?;
         input.expect_comma()?;
         let dark = parse_one(input)?;
@@ -294,10 +294,10 @@ impl<T> GenericLightDark<T> {
     }
 
     /// Parse the light-dark() function.
-    pub fn parse_with<'i>(
-        input: &mut Parser<'i, '_>,
-        parse_one: impl FnMut(&mut Parser<'i, '_>) -> Result<T, ParseError<'i>>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse_with(
+        input: &mut Parser,
+        parse_one: impl FnMut(&mut Parser) -> Result<T, ParseError>,
+    ) -> Result<Self, ParseError> {
         input.expect_function_matching("light-dark")?;
         input.parse_nested_block(|input| Self::parse_args_with(input, parse_one))
     }

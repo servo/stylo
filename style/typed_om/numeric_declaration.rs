@@ -29,12 +29,7 @@ pub enum NumericDeclaration {
 
 impl Parse for NumericDeclaration {
     /// <https://drafts.css-houdini.org/css-typed-om-1/#dom-cssnumericvalue-parse>
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
-
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         // Step 1.
         let token = input.next()?;
 
@@ -64,7 +59,7 @@ impl Parse for NumericDeclaration {
                     return Ok(Self::NoCalc(NoCalcNumeric::Time(time)));
                 }
 
-                Err(location.new_unexpected_token_error(token.clone()))
+                Err(ParseError::unexpected_token())
 
                 // Step 3.
 
@@ -73,7 +68,7 @@ impl Parse for NumericDeclaration {
             },
 
             Token::Function(ref name) => {
-                let function = CalcNode::math_function(context, name, location)?;
+                let function = CalcNode::math_function(context, name)?;
                 let node = CalcNode::parse(
                     context,
                     input,
@@ -85,16 +80,14 @@ impl Parse for NumericDeclaration {
                 let _ = node
                     .clone()
                     .into_length_or_percentage(allow_all_types)
-                    .map_err(|()| {
-                        location.new_custom_error(StyleParseErrorKind::UnspecifiedError)
-                    })?;
+                    .map_err(|()| ParseError::custom(StyleParseErrorKind::UnspecifiedError))?;
 
                 // TODO: Add support for other values represented by a `calc()` expression.
 
                 Ok(Self::Calc(node))
             },
 
-            ref token => return Err(location.new_unexpected_token_error(token.clone())),
+            _ => return Err(ParseError::unexpected_token()),
         }
     }
 }

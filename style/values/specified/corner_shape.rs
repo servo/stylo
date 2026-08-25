@@ -32,12 +32,8 @@ pub enum SuperellipseArg {
 }
 
 impl SuperellipseArg {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        if let Ok(arg) = input.try_parse(|i| -> Result<SuperellipseArg, ParseError<'i>> {
-            let location = i.current_source_location();
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        if let Ok(arg) = input.try_parse(|i| -> Result<SuperellipseArg, ParseError> {
             match i.next()? {
                 Token::Ident(ref ident) if ident.eq_ignore_ascii_case("infinity") => {
                     Ok(SuperellipseArg::Infinity)
@@ -45,7 +41,7 @@ impl SuperellipseArg {
                 Token::Ident(ref ident) if ident.eq_ignore_ascii_case("-infinity") => {
                     Ok(SuperellipseArg::NegativeInfinity)
                 },
-                _ => Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+                _ => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
             }
         }) {
             return Ok(arg);
@@ -95,10 +91,7 @@ impl CornerShape {
 }
 
 impl Parse for CornerShape {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         // Try the `superellipse(...)` function first.
         if let Ok(arg) = input.try_parse(|i| {
             i.expect_function_matching("superellipse")?;

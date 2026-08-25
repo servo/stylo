@@ -206,10 +206,7 @@ impl ContainerCondition {
         self.condition.as_ref()
     }
     /// Parse a container condition.
-    pub fn parse<'a>(
-        context: &ParserContext,
-        input: &mut Parser<'a, '_>,
-    ) -> Result<Self, ParseError<'a>> {
+    pub fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let name = input
             .try_parse(|input| ContainerName::parse_for_query(context, input))
             .ok()
@@ -218,7 +215,7 @@ impl ContainerCondition {
             .try_parse(|input| QueryCondition::parse(context, input, FeatureType::Container))
             .ok();
         if condition.is_none() && name.is_none() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         let mut attributes_referenced = AttrReferenceSet::default();
         condition

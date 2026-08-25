@@ -127,16 +127,13 @@ impl PtNameAndClassSelector {
     // Note: We share the same type for both pseudo-element and pseudo-element selector. The
     // universal symbol (i.e. '*') and `<pt-class-selector>` are used only in the selector (for
     // matching).
-    pub fn parse<'i, 't>(
-        input: &mut Parser<'i, 't>,
-        target: Target,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse(input: &mut Parser, target: Target) -> Result<Self, ParseError> {
         use crate::values::CustomIdent;
         use cssparser::Token;
         use style_traits::StyleParseErrorKind;
 
         // <pt-name-selector> = '*' | <custom-ident>
-        let parse_pt_name = |input: &mut Parser<'i, '_>| {
+        let parse_pt_name = |input: &mut Parser| {
             // For pseudo-element string, we don't accept '*'.
             if matches!(target, Target::Selector)
                 && input.try_parse(|i| i.expect_delim('*')).is_ok()
@@ -154,18 +151,17 @@ impl PtNameAndClassSelector {
         }
 
         // <pt-class-selector> = ['.' <custom-ident>]+
-        let parse_pt_class = |input: &mut Parser<'i, '_>| {
+        let parse_pt_class = |input: &mut Parser| {
             // The white space is forbidden:
             // 1. Between <pt-name-selector> and <pt-class-selector>
             // 2. Between any of the components of <pt-class-selector>.
-            let location = input.current_source_location();
             match input.next_including_whitespace()? {
                 Token::Delim('.') => (),
-                t => return Err(location.new_unexpected_token_error(t.clone())),
+                _ => return Err(ParseError::unexpected_token()),
             }
             // Whitespace is not allowed between '.' and the class name.
-            if let Ok(token) = input.try_parse(|i| i.expect_whitespace()) {
-                return Err(input.new_unexpected_token_error(Token::WhiteSpace(token)));
+            if input.try_parse(|i| i.expect_whitespace()).is_ok() {
+                return Err(ParseError::unexpected_token());
             }
             CustomIdent::parse(input, &[]).map(|c| c.0)
         };
@@ -181,7 +177,7 @@ impl PtNameAndClassSelector {
         // If we don't have `<pt-name-selector>`, we must have `<pt-class-selector>`, per the
         // syntax: `<pt-name-selector> <pt-class-selector>? | <pt-class-selector>`.
         if name.is_err() && classes.is_empty() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         // Use the universal symbol as the first element to present the part of
@@ -548,9 +544,7 @@ impl PseudoElement {
     /// Parse the pseudo-element string without the check of enabled state. This may includes
     /// all possible PseudoElement, including tree pseudo-elements and anonymous box.
     // TODO: Bug 1845712. Merge this with the pseudo element part in parse_one_simple_selector().
-    pub fn parse_ignore_enabled_state<'i, 't>(
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse_ignore_enabled_state(input: &mut Parser) -> Result<Self, ParseError> {
         use crate::gecko::selector_parser;
         use cssparser::Token;
         use selectors::parser::{is_css2_pseudo_element, SelectorParseErrorKind};
@@ -559,16 +553,15 @@ impl PseudoElement {
         // The pseudo-element string should start with ':'.
         input.expect_colon()?;
 
-        let location = input.current_source_location();
         let next = input.next_including_whitespace()?;
         if !matches!(next, Token::Colon) {
             // Parse a CSS2 pseudo-element.
             let name = match next {
                 Token::Ident(name) if is_css2_pseudo_element(&name) => name,
-                _ => return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+                _ => return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
             };
-            return PseudoElement::from_slice(&name).ok_or(location.new_custom_error(
-                SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name.clone()),
+            return PseudoElement::from_slice(&name).ok_or(ParseError::custom(
+                SelectorParseErrorKind::UnsupportedPseudoClassOrElement,
             ));
         }
 
@@ -576,8 +569,8 @@ impl PseudoElement {
         match input.next_including_whitespace()?.clone() {
             Token::Ident(name) => {
                 // We don't need to parse unknown ::-webkit-* pseudo-elements in this function.
-                PseudoElement::from_slice(&name).ok_or(input.new_custom_error(
-                    SelectorParseErrorKind::UnsupportedPseudoClassOrElement(name),
+                PseudoElement::from_slice(&name).ok_or(ParseError::custom(
+                    SelectorParseErrorKind::UnsupportedPseudoClassOrElement,
                 ))
             },
             Token::Function(name) => {
@@ -591,7 +584,7 @@ impl PseudoElement {
                     )
                 })
             },
-            t => return Err(input.new_unexpected_token_error(t)),
+            _ => return Err(ParseError::unexpected_token()),
         }
     }
 

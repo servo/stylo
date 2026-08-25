@@ -706,10 +706,7 @@ impl GenericFontFamily {
 
 impl Parse for SingleFontFamily {
     /// Parse a font-family value.
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(value) = input.try_parse(|i| i.expect_string_cloned()) {
             return Ok(SingleFontFamily::FamilyName(FamilyName {
                 name: Atom::from(&*value),

@@ -106,12 +106,12 @@ impl ScopeBounds {
     }
 }
 
-fn parse_scope<'a>(
+fn parse_scope(
     context: &ParserContext,
-    input: &mut Parser<'a, '_>,
+    input: &mut Parser,
     parse_relative: ParseRelative,
     for_end: bool,
-) -> Result<Option<SelectorList<SelectorImpl>>, ParseError<'a>> {
+) -> Result<Option<SelectorList<SelectorImpl>>, ParseError> {
     input.try_parse(|input| {
         if for_end {
             // scope-end not existing is valid.
@@ -150,11 +150,11 @@ fn parse_scope<'a>(
 
 impl ScopeBounds {
     /// Parse a container condition.
-    pub fn parse<'a>(
+    pub fn parse(
         context: &ParserContext,
-        input: &mut Parser<'a, '_>,
+        input: &mut Parser,
         parse_relative: ParseRelative,
-    ) -> Result<Self, ParseError<'a>> {
+    ) -> Result<Self, ParseError> {
         let start = parse_scope(context, input, parse_relative, false)?;
         let end = parse_scope(context, input, parse_relative, true)?;
         Ok(Self { start, end })

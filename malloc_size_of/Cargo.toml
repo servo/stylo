@@ -16,7 +16,7 @@ servo = ["string_cache"]
 
 [dependencies]
 app_units = "0.7"
-cssparser = "0.37"
+cssparser = "0.38"
 euclid = "0.22"
 selectors = { path = "../selectors" }
 servo_arc = { path = "../servo_arc" }

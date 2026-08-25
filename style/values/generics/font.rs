@@ -137,10 +137,7 @@ impl<T> FontSettings<T> {
 impl<T: Parse> Parse for FontSettings<T> {
     /// https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-feature-settings
     /// https://drafts.csswg.org/css-fonts-4/#font-variation-settings-def
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input
             .try_parse(|i| i.expect_ident_matching("normal"))
             .is_ok()
@@ -208,16 +205,12 @@ impl ToCss for FontTag {
 }
 
 impl Parse for FontTag {
-    fn parse<'i, 't>(
-        _context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let tag = input.expect_string()?;
 
         // allowed strings of length 4 containing chars: <U+20, U+7E>
         if tag.len() != 4 || tag.as_bytes().iter().any(|c| *c < b' ' || *c > b'~') {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         let mut raw = Cursor::new(tag.as_bytes());

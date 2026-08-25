@@ -73,10 +73,7 @@ impl CoordBox {
 }
 
 impl Parse for RayFunction {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         input.expect_function_matching("ray")?;
         input.parse_nested_block(|i| Self::parse_function_arguments(context, i))
     }
@@ -84,10 +81,10 @@ impl Parse for RayFunction {
 
 impl RayFunction {
     /// Parse the inner arguments of a `ray` function.
-    fn parse_function_arguments<'i, 't>(
+    fn parse_function_arguments(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         use crate::values::specified::PositionOrAuto;
 
         let mut angle = None;
@@ -129,7 +126,7 @@ impl RayFunction {
         }
 
         if angle.is_none() {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         Ok(RayFunction {
@@ -143,10 +140,7 @@ impl RayFunction {
 }
 
 impl Parse for OffsetPathFunction {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         use crate::values::specified::basic_shape::{AllowedBasicShapes, ShapeType};
 
         // <offset-path> = <ray()> | <url> | <basic-shape>
@@ -167,10 +161,7 @@ impl Parse for OffsetPathFunction {
 }
 
 impl Parse for OffsetPath {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         // Parse none.
         if input.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
             return Ok(OffsetPath::none());
@@ -203,7 +194,7 @@ impl Parse for OffsetPath {
 
         match coord_box {
             Some(c) => Ok(OffsetPath::CoordBox(c)),
-            None => Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+            None => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
         }
     }
 }
@@ -272,11 +263,7 @@ impl OffsetRotate {
 }
 
 impl Parse for OffsetRotate {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let mut direction = input.try_parse(OffsetRotateDirection::parse);
         let angle = input.try_parse(|i| Angle::parse(context, i));
         if direction.is_err() {
@@ -286,7 +273,7 @@ impl Parse for OffsetRotate {
         }
 
         if direction.is_err() && angle.is_err() {
-            return Err(location.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         Ok(OffsetRotate {

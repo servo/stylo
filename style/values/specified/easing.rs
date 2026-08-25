@@ -19,10 +19,7 @@ use style_traits::{ParseError, StyleParseErrorKind};
 pub type TimingFunction = GenericTimingFunction<Integer, Number, PiecewiseLinearFunction>;
 
 impl Parse for TimingFunction {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(keyword) = input.try_parse(TimingKeyword::parse) {
             return Ok(GenericTimingFunction::Keyword(keyword));
         }
@@ -31,31 +28,27 @@ impl Parse for TimingFunction {
                 "step-start" => StepPosition::Start,
                 "step-end" => StepPosition::End,
                 _ => {
-                    return Err(input.new_custom_error(
-                        SelectorParseErrorKind::UnexpectedIdent(ident.clone())
+                    return Err(ParseError::custom(
+                        SelectorParseErrorKind::UnexpectedIdent
                     ));
                 },
             };
             return Ok(GenericTimingFunction::Steps(Integer::new(1), position));
         }
-        let location = input.current_source_location();
         let function = input.expect_function()?.clone();
         input.parse_nested_block(move |i| {
             match_ignore_ascii_case! { &function,
                 "cubic-bezier" => Self::parse_cubic_bezier(context, i),
                 "steps" => Self::parse_steps(context, i),
                 "linear" => Self::parse_linear_function(context, i),
-                _ => Err(location.new_custom_error(StyleParseErrorKind::UnexpectedFunction(function.clone()))),
+                _ => Err(ParseError::custom(StyleParseErrorKind::UnexpectedFunction)),
             }
         })
     }
 }
 
 impl TimingFunction {
-    fn parse_cubic_bezier<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse_cubic_bezier(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let x1 = Number::parse(context, input)?;
         input.expect_comma()?;
         let y1 = Number::parse(context, input)?;
@@ -70,19 +63,16 @@ impl TimingFunction {
             (x1.resolve(), y1.resolve(), x2.resolve(), y2.resolve())
         {
             if x1 < 0.0 || x1 > 1.0 || x2 < 0.0 || x2 > 1.0 {
-                return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             }
         } else {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         Ok(GenericTimingFunction::CubicBezier { x1, y1, x2, y2 })
     }
 
-    fn parse_steps<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse_steps(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let steps = Integer::parse_positive(context, input)?;
         let position = input
             .try_parse(|i| {
@@ -95,7 +85,7 @@ impl TimingFunction {
         // computed value time (due to relative lengths, sibling-index(), etc.).
         let num_steps = match steps.resolve() {
             Some(v) => v,
-            None => return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+            None => return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
         };
 
         // jump-none accepts a positive integer greater than 1.
@@ -105,15 +95,15 @@ impl TimingFunction {
         // It's not totally clear it's worth it though, and no other browser
         // does this.
         if position == StepPosition::JumpNone && num_steps <= 1 {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         Ok(GenericTimingFunction::Steps(steps, position))
     }
 
-    fn parse_linear_function<'i, 't>(
+    fn parse_linear_function(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         let mut builder = PiecewiseLinearFunctionBuilder::default();
         let mut num_specified_stops = 0;
         // Closely follows `parse_comma_separated`, but can generate multiple entries for one comma-separated entry.
@@ -134,10 +124,10 @@ impl TimingFunction {
                 // computed value time (due to relative lengths, sibling-index(), etc.).
                 let output = match output.resolve() {
                     Some(v) => v,
-                    None => return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError)),
+                    None => return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
                 };
                 if matches!(input_start.as_ref().or(input_end.as_ref()), Some(p) if p.resolve().is_none()) {
-                    return Err(i.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
 
                 let has_input_start = input_start.is_some();
@@ -163,7 +153,7 @@ impl TimingFunction {
         // By spec, specifying only a single stop makes the function invalid, even if that single entry may generate
         // two entries.
         if num_specified_stops < 2 {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
         Ok(GenericTimingFunction::LinearFunction(builder.build()))

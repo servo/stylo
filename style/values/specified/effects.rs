@@ -31,8 +31,8 @@ use crate::values::specified::{Angle, NonNegativeNumberOrPercentage, Number, Num
 #[cfg(feature = "servo")]
 use crate::values::Impossible;
 use crate::Zero;
-use cssparser::{match_ignore_ascii_case, BasicParseErrorKind, Parser, Token};
-use style_traits::{ParseError, StyleParseErrorKind, ValueParseErrorKind};
+use cssparser::{match_ignore_ascii_case, Parser};
+use style_traits::{ParseError, StyleParseErrorKind};
 
 /// A specified value for a single shadow of the `box-shadow` property.
 pub type BoxShadow =
@@ -91,10 +91,7 @@ impl NonNegativeFactor {
 }
 
 impl Parse for NonNegativeFactor {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(Self(FilterFactor(
             NonNegativeNumberOrPercentage::parse(context, input)?.0,
         )))
@@ -110,10 +107,7 @@ impl ZeroToOneFactor {
 
 impl Parse for ZeroToOneFactor {
     #[inline]
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(Self(FilterFactor(clamp_to_one(
             NumberOrPercentage::parse_non_negative(context, input)?,
         ))))
@@ -124,10 +118,7 @@ impl Parse for ZeroToOneFactor {
 pub type SimpleShadow = GenericSimpleShadow<Option<Color>, Length, Option<NonNegativeLength>>;
 
 impl Parse for BoxShadow {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let mut lengths = None;
         let mut color = None;
         let mut inset = false;
@@ -170,8 +161,7 @@ impl Parse for BoxShadow {
             break;
         }
 
-        let lengths =
-            lengths.ok_or(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))?;
+        let lengths = lengths.ok_or(ParseError::custom(StyleParseErrorKind::UnspecifiedError))?;
         Ok(BoxShadow {
             base: SimpleShadow {
                 color: color,
@@ -302,23 +292,15 @@ impl Filter {
 
 impl Parse for Filter {
     #[inline]
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         #[cfg(feature = "gecko")]
         {
             if let Ok(url) = input.try_parse(|i| SpecifiedUrl::parse(context, i)) {
                 return Ok(GenericFilter::Url(url));
             }
         }
-        let location = input.current_source_location();
         let function = match input.expect_function() {
             Ok(f) => f.clone(),
-            Err(cssparser::BasicParseError {
-                kind: BasicParseErrorKind::UnexpectedToken(t),
-                location,
-            }) => return Err(location.new_custom_error(ValueParseErrorKind::InvalidFilter(t))),
             Err(e) => return Err(e.into()),
         };
         input.parse_nested_block(|i| {
@@ -380,9 +362,7 @@ impl Parse for Filter {
                     ))
                 },
                 "drop-shadow" => Ok(GenericFilter::DropShadow(Parse::parse(context, i)?)),
-                _ => Err(location.new_custom_error(
-                    ValueParseErrorKind::InvalidFilter(Token::Function(function.clone()))
-                )),
+                _ => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
             }
         })
     }
@@ -390,10 +370,7 @@ impl Parse for Filter {
 
 impl Parse for SimpleShadow {
     #[inline]
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let color = input.try_parse(|i| Color::parse(context, i)).ok();
         let horizontal = Length::parse(context, input)?;
         let vertical = Length::parse(context, input)?;

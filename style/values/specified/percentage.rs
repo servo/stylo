@@ -233,12 +233,11 @@ impl Percentage {
     }
 
     /// Parses a specific kind of percentage.
-    pub fn parse_with_clamping_mode<'i, 't>(
+    pub fn parse_with_clamping_mode(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         num_context: AllowedNumericType,
-    ) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    ) -> Result<Self, ParseError> {
         Ok(Self(match *input.next()? {
             Token::Percentage { unit_value, .. }
                 if num_context.is_ok(context.parsing_mode, unit_value) =>
@@ -246,28 +245,28 @@ impl Percentage {
                 NumericUnion::inline((), unit_value)
             },
             Token::Function(ref name) => {
-                let function = CalcNode::math_function(context, name, location)?;
+                let function = CalcNode::math_function(context, name)?;
                 let calc = CalcNode::parse_percentage(context, input, num_context, function)?;
                 NumericUnion::boxed(Box::new(calc))
             },
-            ref t => return Err(location.new_unexpected_token_error(t.clone())),
+            _ => return Err(ParseError::unexpected_token()),
         }))
     }
 
     /// Parses a percentage token, but rejects it if it's negative.
-    pub fn parse_non_negative<'i, 't>(
+    pub fn parse_non_negative(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         Self::parse_with_clamping_mode(context, input, AllowedNumericType::NonNegative)
     }
 
     /// Parses a percentage token, but rejects it if it's negative or more than
     /// 100%.
-    pub fn parse_zero_to_a_hundred<'i, 't>(
+    pub fn parse_zero_to_a_hundred(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         Self::parse_with_clamping_mode(context, input, AllowedNumericType::ZeroToOne)
     }
 
@@ -285,10 +284,7 @@ impl Percentage {
 
 impl Parse for Percentage {
     #[inline]
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Self::parse_with_clamping_mode(context, input, AllowedNumericType::All)
     }
 }
@@ -350,10 +346,7 @@ pub type NonNegativePercentage = NonNegative<Percentage>;
 
 impl Parse for NonNegativePercentage {
     #[inline]
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(NonNegative(Percentage::parse_non_negative(context, input)?))
     }
 }

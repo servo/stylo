@@ -476,8 +476,7 @@ impl Stylesheet {
                             data.output.push_str(&css[rule_start.byte_index()..end]);
                         }
                     },
-                    Err((error, slice)) => {
-                        let location = error.location;
+                    Err((error, slice, location)) => {
                         let error = ContextualParseError::InvalidRule(slice, error);
                         iter.parser.context.log_css_error(location, error);
                     },

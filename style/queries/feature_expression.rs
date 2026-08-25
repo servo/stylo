@@ -129,13 +129,12 @@ impl Operator {
         }
     }
 
-    fn parse<'i>(input: &mut Parser<'i, '_>) -> Result<Self, ParseError<'i>> {
-        let location = input.current_source_location();
+    fn parse(input: &mut Parser) -> Result<Self, ParseError> {
         let operator = match *input.next()? {
             Token::Delim('=') => return Ok(Operator::Equal),
             Token::Delim('>') => Operator::GreaterThan,
             Token::Delim('<') => Operator::LessThan,
-            ref t => return Err(location.new_unexpected_token_error(t.clone())),
+            _ => return Err(ParseError::unexpected_token()),
         };
 
         // https://drafts.csswg.org/mediaqueries-4/#mq-syntax:
@@ -310,9 +309,7 @@ impl ToCss for QueryFeatureExpression {
     }
 }
 
-fn consume_operation_or_colon<'i>(
-    input: &mut Parser<'i, '_>,
-) -> Result<Option<Operator>, ParseError<'i>> {
+fn consume_operation_or_colon(input: &mut Parser) -> Result<Option<Operator>, ParseError> {
     if input.try_parse(|input| input.expect_colon()).is_ok() {
         return Ok(None);
     }
@@ -385,13 +382,12 @@ impl QueryFeatureExpression {
         self.feature().flags
     }
 
-    fn parse_feature_name<'i, 't>(
+    fn parse_feature_name(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         feature_type: FeatureType,
-    ) -> Result<(usize, Option<LegacyRange>), ParseError<'i>> {
+    ) -> Result<(usize, Option<LegacyRange>), ParseError> {
         let mut flags = FeatureFlags::empty();
-        let location = input.current_source_location();
         let ident = input.expect_ident()?;
 
         if context.chrome_rules_enabled() {
@@ -418,8 +414,8 @@ impl QueryFeatureExpression {
         let (feature_index, feature) = match feature_type.find_feature(&atom) {
             Some((i, f)) => (i, f),
             None => {
-                return Err(location.new_custom_error(
-                    StyleParseErrorKind::MediaQueryExpectedFeatureName(ident.clone()),
+                return Err(ParseError::custom(
+                    StyleParseErrorKind::MediaQueryExpectedFeatureName,
                 ))
             },
         };
@@ -428,8 +424,8 @@ impl QueryFeatureExpression {
             || !flags.contains(feature.flags.parsing_requirements())
             || (range.is_some() && !feature.allows_ranges())
         {
-            return Err(location.new_custom_error(
-                StyleParseErrorKind::MediaQueryExpectedFeatureName(ident.clone()),
+            return Err(ParseError::custom(
+                StyleParseErrorKind::MediaQueryExpectedFeatureName,
             ));
         }
 
@@ -440,11 +436,11 @@ impl QueryFeatureExpression {
     ///
     ///   (feature-value <operator> feature-name)
     ///   (feature-value <operator> feature-name <operator> feature-value)
-    fn parse_multi_range_syntax<'i, 't>(
+    fn parse_multi_range_syntax(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         feature_type: FeatureType,
-    ) -> Result<Self, ParseError<'i>> {
+    ) -> Result<Self, ParseError> {
         let start = input.state();
 
         // To parse the values, we first need to find the feature name. We rely
@@ -455,14 +451,12 @@ impl QueryFeatureExpression {
             if let Ok((index, range)) = Self::parse_feature_name(context, input, feature_type) {
                 if range.is_some() {
                     // Ranged names are not allowed here.
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
                 break index;
             }
             if input.is_exhausted() {
-                return Err(start
-                    .source_location()
-                    .new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             }
         };
 
@@ -484,7 +478,7 @@ impl QueryFeatureExpression {
         let right = match right_op {
             Some(op) => {
                 if !left_op.is_compatible_with(op) {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
                 Some((op, QueryExpressionValue::parse(feature, context, input)?))
             },
@@ -501,11 +495,11 @@ impl QueryFeatureExpression {
     }
 
     /// Parse a feature expression where we've already consumed the parenthesis.
-    pub fn parse_in_parenthesis_block<'i, 't>(
+    pub fn parse_in_parenthesis_block(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         feature_type: FeatureType,
-    ) -> Result<Self, ParseError<'i>> {
+    ) -> Result<Self, ParseError> {
         let (feature_index, range) =
             match input.try_parse(|input| Self::parse_feature_name(context, input, feature_type)) {
                 Ok(v) => v,
@@ -525,9 +519,9 @@ impl QueryFeatureExpression {
                 // Gecko doesn't allow ranged expressions without a
                 // value, so just reject them here too.
                 if range.is_some() {
-                    return Err(
-                        input.new_custom_error(StyleParseErrorKind::RangedExpressionWithNoValue)
-                    );
+                    return Err(ParseError::custom(
+                        StyleParseErrorKind::RangedExpressionWithNoValue,
+                    ));
                 }
 
                 return Ok(Self::new(
@@ -541,25 +535,24 @@ impl QueryFeatureExpression {
 
         let feature = &feature_type.features()[feature_index];
 
-        let value = QueryExpressionValue::parse(feature, context, input).map_err(|err| {
-            err.location
-                .new_custom_error(StyleParseErrorKind::MediaQueryExpectedFeatureValue)
-        })?;
+        let value = QueryExpressionValue::parse(feature, context, input)
+            .map_err(|_| ParseError::custom(StyleParseErrorKind::MediaQueryExpectedFeatureValue))?;
 
         let kind = match range {
             Some(range) => {
                 if operator.is_some() {
-                    return Err(
-                        input.new_custom_error(StyleParseErrorKind::MediaQueryUnexpectedOperator)
-                    );
+                    return Err(ParseError::custom(
+                        StyleParseErrorKind::MediaQueryUnexpectedOperator,
+                    ));
                 }
                 QueryFeatureExpressionKind::LegacyRange(range, value)
             },
             None => match operator {
                 Some(operator) => {
                     if !feature.allows_ranges() {
-                        return Err(input
-                            .new_custom_error(StyleParseErrorKind::MediaQueryUnexpectedOperator));
+                        return Err(ParseError::custom(
+                            StyleParseErrorKind::MediaQueryUnexpectedOperator,
+                        ));
                     }
                     QueryFeatureExpressionKind::Range {
                         left: None,
@@ -733,11 +726,11 @@ impl QueryExpressionValue {
         }
     }
 
-    fn parse<'i, 't>(
+    fn parse(
         for_feature: &QueryFeatureDescription,
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<QueryExpressionValue, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<QueryExpressionValue, ParseError> {
         Ok(match for_feature.evaluator {
             Evaluator::OptionalLength(..) | Evaluator::Length(..) => {
                 let length = Length::parse(context, input)?;
@@ -750,7 +743,7 @@ impl QueryExpressionValue {
             Evaluator::BoolInteger(..) => {
                 let integer = Integer::parse(context, input)?;
                 if matches!(integer.resolve(), Some(v) if v != 0 && v != 1) {
-                    return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
                 QueryExpressionValue::BoolInteger(integer)
             },
@@ -777,10 +770,10 @@ impl QueryExpressionValue {
     // or a custom property name.
     // NB: we don't currently implement the <frequency> type anywhere, so it is not
     // parsed here.
-    fn parse_for_style_range<'i, 't>(
+    fn parse_for_style_range(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
         if let Ok(number) = input.try_parse(|i| Number::parse(context, i)) {
             return Ok(Self::Float(number));
         }
@@ -810,22 +803,21 @@ impl QueryExpressionValue {
         if let Ok(Token::Function(ref name)) = input.next() {
             // Helper to parse the function arg and store the complete expression (function
             // name and parenthesized argument) into a CustomVariableValue.
-            let parse_func =
-                |input: &mut Parser<'i, 't>| -> Result<CustomVariableValue, ParseError<'i>> {
-                    input.parse_nested_block(|i| i.expect_no_error_token().map_err(Into::into))?;
-                    let mut input = ParserInput::new(input.slice_from(start));
-                    CustomVariableValue::parse(
-                        &mut Parser::new(&mut input),
-                        Some(&context.namespaces.prefixes),
-                        context.url_data,
-                    )
-                };
+            let parse_func = |input: &mut Parser| -> Result<CustomVariableValue, ParseError> {
+                input.parse_nested_block(|i| i.expect_no_error_token().map_err(Into::into))?;
+                let mut input = ParserInput::new(input.slice_from(start));
+                CustomVariableValue::parse(
+                    &mut Parser::new(&mut input),
+                    Some(&context.namespaces.prefixes),
+                    context.url_data,
+                )
+            };
 
             if SubstitutionFunctionKind::from_ident(name).is_ok() {
                 return Ok(Self::Function(Box::new(parse_func(input)?)));
             }
         }
-        Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError))
+        Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
     }
 
     fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
@@ -906,10 +898,7 @@ impl QueryStyleRange {
     ///
     /// This is only used when parsing @container style() queries; the feature_type
     /// and index is hardcoded (and ignored).
-    pub fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let value1 = QueryExpressionValue::parse_for_style_range(context, input)?;
         let op1 = Operator::parse(input)?;
         let value2 = QueryExpressionValue::parse_for_style_range(context, input)?;

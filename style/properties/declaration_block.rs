@@ -43,6 +43,7 @@ use selectors::SelectorList;
 use servo_arc::Arc;
 use smallbitvec::SmallBitVec;
 use smallvec::SmallVec;
+use std::borrow::Cow;
 use std::fmt::{self, Write};
 use std::iter::Zip;
 use std::slice::Iter;
@@ -1480,6 +1481,7 @@ pub fn parse_one_declaration_into(
     let mut input = ParserInput::new(input);
     let mut parser = Parser::new(&mut input);
     let start_position = parser.position();
+    let start_location = parser.current_source_location();
     parser
         .parse_entirely(|parser| {
             PropertyDeclaration::parse_into(declarations, id, &context, parser)
@@ -1492,6 +1494,7 @@ pub fn parse_one_declaration_into(
                     &[],
                     err,
                     parser.slice_from(start_position),
+                    start_location,
                     property_id_for_error_reporting,
                 )
             }
@@ -1541,17 +1544,17 @@ impl<'i> DeclarationParserState<'i> {
     }
 
     /// Parse a single declaration value.
-    pub fn parse_value<'t>(
+    pub fn parse_value(
         &mut self,
         context: &ParserContext,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser<'i, '_>,
         declaration_start: &ParserState,
-    ) -> Result<(), ParseError<'i>> {
+    ) -> Result<(), ParseError> {
         let id = match PropertyId::parse(&name, context) {
             Ok(id) => id,
             Err(..) => {
-                return Err(input.new_custom_error(StyleParseErrorKind::UnknownProperty(name)));
+                return Err(ParseError::custom(StyleParseErrorKind::UnknownProperty));
             },
         };
         if context.error_reporting_enabled() {
@@ -1563,9 +1566,9 @@ impl<'i> DeclarationParserState<'i> {
         self.importance = match input.try_parse(parse_important) {
             Ok(()) => {
                 if !context.allows_important_declarations() {
-                    return Err(
-                        input.new_custom_error(StyleParseErrorKind::UnexpectedImportantDeclaration)
-                    );
+                    return Err(ParseError::custom(
+                        StyleParseErrorKind::UnexpectedImportantDeclaration,
+                    ));
                 }
                 Importance::Important
             },
@@ -1607,13 +1610,14 @@ impl<'i> DeclarationParserState<'i> {
         context: &ParserContext,
         selectors: &[SelectorList<SelectorImpl>],
     ) {
-        for (error, slice, property) in self.errors.drain(..) {
+        for (error, slice, location, property) in self.errors.drain(..) {
             report_one_css_error(
                 context,
                 Some(&self.output_block),
                 selectors,
                 error,
                 slice,
+                location,
                 property,
             )
         }
@@ -1621,13 +1625,19 @@ impl<'i> DeclarationParserState<'i> {
 
     /// Resets the declaration parser state, and reports the error if needed.
     #[inline]
-    pub fn did_error(&mut self, context: &ParserContext, error: ParseError<'i>, slice: &'i str) {
+    pub fn did_error(
+        &mut self,
+        context: &ParserContext,
+        error: ParseError,
+        slice: &'i str,
+        location: SourceLocation,
+    ) {
         self.declarations.clear();
         if !context.error_reporting_enabled() {
             return;
         }
         let property = self.last_parsed_property_id.take();
-        self.errors.push((error, slice, property));
+        self.errors.push((error, slice, location, property));
     }
 }
 
@@ -1635,14 +1645,14 @@ impl<'i> DeclarationParserState<'i> {
 impl<'a, 'b, 'i> AtRuleParser<'i> for PropertyDeclarationParser<'a, 'b, 'i> {
     type Prelude = ();
     type AtRule = ();
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 }
 
 /// Default methods reject all rules.
 impl<'a, 'b, 'i> QualifiedRuleParser<'i> for PropertyDeclarationParser<'a, 'b, 'i> {
     type Prelude = ();
     type QualifiedRule = ();
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 }
 
 /// Based on NonMozillaVendorIdentifier from Gecko's CSS parser.
@@ -1652,20 +1662,20 @@ fn is_non_mozilla_vendor_identifier(name: &str) -> bool {
 
 impl<'a, 'b, 'i> DeclarationParser<'i> for PropertyDeclarationParser<'a, 'b, 'i> {
     type Declaration = ();
-    type Error = StyleParseErrorKind<'i>;
+    type Error = StyleParseErrorKind;
 
-    fn parse_value<'t>(
+    fn parse_value(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser<'i, '_>,
         declaration_start: &ParserState,
-    ) -> Result<(), ParseError<'i>> {
+    ) -> Result<(), ParseError> {
         self.state
             .parse_value(self.context, name, input, declaration_start)
     }
 }
 
-impl<'a, 'b, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind<'i>>
+impl<'a, 'b, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind>
     for PropertyDeclarationParser<'a, 'b, 'i>
 {
     fn parse_declarations(&self) -> bool {
@@ -1677,7 +1687,8 @@ impl<'a, 'b, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind<'i>>
     }
 }
 
-type SmallParseErrorVec<'i> = SmallVec<[(ParseError<'i>, &'i str, Option<PropertyId>); 2]>;
+type SmallParseErrorVec<'i> =
+    SmallVec<[(ParseError, &'i str, SourceLocation, Option<PropertyId>); 2]>;
 
 fn alias_of_known_property(name: &str) -> Option<PropertyId> {
     let mut prefixed = String::with_capacity(name.len() + 5);
@@ -1687,12 +1698,13 @@ fn alias_of_known_property(name: &str) -> Option<PropertyId> {
 }
 
 #[cold]
-fn report_one_css_error<'i>(
+fn report_one_css_error(
     context: &ParserContext,
     block: Option<&PropertyDeclarationBlock>,
     selectors: &[SelectorList<SelectorImpl>],
-    mut error: ParseError<'i>,
+    mut error: ParseError,
     slice: &str,
+    location: SourceLocation,
     property: Option<PropertyId>,
 ) {
     debug_assert!(context.error_reporting_enabled());
@@ -1706,7 +1718,11 @@ fn report_one_css_error<'i>(
         }
     }
 
-    if let ParseErrorKind::Custom(StyleParseErrorKind::UnknownProperty(ref name)) = error.kind {
+    let mut error_string = Cow::Borrowed(slice);
+    if let ParseErrorKind::Custom(StyleParseErrorKind::UnknownProperty) = error.kind {
+        // The error no longer carries the property name, but `slice` is the
+        // declaration text, i.e. `<name>: <value>`.
+        let name = slice.split(':').next().unwrap_or("").trim();
         if is_non_mozilla_vendor_identifier(name) {
             // If the unrecognized property looks like a vendor-specific property,
             // silently ignore it instead of polluting the error output.
@@ -1721,6 +1737,10 @@ fn report_one_css_error<'i>(
                     return;
                 }
             }
+        }
+        if !name.is_empty() {
+            // We don't care about the whole declaration, just the property name
+            error_string = Cow::Borrowed(name);
         }
     }
 
@@ -1737,20 +1757,16 @@ fn report_one_css_error<'i>(
             error.kind,
             ParseErrorKind::Custom(StyleParseErrorKind::UnexpectedImportantDeclaration)
         ) {
-            error = match *property {
-                PropertyId::Custom(ref c) => {
-                    StyleParseErrorKind::new_invalid(format!("--{}", c), error)
-                },
-                _ => StyleParseErrorKind::new_invalid(
-                    property.non_custom_id().unwrap().name(),
-                    error,
-                ),
-            };
+            error = ParseError::custom(StyleParseErrorKind::OtherInvalidValue);
+        }
+        if !slice.contains(':') {
+            // For CSSOM we only have the value. If there's no `:`, prepend the property name.
+            error_string = Cow::Owned(format!("{}: {slice}", property.to_css_string()));
         }
     }
 
-    let location = error.location;
-    let error = ContextualParseError::UnsupportedPropertyDeclaration(slice, error, selectors);
+    let error =
+        ContextualParseError::UnsupportedPropertyDeclaration(&error_string, error, selectors);
     context.log_css_error(location, error);
 }
 
@@ -1770,7 +1786,9 @@ pub fn parse_property_declaration_list(
     while let Some(declaration) = iter.next() {
         match declaration {
             Ok(()) => {},
-            Err((error, slice)) => iter.parser.state.did_error(context, error, slice),
+            Err((error, slice, location)) => {
+                iter.parser.state.did_error(context, error, slice, location)
+            },
         }
     }
     parser.state.report_errors_if_needed(context, selectors);

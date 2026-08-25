@@ -128,15 +128,11 @@ macro_rules! parse_quoted_or_unquoted_string {
 
 impl DocumentMatchingFunction {
     /// Parse a URL matching function for a`@document` rule's condition.
-    pub fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(url) = input.try_parse(|input| CssUrl::parse(context, input)) {
             return Ok(DocumentMatchingFunction::Url(url));
         }
 
-        let location = input.current_source_location();
         let function = input.expect_function()?.clone();
         match_ignore_ascii_case! { &function,
             "url-prefix" => {
@@ -167,8 +163,8 @@ impl DocumentMatchingFunction {
             },
 
             _ => {
-                Err(location.new_custom_error(
-                    StyleParseErrorKind::UnexpectedFunction(function.clone())
+                Err(ParseError::custom(
+                    StyleParseErrorKind::UnexpectedFunction
                 ))
             },
         }
@@ -229,16 +225,15 @@ pub struct DocumentCondition(#[css(iterable)] Vec<DocumentMatchingFunction>);
 
 impl DocumentCondition {
     /// Parse a document condition.
-    pub fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    pub fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let conditions =
             input.parse_comma_separated(|input| DocumentMatchingFunction::parse(context, input))?;
 
         let condition = DocumentCondition(conditions);
         if !condition.allowed_in(context) {
-            return Err(input.new_error(BasicParseErrorKind::AtRuleInvalid("-moz-document".into())));
+            return Err(ParseError::from_basic_kind(
+                BasicParseErrorKind::AtRuleInvalid,
+            ));
         }
         Ok(condition)
     }

@@ -28,10 +28,7 @@ impl FlexBasis {
 }
 
 impl Parse for FlexBasis {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let v = input.try_parse(|i| {
             Ok(try_match_ident_ignore_ascii_case! {i, "content" => Self::Content, })
         });

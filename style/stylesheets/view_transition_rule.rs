@@ -40,8 +40,7 @@ impl ViewTransitionRule {
         let mut iter = RuleBodyParser::new(input, &mut parser);
 
         while let Some(declaration) = iter.next() {
-            if let Err((error, slice)) = declaration {
-                let location = error.location;
+            if let Err((error, slice, location)) = declaration {
                 let error = ContextualParseError::UnsupportedViewTransitionDescriptor(slice, error);
                 context.log_css_error(location, error);
             }

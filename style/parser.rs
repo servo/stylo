@@ -241,10 +241,7 @@ pub trait Parse: Sized {
     /// Parse a value of this type.
     ///
     /// Returns an error on failure.
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>>;
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError>;
 }
 
 impl<T> Parse for Vec<T>
@@ -252,10 +249,7 @@ where
     T: Parse + OneOrMoreSeparated,
     <T as OneOrMoreSeparated>::S: Separator,
 {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         <T as OneOrMoreSeparated>::S::parse(input, |i| T::parse(context, i))
     }
 }
@@ -264,28 +258,19 @@ impl<T> Parse for Box<T>
 where
     T: Parse,
 {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         T::parse(context, input).map(Box::new)
     }
 }
 
 impl Parse for crate::OwnedStr {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(input.expect_string()?.as_ref().to_owned().into())
     }
 }
 
 impl Parse for UnicodeRange {
-    fn parse<'i, 't>(
-        _: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Ok(UnicodeRange::parse(input)?)
     }
 }

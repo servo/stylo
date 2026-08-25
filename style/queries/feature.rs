@@ -28,7 +28,7 @@ pub type KeywordSerializer = fn(KeywordDiscriminant) -> String;
 pub type KeywordParser = for<'a, 'i, 't> fn(
     context: &'a ParserContext,
     input: &'a mut Parser<'i, 't>,
-) -> Result<KeywordDiscriminant, ParseError<'i>>;
+) -> Result<KeywordDiscriminant, ParseError>;
 
 /// An evaluator for a given feature.
 ///
@@ -67,10 +67,10 @@ pub enum Evaluator {
 /// even make sense?).
 macro_rules! keyword_evaluator {
     ($actual_evaluator:ident, $keyword_type:ty) => {{
-        fn __parse<'i, 't>(
+        fn __parse(
             context: &$crate::parser::ParserContext,
-            input: &mut $crate::cssparser::Parser<'i, 't>,
-        ) -> Result<$crate::queries::feature::KeywordDiscriminant, ::style_traits::ParseError<'i>>
+            input: &mut $crate::cssparser::Parser,
+        ) -> Result<$crate::queries::feature::KeywordDiscriminant, ::style_traits::ParseError>
         {
             let kw = <$keyword_type as $crate::parser::Parse>::parse(context, input)?;
             Ok(kw as $crate::queries::feature::KeywordDiscriminant)

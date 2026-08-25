@@ -63,14 +63,11 @@ impl<LengthPercentage> LengthPercentageOrAuto<LengthPercentage> {
     }
 
     /// A helper function to parse this with quirks or not and so forth.
-    pub fn parse_with<'i, 't>(
+    pub fn parse_with(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-        parser: impl FnOnce(
-            &ParserContext,
-            &mut Parser<'i, 't>,
-        ) -> Result<LengthPercentage, ParseError<'i>>,
-    ) -> Result<Self, ParseError<'i>> {
+        input: &mut Parser,
+        parser: impl FnOnce(&ParserContext, &mut Parser) -> Result<LengthPercentage, ParseError>,
+    ) -> Result<Self, ParseError> {
         if input.try_parse(|i| i.expect_ident_matching("auto")).is_ok() {
             return Ok(LengthPercentageOrAuto::Auto);
         }
@@ -128,10 +125,7 @@ impl<LengthPercentage: Zero> Zero for LengthPercentageOrAuto<LengthPercentage> {
 }
 
 impl<LengthPercentage: Parse> Parse for LengthPercentageOrAuto<LengthPercentage> {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         Self::parse_with(context, input, LengthPercentage::parse)
     }
 }
@@ -459,10 +453,7 @@ impl<Fallback> Parse for GenericAnchorSizeFunction<Fallback>
 where
     Fallback: Parse,
 {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError<'i>> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         input.expect_function_matching("anchor-size")?;
         Self::parse_inner(context, input, |i| Fallback::parse(context, i))
     }
@@ -496,13 +487,13 @@ impl<'a, LengthPercentage> AnchorResolutionResult<'a, LengthPercentage> {
 
 impl<LengthPercentage> GenericAnchorSizeFunction<LengthPercentage> {
     /// Parse the inner part of `anchor-size()`, after the parser has consumed "anchor-size(".
-    pub fn parse_inner<'i, 't, F>(
+    pub fn parse_inner<F>(
         context: &ParserContext,
-        input: &mut Parser<'i, 't>,
+        input: &mut Parser,
         f: F,
-    ) -> Result<Self, ParseError<'i>>
+    ) -> Result<Self, ParseError>
     where
-        F: FnOnce(&mut Parser<'i, '_>) -> Result<LengthPercentage, ParseError<'i>>,
+        F: FnOnce(&mut Parser) -> Result<LengthPercentage, ParseError>,
     {
         input.parse_nested_block(|i| {
             let mut target_element = i

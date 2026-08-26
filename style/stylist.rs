@@ -44,7 +44,9 @@ use crate::rule_collector::RuleCollector;
 use crate::rule_tree::{
     CascadeLevel, CascadeOrigin, RuleCascadeFlags, RuleTree, StrongRuleNode, StyleSource,
 };
-use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet, SelectorMap, SelectorMapEntry};
+use crate::selector_map::{
+    BucketMatches, PrecomputedHashMap, PrecomputedHashSet, SelectorMap, SelectorMapEntry,
+};
 use crate::selector_parser::{NonTSPseudoClass, PerPseudoElementMap, PseudoElement, SelectorImpl};
 use crate::shared_lock::{Locked, SharedRwLockReadGuard, StylesheetGuards};
 use crate::sharing::{RevalidationResult, ScopeRevalidationResult};
@@ -82,8 +84,8 @@ use rustc_hash::FxHashMap;
 use selectors::attr::{CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::BloomFilter;
 use selectors::matching::{
-    matches_selector, selector_may_match, MatchingContext, MatchingMode, NeedsSelectorFlags,
-    SelectorCaches,
+    matches_complex_selector, matches_selector, selector_may_match, MatchingContext, MatchingMode,
+    NeedsSelectorFlags, SelectorCaches, SubjectOrPseudoElement,
 };
 use selectors::matching::{MatchingForInvalidation, VisitedHandlingMode};
 use selectors::parser::{
@@ -3707,7 +3709,7 @@ impl CascadeData {
         );
         for candidate in result.candidates {
             if context.nest_for_scope(Some(candidate.root), |context| {
-                matches_selector(&rule.selector, 0, Some(&rule.hashes), &element, context)
+                rule.matches_selector(element, context)
             }) {
                 return candidate.proximity;
             }
@@ -4926,6 +4928,9 @@ pub struct Rule {
     /// The current @scope rule id.
     pub scope_condition_id: ScopeConditionId,
 
+    /// Whether the selector map always covers our selector.
+    pub bucket_matches: BucketMatches,
+
     /// The actual style rule.
     #[ignore_malloc_size_of = "Secondary ref. Primary ref is in StyleRule under Stylesheet."]
     pub style_source: StyleSource,
@@ -4934,6 +4939,10 @@ pub struct Rule {
 impl SelectorMapEntry for Rule {
     fn selector(&self) -> SelectorIter<'_, SelectorImpl> {
         self.selector.iter()
+    }
+
+    fn set_bucket_matches(&mut self, bucket_matches: BucketMatches) {
+        self.bucket_matches = bucket_matches;
     }
 }
 
@@ -4982,7 +4991,60 @@ impl Rule {
             container_condition_id,
             cascade_flags,
             scope_condition_id,
+            bucket_matches: BucketMatches::Unknown,
         }
+    }
+
+    fn iter_past_subject<'a, E: TElement>(
+        selector: &'a Selector<SelectorImpl>,
+        mut element: E,
+        context: &mut MatchingContext<E::Impl>,
+    ) -> (E, SelectorIter<'a, SelectorImpl>) {
+        let mut offset = 0;
+        let mut skipped_pseudo = false;
+        // Skip the subject + pseudo bit. Note that nested selector lists are dealt with in
+        // find_bucket.
+        let mut iter = selector.iter();
+        loop {
+            for _ in &mut iter {
+                offset += 1;
+            }
+            if iter.next_sequence() != Some(Combinator::PseudoElement) {
+                break;
+            }
+            if skipped_pseudo || context.matching_mode() != MatchingMode::ForStatelessPseudoElement
+            {
+                element = element.pseudo_element_originating_element().unwrap();
+            }
+            skipped_pseudo = true;
+            offset += 1;
+        }
+        (element, selector.iter_from(offset))
+    }
+
+    /// Tests a given element against our selector.
+    #[inline(always)]
+    pub fn matches_selector<E: TElement>(
+        &self,
+        mut element: E,
+        context: &mut MatchingContext<E::Impl>,
+    ) -> bool {
+        if self.bucket_matches == BucketMatches::Full {
+            return true;
+        }
+        if context
+            .bloom_filter
+            .is_some_and(|f| !selector_may_match(&self.hashes, f))
+        {
+            return false;
+        }
+        let mut iter = self.selector.iter();
+        let mut subject = SubjectOrPseudoElement::Yes;
+        if self.bucket_matches == BucketMatches::Subject {
+            (element, iter) = Self::iter_past_subject(&self.selector, element, context);
+            subject = SubjectOrPseudoElement::No;
+        }
+        matches_complex_selector(iter, &element, context, subject).to_bool(true)
     }
 }
 

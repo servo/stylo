@@ -322,6 +322,7 @@ where
                 Some(d) => d,
                 None => continue,
             };
+
             let slotted_rules = match data.slotted_rules(&self.pseudo_elements) {
                 Some(r) => r,
                 None => continue,

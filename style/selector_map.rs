@@ -16,7 +16,7 @@ use crate::AllocErr;
 use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded, WeakAtom};
 use dom::ElementState;
 use precomputed_hash::PrecomputedHash;
-use selectors::matching::{matches_selector, MatchingContext};
+use selectors::matching::MatchingContext;
 use selectors::parser::{Combinator, Component, SelectorIter};
 use smallvec::SmallVec;
 use std::collections::hash_map;
@@ -104,6 +104,8 @@ impl Hasher for PrecomputedHasher {
 pub trait SelectorMapEntry: Sized + Clone {
     /// Gets the selector we should use to index in the selector map.
     fn selector(&self) -> SelectorIter<'_, SelectorImpl>;
+    /// Notes the bucketing decision in the entry.
+    fn set_bucket_matches(&mut self, _: BucketMatches) {}
 }
 
 /// Map element data to selector-providing objects for which the last simple
@@ -352,13 +354,7 @@ impl SelectorMap<Rule> {
     {
         for rule in rules {
             let scope_proximity = if rule.scope_condition_id == ScopeConditionId::none() {
-                if !matches_selector(
-                    &rule.selector,
-                    0,
-                    Some(&rule.hashes),
-                    &element,
-                    matching_context,
-                ) {
+                if !rule.matches_selector(element, matching_context) {
                     continue;
                 }
                 ScopeProximity::infinity()
@@ -392,13 +388,14 @@ impl SelectorMap<Rule> {
 
 impl<T: SelectorMapEntry> SelectorMap<T> {
     /// Inserts an entry into the correct bucket(s).
-    pub fn insert(&mut self, entry: T, quirks_mode: QuirksMode) -> Result<(), AllocErr> {
+    pub fn insert(&mut self, mut entry: T, quirks_mode: QuirksMode) -> Result<(), AllocErr> {
         self.count += 1;
 
         // NOTE(emilio): It'd be nice for this to be a separate function, but
         // then the compiler can't reason about the lifetime dependency between
         // `entry` and `bucket`, and would force us to clone the rule in the
         // common path.
+        let mut bucket_matches = BucketMatches::Full;
         macro_rules! insert_into_bucket {
             ($entry:ident, $bucket:expr) => {{
                 let vec = match $bucket {
@@ -436,7 +433,9 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
                             hash.try_reserve(1)?;
                             let vec = hash.entry(lower_name.clone()).or_default();
                             vec.try_reserve(1)?;
-                            vec.push($entry.clone());
+                            let mut entry = $entry.clone();
+                            entry.set_bucket_matches(bucket_matches);
+                            vec.push(entry);
                         }
                         hash.try_reserve(1)?;
                         hash.entry(name.clone()).or_default()
@@ -449,13 +448,20 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
                     Bucket::Universal => &mut self.other,
                 };
                 vec.try_reserve(1)?;
+                $entry.set_bucket_matches(bucket_matches);
                 vec.push($entry);
             }};
         }
 
         let bucket = {
             let mut disjoint_buckets = SmallVec::new();
-            let bucket = find_bucket(entry.selector(), &mut disjoint_buckets);
+            let bucket = find_bucket(
+                entry.selector(),
+                quirks_mode,
+                &mut disjoint_buckets,
+                &mut bucket_matches,
+                /* nested = */ false,
+            );
 
             // See if inserting this selector in multiple entries in the
             // selector map would be worth it. Consider a case like:
@@ -478,7 +484,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
                     .all(|b| b.more_specific_than(&bucket))
             {
                 for bucket in &disjoint_buckets {
-                    let entry = entry.clone();
+                    let mut entry = entry.clone();
                     insert_into_bucket!(entry, *bucket);
                 }
                 return Ok(());
@@ -729,32 +735,75 @@ impl<'a> Bucket<'a> {
 
 type DisjointBuckets<'a> = SmallVec<[Bucket<'a>; 5]>;
 
+/// Whether our bucket is known to match our full selector, the subject part, or nothing.
+#[derive(Copy, Clone, Debug, PartialEq, MallocSizeOf)]
+pub enum BucketMatches {
+    /// Full selector is known-matching.
+    Full,
+    /// The subject is known-matching.
+    Subject,
+    /// Nothing is known-matching.
+    Unknown,
+}
+
 fn specific_bucket_for<'a>(
     component: &'a Component<SelectorImpl>,
+    quirks_mode: QuirksMode,
     disjoint_buckets: &mut DisjointBuckets<'a>,
+    bucket_matches: &mut BucketMatches,
+    nested: bool,
 ) -> Bucket<'a> {
     match *component {
         Component::Root => Bucket::Root,
-        Component::ID(ref id) => Bucket::ID(id),
-        Component::Class(ref class) => Bucket::Class(class),
-        Component::AttributeInNoNamespace { ref local_name, .. } => Bucket::Attribute {
-            name: local_name,
-            lower_name: local_name,
+        Component::ID(ref id) => {
+            if quirks_mode == QuirksMode::Quirks {
+                // Lookup is case-insensitive, we still need to match the real thing.
+                *bucket_matches = BucketMatches::Unknown;
+            }
+            Bucket::ID(id)
+        },
+        Component::Class(ref class) => {
+            if quirks_mode == QuirksMode::Quirks {
+                // Lookup is case-insensitive, we still need to match the real thing.
+                *bucket_matches = BucketMatches::Unknown;
+            }
+            Bucket::Class(class)
+        },
+        Component::AttributeInNoNamespace { ref local_name, .. } => {
+            // Depends on the attribute value, or might have namespaced attributes (ugh!).
+            *bucket_matches = BucketMatches::Unknown;
+            Bucket::Attribute {
+                name: local_name,
+                lower_name: local_name,
+            }
         },
         Component::AttributeInNoNamespaceExists {
             ref local_name,
             ref local_name_lower,
-        } => Bucket::Attribute {
-            name: local_name,
-            lower_name: local_name_lower,
+        } => {
+            // Might have namespaced attributes (ugh!).
+            *bucket_matches = BucketMatches::Unknown;
+            Bucket::Attribute {
+                name: local_name,
+                lower_name: local_name_lower,
+            }
         },
-        Component::AttributeOther(ref selector) => Bucket::Attribute {
-            name: &selector.local_name,
-            lower_name: &selector.local_name_lower,
+        Component::AttributeOther(ref selector) => {
+            // Depends on the attribute value, or might have namespaced attributes (ugh!).
+            *bucket_matches = BucketMatches::Unknown;
+            Bucket::Attribute {
+                name: &selector.local_name,
+                lower_name: &selector.local_name_lower,
+            }
         },
-        Component::LocalName(ref selector) => Bucket::LocalName {
-            name: &selector.name,
-            lower_name: &selector.lower_name,
+        Component::LocalName(ref selector) => {
+            if selector.name != selector.lower_name {
+                *bucket_matches = BucketMatches::Unknown;
+            }
+            Bucket::LocalName {
+                name: &selector.name,
+                lower_name: &selector.lower_name,
+            }
         },
         Component::Namespace(_, ref url) | Component::DefaultNamespace(ref url) => {
             Bucket::Namespace(url)
@@ -777,14 +826,55 @@ fn specific_bucket_for<'a>(
         //
         // So inserting `span` in the rule hash makes sense since we want to
         // match the slotted <span>.
-        Component::Slotted(ref selector) => find_bucket(selector.iter(), disjoint_buckets),
-        Component::Host(Some(ref selector)) => find_bucket(selector.iter(), disjoint_buckets),
+        Component::Slotted(ref selector) => {
+            // We need to set unknown here because <slot> still shouldn't match... We could avoid
+            // looking up slotted rules for <slot> elements instead.
+            *bucket_matches = BucketMatches::Unknown;
+            find_bucket(
+                selector.iter(),
+                quirks_mode,
+                disjoint_buckets,
+                bucket_matches,
+                /* nested = */ true,
+            )
+        },
+        Component::Host(ref selector) => {
+            if let Some(selector) = selector {
+                find_bucket(
+                    selector.iter(),
+                    quirks_mode,
+                    disjoint_buckets,
+                    bucket_matches,
+                    /* nested = */ true,
+                )
+            } else {
+                // :host rules are bucketed, so we can leave bucket_matches as-is.
+                Bucket::Universal
+            }
+        },
         Component::Is(ref list) | Component::Where(ref list) => {
             if list.len() == 1 {
-                find_bucket(list.slice()[0].iter(), disjoint_buckets)
+                find_bucket(
+                    list.slice()[0].iter(),
+                    quirks_mode,
+                    disjoint_buckets,
+                    bucket_matches,
+                    /* nested = */ true,
+                )
             } else {
+                // TODO: Since the is/where() semantics are effectively OR rather than AND, this is
+                // a bit too conservative, we could keep bucket_matches set for some of the disjoint
+                // buckets or so... But then we also need to deal with other special-cases like
+                // :is(:host, #not-host) or so.
+                *bucket_matches = BucketMatches::Unknown;
                 for selector in list.slice() {
-                    let bucket = find_bucket(selector.iter(), disjoint_buckets);
+                    let bucket = find_bucket(
+                        selector.iter(),
+                        quirks_mode,
+                        disjoint_buckets,
+                        bucket_matches,
+                        /* nested = */ true,
+                    );
                     if disjoint_buckets.last() == Some(&bucket) {
                         // It's pretty common to have selectors like:
                         //   input:is([type=foo], [type=bar], ...)
@@ -801,9 +891,28 @@ fn specific_bucket_for<'a>(
                 .state_flag()
                 .intersects(RARE_PSEUDO_CLASS_STATES) =>
         {
+            // We bucket a bunch of pseudo-classes together so we still need to do the matching to
+            // figure out if the specific one is covered...
+            *bucket_matches = BucketMatches::Unknown;
             Bucket::RarePseudoClasses
         },
-        _ => Bucket::Universal,
+        Component::PseudoElement(ref pseudo) => {
+            // Pseudos are covered by bucketing, unless they are functional in which case they share
+            // a map with the other pseudos of their kind, or if they're nested (due to CSS nesting
+            // or so) in which case they never match and we can't skip the subject part.
+            if pseudo.has_argument() || nested {
+                *bucket_matches = BucketMatches::Unknown;
+            }
+            Bucket::Universal
+        },
+        Component::ExplicitUniversalType | Component::ExplicitAnyNamespace => {
+            // The universal selectors, well, always match, so we can leave bucket_matches as-is...
+            Bucket::Universal
+        },
+        _ => {
+            *bucket_matches = BucketMatches::Unknown;
+            Bucket::Universal
+        },
     }
 }
 
@@ -812,18 +921,29 @@ fn specific_bucket_for<'a>(
 ///
 /// It also populates disjoint_buckets with dependencies from nested selectors
 /// with any semantics like :is() and :where().
+///
+/// If the bucket is not guaranteed to cover the whole selector, it will set bucket_matches to
+/// either Unknown or Subject.
 #[inline(always)]
 fn find_bucket<'a>(
     mut iter: SelectorIter<'a, SelectorImpl>,
+    quirks_mode: QuirksMode,
     disjoint_buckets: &mut DisjointBuckets<'a>,
+    bucket_matches: &mut BucketMatches,
+    nested: bool,
 ) -> Bucket<'a> {
     let mut current_bucket = Bucket::Universal;
 
     loop {
         for ss in &mut iter {
-            let new_bucket = specific_bucket_for(ss, disjoint_buckets);
+            let new_bucket =
+                specific_bucket_for(ss, quirks_mode, disjoint_buckets, bucket_matches, nested);
             // NOTE: When presented with the choice of multiple specific selectors, use the
             // rightmost, on the assumption that that's less common, see bug 1829540.
+            if current_bucket != Bucket::Universal {
+                // Selector fits in multiple buckets so need to do selector matching.
+                *bucket_matches = BucketMatches::Unknown;
+            }
             if new_bucket.more_or_equally_specific_than(&current_bucket) {
                 current_bucket = new_bucket;
             }
@@ -831,8 +951,20 @@ fn find_bucket<'a>(
 
         // Effectively, pseudo-elements are ignored, given only state
         // pseudo-classes may appear before them.
-        if iter.next_sequence() != Some(Combinator::PseudoElement) {
-            break;
+        match iter.next_sequence() {
+            None => break,
+            Some(Combinator::PseudoElement) => continue,
+            Some(..) => {
+                // We need to match the combinator.
+                if *bucket_matches != BucketMatches::Unknown {
+                    if nested {
+                        *bucket_matches = BucketMatches::Unknown;
+                    } else {
+                        *bucket_matches = BucketMatches::Subject;
+                    }
+                }
+                break;
+            },
         }
     }
 

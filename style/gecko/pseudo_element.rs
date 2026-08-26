@@ -63,6 +63,9 @@ bitflags! {
         const IS_WRAPPER_ANON_BOX = 1 << 13;
         /// Whether we parse as an element-backed pseudo-element.
         const PARSES_AS_ELEMENT_BACKED = 1 << 14;
+        /// Whether we take an argument. Such pseudo-elements share an `index()` with the other
+        /// pseudo-elements of the same kind, so they can't be told apart by it alone.
+        const HAS_ARGUMENT = 1 << 15;
     }
 }
 
@@ -317,6 +320,12 @@ impl PseudoElement {
     #[inline]
     pub fn is_eager(&self) -> bool {
         self.flags().intersects(PseudoStyleTypeFlags::IS_EAGER)
+    }
+
+    /// Whether this pseudo-element takes an argument.
+    #[inline]
+    pub fn has_argument(&self) -> bool {
+        self.flags().intersects(PseudoStyleTypeFlags::HAS_ARGUMENT)
     }
 
     /// Gets the canonical index of this eagerly-cascaded pseudo-element.

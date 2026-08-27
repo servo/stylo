@@ -13,7 +13,6 @@ use crate::values::{CSSFloat, CustomIdent};
 use crate::{One, Zero};
 use cssparser::Parser;
 use std::fmt::{self, Write};
-use std::usize;
 use style_traits::values::specified::AllowedNumericType;
 use style_traits::{CssString, CssWriter, ParseError, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;

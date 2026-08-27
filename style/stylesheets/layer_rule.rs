@@ -29,12 +29,12 @@ pub struct LayerOrder(u16);
 impl LayerOrder {
     /// The order of the root layer.
     pub const fn root() -> Self {
-        Self(std::u16::MAX - 1)
+        Self(u16::MAX - 1)
     }
 
     /// The order of the style attribute layer.
     pub const fn style_attribute() -> Self {
-        Self(std::u16::MAX)
+        Self(u16::MAX)
     }
 
     /// Returns whether this layer is for the style attribute, which behaves
@@ -56,7 +56,7 @@ impl LayerOrder {
     /// Increment the cascade layer order.
     #[inline]
     pub fn inc(&mut self) {
-        if self.0 != std::u16::MAX - 1 {
+        if self.0 != u16::MAX - 1 {
             self.0 += 1;
         }
     }

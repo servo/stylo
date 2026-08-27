@@ -174,10 +174,10 @@ impl AbsoluteColor {
         let bmax = [1.0, 1.0, 1.0];
 
         // 2. let `tfar` be `infinity` (or some very large number)
-        let mut tfar = std::f32::INFINITY;
+        let mut tfar = f32::INFINITY;
 
         // 3. let `tnear` be `-infinity` (or some very large, negative number)
-        let mut tnear = std::f32::NEG_INFINITY;
+        let mut tnear = f32::NEG_INFINITY;
 
         // 4. let `direction` be a 3-element array
         let mut direction = [0.0, 0.0, 0.0];

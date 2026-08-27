@@ -1131,7 +1131,6 @@ impl ToComputedValue for specified::MathDepth {
 
     fn to_computed_value(&self, cx: &Context) -> i8 {
         use crate::properties::longhands::math_style::SpecifiedValue as MathStyleValue;
-        use std::{cmp, i8};
 
         let int = match self {
             specified::MathDepth::AutoAdd => {
@@ -1149,7 +1148,7 @@ impl ToComputedValue for specified::MathDepth {
             },
             specified::MathDepth::Absolute(abs) => abs.to_computed_value(cx),
         };
-        cmp::min(int, i8::MAX as i32) as i8
+        std::cmp::min(int, i8::MAX as i32) as i8
     }
 
     fn from_computed_value(other: &i8) -> Self {
@@ -1168,8 +1167,7 @@ impl ToAnimatedValue for MathDepth {
 
     #[inline]
     fn from_animated_value(animated: Self::AnimatedValue) -> Self {
-        use std::{cmp, i8};
-        cmp::min(animated, i8::MAX as i32) as i8
+        std::cmp::min(animated, i8::MAX as i32) as i8
     }
 }
 

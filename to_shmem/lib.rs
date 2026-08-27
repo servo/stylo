@@ -15,7 +15,6 @@
 use std::alloc::Layout;
 use std::collections::HashSet;
 use std::ffi::CString;
-use std::isize;
 use std::marker::PhantomData;
 use std::mem::{self, ManuallyDrop};
 use std::num::Wrapping;
@@ -142,7 +141,7 @@ impl SharedMemoryBuilder {
 
         // Reserve space for the padding.
         let start = self.index.checked_add(padding).unwrap();
-        assert!(start <= std::isize::MAX as usize); // for the cast below
+        assert!(start <= isize::MAX as usize); // for the cast below
 
         // Reserve space for the value.
         let end = start.checked_add(layout.size()).unwrap();

@@ -48,7 +48,7 @@ where
         self.name.to_css(dest)?;
         if self.is_reversed {
             dest.write_char(')')?;
-            if self.value == i32::min_value() {
+            if self.value == i32::MIN {
                 return Ok(());
             }
         }

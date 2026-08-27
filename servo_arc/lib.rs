@@ -41,13 +41,12 @@ use std::process;
 use std::ptr;
 use std::sync::atomic;
 use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
-use std::{isize, usize};
 
 /// A soft limit on the amount of references that may be made to an `Arc`.
 ///
 /// Going above this limit will abort your program (although not
 /// necessarily) at _exactly_ `MAX_REFCOUNT + 1` references.
-const MAX_REFCOUNT: usize = (isize::MAX) as usize;
+const MAX_REFCOUNT: usize = isize::MAX as usize;
 
 /// Special refcount value that means the data is not reference counted,
 /// and that the `Arc` is really acting as a read-only static reference.

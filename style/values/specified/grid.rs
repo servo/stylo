@@ -263,7 +263,7 @@ impl Parse for TrackList<LengthPercentage, Integer> {
         }
 
         Ok(TrackList {
-            auto_repeat_index: auto_repeat_index.unwrap_or(std::usize::MAX),
+            auto_repeat_index: auto_repeat_index.unwrap_or(usize::MAX),
             values: values.into(),
             line_names: names.into(),
         })

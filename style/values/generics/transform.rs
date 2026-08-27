@@ -827,7 +827,6 @@ impl<T: ToMatrix> Transform<T> {
         reference_box: Option<&Rect<ComputedLength>>,
     ) -> Result<(Transform3D<CSSFloat>, bool), ()> {
         let cast_3d_transform = |m: Transform3D<f64>| -> Transform3D<CSSFloat> {
-            use std::{f32, f64};
             let cast = |v: f64| v.min(f32::MAX as f64).max(f32::MIN as f64) as f32;
             Transform3D::new(
                 cast(m.m11), cast(m.m12), cast(m.m13), cast(m.m14),

@@ -1283,7 +1283,7 @@ impl ComputedTransformOperation {
             Procedure::Accumulate { count } => Self::AccumulateMatrix {
                 from_list,
                 to_list,
-                count: cmp::min(count, i32::max_value() as u64) as i32,
+                count: cmp::min(count, i32::MAX as u64) as i32,
             },
         })
     }

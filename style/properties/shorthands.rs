@@ -3932,7 +3932,7 @@ pub mod grid_template {
             let template_rows = TrackList {
                 values: values.into(),
                 line_names: line_names.into(),
-                auto_repeat_index: std::usize::MAX,
+                auto_repeat_index: usize::MAX,
             };
 
             let template_cols = if input.try_parse(|i| i.expect_delim('/')).is_ok() {

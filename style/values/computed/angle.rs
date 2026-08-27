@@ -12,7 +12,6 @@ use crate::Zero;
 use std::f64::consts::PI;
 use std::fmt::{self, Write};
 use std::ops::{AddAssign, Neg};
-use std::{f32, f64};
 use style_traits::{CssString, CssWriter, ToCss};
 use thin_vec::ThinVec;
 

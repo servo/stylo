@@ -498,7 +498,7 @@ impl fmt::Display for Atom {
 impl<'a> From<&'a str> for Atom {
     #[inline]
     fn from(string: &str) -> Atom {
-        debug_assert!(string.len() <= u32::max_value() as usize);
+        debug_assert!(string.len() <= u32::MAX as usize);
         unsafe {
             Atom::from_addrefed(Gecko_Atomize(
                 string.as_ptr() as *const _,

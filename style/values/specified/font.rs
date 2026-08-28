@@ -7,6 +7,7 @@
 use crate::context::QuirksMode;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::NumericBaseType;
 use crate::values::computed::font::{FamilyName, FontFamilyList, SingleFontFamily};
 use crate::values::computed::Percentage as ComputedPercentage;
 use crate::values::computed::{font as computed, Length, NonNegativeLength};
@@ -15,7 +16,9 @@ use crate::values::generics::font::{
     self as generics, FeatureTagValue, FontSettings, FontTag, GenericLineHeight, VariationValue,
 };
 use crate::values::generics::NonNegative;
+use crate::values::specified::calc::{Leaf, PercentageContext};
 use crate::values::specified::length::{FontBaseSize, LengthUnit, LineHeightBase, PX_PER_PT};
+use crate::values::specified::number::parse_number_with_clamping_mode;
 use crate::values::specified::{AllowQuirks, Angle, Integer, LengthPercentage};
 use crate::values::specified::{
     NoCalcLength, NonNegativeLengthPercentage, NonNegativeNumber, NonNegativePercentage, Number,
@@ -26,6 +29,7 @@ use cssparser::{match_ignore_ascii_case, Parser, Token};
 #[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps, MallocUnconditionalSizeOf};
 use std::fmt::{self, Write};
+use style_traits::values::specified::AllowedNumericType;
 use style_traits::{CssWriter, KeywordsCollectFn, ParseError};
 use style_traits::{SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 
@@ -1942,6 +1946,69 @@ impl From<MozScriptSizeMultiplier> for f32 {
 /// A specified value for the `line-height` property.
 pub type LineHeight = GenericLineHeight<NonNegativeNumber, NonNegativeLengthPercentage>;
 
+/// Parses a line height <number> value. Percentages in <number>-typed calc expressions
+/// are allowed in the `line-height` property, relative to the computed value of 1em.
+/// https://drafts.csswg.org/css-inline/#line-height-property
+fn parse_line_height_number<'i, 't>(
+    context: &ParserContext,
+    input: &mut Parser<'i, 't>,
+) -> Result<NonNegativeNumber, ParseError> {
+    parse_number_with_clamping_mode(
+        context,
+        input,
+        AllowedNumericType::NonNegative,
+        PercentageContext::allowed_with_hint(NumericBaseType::Length),
+    )
+    .map(NonNegative::<Number>)
+}
+
+impl Parse for LineHeight {
+    fn parse<'i, 't>(
+        context: &ParserContext,
+        input: &mut Parser<'i, 't>,
+    ) -> Result<Self, ParseError> {
+        if let Ok(v) = input.try_parse(|input| parse_line_height_number(context, input)) {
+            return Ok(GenericLineHeight::Number(v));
+        }
+        if let Ok(v) = input.try_parse(|input| NonNegativeLengthPercentage::parse(context, input)) {
+            return Ok(GenericLineHeight::Length(v));
+        }
+        let ident = input.expect_ident()?;
+        match_ignore_ascii_case! { &ident,
+            "normal" => Ok(GenericLineHeight::Normal),
+            _ => Err(ParseError::custom(SelectorParseErrorKind::UnexpectedIdent)),
+        }
+    }
+}
+
+/// Resolves a line-height length into an absolute pixel value, properly applying text
+/// scaling and ensuring any `lh` lengths are resolved against the inherited line-height.
+fn resolve_line_height_length(context: &Context, length: NoCalcLength) -> CSSPixelLength {
+    let result = length.to_computed_value_with_base_size(
+        context,
+        FontBaseSize::CurrentStyle,
+        LineHeightBase::InheritedStyle,
+    );
+    if length.should_zoom_text() {
+        context.maybe_zoom_text(result)
+    } else {
+        result
+    }
+}
+
+/// Maps a line-height calc leaf into a resolved leaf. Percentages are replaced
+/// with equivalent `em` lengths, and all lengths are resolved to absolute lengths.
+fn map_line_height_leaf(context: &Context, leaf: &Leaf) -> Leaf {
+    let length = match leaf {
+        Leaf::Percentage(p) => NoCalcLength::from_em(p.get()),
+        Leaf::Length(l) => *l,
+        _ => return leaf.clone(),
+    };
+    Leaf::Length(NoCalcLength::from_px(
+        resolve_line_height_length(context, length).px(),
+    ))
+}
+
 impl ToComputedValue for LineHeight {
     type ComputedValue = computed::LineHeight;
 
@@ -1950,39 +2017,44 @@ impl ToComputedValue for LineHeight {
         match self {
             GenericLineHeight::Normal => GenericLineHeight::Normal,
             GenericLineHeight::Number(ref number) => {
-                GenericLineHeight::Number(number.to_computed_value(context))
+                let value = match number.as_calc() {
+                    None => number.to_computed_value(context).0,
+                    Some(calc) => {
+                        let resolved = calc
+                            .node
+                            .resolve_map(|leaf| Ok(map_line_height_leaf(context, leaf)));
+                        let value = match resolved {
+                            Ok(Leaf::Number(n)) => n.get(),
+                            _ => {
+                                debug_assert!(
+                                    false,
+                                    "Unexpected LineHeight number calc without resolved number"
+                                );
+                                f32::NAN
+                            },
+                        };
+                        // The `NonNegative` clamping mode ensures that -infinity isn't produced
+                        calc.clamping_mode
+                            .clamp(crate::values::normalize(value).min(f32::MAX))
+                    },
+                };
+                GenericLineHeight::Number(NonNegative(value))
             },
             GenericLineHeight::Length(ref non_negative_lp) => {
                 let result = match non_negative_lp.0 {
-                    LengthPercentage::Length(ref length) if length.length_unit().is_absolute() => {
-                        context.maybe_zoom_text(length.to_computed_value(context))
-                    },
                     LengthPercentage::Length(ref length) => {
-                        // line-height units specifically resolve against parent's
-                        // font and line-height properties, while the rest of font
-                        // relative units still resolve against the element's own
-                        // properties.
-                        length.to_computed_value_with_base_size(
+                        resolve_line_height_length(context, *length)
+                    },
+                    LengthPercentage::Percentage(ref p) => {
+                        resolve_line_height_length(context, NoCalcLength::from_em(p.get()))
+                    },
+                    LengthPercentage::Calc(ref calc) => calc
+                        .to_computed_value_zoomed(
                             context,
                             FontBaseSize::CurrentStyle,
                             LineHeightBase::InheritedStyle,
                         )
-                    },
-                    LengthPercentage::Percentage(ref p) => NoCalcLength::from_em(p.get())
-                        .to_computed_value_with_base_size(
-                            context,
-                            FontBaseSize::CurrentStyle,
-                            LineHeightBase::InheritedStyle,
-                        ),
-                    LengthPercentage::Calc(ref calc) => {
-                        let computed_calc = calc.to_computed_value_zoomed(
-                            context,
-                            FontBaseSize::CurrentStyle,
-                            LineHeightBase::InheritedStyle,
-                        );
-                        let base = context.style().get_font().clone_font_size().computed_size();
-                        computed_calc.resolve(base)
-                    },
+                        .resolve(FontBaseSize::CurrentStyle.resolve(context).computed_size()),
                 };
                 GenericLineHeight::Length(result.into())
             },

@@ -334,6 +334,7 @@ impl<Factor: ToTyped> ToTyped for GenericFontSizeAdjust<Factor> {
     Debug,
     Deserialize,
     MallocSizeOf,
+    Parse,
     PartialEq,
     Serialize,
     SpecifiedValueInfo,

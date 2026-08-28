@@ -243,15 +243,6 @@ impl Number {
         }
     }
 
-    /// Returns the calc tree if this number is a calc expression.
-    #[inline]
-    pub fn as_calc(&self) -> Option<&CalcNumeric> {
-        match self.0.unpack() {
-            Unpacked::Inline(..) => None,
-            Unpacked::Boxed(ref calc) => Some(calc),
-        }
-    }
-
     #[allow(missing_docs)]
     pub fn parse_non_negative(
         context: &ParserContext,
@@ -384,12 +375,6 @@ impl NonNegativeNumber {
     #[inline]
     pub fn get(&self) -> Option<f32> {
         self.0.get()
-    }
-
-    /// Returns the calc tree if this number is a calc expression.
-    #[inline]
-    pub fn as_calc(&self) -> Option<&CalcNumeric> {
-        self.0.as_calc()
     }
 }
 

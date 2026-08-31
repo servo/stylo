@@ -22,6 +22,10 @@ pub mod ${property.ident} {
     #[allow(unused_imports)]
     use crate::properties::{longhands, LonghandId, CSSWideKeyword, PropertyDeclaration};
 
+    /// # Safety
+    ///
+    /// `declaration` must be a declaration of this longhand, since its value is
+    /// read back with `unchecked_value_as`.
     #[allow(unused_variables)]
     pub unsafe fn cascade_property(
         declaration: &PropertyDeclaration,

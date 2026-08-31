@@ -49,14 +49,10 @@ impl PseudoElement {
     /// Whether this pseudo-element is tree pseudo-element.
     #[inline]
     pub fn is_tree_pseudo_element(&self) -> bool {
-        match *self {
-            % for pseudo in PSEUDOS:
-            % if pseudo.name.startswith("-moz-tree-"):
-            ${pseudo_element_variant(pseudo)} => true,
-            % endif
-            % endfor
-            _ => false,
-        }
+        matches!(
+            *self,
+            ${" | ".join(capture(pseudo_element_variant, pseudo) for pseudo in PSEUDOS if pseudo.name.startswith("-moz-tree-"))}
+        )
     }
 
     #[inline]
@@ -274,7 +270,7 @@ impl ToCss for PseudoElement {
                 let mut iter = args.iter();
                 if let Some(first) = iter.next() {
                     dest.write_char('(')?;
-                    serialize_atom_identifier(&first, dest)?;
+                    serialize_atom_identifier(first, dest)?;
                     for item in iter {
                         dest.write_str(", ")?;
                         serialize_atom_identifier(item, dest)?;

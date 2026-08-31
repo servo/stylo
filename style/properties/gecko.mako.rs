@@ -57,6 +57,7 @@ impl ComputedValues {
         &self.0
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pseudo: Option<&PseudoElement>,
         custom_properties: ComputedCustomProperties,
@@ -82,7 +83,7 @@ impl ComputedValues {
             % for style_struct in data.style_structs:
             ${style_struct.ident},
             % endfor
-        ).to_outer()
+        ).into_outer()
     }
 
     pub fn default_values(doc: &structs::Document) -> Arc<Self> {
@@ -98,7 +99,7 @@ impl ComputedValues {
             % for style_struct in data.style_structs:
             style_structs::${style_struct.name}::default(doc),
             % endfor
-        ).to_outer()
+        ).into_outer()
     }
 
     /// Converts the computed values to an Arc<> from a reference.
@@ -135,7 +136,7 @@ impl ComputedValues {
     ) -> bool {
         use crate::properties::longhands::display::computed_value::T as Display;
 
-        old_values.map_or(false, |old| {
+        old_values.is_some_and(|old| {
             let old_display_style = old.get_box().clone_display();
             let new_display_style = self.get_box().clone_display();
             old_display_style == Display::None &&
@@ -189,6 +190,7 @@ impl Drop for ComputedValuesInner {
 }
 
 impl ComputedValuesInner {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pseudo: Option<&PseudoElement>,
         custom_properties: ComputedCustomProperties,
@@ -227,8 +229,8 @@ impl ComputedValuesInner {
             pseudo,
             self.custom_properties.clone(),
             self.attribute_references.clone(),
-            self.writing_mode.clone(),
-            self.effective_zoom.clone(),
+            self.writing_mode,
+            self.effective_zoom,
             flags,
             self.rules.clone(),
             if self.visited_style.is_null() {
@@ -239,10 +241,10 @@ impl ComputedValuesInner {
             % for style_struct in data.style_structs:
             unsafe { Arc::from_raw_addrefed(self.${style_struct.gecko_name} as *const _) },
             % endfor
-        ).to_outer()
+        ).into_outer()
     }
 
-    fn to_outer(self) -> Arc<ComputedValues> {
+    fn into_outer(self) -> Arc<ComputedValues> {
         unsafe {
             let mut arc = UniqueArc::<ComputedValues>::new_uninit();
             bindings::Gecko_ComputedStyle_Init(
@@ -803,7 +805,7 @@ fn static_assert() {
         if count != other.${type}_${ident}_count() {
             return false;
         }
-        let iter = self.m${to_camel_case(type)}s.iter().take(count as usize).zip(
+        let iter = self.m${to_camel_case(type)}s.iter().take(count).zip(
             other.m${to_camel_case(type)}s.iter()
         );
         for (ours, others) in iter {
@@ -998,7 +1000,7 @@ fn static_assert() {
         longhands::${ident}::computed_value::List(
             self.${layer_field_name}.mLayers.iter()
                 .take(self.${layer_field_name}.${field_name}Count as usize)
-                .map(|ref layer| {
+                .map(|layer| {
                     % if keyword:
                     match layer.${field_name} {
                         % for value in longhand.keyword.values_for("gecko"):
@@ -1067,7 +1069,7 @@ fn static_assert() {
         longhands::${shorthand}_repeat::computed_value::List(
             self.${image_layers_field}.mLayers.iter()
                 .take(self.${image_layers_field}.mRepeatCount as usize)
-                .map(|ref layer| {
+                .map(|layer| {
                     T(to_servo(layer.mRepeat.mXRepeat), to_servo(layer.mRepeat.mYRepeat))
                 }).collect()
         )
@@ -1333,7 +1335,7 @@ mask-mode mask-repeat mask-clip mask-origin mask-composite mask-position-x mask-
     }
 
     pub fn animations_equals(&self, other: &Self) -> bool {
-        return self.mAnimationNameCount == other.mAnimationNameCount
+        self.mAnimationNameCount == other.mAnimationNameCount
             && self.mAnimationDelayCount == other.mAnimationDelayCount
             && self.mAnimationDirectionCount == other.mAnimationDirectionCount
             && self.mAnimationDurationCount == other.mAnimationDurationCount

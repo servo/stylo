@@ -4168,6 +4168,30 @@ animation_type = "discrete"
 affects = "layout"
 keyword = { values = ["auto", "thin", "none"] }
 
+# Reserves space at each end of a vertical scrollbar.
+[-moz-scrollbar-inset-block]
+type = "ScrollbarInset"
+initial = "computed::ScrollbarInset::zero()"
+struct = "box"
+engine = "gecko"
+animation_type = "discrete"
+enabled_in = "chrome"
+gecko_ffi_name = "mScrollbarInsetBlock"
+spec = "None (Nonstandard Firefox-only property)"
+affects = "layout"
+
+# Reserves space at each end of a horizontal scrollbar.
+[-moz-scrollbar-inset-inline]
+type = "ScrollbarInset"
+initial = "computed::ScrollbarInset::zero()"
+struct = "box"
+engine = "gecko"
+animation_type = "discrete"
+enabled_in = "chrome"
+gecko_ffi_name = "mScrollbarInsetInline"
+spec = "None (Nonstandard Firefox-only property)"
+affects = "layout"
+
 [-moz-window-dragging]
 struct = "ui"
 engine = "gecko"

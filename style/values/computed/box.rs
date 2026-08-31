@@ -10,7 +10,7 @@ use crate::values::computed::length::{LengthPercentage, NonNegativeLength};
 use crate::values::computed::{Context, Integer, Number, ToComputedValue};
 use crate::values::generics::box_::{
     GenericBaselineShift, GenericContainIntrinsicSize, GenericLineClamp, GenericOverflowClipMargin,
-    GenericPerspective,
+    GenericPerspective, GenericScrollbarInset,
 };
 use crate::values::generics::GreaterThanOrEqualToOne;
 use crate::values::specified::box_ as specified;
@@ -30,6 +30,9 @@ pub type BaselineShift = GenericBaselineShift<LengthPercentage>;
 
 /// A computed value for the `overflow-clip-margin` property.
 pub type OverflowClipMargin = GenericOverflowClipMargin<NonNegativeLength>;
+
+/// A computed value for the `-moz-scrollbar-inset-block` / `-inline` properties.
+pub type ScrollbarInset = GenericScrollbarInset<NonNegativeLength>;
 
 /// A computed value for the `contain-intrinsic-size` property.
 pub type ContainIntrinsicSize = GenericContainIntrinsicSize<NonNegativeLength>;

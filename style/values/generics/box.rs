@@ -500,3 +500,53 @@ impl<L: Zero + ToCss> ToCss for OverflowClipMargin<L> {
         Ok(())
     }
 }
+
+/// The two insets of one scrollbar, for the chrome-only
+/// `-moz-scrollbar-inset-block` / `-moz-scrollbar-inset-inline`. Each property
+/// names the axis the scrollbar runs along, so `start` and `end` are the logical
+/// start and end of that axis and flip with the writing mode.
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(C)]
+pub struct GenericScrollbarInset<L> {
+    /// The inset at the logical start of the axis.
+    pub start: L,
+    /// The inset at the logical end of the axis.
+    pub end: L,
+}
+
+pub use self::GenericScrollbarInset as ScrollbarInset;
+
+impl<L: Zero> ScrollbarInset<L> {
+    /// Returns the initial, all-zero value.
+    pub fn zero() -> Self {
+        Self {
+            start: Zero::zero(),
+            end: Zero::zero(),
+        }
+    }
+}
+
+impl<L: PartialEq + ToCss> ToCss for ScrollbarInset<L> {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        self.start.to_css(dest)?;
+        if self.end != self.start {
+            dest.write_char(' ')?;
+            self.end.to_css(dest)?;
+        }
+        Ok(())
+    }
+}

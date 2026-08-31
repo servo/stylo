@@ -290,18 +290,6 @@ impl Parse for TrackList<LengthPercentage, Integer> {
 
 #[cfg(feature = "gecko")]
 #[inline]
-fn allow_grid_template_subgrids() -> bool {
-    true
-}
-
-#[cfg(feature = "servo")]
-#[inline]
-fn allow_grid_template_subgrids() -> bool {
-    false
-}
-
-#[cfg(feature = "gecko")]
-#[inline]
 fn allow_grid_template_masonry() -> bool {
     static_prefs::pref!("layout.css.grid-template-masonry-value.enabled")
 }
@@ -331,10 +319,8 @@ impl GridTemplateComponent<LengthPercentage, Integer> {
         context: &ParserContext,
         input: &mut Parser<'i, 't>,
     ) -> Result<Self, ParseError<'i>> {
-        if allow_grid_template_subgrids() {
-            if let Ok(t) = input.try_parse(|i| LineNameList::parse(context, i)) {
-                return Ok(GridTemplateComponent::Subgrid(Box::new(t)));
-            }
+        if let Ok(t) = input.try_parse(|i| LineNameList::parse(context, i)) {
+            return Ok(GridTemplateComponent::Subgrid(Box::new(t)));
         }
         if allow_grid_template_masonry() {
             if input

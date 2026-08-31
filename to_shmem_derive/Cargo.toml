@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["The Servo Project Developers"]
 license = "MPL-2.0"
 repository = "https://github.com/servo/stylo"
-edition = "2021"
+edition = "2024"
 description = "Allows deriving the to_shmem trait."
 
 [lib]

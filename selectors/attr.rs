@@ -26,7 +26,7 @@ impl<Impl: SelectorImpl> AttrSelectorWithOptionalNamespace<Impl> {
     pub fn namespace(&self) -> Option<NamespaceConstraint<&Impl::NamespaceUrl>> {
         self.namespace.as_ref().map(|ns| match ns {
             NamespaceConstraint::Any => NamespaceConstraint::Any,
-            NamespaceConstraint::Specific((_, ref url)) => NamespaceConstraint::Specific(url),
+            NamespaceConstraint::Specific((_, url)) => NamespaceConstraint::Specific(url),
         })
     }
 }

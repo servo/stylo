@@ -383,10 +383,10 @@ mod bench {
     #[bench]
     fn might_contain_10(b: &mut test::Bencher) {
         let bf = BloomFilter::new();
-        let mut gen = HashGenerator::default();
+        let mut generator = HashGenerator::default();
         b.iter(|| {
             for _ in 0..10 {
-                test::black_box(bf.might_contain_hash(gen.next()));
+                test::black_box(bf.might_contain_hash(generator.next()));
             }
         });
     }
@@ -400,10 +400,10 @@ mod bench {
     #[bench]
     fn insert_10(b: &mut test::Bencher) {
         let mut bf = BloomFilter::new();
-        let mut gen = HashGenerator::default();
+        let mut generator = HashGenerator::default();
         b.iter(|| {
             for _ in 0..10 {
-                test::black_box(bf.insert_hash(gen.next()));
+                test::black_box(bf.insert_hash(generator.next()));
             }
         });
     }
@@ -411,11 +411,11 @@ mod bench {
     #[bench]
     fn remove_10(b: &mut test::Bencher) {
         let mut bf = BloomFilter::new();
-        let mut gen = HashGenerator::default();
+        let mut generator = HashGenerator::default();
         // Note: this will underflow, and that's ok.
         b.iter(|| {
             for _ in 0..10 {
-                bf.remove_hash(gen.next())
+                bf.remove_hash(generator.next())
             }
         });
     }

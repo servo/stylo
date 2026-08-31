@@ -739,7 +739,7 @@ fn collect_ancestor_hashes<Impl: SelectorImpl>(
 ) -> bool {
     loop {
         while let Some(item) = iter.next() {
-            if let Component::Is(ref list) | Component::Where(ref list) = item {
+            if let Component::Is(list) | Component::Where(list) = item {
                 let slice = list.slice();
                 if slice.len() == 1
                     && !collect_ancestor_hashes(slice[0].iter(), quirks_mode, hashes, len)

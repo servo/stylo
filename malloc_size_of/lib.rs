@@ -108,7 +108,7 @@ impl MallocSizeOfOps {
         if MallocSizeOfOps::is_empty(ptr) {
             0
         } else {
-            (self.size_of_op)(ptr as *const c_void)
+            unsafe { (self.size_of_op)(ptr as *const c_void) }
         }
     }
 
@@ -121,7 +121,7 @@ impl MallocSizeOfOps {
     /// must not be empty.
     pub unsafe fn malloc_enclosing_size_of<T>(&self, ptr: *const T) -> usize {
         assert!(!MallocSizeOfOps::is_empty(ptr));
-        (self.enclosing_size_of_op.unwrap())(ptr as *const c_void)
+        unsafe { (self.enclosing_size_of_op.unwrap())(ptr as *const c_void) }
     }
 
     /// Call `have_seen_ptr_op` on `ptr`.
@@ -713,16 +713,16 @@ where
         use selectors::parser::Component;
 
         match self {
-            Component::AttributeOther(ref attr_selector) => attr_selector.size_of(ops),
-            Component::Negation(ref components) => components.unconditional_size_of(ops),
-            Component::NonTSPseudoClass(ref pseudo) => (*pseudo).size_of(ops),
-            Component::Slotted(ref selector) | Component::Host(Some(ref selector)) => {
+            Component::AttributeOther(attr_selector) => attr_selector.size_of(ops),
+            Component::Negation(components) => components.unconditional_size_of(ops),
+            Component::NonTSPseudoClass(pseudo) => (*pseudo).size_of(ops),
+            Component::Slotted(selector) | Component::Host(Some(selector)) => {
                 selector.unconditional_size_of(ops)
             },
-            Component::Is(ref list) | Component::Where(ref list) => list.unconditional_size_of(ops),
-            Component::Has(ref relative_selectors) => relative_selectors.size_of(ops),
-            Component::NthOf(ref nth_of_data) => nth_of_data.size_of(ops),
-            Component::PseudoElement(ref pseudo) => (*pseudo).size_of(ops),
+            Component::Is(list) | Component::Where(list) => list.unconditional_size_of(ops),
+            Component::Has(relative_selectors) => relative_selectors.size_of(ops),
+            Component::NthOf(nth_of_data) => nth_of_data.size_of(ops),
+            Component::PseudoElement(pseudo) => (*pseudo).size_of(ops),
             Component::Combinator(..)
             | Component::ExplicitAnyNamespace
             | Component::ExplicitNoNamespace

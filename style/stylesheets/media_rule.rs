@@ -96,9 +96,7 @@ impl DeepCloneWithLock for CustomMediaCondition {
         match self {
             Self::True => Self::True,
             Self::False => Self::False,
-            Self::MediaList(ref m) => {
-                Self::MediaList(Arc::new(lock.wrap(m.read_with(guard).clone())))
-            },
+            Self::MediaList(m) => Self::MediaList(Arc::new(lock.wrap(m.read_with(guard).clone()))),
         }
     }
 }
@@ -180,7 +178,7 @@ impl<'a> CustomMediaEvaluator<'a> {
         let media = match condition {
             CustomMediaCondition::True => return KleeneValue::True,
             CustomMediaCondition::False => return KleeneValue::False,
-            CustomMediaCondition::MediaList(ref m) => m,
+            CustomMediaCondition::MediaList(m) => m,
         };
         if !self.currently_evaluating.insert(ident.0.clone()) {
             // Found a cycle while evaluating this rule.

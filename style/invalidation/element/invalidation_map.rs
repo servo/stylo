@@ -1256,7 +1256,7 @@ fn add_non_unique_info<C: Collector>(
     // Go through this compound again.
     for ss in selector.iter_from(offset) {
         match ss {
-            Component::LocalName(ref name) => {
+            Component::LocalName(name) => {
                 let dependency = collector.dependency();
                 add_local_name(name.name.clone(), dependency, &mut collector.type_map())?;
                 if name.name != name.lower_name {

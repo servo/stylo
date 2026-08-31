@@ -1190,16 +1190,19 @@ impl EndingShape {
         }
         input.try_parse(|i| {
             let x = Percentage::parse_non_negative(context, i)?;
-            let y = if let Ok(y) = i.try_parse(|i| NonNegativeLengthPercentage::parse(context, i)) {
-                if compat_mode == GradientCompatMode::Modern {
-                    let _ = i.try_parse(|i| i.expect_ident_matching("ellipse"));
-                }
-                y
-            } else {
-                if compat_mode == GradientCompatMode::Modern {
-                    i.expect_ident_matching("ellipse")?;
-                }
-                NonNegativeLengthPercentage::parse(context, i)?
+            let y = match i.try_parse(|i| NonNegativeLengthPercentage::parse(context, i)) {
+                Ok(y) => {
+                    if compat_mode == GradientCompatMode::Modern {
+                        let _ = i.try_parse(|i| i.expect_ident_matching("ellipse"));
+                    }
+                    y
+                },
+                _ => {
+                    if compat_mode == GradientCompatMode::Modern {
+                        i.expect_ident_matching("ellipse")?;
+                    }
+                    NonNegativeLengthPercentage::parse(context, i)?
+                },
             };
             Ok(generic::EndingShape::Ellipse(Ellipse::Radii(
                 NonNegative(x.to_length_percentage()),
@@ -1248,18 +1251,21 @@ impl<T> generic::GradientItem<Color, T> {
 
                 let stop = generic::ColorStop::parse(context, input, parse_position)?;
 
-                if let Ok(multi_position) = input.try_parse(|i| parse_position(context, i)) {
-                    let stop_color = stop.color.clone();
-                    items.push(stop.into_item());
-                    items.push(
-                        generic::ColorStop {
-                            color: stop_color,
-                            position: Some(multi_position),
-                        }
-                        .into_item(),
-                    );
-                } else {
-                    items.push(stop.into_item());
+                match input.try_parse(|i| parse_position(context, i)) {
+                    Ok(multi_position) => {
+                        let stop_color = stop.color.clone();
+                        items.push(stop.into_item());
+                        items.push(
+                            generic::ColorStop {
+                                color: stop_color,
+                                position: Some(multi_position),
+                            }
+                            .into_item(),
+                        );
+                    },
+                    _ => {
+                        items.push(stop.into_item());
+                    },
                 }
 
                 seen_stop = true;

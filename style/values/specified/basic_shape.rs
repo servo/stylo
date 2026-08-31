@@ -600,8 +600,8 @@ impl ToComputedValue for BasicShapeRect {
         use style_traits::values::specified::AllowedNumericType;
 
         match self {
-            Self::Inset(ref inset) => inset.to_computed_value(context),
-            Self::Xywh(ref xywh) => {
+            Self::Inset(inset) => inset.to_computed_value(context),
+            Self::Xywh(xywh) => {
                 // Given `xywh(x y w h)`, construct the equivalent inset() function,
                 // `inset(y calc(100% - x - w) calc(100% - y - h) x)`.
                 //
@@ -627,7 +627,7 @@ impl ToComputedValue for BasicShapeRect {
                     round: xywh.round.to_computed_value(context),
                 }
             },
-            Self::Rect(ref rect) => {
+            Self::Rect(rect) => {
                 // Given `rect(t r b l)`, the equivalent function is
                 // `inset(t calc(100% - r) calc(100% - b) l)`.
                 //

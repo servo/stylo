@@ -67,9 +67,7 @@ where
         Parse: Fn(&ParserContext, &mut Parser) -> Result<T, ParseError>,
     {
         let first = parse(context, input)?;
-        let second = if let Ok(second) = input.try_parse(|i| parse(context, i)) {
-            second
-        } else {
+        let Ok(second) = input.try_parse(|i| parse(context, i)) else {
             // <first>
             return Ok(Self::new(
                 first.clone(),
@@ -78,15 +76,11 @@ where
                 first,
             ));
         };
-        let third = if let Ok(third) = input.try_parse(|i| parse(context, i)) {
-            third
-        } else {
+        let Ok(third) = input.try_parse(|i| parse(context, i)) else {
             // <first> <second>
             return Ok(Self::new(first.clone(), second.clone(), first, second));
         };
-        let fourth = if let Ok(fourth) = input.try_parse(|i| parse(context, i)) {
-            fourth
-        } else {
+        let Ok(fourth) = input.try_parse(|i| parse(context, i)) else {
             // <first> <second> <third>
             return Ok(Self::new(first, second.clone(), third, second));
         };

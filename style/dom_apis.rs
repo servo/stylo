@@ -401,13 +401,13 @@ fn collect_elements_with_id<E, Q, F>(
 
 fn get_attr_name(component: &Component<SelectorImpl>) -> Option<&crate::LocalName> {
     let (name, name_lower) = match component {
-        Component::AttributeInNoNamespace { ref local_name, .. } => return Some(local_name),
+        Component::AttributeInNoNamespace { local_name, .. } => return Some(local_name),
         Component::AttributeInNoNamespaceExists {
-            ref local_name,
-            ref local_name_lower,
+            local_name,
+            local_name_lower,
             ..
         } => (local_name, local_name_lower),
-        Component::AttributeOther(ref attr) => {
+        Component::AttributeOther(attr) => {
             if attr.namespace.is_some() {
                 return None;
             }
@@ -424,11 +424,11 @@ fn get_attr_name(component: &Component<SelectorImpl>) -> Option<&crate::LocalNam
 fn get_id(component: &Component<SelectorImpl>) -> Option<&AtomIdent> {
     use selectors::attr::AttrSelectorOperator;
     Some(match component {
-        Component::ID(ref id) => id,
+        Component::ID(id) => id,
         Component::AttributeInNoNamespace {
-            ref operator,
-            ref local_name,
-            ref value,
+            operator,
+            local_name,
+            value,
             ..
         } => {
             if *local_name != local_name!("id") {

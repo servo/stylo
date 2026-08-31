@@ -522,7 +522,7 @@ impl<'a> Parser<'a> {
     ) -> Result<SpecifiedValueComponent, StyleParseError> {
         let data_type = match component.name() {
             ComponentName::DataType(ty) => ty,
-            ComponentName::Ident(ref name) => {
+            ComponentName::Ident(name) => {
                 let ident = CustomIdent::parse(input, &[])?;
                 if ident != *name {
                     return Err(StyleParseError::custom(

@@ -702,7 +702,9 @@ pub trait TElement:
     /// animation-only dirty descendants bit, and the lazy frame construction
     /// descendants bit.
     unsafe fn clear_descendant_bits(&self) {
-        self.unset_dirty_descendants();
+        unsafe {
+            self.unset_dirty_descendants();
+        }
     }
 
     /// Returns true if this element is a visited link.

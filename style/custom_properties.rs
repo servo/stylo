@@ -1378,12 +1378,10 @@ fn parse_attr_type(input: &mut Parser) -> AttributeType {
     input
         .try_parse(|input| {
             Ok(match input.next()? {
-                Token::Function(ref name) if name.eq_ignore_ascii_case("type") => {
-                    AttributeType::Type(
-                        input.parse_nested_block(SyntaxDescriptor::from_css_parser)?,
-                    )
-                },
-                Token::Ident(ref ident) => {
+                Token::Function(name) if name.eq_ignore_ascii_case("type") => AttributeType::Type(
+                    input.parse_nested_block(SyntaxDescriptor::from_css_parser)?,
+                ),
+                Token::Ident(ident) => {
                     if ident.eq_ignore_ascii_case("raw-string") {
                         AttributeType::RawString
                     } else if let Ok(unit) = AttrUnit::from_ident(ident) {

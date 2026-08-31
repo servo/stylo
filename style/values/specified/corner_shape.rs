@@ -35,10 +35,10 @@ impl SuperellipseArg {
     fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(arg) = input.try_parse(|i| -> Result<SuperellipseArg, ParseError> {
             match i.next()? {
-                Token::Ident(ref ident) if ident.eq_ignore_ascii_case("infinity") => {
+                Token::Ident(ident) if ident.eq_ignore_ascii_case("infinity") => {
                     Ok(SuperellipseArg::Infinity)
                 },
-                Token::Ident(ref ident) if ident.eq_ignore_ascii_case("-infinity") => {
+                Token::Ident(ident) if ident.eq_ignore_ascii_case("-infinity") => {
                     Ok(SuperellipseArg::NegativeInfinity)
                 },
                 _ => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),

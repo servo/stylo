@@ -749,7 +749,9 @@ where
                 // By consequence, any element without data has no descendants with
                 // data.
                 if kid.has_data() {
-                    kid.clear_data();
+                    unsafe {
+                        kid.clear_data();
+                    }
                     parents.push(kid);
                 }
             }
@@ -757,5 +759,7 @@ where
     }
 
     // Make sure not to clear NODE_NEEDS_FRAME on the root.
-    root.clear_descendant_bits();
+    unsafe {
+        root.clear_descendant_bits();
+    }
 }

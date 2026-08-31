@@ -27,8 +27,10 @@ impl<T> UnsafeBox<T> {
     ///
     /// The input should point to a valid `T`.
     pub(super) unsafe fn from_raw(ptr: *mut T) -> Self {
-        Self {
-            inner: ManuallyDrop::new(Box::from_raw(ptr)),
+        unsafe {
+            Self {
+                inner: ManuallyDrop::new(Box::from_raw(ptr)),
+            }
         }
     }
 
@@ -39,8 +41,10 @@ impl<T> UnsafeBox<T> {
     /// There is no refcounting or whatever else in an unsafe box, so this
     /// operation can lead to double frees.
     pub(super) unsafe fn clone(this: &Self) -> Self {
-        Self {
-            inner: ptr::read(&this.inner),
+        unsafe {
+            Self {
+                inner: ptr::read(&this.inner),
+            }
         }
     }
 
@@ -61,7 +65,7 @@ impl<T> UnsafeBox<T> {
     /// Given this doesn't consume the unsafe box itself, this has the same
     /// safety caveats as `ManuallyDrop::drop`.
     pub(super) unsafe fn drop(this: &mut Self) {
-        ManuallyDrop::drop(&mut this.inner)
+        unsafe { ManuallyDrop::drop(&mut this.inner) }
     }
 }
 

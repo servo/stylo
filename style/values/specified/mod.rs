@@ -510,7 +510,7 @@ pub fn parse_namespace(
     input: &mut Parser,
 ) -> Result<(Prefix, ParsedNamespace), ParseError> {
     let ns_prefix = match input.next()? {
-        Token::Ident(ref prefix) => Some(Prefix::from(prefix.as_ref())),
+        Token::Ident(prefix) => Some(Prefix::from(prefix.as_ref())),
         Token::Delim('|') => None,
         _ => return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
     };

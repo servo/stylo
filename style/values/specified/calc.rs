@@ -557,21 +557,21 @@ impl generic::CalcNodeLeaf for Leaf {
 
     fn simplify(&mut self) -> SimplificationResult {
         match self {
-            Leaf::Length(ref mut l) => {
+            Leaf::Length(l) => {
                 if let Some(px) = l.to_px_if_absolute() {
                     *l = NoCalcLength::from_px(px);
                     return SimplificationResult::Simplified;
                 }
             },
-            Leaf::Resolution(ref mut r) => {
+            Leaf::Resolution(r) => {
                 *r = NoCalcResolution::from_dppx(r.dppx());
                 return SimplificationResult::Simplified;
             },
-            Leaf::Time(ref mut t) => {
+            Leaf::Time(t) => {
                 *t = NoCalcTime::from_seconds(t.seconds());
                 return SimplificationResult::Simplified;
             },
-            Leaf::Angle(ref mut a) => {
+            Leaf::Angle(a) => {
                 *a = NoCalcAngle::from_degrees(a.degrees());
                 return SimplificationResult::Simplified;
             },

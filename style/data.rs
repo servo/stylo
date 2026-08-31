@@ -213,7 +213,7 @@ impl ElementStyles {
         });
 
         for pseudo_style in self.pseudos.as_array() {
-            if let Some(ref pseudo_style) = pseudo_style {
+            if let Some(pseudo_style) = pseudo_style {
                 usage = std::cmp::max(usage, usage_from_flags(pseudo_style.flags));
                 // Also check cached lazy pseudos on eager pseudo styles.
                 pseudo_style.each_cached_lazy_pseudo(|style| {
@@ -245,7 +245,7 @@ impl ElementStyles {
         let mut usage = usage_from_flags(primary.flags);
 
         for pseudo_style in self.pseudos.as_array() {
-            if let Some(ref pseudo_style) = pseudo_style {
+            if let Some(pseudo_style) = pseudo_style {
                 usage |= usage_from_flags(pseudo_style.flags);
             }
         }

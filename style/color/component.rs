@@ -130,13 +130,12 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
                 // Try to compute, substitute channels and fold the calc tree in a
                 // single pass. If it resolves to a concrete value, collapse to a
                 // value; otherwise keep the computed (still symbolic) calc tree.
-                if let Ok(value) = node
+                match node
                     .resolve_map(|leaf| Ok(leaf.to_computed_value(context, origin_color)))
                     .and_then(|leaf| ValueType::try_from_leaf(&leaf))
                 {
-                    Self::Value(value)
-                } else {
-                    Self::Calc(Box::new(node.to_computed_value(context, origin_color)))
+                    Ok(value) => Self::Value(value),
+                    Err(..) => Self::Calc(Box::new(node.to_computed_value(context, origin_color))),
                 }
             },
             Self::AlphaOmitted => match origin_color {

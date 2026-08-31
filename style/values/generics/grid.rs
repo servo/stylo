@@ -161,7 +161,9 @@ impl Parse for GridLine<specified::Integer> {
                 }
 
                 is_span = true;
-            } else if let Ok(i) = input.try_parse(|i| specified::Integer::parse(context, i)) {
+                continue;
+            }
+            if let Ok(i) = input.try_parse(|i| specified::Integer::parse(context, i)) {
                 if val_before_span || line_num.is_some() {
                     return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
@@ -171,16 +173,18 @@ impl Parse for GridLine<specified::Integer> {
                 }
 
                 line_num = Some(i);
-            } else if let Ok(name) = input.try_parse(|i| CustomIdent::parse(i, &["auto"])) {
+                continue;
+            }
+            if let Ok(name) = input.try_parse(|i| CustomIdent::parse(i, &["auto"])) {
                 if val_before_span || ident.is_some() {
                     return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
                 // NOTE(emilio): `span` is consumed above, so we only need to
                 // reject `auto`.
                 ident = Some(name);
-            } else {
-                break;
+                continue;
             }
+            break;
         }
 
         if line_num.is_none() && ident.is_none() {

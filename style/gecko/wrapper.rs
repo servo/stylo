@@ -96,7 +96,9 @@ fn elements_with_id<'a, 'le>(
         // GeckoElement<'ld> and *const RawGeckoElement being the same.
         #[allow(dead_code)]
         unsafe fn static_assert() {
-            mem::transmute::<*mut RawGeckoElement, GeckoElement<'static>>(0xbadc0de as *mut _);
+            unsafe {
+                mem::transmute::<*mut RawGeckoElement, GeckoElement<'static>>(0xbadc0de as *mut _);
+            }
         }
 
         mem::transmute(elements)
@@ -199,7 +201,11 @@ impl<'lr> TShadowRoot for GeckoShadowRoot<'lr> {
 
         #[allow(dead_code)]
         unsafe fn static_assert() {
-            mem::transmute::<*const RawGeckoElement, GeckoElement<'static>>(0xbadc0de as *const _);
+            unsafe {
+                mem::transmute::<*const RawGeckoElement, GeckoElement<'static>>(
+                    0xbadc0de as *const _,
+                );
+            }
         }
 
         unsafe { mem::transmute(slice) }
@@ -824,7 +830,7 @@ impl<'le> GeckoElement<'le> {
             "note_explicit_hints: {:?}, restyle_hint={:?}, change_hint={:?}",
             self, restyle_hint, change_hint
         );
-        debug_assert!(bindings::Gecko_IsMainThread());
+        debug_assert!(unsafe { bindings::Gecko_IsMainThread() });
         debug_assert!(
             !(restyle_hint.has_animation_hint() && restyle_hint.has_non_animation_hint()),
             "Animation restyle hints should not appear with non-animation restyle hints"
@@ -836,10 +842,12 @@ impl<'le> GeckoElement<'le> {
         };
 
         // Propagate the bit up the chain.
-        if restyle_hint.has_animation_hint() {
-            bindings::Gecko_NoteAnimationOnlyDirtyElement(self.0);
-        } else {
-            bindings::Gecko_NoteDirtyElement(self.0);
+        unsafe {
+            if restyle_hint.has_animation_hint() {
+                bindings::Gecko_NoteAnimationOnlyDirtyElement(self.0);
+            } else {
+                bindings::Gecko_NoteDirtyElement(self.0);
+            }
         }
 
         data.hint.insert(restyle_hint);
@@ -1153,7 +1161,9 @@ impl<'le> TElement for GeckoElement<'le> {
             // GeckoNode<'ld> and *const RawGeckoNode being the same.
             #[allow(dead_code)]
             unsafe fn static_assert() {
-                mem::transmute::<*mut RawGeckoNode, GeckoNode<'static>>(0xbadc0de as *mut _);
+                unsafe {
+                    mem::transmute::<*mut RawGeckoNode, GeckoNode<'static>>(0xbadc0de as *mut _);
+                }
             }
             mem::transmute(nodes)
         }
@@ -1353,7 +1363,7 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     unsafe fn unset_dirty_descendants(&self) {
-        self.unset_flags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO)
+        unsafe { self.unset_flags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO) }
     }
 
     #[inline]
@@ -1366,15 +1376,17 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     unsafe fn unset_animation_only_dirty_descendants(&self) {
-        self.unset_flags(ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO)
+        unsafe { self.unset_flags(ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO) }
     }
 
     unsafe fn clear_descendant_bits(&self) {
-        self.unset_flags(
-            ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO
-                | ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO
-                | NODE_DESCENDANTS_NEED_FRAMES,
-        )
+        unsafe {
+            self.unset_flags(
+                ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO
+                    | ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO
+                    | NODE_DESCENDANTS_NEED_FRAMES,
+            )
+        }
     }
 
     fn is_visited_link(&self) -> bool {
@@ -1436,16 +1448,18 @@ impl<'le> TElement for GeckoElement<'le> {
             let _ = self.mutate_data();
         }
         let ptr = self.0.mServoData.get();
-        self.unset_flags(
-            ELEMENT_HAS_SNAPSHOT
-                | ELEMENT_HANDLED_SNAPSHOT
-                | structs::Element_kAllServoDescendantBits
-                | NODE_NEEDS_FRAME,
-        );
-        if !ptr.is_null() {
-            debug!("Dropping ElementData for {:?}", self);
-            let _data = Box::from_raw(self.0.mServoData.get());
-            self.0.mServoData.set(ptr::null_mut());
+        unsafe {
+            self.unset_flags(
+                ELEMENT_HAS_SNAPSHOT
+                    | ELEMENT_HANDLED_SNAPSHOT
+                    | structs::Element_kAllServoDescendantBits
+                    | NODE_NEEDS_FRAME,
+            );
+            if !ptr.is_null() {
+                debug!("Dropping ElementData for {:?}", self);
+                let _data = Box::from_raw(self.0.mServoData.get());
+                self.0.mServoData.set(ptr::null_mut());
+            }
         }
     }
 

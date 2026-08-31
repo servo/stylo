@@ -223,7 +223,7 @@ impl UrlExtraData {
     /// This method doesn't touch refcount.
     #[inline]
     pub unsafe fn from_ptr_ref(ptr: &*mut structs::URLExtraData) -> &Self {
-        mem::transmute(ptr)
+        unsafe { mem::transmute(ptr) }
     }
 
     /// Returns a pointer to the Gecko URLExtraData object.

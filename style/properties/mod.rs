@@ -764,7 +764,7 @@ fn parse_non_custom_property_declaration_value_into(
     let mut starts_with_curly_block = false;
     if let Ok(token) = input.next() {
         match token {
-            cssparser::Token::Ident(ref ident) => match CSSWideKeyword::from_ident(ident) {
+            cssparser::Token::Ident(ident) => match CSSWideKeyword::from_ident(ident) {
                 Ok(wk) => {
                     if input.expect_exhausted().is_ok() {
                         return Ok(parsed_wide_keyword(declarations, wk));
@@ -1236,8 +1236,10 @@ impl IndexedId for PrioritaryPropertyId {
 
     #[inline(always)]
     unsafe fn from_index_release_unchecked(index: usize) -> Self {
-        debug_assert!(index < Self::COUNT);
-        std::mem::transmute(index as u8)
+        unsafe {
+            debug_assert!(index < Self::COUNT);
+            std::mem::transmute(index as u8)
+        }
     }
 
     #[inline(always)]
@@ -1251,8 +1253,10 @@ impl IndexedId for LonghandId {
 
     #[inline(always)]
     unsafe fn from_index_release_unchecked(index: usize) -> Self {
-        debug_assert!(index < Self::COUNT);
-        std::mem::transmute(index as u16)
+        unsafe {
+            debug_assert!(index < Self::COUNT);
+            std::mem::transmute(index as u16)
+        }
     }
 
     #[inline(always)]

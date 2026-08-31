@@ -27,14 +27,18 @@ use servo_arc::Arc;
 
 macro_rules! impl_simple_arc_ffi {
     ($ty:ty, $addref:ident, $release:ident) => {
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $addref(obj: *const $ty) {
-            std::mem::forget(Arc::from_raw_addrefed(obj));
+            unsafe {
+                std::mem::forget(Arc::from_raw_addrefed(obj));
+            }
         }
 
-        #[no_mangle]
+        #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $release(obj: *const $ty) {
-            let _ = Arc::from_raw(obj);
+            unsafe {
+                let _ = Arc::from_raw(obj);
+            }
         }
     };
 }

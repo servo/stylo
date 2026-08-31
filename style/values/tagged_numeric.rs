@@ -87,13 +87,15 @@ impl<T: Copy, N: Copy, B> NumericUnion<T, N, B> {
     #[inline]
     unsafe fn boxed_ptr(&self) -> *mut B {
         debug_assert!(self.is_boxed());
-        #[cfg(not(all(target_endian = "big", target_pointer_width = "64")))]
-        {
-            self.0.boxed.ptr as *mut _
-        }
-        #[cfg(all(target_endian = "big", target_pointer_width = "64"))]
-        {
-            self.0.boxed.ptr.swap_bytes() as *mut _
+        unsafe {
+            #[cfg(not(all(target_endian = "big", target_pointer_width = "64")))]
+            {
+                self.0.boxed.ptr as *mut _
+            }
+            #[cfg(all(target_endian = "big", target_pointer_width = "64"))]
+            {
+                self.0.boxed.ptr.swap_bytes() as *mut _
+            }
         }
     }
 

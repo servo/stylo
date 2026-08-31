@@ -38,25 +38,27 @@ unsafe fn ptr<T>(attr: &structs::nsAttrValue) -> *const T {
 
 #[inline(always)]
 unsafe fn get_class_or_part_from_attr(attr: &structs::nsAttrValue) -> Class<'_> {
-    debug_assert!(bindings::Gecko_AssertClassAttrValueIsSane(attr));
+    debug_assert!(unsafe { bindings::Gecko_AssertClassAttrValueIsSane(attr) });
     let base_type = base_type(attr);
     if base_type == structs::nsAttrValue_ValueBaseType_eAtomBase {
-        return Class::One(&*ptr::<nsAtom>(attr));
+        return Class::One(unsafe { &*ptr::<nsAtom>(attr) });
     }
     if base_type == structs::nsAttrValue_ValueBaseType_eOtherBase {
-        let container = ptr::<structs::MiscContainer>(attr);
-        debug_assert_eq!(
-            (*container).mType,
-            structs::nsAttrValue_ValueType_eAtomArray
-        );
-        let atom_array: *const _ = *(*container)
-            .__bindgen_anon_1
-            .mValue
-            .as_ref()
-            .__bindgen_anon_1
-            .mAtomArray
-            .as_ref();
-        return Class::More(&*atom_array);
+        unsafe {
+            let container = ptr::<structs::MiscContainer>(attr);
+            debug_assert_eq!(
+                (*container).mType,
+                structs::nsAttrValue_ValueType_eAtomArray
+            );
+            let atom_array: *const _ = *(*container)
+                .__bindgen_anon_1
+                .mValue
+                .as_ref()
+                .__bindgen_anon_1
+                .mAtomArray
+                .as_ref();
+            return Class::More(&*atom_array);
+        }
     }
     debug_assert_eq!(base_type, structs::nsAttrValue_ValueBaseType_eStringBase);
     Class::None
@@ -68,7 +70,7 @@ unsafe fn get_id_from_attr(attr: &structs::nsAttrValue) -> &WeakAtom {
         base_type(attr),
         structs::nsAttrValue_ValueBaseType_eAtomBase
     );
-    WeakAtom::new(ptr::<nsAtom>(attr))
+    unsafe { WeakAtom::new(ptr::<nsAtom>(attr)) }
 }
 
 impl structs::nsAttrName {
@@ -80,7 +82,7 @@ impl structs::nsAttrName {
     #[inline]
     unsafe fn as_nodeinfo(&self) -> &structs::NodeInfo {
         debug_assert!(self.is_nodeinfo());
-        &*((self.mBits & !1) as *const structs::NodeInfo)
+        unsafe { &*((self.mBits & !1) as *const structs::NodeInfo) }
     }
 
     #[inline]

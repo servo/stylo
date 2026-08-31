@@ -190,7 +190,7 @@ impl Descriptor {
         let mut types = DependentDataTypes::empty();
         for component in self.components.iter() {
             let t = match &component.name {
-                ComponentName::DataType(ref t) => t,
+                ComponentName::DataType(t) => t,
                 ComponentName::Ident(_) => continue,
             };
             types.insert(t.dependent_types());

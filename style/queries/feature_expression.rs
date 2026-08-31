@@ -224,7 +224,7 @@ impl QueryFeatureExpressionKind {
                 ref right,
             } => {
                 debug_assert!(left.is_some() || right.is_some());
-                if let Some((ref op, ref value)) = left {
+                if let Some((op, value)) = left {
                     let value = compute(value);
                     let cmp = match value.partial_cmp(&context_value) {
                         Some(c) => c,
@@ -234,7 +234,7 @@ impl QueryFeatureExpressionKind {
                         return false;
                     }
                 }
-                if let Some((ref op, ref value)) = right {
+                if let Some((op, value)) = right {
                     let value = compute(value);
                     let cmp = match context_value.partial_cmp(&value) {
                         Some(c) => c,
@@ -290,14 +290,14 @@ impl ToCss for QueryFeatureExpression {
                 ref left,
                 ref right,
             } => {
-                if let Some((ref op, ref val)) = left {
+                if let Some((op, val)) = left {
                     val.to_css(dest, Some(self))?;
                     dest.write_char(' ')?;
                     op.to_css(dest)?;
                     dest.write_char(' ')?;
                 }
                 self.write_name(dest)?;
-                if let Some((ref op, ref val)) = right {
+                if let Some((op, val)) = right {
                     dest.write_char(' ')?;
                     op.to_css(dest)?;
                     dest.write_char(' ')?;
@@ -800,7 +800,7 @@ impl QueryExpressionValue {
         }
         input.skip_whitespace();
         let start = input.position();
-        if let Ok(Token::Function(ref name)) = input.next() {
+        if let Ok(Token::Function(name)) = input.next() {
             // Helper to parse the function arg and store the complete expression (function
             // name and parenthesized argument) into a CustomVariableValue.
             let parse_func = |input: &mut Parser| -> Result<CustomVariableValue, ParseError> {
@@ -859,9 +859,9 @@ impl ToCss for QueryStyleRange {
     {
         match self {
             Self::StyleRange2 {
-                ref value1,
-                ref op1,
-                ref value2,
+                value1,
+                op1,
+                value2,
             } => {
                 value1.to_css(dest, None)?;
                 dest.write_char(' ')?;
@@ -870,11 +870,11 @@ impl ToCss for QueryStyleRange {
                 value2.to_css(dest, None)
             },
             Self::StyleRange3 {
-                ref value1,
-                ref op1,
-                ref value2,
-                ref op2,
-                ref value3,
+                value1,
+                op1,
+                value2,
+                op2,
+                value3,
             } => {
                 value1.to_css(dest, None)?;
                 dest.write_char(' ')?;
@@ -931,9 +931,9 @@ impl QueryStyleRange {
     ) -> KleeneValue {
         match self {
             QueryStyleRange::StyleRange2 {
-                ref value1,
-                ref op1,
-                ref value2,
+                value1,
+                op1,
+                value2,
             } => Self::compare_values(
                 Self::resolve_value(
                     value1,
@@ -954,11 +954,11 @@ impl QueryStyleRange {
             .into(),
 
             QueryStyleRange::StyleRange3 {
-                ref value1,
-                ref op1,
-                ref value2,
-                ref op2,
-                ref value3,
+                value1,
+                op1,
+                value2,
+                op2,
+                value3,
             } => {
                 let v1 = Self::resolve_value(
                     value1,

@@ -418,7 +418,7 @@ impl ScopeSubjectMap {
                         .insert(local_name.lower_name.clone(), ());
                     false
                 },
-                Component::Is(ref list) | Component::Where(ref list) => {
+                Component::Is(list) | Component::Where(list) => {
                     self.add_selector_list(list, quirks_mode)
                 },
                 _ => true,
@@ -487,9 +487,7 @@ pub fn scope_selector_list_is_trivial(list: &SelectorList<SelectorImpl>) -> bool
                     | Component::Nth(_)
                     | Component::NthOf(_)
                     | Component::Has(_) => return false,
-                    Component::Is(ref list)
-                    | Component::Where(ref list)
-                    | Component::Negation(ref list) => {
+                    Component::Is(list) | Component::Where(list) | Component::Negation(list) => {
                         if !scope_selector_list_is_trivial(list) {
                             return false;
                         }

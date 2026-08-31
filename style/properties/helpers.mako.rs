@@ -72,7 +72,7 @@ pub mod ${property.ident} {
                                 let specified = Box::new(specified);
                                 % endif
                                 let decl = PropertyDeclaration::${property.camel_case}(specified);
-                                cascade_property(&decl, context);
+                                unsafe { cascade_property(&decl, context) };
                                 context.builder.effective_zoom = old_zoom;
                                 return;
                             }

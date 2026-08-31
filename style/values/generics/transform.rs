@@ -742,7 +742,7 @@ where
             Perspective(ref p) => {
                 let px = match p {
                     PerspectiveFunction::None => f32::INFINITY,
-                    PerspectiveFunction::Length(ref p) => p.to_pixel_length(None)?,
+                    PerspectiveFunction::Length(p) => p.to_pixel_length(None)?,
                 };
                 create_perspective_matrix(px).cast()
             },

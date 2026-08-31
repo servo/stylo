@@ -1180,12 +1180,14 @@ impl<'a> Cascade<'a> {
         declaration: &PropertyDeclaration,
     ) {
         debug_assert!(!longhand_id.is_logical());
-        // We could (and used to) use a pattern match here, but that bloats this
-        // function to over 100K of compiled code!
-        //
-        // To improve i-cache behavior, we outline the individual functions and
-        // use virtual dispatch instead.
-        (CASCADE_PROPERTY[longhand_id as usize])(&declaration, context);
+        unsafe {
+            // We could (and used to) use a pattern match here, but that bloats this
+            // function to over 100K of compiled code!
+            //
+            // To improve i-cache behavior, we outline the individual functions and
+            // use virtual dispatch instead.
+            (CASCADE_PROPERTY[longhand_id as usize])(&declaration, context);
+        }
     }
 
     fn compute_visited_style_if_needed<E>(

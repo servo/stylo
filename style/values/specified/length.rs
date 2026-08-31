@@ -1568,14 +1568,14 @@ impl LengthPercentage {
     pub fn compute_without_context(&self) -> Option<computed::LengthPercentage> {
         use crate::values::normalize;
         match self {
-            Self::Length(ref length) => length
+            Self::Length(length) => length
                 .to_computed_pixel_length_without_context()
                 .map(|v| computed::LengthPercentage::new_length(computed::Length::new(v)))
                 .ok(),
-            Self::Percentage(ref pc) => Some(computed::LengthPercentage::new_percent(
+            Self::Percentage(pc) => Some(computed::LengthPercentage::new_percent(
                 computed::Percentage(normalize(pc.get())),
             )),
-            Self::Calc(ref calc) => calc.compute_without_context(),
+            Self::Calc(calc) => calc.compute_without_context(),
         }
     }
 }

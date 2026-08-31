@@ -173,7 +173,7 @@ where
     }
 
     for pseudo_styles in styles.pseudos.as_array() {
-        let Some(ref styles) = pseudo_styles else {
+        let Some(styles) = pseudo_styles else {
             continue;
         };
         if !check_style(styles) {

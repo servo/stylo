@@ -2016,7 +2016,7 @@ impl ToComputedValue for LineHeight {
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         match self {
             GenericLineHeight::Normal => GenericLineHeight::Normal,
-            GenericLineHeight::Number(ref number) => {
+            GenericLineHeight::Number(number) => {
                 let value = match number.as_calc() {
                     None => number.to_computed_value(context).0,
                     Some(calc) => {
@@ -2040,7 +2040,7 @@ impl ToComputedValue for LineHeight {
                 };
                 GenericLineHeight::Number(NonNegative(value))
             },
-            GenericLineHeight::Length(ref non_negative_lp) => {
+            GenericLineHeight::Length(non_negative_lp) => {
                 let result = match non_negative_lp.0 {
                     LengthPercentage::Length(ref length) => {
                         resolve_line_height_length(context, *length)

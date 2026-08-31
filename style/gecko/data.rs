@@ -54,9 +54,11 @@ impl GeckoStyleSheet {
     /// Create a `GeckoStyleSheet` from a raw `DomStyleSheet` pointer.
     #[inline]
     pub unsafe fn new(s: *const DomStyleSheet) -> Self {
-        debug_assert!(!s.is_null());
-        bindings::Gecko_StyleSheet_AddRef(s);
-        Self::from_addrefed(s)
+        unsafe {
+            debug_assert!(!s.is_null());
+            bindings::Gecko_StyleSheet_AddRef(s);
+            Self::from_addrefed(s)
+        }
     }
 
     /// Create a `GeckoStyleSheet` from a raw `DomStyleSheet` pointer that

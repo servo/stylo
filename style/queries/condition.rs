@@ -203,7 +203,7 @@ impl StyleQuery {
     where
         W: fmt::Write,
     {
-        if let StyleQuery::GeneralEnclosed(ref s) = self {
+        if let StyleQuery::GeneralEnclosed(s) = self {
             dest.write_str(&s)
         } else {
             dest.write_char('(')?;
@@ -773,7 +773,7 @@ impl QueryCondition {
             if let Self::Style(..) = condition {
                 result.insert(FeatureFlags::STYLE);
             }
-            if let Self::Feature(ref f) = condition {
+            if let Self::Feature(f) = condition {
                 result.insert(f.feature_flags())
             }
         });

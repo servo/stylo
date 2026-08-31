@@ -106,8 +106,10 @@ impl<T: RefCounted> RefPtr<T> {
     ///
     /// Call only when the data actually needs releasing.
     pub unsafe fn release(&self) {
-        if !self.ptr.is_null() {
-            (*self.ptr).release();
+        unsafe {
+            if !self.ptr.is_null() {
+                (*self.ptr).release();
+            }
         }
     }
 }
@@ -150,9 +152,11 @@ impl<T: RefCounted> structs::RefPtr<T> {
     /// Safe when called on an aliased pointer because the refcount in that case
     /// needs to be at least two.
     pub unsafe fn set(&mut self, other: &Self) {
-        self.clear();
-        if !other.mRawPtr.is_null() {
-            *self = other.to_safe().forget();
+        unsafe {
+            self.clear();
+            if !other.mRawPtr.is_null() {
+                *self = other.to_safe().forget();
+            }
         }
     }
 
@@ -161,9 +165,11 @@ impl<T: RefCounted> structs::RefPtr<T> {
     ///
     /// `self` must be valid, but can be null.
     pub unsafe fn clear(&mut self) {
-        if !self.mRawPtr.is_null() {
-            (*self.mRawPtr).release();
-            self.mRawPtr = ptr::null_mut();
+        unsafe {
+            if !self.mRawPtr.is_null() {
+                (*self.mRawPtr).release();
+                self.mRawPtr = ptr::null_mut();
+            }
         }
     }
 
@@ -245,7 +251,7 @@ macro_rules! impl_refcount {
 
             #[inline]
             unsafe fn release(&self) {
-                $release(self as *const _ as *mut _)
+                unsafe { $release(self as *const _ as *mut _) }
             }
         }
     };
@@ -279,11 +285,15 @@ impl_threadsafe_refcount!(
 
 #[inline]
 unsafe fn addref_atom(atom: *mut structs::nsAtom) {
-    mem::forget(Atom::from_raw(atom));
+    unsafe {
+        mem::forget(Atom::from_raw(atom));
+    }
 }
 
 #[inline]
 unsafe fn release_atom(atom: *mut structs::nsAtom) {
-    let _ = Atom::from_addrefed(atom);
+    unsafe {
+        let _ = Atom::from_addrefed(atom);
+    }
 }
 impl_threadsafe_refcount!(structs::nsAtom, addref_atom, release_atom);

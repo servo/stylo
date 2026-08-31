@@ -326,19 +326,19 @@ impl NumericType {
     // the remaining context-sensitive cases would need to be added.
 
     /// Matches <length>.
-    #[export_name = "Servo_NumericType_MatchesLength"]
+    #[unsafe(export_name = "Servo_NumericType_MatchesLength")]
     pub extern "C" fn matches_length(&self) -> bool {
         self.only_non_zero_entry_is(NumericBaseType::Length, 1) && self.has_null_percent_hint()
     }
 
     /// Matches <angle>.
-    #[export_name = "Servo_NumericType_MatchesAngle"]
+    #[unsafe(export_name = "Servo_NumericType_MatchesAngle")]
     pub extern "C" fn matches_angle(&self) -> bool {
         self.only_non_zero_entry_is(NumericBaseType::Angle, 1) && self.has_null_percent_hint()
     }
 
     /// Matches <percentage>.
-    #[export_name = "Servo_NumericType_MatchesPercentage"]
+    #[unsafe(export_name = "Servo_NumericType_MatchesPercentage")]
     pub extern "C" fn matches_percentage(&self) -> bool {
         self.only_non_zero_entry_is(NumericBaseType::Percent, 1)
             && (self.has_null_percent_hint()
@@ -346,13 +346,13 @@ impl NumericType {
     }
 
     /// Matches <length-percentage>.
-    #[export_name = "Servo_NumericType_MatchesLengthPercentage"]
+    #[unsafe(export_name = "Servo_NumericType_MatchesLengthPercentage")]
     pub extern "C" fn matches_length_percentage(&self) -> bool {
         self.matches_length_in_percentage_context() || self.matches_percentage()
     }
 
     /// Matches <number>.
-    #[export_name = "Servo_NumericType_MatchesNumber"]
+    #[unsafe(export_name = "Servo_NumericType_MatchesNumber")]
     pub extern "C" fn matches_number(&self) -> bool {
         self.has_no_non_zero_entries() && self.has_null_percent_hint()
     }

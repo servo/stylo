@@ -746,7 +746,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 let divisor_ty = divisor.numeric_type()?;
                 NumericType::add_two_types(&dividend_ty, &divisor_ty)?
             },
-            CalcNode::Sign(ref child) => {
+            CalcNode::Sign(child) => {
                 // sign() always resolves to a number, but we still need to make sure that the
                 // child units make sense.
                 let _ = child.numeric_type()?;
@@ -755,27 +755,27 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             CalcNode::Anchor(..) | CalcNode::AnchorSize(..) => {
                 NumericType::length().with_percent_hint(NumericBaseType::Length)
             },
-            CalcNode::Sin(ref child) | CalcNode::Cos(ref child) | CalcNode::Tan(ref child) => {
+            CalcNode::Sin(child) | CalcNode::Cos(child) | CalcNode::Tan(child) => {
                 let child_ty = child.numeric_type_as_calc_type()?;
                 if child_ty != CalcType::Number && child_ty != CalcType::Angle {
                     return Err(());
                 }
                 NumericType::number()
             },
-            CalcNode::Asin(ref child) | CalcNode::Acos(ref child) | CalcNode::Atan(ref child) => {
+            CalcNode::Asin(child) | CalcNode::Acos(child) | CalcNode::Atan(child) => {
                 if child.numeric_type_as_calc_type()? != CalcType::Number {
                     return Err(());
                 }
                 NumericType::angle()
             },
-            CalcNode::Atan2(ref a, ref b) => {
+            CalcNode::Atan2(a, b) => {
                 // Ensure that the types of a and b can be made consistent
                 let a_ty = a.numeric_type()?;
                 let b_ty = b.numeric_type()?;
                 let _ = NumericType::add_two_types(&a_ty, &b_ty)?;
                 NumericType::angle()
             },
-            CalcNode::Pow(ref a, ref b) => {
+            CalcNode::Pow(a, b) => {
                 let a_ty = a.numeric_type_as_calc_type()?;
                 let b_ty = b.numeric_type_as_calc_type()?;
                 if a_ty != CalcType::Number || b_ty != CalcType::Number {
@@ -783,7 +783,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
                 NumericType::number()
             },
-            CalcNode::Invert(ref c) => {
+            CalcNode::Invert(c) => {
                 if typed_arithmetic_enabled() {
                     let mut ty = c.numeric_type()?;
                     ty.invert();
@@ -795,13 +795,13 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     NumericType::number()
                 }
             },
-            CalcNode::Sqrt(ref c) | CalcNode::Exp(ref c) => {
+            CalcNode::Sqrt(c) | CalcNode::Exp(c) => {
                 if c.numeric_type_as_calc_type()? != CalcType::Number {
                     return Err(());
                 }
                 NumericType::number()
             },
-            CalcNode::Log(ref a, ref b) => {
+            CalcNode::Log(a, b) => {
                 let a_ty = a.numeric_type_as_calc_type()?;
                 let b_ty = match b {
                     Optional::Some(b) => b.numeric_type_as_calc_type()?,
@@ -1444,7 +1444,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 let value = op.apply(dividend, divisor);
                 Ok((value, ty))
             },
-            Self::Sin(ref c) => {
+            Self::Sin(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 let radians = match ty.as_calc_type()? {
                     CalcType::Number => value,
@@ -1453,7 +1453,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 };
                 Ok((radians.sin(), NumericType::number()))
             },
-            Self::Cos(ref c) => {
+            Self::Cos(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 let radians = match ty.as_calc_type()? {
                     CalcType::Number => value,
@@ -1462,7 +1462,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 };
                 Ok((radians.cos(), NumericType::number()))
             },
-            Self::Tan(ref c) => {
+            Self::Tan(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 let radians = match ty.as_calc_type()? {
                     CalcType::Number => value,
@@ -1471,34 +1471,34 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 };
                 Ok((radians.tan(), NumericType::number()))
             },
-            Self::Asin(ref c) => {
+            Self::Asin(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 if !ty.is_number() {
                     return Err(());
                 }
                 Ok((value.asin().to_degrees(), NumericType::angle()))
             },
-            Self::Acos(ref c) => {
+            Self::Acos(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 if !ty.is_number() {
                     return Err(());
                 }
                 Ok((value.acos().to_degrees(), NumericType::angle()))
             },
-            Self::Atan(ref c) => {
+            Self::Atan(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 if !ty.is_number() {
                     return Err(());
                 }
                 Ok((value.atan().to_degrees(), NumericType::angle()))
             },
-            Self::Atan2(ref a, ref b) => {
+            Self::Atan2(a, b) => {
                 let (a, a_ty) = a.resolve_internal(leaf_to_output_fn)?;
                 let (b, b_ty) = b.resolve_internal(leaf_to_output_fn)?;
                 let _ = NumericType::add_two_types(&a_ty, &b_ty)?;
                 Ok((a.atan2(b).to_degrees(), NumericType::angle()))
             },
-            Self::Pow(ref a, ref b) => {
+            Self::Pow(a, b) => {
                 let (a, a_ty) = a.resolve_internal(leaf_to_output_fn)?;
                 let (b, b_ty) = b.resolve_internal(leaf_to_output_fn)?;
                 if !a_ty.is_number() || !b_ty.is_number() {
@@ -1506,7 +1506,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
                 Ok((a.powf(b), NumericType::number()))
             },
-            Self::Sqrt(ref c) => {
+            Self::Sqrt(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 if !ty.is_number() {
                     return Err(());
@@ -1525,13 +1525,13 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 Ok((value.sqrt(), ty))
             },
-            Self::Log(ref a, ref b) => {
+            Self::Log(a, b) => {
                 let (a, a_ty) = a.resolve_internal(leaf_to_output_fn)?;
                 if !a_ty.is_number() {
                     return Err(());
                 }
                 let value = match b {
-                    Optional::Some(ref b) => {
+                    Optional::Some(b) => {
                         let (b, b_ty) = b.resolve_internal(leaf_to_output_fn)?;
                         if !b_ty.is_number() {
                             return Err(());
@@ -1542,27 +1542,27 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 };
                 Ok((value, NumericType::number()))
             },
-            Self::Exp(ref c) => {
+            Self::Exp(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 if !ty.is_number() {
                     return Err(());
                 }
                 Ok((value.exp(), NumericType::number()))
             },
-            Self::Abs(ref c) => {
+            Self::Abs(c) => {
                 let (value, ty) = c.resolve_internal(leaf_to_output_fn)?;
                 Ok((value.abs(), ty))
             },
-            Self::Sign(ref c) => {
+            Self::Sign(c) => {
                 let (value, _) = c.resolve_internal(leaf_to_output_fn)?;
                 let sign = crate::values::calc_sign(value);
                 Ok((sign, NumericType::number()))
             },
             Self::Progress {
                 clamping_mode,
-                ref value,
-                ref start,
-                ref end,
+                value,
+                start,
+                end,
             } => {
                 let (value, value_ty) = value.resolve_internal(leaf_to_output_fn)?;
                 let (start, start_ty) = start.resolve_internal(leaf_to_output_fn)?;
@@ -2251,7 +2251,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 return SimplificationResult::Unchanged;
             },
             Self::Atan2(ref mut a, ref mut b) => {
-                if let (CalcNode::Leaf(ref la), CalcNode::Leaf(ref lb)) = (&**a, &**b) {
+                if let (CalcNode::Leaf(la), CalcNode::Leaf(lb)) = (&**a, &**b) {
                     if la.is_same_unit_as(lb) {
                         if let (Some(a_val), Some(b_val)) =
                             (la.unitless_value(), lb.unitless_value())
@@ -2266,7 +2266,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 return SimplificationResult::Unchanged;
             },
             Self::Pow(ref mut a, ref mut b) => {
-                if let (CalcNode::Leaf(ref la), CalcNode::Leaf(ref lb)) = (&**a, &**b) {
+                if let (CalcNode::Leaf(la), CalcNode::Leaf(lb)) = (&**a, &**b) {
                     if let (Some(a_val), Some(b_val)) = (la.as_number(), lb.as_number()) {
                         let mut result = Self::Leaf(L::new_number(a_val.powf(b_val)));
                         replace_self_with!(&mut result);
@@ -2302,7 +2302,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 if let CalcNode::Leaf(ref la) = **a {
                     if let Some(a_val) = la.as_number() {
                         let folded = match b {
-                            Optional::Some(ref b) => {
+                            &mut Optional::Some(ref b) => {
                                 if let CalcNode::Leaf(ref lb) = **b {
                                     lb.as_number().map(|b_val| a_val.log(b_val))
                                 } else {
@@ -2397,11 +2397,8 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 ref mut start,
                 ref mut end,
             } => {
-                if let (
-                    CalcNode::Leaf(ref value),
-                    CalcNode::Leaf(ref start),
-                    CalcNode::Leaf(ref end),
-                ) = (&**value, &**start, &**end)
+                if let (CalcNode::Leaf(value), CalcNode::Leaf(start), CalcNode::Leaf(end)) =
+                    (&**value, &**start, &**end)
                 {
                     if value.is_same_unit_as(start) && value.is_same_unit_as(end) {
                         if let (Some(value), Some(start), Some(end)) = (
@@ -2707,7 +2704,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             },
             Self::Log(ref a, ref b) => {
                 a.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
-                if let Optional::Some(ref b) = b {
+                if let Optional::Some(b) = b {
                     dest.write_str(", ")?;
                     b.to_css_impl(dest, ArgumentLevel::ArgumentRoot)?;
                 }

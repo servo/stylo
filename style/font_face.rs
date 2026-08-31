@@ -53,7 +53,7 @@ impl Parse for SourceList {
                 Ok(s.ok())
             })?
             .into_iter()
-            .filter_map(|s| s)
+            .flatten()
             .collect::<Vec<Source>>();
         if list.is_empty() {
             Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
@@ -488,8 +488,8 @@ pub fn parse_font_face_block(
             context,
             descriptors: &mut rule.descriptors,
         };
-        let mut iter = RuleBodyParser::new(input, &mut parser);
-        while let Some(declaration) = iter.next() {
+        let iter = RuleBodyParser::new(input, &mut parser);
+        for declaration in iter {
             if let Err((error, slice, location)) = declaration {
                 let error = ContextualParseError::UnsupportedFontFaceDescriptor(slice, error);
                 context.log_css_error(location, error)

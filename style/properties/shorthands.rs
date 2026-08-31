@@ -131,7 +131,7 @@ pub mod border_block {
         let (width, style, color) = super::parse_border(context, input)?;
         Ok(Longhands {
             border_block_start_width: width.clone(),
-            border_block_start_style: style.clone(),
+            border_block_start_style: style,
             border_block_start_color: color.clone(),
             border_block_end_width: width,
             border_block_end_style: style,
@@ -147,9 +147,9 @@ pub mod border_block {
             // FIXME: Should serialize empty if start != end, right?
             super::serialize_directional_border(
                 dest,
-                &self.border_block_start_width,
-                &self.border_block_start_style,
-                &self.border_block_start_color,
+                self.border_block_start_width,
+                self.border_block_start_style,
+                self.border_block_start_color,
             )
         }
     }
@@ -166,7 +166,7 @@ pub mod border_inline {
         let (width, style, color) = super::parse_border(context, input)?;
         Ok(Longhands {
             border_inline_start_width: width.clone(),
-            border_inline_start_style: style.clone(),
+            border_inline_start_style: style,
             border_inline_start_color: color.clone(),
             border_inline_end_width: width,
             border_inline_end_style: style,
@@ -182,9 +182,9 @@ pub mod border_inline {
             // FIXME: Should serialize empty if start != end, right?
             super::serialize_directional_border(
                 dest,
-                &self.border_inline_start_width,
-                &self.border_inline_start_style,
-                &self.border_inline_start_color,
+                self.border_inline_start_width,
+                self.border_inline_start_style,
+                self.border_inline_start_color,
             )
         }
     }
@@ -217,10 +217,10 @@ pub mod border_radius {
             W: fmt::Write,
         {
             let LonghandsToSerialize {
-                border_top_left_radius: &BorderCornerRadius(ref tl),
-                border_top_right_radius: &BorderCornerRadius(ref tr),
-                border_bottom_right_radius: &BorderCornerRadius(ref br),
-                border_bottom_left_radius: &BorderCornerRadius(ref bl),
+                border_top_left_radius: BorderCornerRadius(tl),
+                border_top_right_radius: BorderCornerRadius(tr),
+                border_bottom_right_radius: BorderCornerRadius(br),
+                border_bottom_left_radius: BorderCornerRadius(bl),
             } = *self;
 
             let widths = Rect::new(tl.width(), tr.width(), br.width(), bl.width());
@@ -1432,7 +1432,7 @@ pub mod place_items {
         let align = ItemPlacement::parse_block(context, input)?;
         let justify = input
             .try_parse(|input| ItemPlacement::parse_inline(context, input))
-            .unwrap_or_else(|_| align.clone());
+            .unwrap_or(align);
 
         Ok(expanded! {
             align_items: align,
@@ -2440,10 +2440,10 @@ pub mod background {
                     }
                 }
 
-                if i == len - 1 {
-                    if *self.background_color != background_color::get_initial_specified_value() {
-                        writer.item(self.background_color)?;
-                    }
+                if i == len - 1
+                    && *self.background_color != background_color::get_initial_specified_value()
+                {
+                    writer.item(self.background_color)?;
                 }
 
                 if !writer.has_written() {
@@ -2521,14 +2521,13 @@ pub mod font {
             }
             try_parse_one!(context, input, style, font_style::parse);
             try_parse_one!(context, input, weight, font_weight::parse);
-            if variant_caps.is_none() {
-                if input
+            if variant_caps.is_none()
+                && input
                     .try_parse(|input| input.expect_ident_matching("small-caps"))
                     .is_ok()
-                {
-                    variant_caps = Some(font_variant_caps::SpecifiedValue::SmallCaps);
-                    continue;
-                }
+            {
+                variant_caps = Some(font_variant_caps::SpecifiedValue::SmallCaps);
+                continue;
             }
             try_parse_one!(input, width, FontWidthKeyword::parse);
             size = FontSize::parse(context, input)?;
@@ -2944,9 +2943,9 @@ pub mod font_synthesis {
         let mut small_caps = FontSynthesis::None;
         let mut position = FontSynthesis::None;
 
-        if !input
+        if input
             .try_parse(|input| input.expect_ident_matching("none"))
-            .is_ok()
+            .is_err()
         {
             let mut has_custom_value = false;
             while !input.is_exhausted() {
@@ -3421,19 +3420,19 @@ pub mod animation {
             // if any of them are not the initial value.
             if self
                 .animation_timeline
-                .map_or(false, |v| v.0.len() != 1 || !v.0[0].is_auto())
+                .is_some_and(|v| v.0.len() != 1 || !v.0[0].is_auto())
             {
                 return Ok(());
             }
             if self
                 .animation_range_start
-                .map_or(false, |v| v.0.len() != 1 || !v.0[0].0.is_normal())
+                .is_some_and(|v| v.0.len() != 1 || !v.0[0].0.is_normal())
             {
                 return Ok(());
             }
             if self
                 .animation_range_end
-                .map_or(false, |v| v.0.len() != 1 || !v.0[0].0.is_normal())
+                .is_some_and(|v| v.0.len() != 1 || !v.0[0].0.is_normal())
             {
                 return Ok(());
             }
@@ -3907,7 +3906,7 @@ pub mod grid_template {
                     Ok(()) => {
                         if let Ok(v) = more_names {
                             let mut names_vec = names.into_vec();
-                            names_vec.extend(v.into_iter());
+                            names_vec.extend(v);
                             names = names_vec.into();
                         }
                         line_names.push(names);

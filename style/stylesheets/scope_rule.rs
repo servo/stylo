@@ -46,7 +46,7 @@ impl DeepCloneWithLock for ScopeRule {
         Self {
             bounds: self.bounds.clone(),
             rules: Arc::new(lock.wrap(rules.deep_clone_with_lock(lock, guard))),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }
@@ -355,7 +355,7 @@ where
                 }
             }
         }
-        return false;
+        false
     })
 }
 
@@ -393,8 +393,8 @@ impl ScopeSubjectMap {
 
     fn add_selector(&mut self, selector: &Selector<SelectorImpl>, quirks_mode: QuirksMode) -> bool {
         let mut is_any = true;
-        let mut iter = selector.iter();
-        while let Some(c) = iter.next() {
+        let iter = selector.iter();
+        for c in iter {
             let component_any = match c {
                 Component::Class(cls) => {
                     match self.buckets.classes.try_entry(cls.0.clone(), quirks_mode) {
@@ -481,7 +481,7 @@ pub fn scope_selector_list_is_trivial(list: &SelectorList<SelectorImpl>) -> bool
         //   requires re-plumbing what we pass around for scope roots.
         let mut iter = selector.iter();
         loop {
-            while let Some(c) = iter.next() {
+            for c in iter.by_ref() {
                 match c {
                     Component::ID(_)
                     | Component::Nth(_)
@@ -507,5 +507,5 @@ pub fn scope_selector_list_is_trivial(list: &SelectorList<SelectorImpl>) -> bool
         }
     }
 
-    list.slice().iter().all(|s| scope_selector_is_trivial(s))
+    list.slice().iter().all(scope_selector_is_trivial)
 }

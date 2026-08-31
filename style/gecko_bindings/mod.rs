@@ -17,7 +17,13 @@
     non_upper_case_globals,
     missing_docs,
     unnecessary_transmutes,
-    unsafe_op_in_unsafe_fn
+    unsafe_op_in_unsafe_fn,
+    clippy::doc_overindented_list_items,
+    clippy::missing_safety_doc,
+    clippy::ptr_offset_with_cast,
+    clippy::too_many_arguments,
+    clippy::transmute_int_to_bool,
+    clippy::useless_transmute
 )]
 pub mod structs {
     include!(concat!(env!("OUT_DIR"), "/gecko/structs.rs"));

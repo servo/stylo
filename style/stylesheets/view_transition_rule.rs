@@ -37,9 +37,9 @@ impl ViewTransitionRule {
             context,
             descriptors: &mut rule.descriptors,
         };
-        let mut iter = RuleBodyParser::new(input, &mut parser);
+        let iter = RuleBodyParser::new(input, &mut parser);
 
-        while let Some(declaration) = iter.next() {
+        for declaration in iter {
             if let Err((error, slice, location)) = declaration {
                 let error = ContextualParseError::UnsupportedViewTransitionDescriptor(slice, error);
                 context.log_css_error(location, error);

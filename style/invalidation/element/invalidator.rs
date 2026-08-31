@@ -499,13 +499,8 @@ impl SelectorVisitor for NegationScopeVisitor {
     }
 
     fn visit_simple_selector(&mut self, component: &Component<Self::Impl>) -> bool {
-        if self.in_negation {
-            match component {
-                Component::Scope => {
-                    self.found_scope_in_negation = true;
-                },
-                _ => {},
-            }
+        if self.in_negation && component == &Component::Scope {
+            self.found_scope_in_negation = true;
         }
         true
     }
@@ -744,13 +739,6 @@ where
     ) -> bool {
         let mut sibling_invalidations = InvalidationVector::new();
 
-        let result = self.invalidate_child(
-            child,
-            invalidations,
-            &mut sibling_invalidations,
-            DescendantInvalidationKind::Dom,
-        );
-
         // Roots of NAC subtrees can indeed generate sibling invalidations, but
         // they can be just ignored, since they have no siblings.
         //
@@ -758,7 +746,12 @@ where
         // matching due to this being NAC, like those coming from document
         // rules, but we overinvalidate instead of checking this.
 
-        result
+        self.invalidate_child(
+            child,
+            invalidations,
+            &mut sibling_invalidations,
+            DescendantInvalidationKind::Dom,
+        )
     }
 
     /// Invalidate a child and recurse down invalidating its descendants if
@@ -1217,7 +1210,7 @@ where
                 ));
             }
         }
-        return (result, next_invalidations);
+        (result, next_invalidations)
     }
 
     /// Processes a given invalidation, potentially invalidating the style of

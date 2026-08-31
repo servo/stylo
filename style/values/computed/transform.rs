@@ -51,7 +51,7 @@ pub type Matrix = generic::Matrix<Number>;
 
 // we rustfmt_skip here because we want the matrices to look like
 // matrices instead of being split across lines
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl Matrix3D {
     /// Get an identity matrix
     #[inline]
@@ -329,7 +329,7 @@ impl Matrix3D {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl Matrix {
     #[inline]
     /// Get an identity matrix
@@ -343,7 +343,7 @@ impl Matrix {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl From<Matrix> for Matrix3D {
     fn from(m: Matrix) -> Self {
         Self {
@@ -355,7 +355,7 @@ impl From<Matrix> for Matrix3D {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 impl From<Transform3D<CSSFloat>> for Matrix3D {
     #[inline]
     fn from(m: Transform3D<CSSFloat>) -> Self {
@@ -396,7 +396,7 @@ impl TransformOperation {
                 generic::TransformOperation::Translate3D(
                     LengthPercentage::zero(),
                     LengthPercentage::zero(),
-                    z.clone(),
+                    *z,
                 )
             },
             _ => unreachable!(),
@@ -411,13 +411,13 @@ impl TransformOperation {
             generic::TransformOperation::Rotate3D(..) => self.clone(),
             generic::TransformOperation::RotateZ(ref angle)
             | generic::TransformOperation::Rotate(ref angle) => {
-                generic::TransformOperation::Rotate3D(0., 0., 1., angle.clone())
+                generic::TransformOperation::Rotate3D(0., 0., 1., *angle)
             },
             generic::TransformOperation::RotateX(ref angle) => {
-                generic::TransformOperation::Rotate3D(1., 0., 0., angle.clone())
+                generic::TransformOperation::Rotate3D(1., 0., 0., *angle)
             },
             generic::TransformOperation::RotateY(ref angle) => {
-                generic::TransformOperation::Rotate3D(0., 1., 0., angle.clone())
+                generic::TransformOperation::Rotate3D(0., 1., 0., *angle)
             },
             _ => unreachable!(),
         }

@@ -284,14 +284,12 @@ impl RuleTree {
                     );
                     *important_rules_changed = true;
                 }
-            } else {
-                if pdb.read_with(level.guard(guards)).any_normal() {
-                    current = current.ensure_child(
-                        self.root(),
-                        StyleSource::from_declarations(pdb.clone_arc()),
-                        cascade_priority,
-                    );
-                }
+            } else if pdb.read_with(level.guard(guards)).any_normal() {
+                current = current.ensure_child(
+                    self.root(),
+                    StyleSource::from_declarations(pdb.clone_arc()),
+                    cascade_priority,
+                );
             }
         }
 
@@ -422,9 +420,8 @@ impl<'a> Iterator for SelfAndAncestors<'a> {
     type Item = &'a StrongRuleNode;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.current.map(|node| {
+        self.current.inspect(|node| {
             self.current = node.parent();
-            node
         })
     }
 }

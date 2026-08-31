@@ -306,7 +306,7 @@ fn style_or_page_rule_to_css(
     let has_declarations = !declaration_block.declarations().is_empty();
 
     // Step 3
-    if let Some(ref rules) = rules {
+    if let Some(rules) = rules {
         let rules = rules.read_with(guard);
         // Step 6 (here because it's more convenient)
         if !rules.is_empty() {
@@ -737,11 +737,11 @@ impl CssRule {
         let namespaces = &parent_stylesheet_contents.namespaces;
         let mut context = ParserContext::new(
             parent_stylesheet_contents.origin,
-            &url_data,
+            url_data,
             None,
             ParsingMode::DEFAULT,
             parent_stylesheet_contents.quirks_mode,
-            Cow::Borrowed(&*namespaces),
+            Cow::Borrowed(namespaces),
             None,
             None,
             /* attr_taint */ Default::default(),
@@ -767,7 +767,7 @@ impl CssRule {
         // nested rules are in the body state
         let mut parser = TopLevelRuleParser {
             context,
-            shared_lock: &shared_lock,
+            shared_lock,
             loader,
             state,
             dom_error: None,

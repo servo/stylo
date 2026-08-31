@@ -498,7 +498,7 @@ fn parse_relative_alpha(
         // An alpha is required as it is the only controllable component.
         return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
     }
-    Ok(ColorFunction::Alpha(origin_color.into(), alpha))
+    Ok(ColorFunction::Alpha(origin_color, alpha))
 }
 
 /// Either a percentage or a number.

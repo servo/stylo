@@ -376,7 +376,7 @@ impl SelectorVisitor for UnconstrainedRelativeSelectorVisitor {
 
                     let c = iter.next_sequence();
                     offset += 1;
-                    if c.map_or(true, |c| !c.is_pseudo_element()) {
+                    if c.is_none_or(|c| !c.is_pseudo_element()) {
                         break;
                     }
                 }

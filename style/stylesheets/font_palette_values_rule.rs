@@ -153,8 +153,8 @@ impl FontPaletteValuesRule {
             context,
             rule: &mut rule,
         };
-        let mut iter = RuleBodyParser::new(input, &mut parser);
-        while let Some(declaration) = iter.next() {
+        let iter = RuleBodyParser::new(input, &mut parser);
+        for declaration in iter {
             if let Err((error, slice, location)) = declaration {
                 let error =
                     ContextualParseError::UnsupportedFontPaletteValuesDescriptor(slice, error);
@@ -190,7 +190,7 @@ impl FontPaletteValuesRule {
     /// Convert to Gecko FontPaletteValueSet.
     #[cfg(feature = "gecko")]
     pub fn to_gecko_palette_value_set(&self, dest: *mut FontPaletteValueSet) {
-        for ref family in self.family_names.iter() {
+        for family in self.family_names.iter() {
             let family = family.name.to_ascii_lowercase();
             let palette_values = unsafe {
                 Gecko_AppendPaletteValueHashEntry(dest, family.as_ptr(), self.name.0.as_ptr())

@@ -278,7 +278,7 @@ impl NonCustomPropertyId {
     #[inline]
     pub fn as_longhand(self) -> Option<LonghandId> {
         if self.0 < property_counts::LONGHANDS as u16 {
-            return Some(unsafe { mem::transmute(self.0 as u16) });
+            return Some(unsafe { mem::transmute(self.0) });
         }
         None
     }
@@ -694,7 +694,7 @@ impl ShorthandId {
         self,
         declarations: &'a [&'b PropertyDeclaration],
     ) -> Option<AppendableValue<'a, 'b>> {
-        let first_declaration = declarations.get(0)?;
+        let first_declaration = declarations.first()?;
         let rest = || declarations.iter().skip(1);
 
         // https://drafts.csswg.org/css-variables/#variables-in-shorthands
@@ -764,13 +764,15 @@ fn parse_non_custom_property_declaration_value_into(
     let mut starts_with_curly_block = false;
     if let Ok(token) = input.next() {
         match token {
-            cssparser::Token::Ident(ident) => match CSSWideKeyword::from_ident(ident) {
-                Ok(wk) => {
+            cssparser::Token::Ident(ident) => {
+                if let Ok(wk) = CSSWideKeyword::from_ident(ident) {
                     if input.expect_exhausted().is_ok() {
-                        return Ok(parsed_wide_keyword(declarations, wk));
+                        return {
+                            parsed_wide_keyword(declarations, wk);
+                            Ok(())
+                        };
                     }
-                },
-                Err(()) => {},
+                }
             },
             cssparser::Token::CurlyBracketBlock => {
                 starts_with_curly_block = true;
@@ -779,7 +781,7 @@ fn parse_non_custom_property_declaration_value_into(
         }
     };
 
-    input.reset(&start);
+    input.reset(start);
     input.look_for_arbitrary_substitution_functions(ARBITRARY_SUBSTITUTION_FUNCTIONS);
 
     let mut saw_arbitrary_substitution_functions = false;
@@ -819,7 +821,7 @@ fn parse_non_custom_property_declaration_value_into(
     let value = custom_properties::VariableValue::parse(
         input,
         Some(&context.namespaces.prefixes),
-        &context.url_data,
+        context.url_data,
     )?;
     parsed_custom(declarations, value);
     Ok(())
@@ -918,7 +920,7 @@ impl PropertyDeclaration {
                         custom_properties::VariableValue::parse(
                             input,
                             Some(&context.namespaces.prefixes),
-                            &context.url_data,
+                            context.url_data,
                         )?,
                     )),
                 };
@@ -1146,7 +1148,7 @@ impl<'a> PropertyDeclarationId<'a> {
     pub fn to_physical(&self, wm: WritingMode) -> Self {
         match self {
             Self::Longhand(id) => Self::Longhand(id.to_physical(wm)),
-            Self::Custom(_) => self.clone(),
+            Self::Custom(_) => *self,
         }
     }
 

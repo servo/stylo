@@ -64,7 +64,7 @@ impl DeepCloneWithLock for SupportsRule {
             condition: self.condition.clone(),
             rules: Arc::new(lock.wrap(rules.deep_clone_with_lock(lock, guard))),
             enabled: self.enabled,
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }
@@ -113,7 +113,7 @@ impl SupportsCondition {
         let (keyword, wrapper) = match input.next() {
             // End of input
             Err(..) => return Ok(in_parens),
-            Ok(&Token::Ident(ref ident)) => {
+            Ok(Token::Ident(ident)) => {
                 match_ignore_ascii_case! { &ident,
                     "and" => ("and", SupportsCondition::And as fn(_) -> _),
                     "or" => ("or", SupportsCondition::Or as fn(_) -> _),
@@ -324,7 +324,7 @@ impl ToCss for SupportsCondition {
                 feature.to_css(dest)?;
                 dest.write_char(')')
             },
-            SupportsCondition::FutureSyntax(ref s) => dest.write_str(&s),
+            SupportsCondition::FutureSyntax(ref s) => dest.write_str(s),
         }
     }
 }
@@ -411,7 +411,7 @@ impl Declaration {
 
                 let mut declarations = SourcePropertyDeclaration::default();
                 input.parse_until_before(Delimiter::Bang, |input| {
-                    PropertyDeclaration::parse_into(&mut declarations, id, &context, input)
+                    PropertyDeclaration::parse_into(&mut declarations, id, context, input)
                         .map_err(|_| CssParseError::custom(()))
                 })?;
                 let _ = input.try_parse(parse_important);

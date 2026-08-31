@@ -31,19 +31,19 @@ pub struct RuleCacheConditions {
 impl RuleCacheConditions {
     /// Sets the style as depending in the font-size value.
     pub fn set_font_size_dependency(&mut self, font_size: NonNegativeLength) {
-        debug_assert!(self.font_size.map_or(true, |f| f == font_size));
+        debug_assert!(self.font_size.is_none_or(|f| f == font_size));
         self.font_size = Some(font_size);
     }
 
     /// Sets the style as depending in the line-height value.
     pub fn set_line_height_dependency(&mut self, line_height: NonNegativeLength) {
-        debug_assert!(self.line_height.map_or(true, |l| l == line_height));
+        debug_assert!(self.line_height.is_none_or(|l| l == line_height));
         self.line_height = Some(line_height);
     }
 
     /// Sets the style as depending in the color-scheme property value.
     pub fn set_color_scheme_dependency(&mut self, color_scheme: ColorSchemeFlags) {
-        debug_assert!(self.color_scheme.map_or(true, |cs| cs == color_scheme));
+        debug_assert!(self.color_scheme.is_none_or(|cs| cs == color_scheme));
         self.color_scheme = Some(color_scheme);
     }
 
@@ -54,7 +54,7 @@ impl RuleCacheConditions {
 
     /// Sets the style as depending in the writing-mode value `writing_mode`.
     pub fn set_writing_mode_dependency(&mut self, writing_mode: WritingMode) {
-        debug_assert!(self.writing_mode.map_or(true, |wm| wm == writing_mode));
+        debug_assert!(self.writing_mode.is_none_or(|wm| wm == writing_mode));
         self.writing_mode = Some(writing_mode);
     }
 
@@ -99,7 +99,7 @@ impl CachedConditions {
             let new_line_height =
                 style
                     .device
-                    .calc_line_height(&style.get_font(), style.writing_mode, None);
+                    .calc_line_height(style.get_font(), style.writing_mode, None);
             if new_line_height != lh {
                 return false;
             }
@@ -124,6 +124,12 @@ impl CachedConditions {
 pub struct RuleCache {
     // FIXME(emilio): Consider using LRUCache or something like that?
     map: FxHashMap<StrongRuleNode, SmallVec<[(CachedConditions, Arc<ComputedValues>); 1]>>,
+}
+
+impl Default for RuleCache {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RuleCache {
@@ -197,7 +203,7 @@ impl RuleCache {
         let rules = Self::get_rule_node_for_cache(guards, rules)?;
         let cached_values = self.map.get(rules)?;
 
-        for &(ref conditions, ref values) in cached_values.iter() {
+        for (conditions, values) in cached_values.iter() {
             if conditions.matches(values, &context.builder) {
                 debug!("Using cached reset style with conditions {:?}", conditions);
                 return Some(&**values);

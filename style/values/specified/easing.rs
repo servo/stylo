@@ -62,7 +62,7 @@ impl TimingFunction {
         if let (Some(x1), Some(_), Some(x2), Some(_)) =
             (x1.resolve(), y1.resolve(), x2.resolve(), y2.resolve())
         {
-            if x1 < 0.0 || x1 > 1.0 || x2 < 0.0 || x2 > 1.0 {
+            if !(0.0..=1.0).contains(&x1) || !(0.0..=1.0).contains(&x2) {
                 return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             }
         } else {
@@ -133,12 +133,12 @@ impl TimingFunction {
                 let has_input_start = input_start.is_some();
                 builder.push(
                     output,
-                    input_start.map(|v| v.to_percentage().unwrap()).into(),
+                    input_start.map(|v| v.to_percentage().unwrap()),
                 );
                 num_specified_stops += 1;
                 if input_end.is_some() {
                     debug_assert!(has_input_start, "Input end valid but not input start?");
-                    builder.push(output, input_end.map(|v| v.to_percentage().unwrap()).into());
+                    builder.push(output, input_end.map(|v| v.to_percentage().unwrap()));
                 }
 
                 Ok(())

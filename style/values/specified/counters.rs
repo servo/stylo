@@ -81,8 +81,8 @@ fn parse_counters(
     let mut counters = Vec::new();
     loop {
         let (name, is_reversed) = match input.next() {
-            Ok(&Token::Ident(ref ident)) => (CustomIdent::from_ident(ident, &["none"])?, false),
-            Ok(&Token::Function(ref name))
+            Ok(Token::Ident(ident)) => (CustomIdent::from_ident(ident, &["none"])?, false),
+            Ok(Token::Function(name))
                 if counter_type == CounterType::Reset && name.eq_ignore_ascii_case("reversed") =>
             {
                 input

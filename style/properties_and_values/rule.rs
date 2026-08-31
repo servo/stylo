@@ -49,10 +49,10 @@ pub fn parse_property_block(
         context,
         descriptors: &mut descriptors,
     };
-    let mut iter = RuleBodyParser::new(input, &mut parser);
+    let iter = RuleBodyParser::new(input, &mut parser);
     let mut syntax_err = None;
     let mut inherits_err = None;
-    while let Some(declaration) = iter.next() {
+    for declaration in iter {
         if !context.error_reporting_enabled() {
             continue;
         }
@@ -306,7 +306,7 @@ impl Parse for InitialValue {
         Ok(Arc::new(SpecifiedValue::parse(
             input,
             Some(&context.namespaces.prefixes),
-            &context.url_data,
+            context.url_data,
         )?))
     }
 }
@@ -330,6 +330,6 @@ impl Descriptors {
 
     /// Whether this property uses universal syntax.
     pub fn is_universal(&self) -> bool {
-        self.syntax.as_ref().map_or(true, |s| s.is_universal())
+        self.syntax.as_ref().is_none_or(|s| s.is_universal())
     }
 }

@@ -137,7 +137,7 @@ impl PropertyDeclarationIdSet {
                     return false;
                 }
                 self.longhands.insert(id);
-                return true;
+                true
             },
             PropertyDeclarationId::Custom(name) => self.custom.insert((*name).clone()),
         }
@@ -223,10 +223,7 @@ impl<'a> Iterator for PropertyDeclarationIdSetIterator<'a> {
         // to iterate over the custom properties.
         match self.longhands.next() {
             Some(id) => Some(PropertyDeclarationId::Longhand(id)),
-            None => match self.custom.next() {
-                Some(a) => Some(PropertyDeclarationId::Custom(a)),
-                None => None,
-            },
+            None => self.custom.next().map(PropertyDeclarationId::Custom),
         }
     }
 }
@@ -388,7 +385,7 @@ impl<'a, 'cx, 'cx_a: 'cx> Iterator for AnimationValueIterator<'a, 'cx, 'cx_a> {
 
             let animation = AnimationValue::from_declaration(
                 decl,
-                &mut self.context,
+                self.context,
                 self.style,
                 self.default_values,
                 // TODO (descalante): should be able to get an attr from an animated element
@@ -466,9 +463,7 @@ impl PropertyDeclarationBlock {
 
     /// Iterate over `PropertyDeclaration` for Importance::Normal
     #[inline]
-    pub fn normal_declaration_iter<'a>(
-        &'a self,
-    ) -> impl DoubleEndedIterator<Item = &'a PropertyDeclaration> {
+    pub fn normal_declaration_iter(&self) -> impl DoubleEndedIterator<Item = &PropertyDeclaration> {
         self.declaration_importance_iter()
             .filter(|(_, importance)| !importance.important())
             .map(|(declaration, _)| declaration)
@@ -578,7 +573,7 @@ impl PropertyDeclarationBlock {
         // so we treat this as a normal-importance property
         match shorthand.get_shorthand_appendable_value(&list) {
             Some(appendable_value) => append_declaration_value(dest, appendable_value),
-            None => return Ok(()),
+            None => Ok(()),
         }
     }
 
@@ -617,7 +612,7 @@ impl PropertyDeclarationBlock {
                 // Step 2.1 & 2.2 & 2.3
                 if shorthand.longhands().all(|l| {
                     self.get(PropertyDeclarationId::Longhand(l))
-                        .map_or(false, |(_, importance)| importance.important())
+                        .is_some_and(|(_, importance)| importance.important())
                 }) {
                     Importance::Important
                 } else {
@@ -751,8 +746,8 @@ impl PropertyDeclarationBlock {
                             .declarations
                             .iter()
                             .enumerate()
-                            .find(|&(_, ref d)| d.id() == decl.id())
-                            .map_or(true, |(i, d)| {
+                            .find(|&(_, d)| d.id() == decl.id())
+                            .is_none_or(|(i, d)| {
                                 let important = self.declarations_importance[i];
                                 *d != decl || important != importance.important()
                             })
@@ -803,7 +798,7 @@ impl PropertyDeclarationBlock {
                     self.declarations
                         .iter()
                         .enumerate()
-                        .find(|&(_, ref decl)| decl.id() == declaration.id())
+                        .find(|&(_, decl)| decl.id() == declaration.id())
                         .map_or(DeclarationUpdate::Append, |(pos, decl)| {
                             let important = self.declarations_importance[pos];
                             if decl == declaration && important == importance.important() {
@@ -852,7 +847,7 @@ impl PropertyDeclarationBlock {
                         .declarations
                         .iter_mut()
                         .enumerate()
-                        .find(|&(_, ref d)| d.id() == decl.id())
+                        .find(|(_, d)| d.id() == decl.id())
                         .unwrap();
                     *slot = decl;
                     self.declarations_importance.set(idx, important);
@@ -1005,7 +1000,7 @@ impl PropertyDeclarationBlock {
 
         // FIXME(emilio): Should this assert, or assert that the declaration is
         // the property we expect?
-        let declaration = match self.declarations.get(0) {
+        let declaration = match self.declarations.first() {
             Some(d) => d,
             None => return Err(fmt::Error),
         };
@@ -1042,7 +1037,7 @@ impl PropertyDeclarationBlock {
             // getKeyframes() implementation for CSS animations, if
             // |computed_values| is supplied, we use it to expand such variable
             // declarations. This will be fixed properly in Gecko bug 1391537.
-            (&PropertyDeclaration::WithVariables(ref declaration), Some(_)) => declaration
+            (PropertyDeclaration::WithVariables(declaration), Some(_)) => declaration
                 .value
                 .substitute_variables(
                     declaration.id,
@@ -1053,7 +1048,7 @@ impl PropertyDeclarationBlock {
                     &mut AttributeTracker::new_dummy(),
                 )
                 .to_css(dest),
-            (ref d, _) => d.to_css(dest),
+            (d, _) => d.to_css(dest),
         }
     }
 

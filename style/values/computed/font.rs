@@ -411,7 +411,7 @@ impl FontFamily {
             })
         );
 
-        &*MOZ_BULLET
+        &MOZ_BULLET
     }
 
     /// Returns a font family for a single system font.
@@ -740,7 +740,7 @@ impl Parse for SingleFontFamily {
             let ident = input.expect_ident()?;
             serialize_quoted = serialize_quoted || ident.contains(' ');
             value.push(' ');
-            value.push_str(&ident);
+            value.push_str(ident);
         }
         while let Ok(ident) = input.try_parse(|i| i.expect_ident_cloned()) {
             serialize_quoted = serialize_quoted || ident.contains(' ');
@@ -800,7 +800,7 @@ impl FontFamilyList {
         let mut target_index = None;
 
         for (i, f) in self.iter().enumerate() {
-            match &*f {
+            match f {
                 SingleFontFamily::Generic(f) => {
                     if index_of_first_generic.is_none() && f.valid_for_user_font_prioritization() {
                         // If we haven't found a target position, there's nothing to do;
@@ -845,7 +845,7 @@ impl FontFamilyList {
     /// Returns whether we need to prioritize user fonts.
     #[cfg_attr(feature = "servo", allow(unused))]
     pub(crate) fn needs_user_font_prioritization(&self) -> bool {
-        self.iter().next().map_or(true, |f| match f {
+        self.iter().next().is_none_or(|f| match f {
             SingleFontFamily::Generic(f) => !f.valid_for_user_font_prioritization(),
             _ => true,
         })

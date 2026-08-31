@@ -156,7 +156,7 @@ impl<'ln> fmt::Debug for GeckoShadowRoot<'ln> {
 impl<'lr> PartialEq for GeckoShadowRoot<'lr> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.0 as *const _ == other.0 as *const _
+        std::ptr::eq(self.0, other.0)
     }
 }
 
@@ -197,7 +197,7 @@ impl<'lr> TShadowRoot for GeckoShadowRoot<'lr> {
     where
         Self: 'a,
     {
-        let slice: &[*const RawGeckoElement] = &*self.0.mParts;
+        let slice: &[*const RawGeckoElement] = &self.0.mParts;
 
         #[allow(dead_code)]
         unsafe fn static_assert() {
@@ -235,7 +235,7 @@ pub struct GeckoNode<'ln>(pub &'ln RawGeckoNode);
 impl<'ln> PartialEq for GeckoNode<'ln> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.0 as *const _ == other.0 as *const _
+        std::ptr::eq(self.0, other.0)
     }
 }
 
@@ -452,10 +452,7 @@ impl<'ln> GeckoNode<'ln> {
     /// Returns last child sibling of this node that is an element.
     #[inline]
     pub fn last_child_element(&self) -> Option<GeckoElement<'ln>> {
-        let last = match self.last_child() {
-            Some(n) => n,
-            None => return None,
-        };
+        let last = self.last_child()?;
         if let Some(e) = last.as_element() {
             return Some(e);
         }
@@ -857,7 +854,7 @@ impl<'le> GeckoElement<'le> {
     /// This logic is duplicated in Gecko's nsIContent::IsRootOfNativeAnonymousSubtree.
     #[inline]
     fn is_root_of_native_anonymous_subtree(&self) -> bool {
-        return self.flags() & structs::NODE_IS_NATIVE_ANONYMOUS_ROOT != 0;
+        self.flags() & structs::NODE_IS_NATIVE_ANONYMOUS_ROOT != 0
     }
 
     /// Whether the element is in an anonymous subtree. Note that this includes UA widgets!
@@ -905,14 +902,14 @@ impl<'le> GeckoElement<'le> {
         // If the end value has not changed, we should leave the currently
         // running transition as-is since we don't want to interrupt its timing
         // function.
-        if let Some(ref existing) = existing_transitions.get(&property_declaration_id.to_owned()) {
+        if let Some(existing) = existing_transitions.get(&property_declaration_id.to_owned()) {
             let after_value =
                 AnimationValue::from_computed_values(property_declaration_id, after_change_style);
             debug_assert!(
                 after_value.is_some()
                     || matches!(property_declaration_id, PropertyDeclarationId::Custom(..))
             );
-            return after_value.is_none() || ***existing != after_value.unwrap();
+            return after_value.is_none() || **existing != after_value.unwrap();
         }
 
         if combined_duration_seconds <= 0.0f32 {
@@ -1040,10 +1037,7 @@ impl<'le> TElement for GeckoElement<'le> {
                     .unwrap(),
             )
         };
-        let shadow_root = match e.shadow_root() {
-            None => return None,
-            Some(r) => r,
-        };
+        let shadow_root = e.shadow_root()?;
         shadow_root.implicit_scope_for_sheet(sheet_index)
     }
 
@@ -1219,7 +1213,7 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     fn owner_doc_matches_for_testing(&self, device: &Device) -> bool {
-        self.as_node().owner_doc().0 as *const structs::Document == device.document() as *const _
+        std::ptr::eq(self.as_node().owner_doc().0, device.document())
     }
 
     fn style_attribute(&self) -> Option<ArcBorrow<'_, Locked<PropertyDeclarationBlock>>> {
@@ -1478,7 +1472,7 @@ impl<'le> TElement for GeckoElement<'le> {
             if pseudo.animations_stored_in_parent() {
                 // FIXME(emilio): When would the parent of a ::before / ::after
                 // pseudo-element be null?
-                return self.parent_element().map_or(false, |p| {
+                return self.parent_element().is_some_and(|p| {
                     p.as_node()
                         .get_bool_flag(nsINode_BooleanFlag::ElementHasAnimations)
                 });
@@ -1667,7 +1661,7 @@ impl<'le> TElement for GeckoElement<'le> {
         static TABLE_COLOR_RULE: LazyLock<ApplicableDeclarationBlock> = LazyLock::new(|| {
             let global_style_data = &*GLOBAL_STYLE_DATA;
             let pdb = PropertyDeclarationBlock::with_one(
-                PropertyDeclaration::Color(SpecifiedColor(Color::InheritFromBodyQuirk.into())),
+                PropertyDeclaration::Color(SpecifiedColor(Color::InheritFromBodyQuirk)),
                 Importance::Normal,
             );
             let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
@@ -1707,17 +1701,16 @@ impl<'le> TElement for GeckoElement<'le> {
 
         let ns = self.namespace_id();
         // <th> elements get a default MozCenterOrInherit which may get overridden
-        if ns == structs::kNameSpaceID_XHTML as i32 {
-            if self.local_name().as_ptr() == atom!("table").as_ptr()
-                && self.as_node().owner_doc().quirks_mode() == QuirksMode::Quirks
-            {
-                hints.push(TABLE_COLOR_RULE.clone());
-            }
+        if ns == structs::kNameSpaceID_XHTML as i32
+            && self.local_name().as_ptr() == atom!("table").as_ptr()
+            && self.as_node().owner_doc().quirks_mode() == QuirksMode::Quirks
+        {
+            hints.push(TABLE_COLOR_RULE.clone());
         }
-        if ns == structs::kNameSpaceID_SVG as i32 {
-            if self.local_name().as_ptr() == atom!("text").as_ptr() {
-                hints.push(SVG_TEXT_DISABLE_SCALE_RULE.clone());
-            }
+        if ns == structs::kNameSpaceID_SVG as i32
+            && self.local_name().as_ptr() == atom!("text").as_ptr()
+        {
+            hints.push(SVG_TEXT_DISABLE_SCALE_RULE.clone());
         }
         let declarations =
             unsafe { Gecko_GetHTMLPresentationAttrDeclarationBlock(self.0).as_ref() };
@@ -1801,10 +1794,9 @@ impl<'le> TElement for GeckoElement<'le> {
         // MathML's default lang has precedence over both `lang` and `xml:lang`
         if !static_prefs::pref!("mathml.font_family_math.enabled")
             && ns == structs::kNameSpaceID_MathML as i32
+            && self.local_name().as_ptr() == atom!("math").as_ptr()
         {
-            if self.local_name().as_ptr() == atom!("math").as_ptr() {
-                hints.push(MATHML_LANG_RULE.clone());
-            }
+            hints.push(MATHML_LANG_RULE.clone());
         }
     }
 
@@ -1848,7 +1840,7 @@ impl<'le> TElement for GeckoElement<'le> {
 impl<'le> PartialEq for GeckoElement<'le> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.0 as *const _ == other.0 as *const _
+        std::ptr::eq(self.0, other.0)
     }
 }
 
@@ -1879,7 +1871,7 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
     fn parent_node_is_shadow_root(&self) -> bool {
         self.as_node()
             .parent_node()
-            .map_or(false, |p| p.is_shadow_root())
+            .is_some_and(|p| p.is_shadow_root())
     }
 
     #[inline]
@@ -2006,7 +1998,7 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
         debug_assert!(self
             .as_node()
             .parent_node()
-            .map_or(false, |p| p.is_document()));
+            .is_some_and(|p| p.is_document()));
         // XXX this should always return true at this point, shouldn't it?
         unsafe { bindings::Gecko_IsRootElement(self.0) }
     }
@@ -2256,8 +2248,8 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             return false;
         }
         let check_state_ptr: *const nsAtom = state.as_ptr();
-        self.extended_slots().map_or(false, |slot| {
-            (&slot.mCustomStates).iter().any(|setstate| {
+        self.extended_slots().is_some_and(|slot| {
+            slot.mCustomStates.iter().any(|setstate| {
                 let setstate_ptr: *const nsAtom = setstate.mRawPtr;
                 setstate_ptr == check_state_ptr
             })

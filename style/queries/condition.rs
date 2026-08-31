@@ -190,7 +190,7 @@ impl ToCss for StyleQuery {
                 _ => c.to_css(dest),
             },
             StyleQuery::Feature(ref f) => f.to_css(dest),
-            StyleQuery::GeneralEnclosed(ref s) => dest.write_str(&s),
+            StyleQuery::GeneralEnclosed(ref s) => dest.write_str(s),
         }
     }
 }
@@ -204,7 +204,7 @@ impl StyleQuery {
         W: fmt::Write,
     {
         if let StyleQuery::GeneralEnclosed(s) = self {
-            dest.write_str(&s)
+            dest.write_str(s)
         } else {
             dest.write_char('(')?;
             self.to_css(dest)?;
@@ -314,7 +314,7 @@ impl OperationParser for StyleQuery {
                 })?;
                 Ok(Self::GeneralEnclosed(input.slice_from(start).to_owned()))
             },
-            _ => return Err(ParseError::unexpected_token()),
+            _ => Err(ParseError::unexpected_token()),
         }
     }
 
@@ -411,7 +411,7 @@ impl StyleFeaturePlain {
                 let value = custom_properties::SpecifiedValue::parse(
                     input,
                     Some(&context.namespaces.prefixes),
-                    &context.url_data,
+                    context.url_data,
                 )?;
                 // `!important` is allowed (but ignored) after the value.
                 let _ = input.try_parse(parse_important);
@@ -439,7 +439,7 @@ impl StyleFeaturePlain {
         );
         let custom_properties::SubstitutionResult { css, attr_taint } =
             match custom_properties::substitute(
-                &value,
+                value,
                 &substitution_functions,
                 stylist,
                 ctx,
@@ -500,7 +500,7 @@ impl StyleFeaturePlain {
                         current_value,
                     )
                 } else {
-                    custom_properties::compute_variable_value(&v, registration, ctx).as_ref()
+                    custom_properties::compute_variable_value(v, registration, ctx).as_ref()
                         == current_value
                 }
             },
@@ -511,7 +511,7 @@ impl StyleFeaturePlain {
                     CSSWideKeyword::Initial => {
                         if let Some(initial) = &registration.initial_value {
                             let v = custom_properties::compute_variable_value(
-                                &initial,
+                                initial,
                                 registration,
                                 ctx,
                             );
@@ -546,9 +546,8 @@ impl StyleFeaturePlain {
     }
 
     fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
-        match &self.value {
-            StyleFeatureValue::Value(Some(v)) => v.collect_attribute_references(references),
-            _ => {},
+        if let StyleFeatureValue::Value(Some(v)) = &self.value {
+            v.collect_attribute_references(references)
         }
     }
 }
@@ -724,7 +723,7 @@ impl ToCss for QueryCondition {
                 }
                 Ok(())
             },
-            QueryCondition::GeneralEnclosed(ref s, _) => dest.write_str(&s),
+            QueryCondition::GeneralEnclosed(ref s, _) => dest.write_str(s),
         }
     }
 }
@@ -830,7 +829,7 @@ impl QueryCondition {
             Self::Custom(ref f) => custom.matches(f, context),
             Self::Feature(ref f) => f.matches(context),
             Self::GeneralEnclosed(ref str, ref url_data) => {
-                self.matches_general(&str, url_data, context, custom, attribute_tracker)
+                self.matches_general(str, url_data, context, custom, attribute_tracker)
             },
             Self::InParens(ref c) => c.matches(context, custom, attribute_tracker),
             Self::Not(ref c) => !c.matches(context, custom, attribute_tracker),
@@ -934,9 +933,8 @@ impl QueryCondition {
 
     /// Collect the attribute references in this query condition, if any.
     pub fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
-        match self {
-            QueryCondition::Style(c) => c.collect_attribute_references(references),
-            _ => {},
+        if let QueryCondition::Style(c) = self {
+            c.collect_attribute_references(references)
         }
     }
 }

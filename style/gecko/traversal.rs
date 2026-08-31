@@ -18,7 +18,7 @@ pub struct RecalcStyleOnly<'a> {
 impl<'a> RecalcStyleOnly<'a> {
     /// Create a `RecalcStyleOnly` traversal from a `SharedStyleContext`.
     pub fn new(shared: SharedStyleContext<'a>) -> Self {
-        RecalcStyleOnly { shared: shared }
+        RecalcStyleOnly { shared }
     }
 }
 

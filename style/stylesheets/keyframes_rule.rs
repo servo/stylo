@@ -57,7 +57,7 @@ impl ToCssWithGuard for KeyframesRule {
         let iter = self.keyframes.iter();
         for lock in iter {
             dest.write_str("\n")?;
-            let keyframe = lock.read_with(&guard);
+            let keyframe = lock.read_with(guard);
             keyframe.to_css(guard, dest)?;
         }
         dest.write_str("\n}")
@@ -93,7 +93,7 @@ impl DeepCloneWithLock for KeyframesRule {
                 .map(|x| Arc::new(lock.wrap(x.read_with(guard).deep_clone_with_lock(lock, guard))))
                 .collect(),
             vendor_prefix: self.vendor_prefix.clone(),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }
@@ -141,7 +141,7 @@ impl KeyframePercentage {
             Token::Percentage {
                 unit_value: percentage,
                 ..
-            } if percentage >= 0. && percentage <= 1. => Ok(KeyframePercentage::new(percentage)),
+            } if (0. ..=1.).contains(&percentage) => Ok(KeyframePercentage::new(percentage)),
             _ => Err(ParseError::unexpected_token()),
         }
     }
@@ -251,8 +251,8 @@ impl ToCssWithGuard for Keyframe {
 
 impl Keyframe {
     /// Parse a CSS keyframe.
-    pub fn parse<'i>(
-        css: &'i str,
+    pub fn parse(
+        css: &str,
         parent_stylesheet_contents: &StylesheetContents,
         lock: &SharedRwLock,
     ) -> Result<Arc<Locked<Self>>, ParseError> {
@@ -260,11 +260,11 @@ impl Keyframe {
         let namespaces = &parent_stylesheet_contents.namespaces;
         let mut context = ParserContext::new(
             parent_stylesheet_contents.origin,
-            &url_data,
+            url_data,
             Some(CssRuleType::Keyframe),
             ParsingMode::DEFAULT,
             parent_stylesheet_contents.quirks_mode,
-            Cow::Borrowed(&*namespaces),
+            Cow::Borrowed(namespaces),
             None,
             None,
             /* attr_taint */ Default::default(),
@@ -274,7 +274,7 @@ impl Keyframe {
 
         let mut rule_parser = KeyframeListParser {
             context: &mut context,
-            shared_lock: &lock,
+            shared_lock: lock,
         };
         parse_one_rule(&mut input, &mut rule_parser)
     }
@@ -286,7 +286,7 @@ impl DeepCloneWithLock for Keyframe {
         Keyframe {
             selector: self.selector.clone(),
             block: Arc::new(lock.wrap(self.block.read_with(guard).clone())),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }
@@ -430,7 +430,7 @@ impl KeyframesStep {
                 match *decl {
                     PropertyDeclaration::AnimationComposition(ref value) => {
                         // Use the first value
-                        value.0[0].clone()
+                        value.0[0]
                     },
                     _ => unreachable!("Unexpected PropertyDeclaration"),
                 }
@@ -466,7 +466,7 @@ fn has_animated_properties(
     // NB: declarations are already deduplicated, so we don't have to check for
     // it here.
     for keyframe in keyframes {
-        let keyframe = keyframe.read_with(&guard);
+        let keyframe = keyframe.read_with(guard);
         let block = keyframe.block.read_with(guard);
         // CSS Animations spec clearly defines that properties with !important
         // in keyframe rules are invalid and ignored, but it's still ambiguous
@@ -522,7 +522,7 @@ impl KeyframesAnimation {
         let mut steps = vec![];
 
         for keyframe in keyframes {
-            let keyframe = keyframe.read_with(&guard);
+            let keyframe = keyframe.read_with(guard);
             for selector in keyframe.selector.0.iter() {
                 let step = KeyframesStep::new(
                     *selector,
@@ -597,13 +597,12 @@ impl<'a, 'b, 'i> QualifiedRuleParser<'i> for KeyframeListParser<'a, 'b> {
     fn parse_prelude(&mut self, input: &mut Parser<'i, '_>) -> Result<Self::Prelude, ParseError> {
         let start_position = input.position();
         let start_location = input.current_source_location();
-        KeyframeSelectors::parse(input).map_err(|e| {
+        KeyframeSelectors::parse(input).inspect_err(|e| {
             let error = ContextualParseError::InvalidKeyframeRule(
                 input.slice_from(start_position),
                 e.clone(),
             );
             self.context.log_css_error(start_location, error);
-            e
         })
     }
 
@@ -614,7 +613,7 @@ impl<'a, 'b, 'i> QualifiedRuleParser<'i> for KeyframeListParser<'a, 'b> {
         input: &mut Parser<'i, '_>,
     ) -> Result<Self::QualifiedRule, ParseError> {
         let block = self.context.nest_for_rule(CssRuleType::Keyframe, |p| {
-            parse_property_declaration_list(&p, input, &[])
+            parse_property_declaration_list(p, input, &[])
         });
         Ok(Arc::new(self.shared_lock.wrap(Keyframe {
             selector,

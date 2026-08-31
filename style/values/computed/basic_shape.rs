@@ -70,8 +70,8 @@ macro_rules! animate_shape {
         $from:ident,
         $to:ident,
         $procedure:ident,
-        $from_as_shape:tt,
-        $to_as_shape:tt
+        $from_as_shape:expr,
+        $to_as_shape:expr
     ) => {{
         // Check fill-rule.
         if $from.fill != $to.fill {
@@ -119,7 +119,7 @@ impl Animate for PathOrShapeFunction {
                     to,
                     procedure,
                     (|shape_cmd| shape_cmd),
-                    (|path_cmd| ShapeCommand::from(path_cmd))
+                    ShapeCommand::from
                 )
                 .map(Self::Shape)
             },
@@ -130,7 +130,7 @@ impl Animate for PathOrShapeFunction {
                     from,
                     to,
                     procedure,
-                    (|path_cmd| ShapeCommand::from(path_cmd)),
+                    ShapeCommand::from,
                     (|shape_cmd| shape_cmd)
                 )
                 .map(Self::Shape)
@@ -144,38 +144,32 @@ impl From<&PathCommand> for ShapeCommand {
     fn from(path: &PathCommand) -> Self {
         match path {
             &PathCommand::Close => Self::Close,
-            &PathCommand::Move { ref point } => Self::Move {
+            PathCommand::Move { point } => Self::Move {
                 point: point.into(),
             },
-            &PathCommand::Line { ref point } => Self::Move {
+            PathCommand::Line { point } => Self::Move {
                 point: point.into(),
             },
-            &PathCommand::HLine { ref x } => Self::HLine { x: x.into() },
-            &PathCommand::VLine { ref y } => Self::VLine { y: y.into() },
-            &PathCommand::CubicCurve {
-                ref point,
-                ref control1,
-                ref control2,
+            PathCommand::HLine { x } => Self::HLine { x: x.into() },
+            PathCommand::VLine { y } => Self::VLine { y: y.into() },
+            PathCommand::CubicCurve {
+                point,
+                control1,
+                control2,
             } => Self::CubicCurve {
                 point: point.into(),
                 control1: control1.into(),
                 control2: control2.into(),
             },
-            &PathCommand::QuadCurve {
-                ref point,
-                ref control1,
-            } => Self::QuadCurve {
+            PathCommand::QuadCurve { point, control1 } => Self::QuadCurve {
                 point: point.into(),
                 control1: control1.into(),
             },
-            &PathCommand::SmoothCubic {
-                ref point,
-                ref control2,
-            } => Self::SmoothCubic {
+            PathCommand::SmoothCubic { point, control2 } => Self::SmoothCubic {
                 point: point.into(),
                 control2: control2.into(),
             },
-            &PathCommand::SmoothQuad { ref point } => Self::SmoothQuad {
+            PathCommand::SmoothQuad { point } => Self::SmoothQuad {
                 point: point.into(),
             },
             &PathCommand::Arc {

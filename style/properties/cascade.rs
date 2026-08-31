@@ -151,7 +151,7 @@ impl<'a> DeclarationIterator<'a> {
 
     fn update_for_node(&mut self, node: &'a StrongRuleNode) {
         self.priority = node.cascade_priority();
-        let guard = self.priority.cascade_level().origin().guard(&self.guards);
+        let guard = self.priority.cascade_level().origin().guard(self.guards);
         self.declarations = match node.style_source() {
             Some(source) => source.read(guard).declaration_importance_iter(),
             None => DeclarationImportanceIterator::default(),
@@ -307,7 +307,7 @@ where
     debug_assert!(layout_parent_style.is_none() || parent_style.is_some());
     let device = stylist.device();
     let inherited_style = parent_style.unwrap_or(device.default_computed_values());
-    let is_root_element = pseudo.is_none() && element.map_or(false, |e| e.is_root());
+    let is_root_element = pseudo.is_none() && element.is_some_and(|e| e.is_root());
     let container_size_query =
         ContainerSizeQuery::for_option_element(element, Some(inherited_style), pseudo.is_some());
 
@@ -369,7 +369,7 @@ where
             // visited-dependent properties, we can avoid gathering the declarations, we know none
             // would be relevant.
             if unvisited_context.builder.rules.as_ref() != Some(rules)
-                || unvisited_properties.contains_any(&visited_dependent_props)
+                || unvisited_properties.contains_any(visited_dependent_props)
             {
                 iter_declarations(iter, &mut declarations, None, &mut attribute_tracker);
             }
@@ -409,7 +409,7 @@ where
         &mut context,
         &declarations.longhand_declarations,
         &mut shorthand_cache,
-        &properties_to_apply,
+        properties_to_apply,
         &mut attribute_tracker,
     );
 
@@ -582,14 +582,13 @@ fn tweak_when_ignoring_colors(
         #[cfg(feature = "gecko")]
         PropertyDeclaration::BackgroundImage(ref bkg) => {
             use crate::values::generics::image::Image;
-            if static_prefs::pref!("browser.display.permit_backplate") {
-                if bkg
+            if static_prefs::pref!("browser.display.permit_backplate")
+                && bkg
                     .0
                     .iter()
                     .all(|image| matches!(*image, Image::Url(..) | Image::None))
-                {
-                    return;
-                }
+            {
+                return;
             }
         },
         _ => {
@@ -891,7 +890,7 @@ impl<'a> Cascade<'a> {
         );
         declaration.value.substitute_variables(
             declaration.id,
-            &context.builder.substitution_functions(),
+            context.builder.substitution_functions(),
             context.builder.stylist.unwrap(),
             context,
             shorthand_cache,
@@ -1028,7 +1027,7 @@ impl<'a> Cascade<'a> {
     ) {
         debug_assert!(!properties_to_apply.contains_any(LonghandIdSet::prioritary_properties()));
         debug_assert!(self.declarations_to_apply_unless_overridden.is_empty());
-        for declaration in &*longhand_declarations {
+        for declaration in longhand_declarations {
             let mut longhand_id = declaration.decl.id().as_longhand().unwrap();
             if !properties_to_apply.contains(longhand_id) {
                 continue;
@@ -1186,7 +1185,7 @@ impl<'a> Cascade<'a> {
             //
             // To improve i-cache behavior, we outline the individual functions and
             // use virtual dispatch instead.
-            (CASCADE_PROPERTY[longhand_id as usize])(&declaration, context);
+            (CASCADE_PROPERTY[longhand_id as usize])(declaration, context);
         }
     }
 
@@ -1293,7 +1292,7 @@ impl<'a> Cascade<'a> {
             FirstLineReparenting::Yes { style_to_reparent } => style_to_reparent,
             FirstLineReparenting::No => {
                 let Some(cache) = cache else { return false };
-                let Some(style) = cache.find(guards, &context) else {
+                let Some(style) = cache.find(guards, context) else {
                     return false;
                 };
                 style
@@ -1535,9 +1534,8 @@ impl<'a> Cascade<'a> {
             let mut a = parent_math_depth;
             let mut b = computed_math_depth;
             let c = SCALE_FACTOR_WHEN_INCREMENTING_MATH_DEPTH_BY_ONE;
-            let scale_between_0_and_1 = parent_script_percent_scale_down.unwrap_or_else(|| c);
-            let scale_between_0_and_2 =
-                parent_script_script_percent_scale_down.unwrap_or_else(|| c * c);
+            let scale_between_0_and_1 = parent_script_percent_scale_down.unwrap_or(c);
+            let scale_between_0_and_2 = parent_script_script_percent_scale_down.unwrap_or(c * c);
             let mut s = 1.0;
             let mut invert_scale_factor = false;
             if a == b {
@@ -1558,7 +1556,7 @@ impl<'a> Cascade<'a> {
                 s *= scale_between_0_and_1;
                 e -= 1;
             }
-            s *= (c as f32).powi(e);
+            s *= c.powi(e);
             if invert_scale_factor {
                 1.0 / s.max(f32::MIN_POSITIVE)
             } else {
@@ -1743,7 +1741,7 @@ impl<'a> Cascade<'a> {
             Entry::Vacant(v) => v,
         };
 
-        let registration = self.stylist.get_custom_property_registration(&name);
+        let registration = self.stylist.get_custom_property_registration(name);
         let initial_values = self.stylist.get_custom_property_initial_values();
         if !Self::value_may_affect_style(context, name, registration, initial_values, value) {
             entry.insert(false);
@@ -1801,7 +1799,7 @@ impl<'a> Cascade<'a> {
                     .insert_var(registration, name, value);
             },
             CustomDeclarationValue::Parsed(parsed_value) => {
-                let value = parsed_value.to_computed_value(&context);
+                let value = parsed_value.to_computed_value(context);
                 context
                     .builder
                     .substitution_functions
@@ -1961,7 +1959,7 @@ impl<'a> Cascade<'a> {
         let existing_value = context
             .builder
             .substitution_functions
-            .get_var(registration, &name);
+            .get_var(registration, name);
         let Some(existing_value) = existing_value else {
             if matches!(
                 value,
@@ -2341,7 +2339,7 @@ fn substitute_all(
                 // The primary is guaranteed-invalid if it's absent from the map, or still
                 // present but unresolved (i.e. part of a cycle currently being resolved).
                 let mut primary_valid = false;
-                if let Some(ref resolved) = resolved {
+                if let Some(resolved) = resolved {
                     if let Some(v) = resolved.as_universal() {
                         primary_valid = !v.has_references();
                         *non_custom_references |= v.references.flags;
@@ -2511,7 +2509,7 @@ fn substitute_all(
 
         let mut self_ref = false;
         let mut lowlink = index;
-        if let Some(ref v) = value.as_ref() {
+        if let Some(v) = value.as_ref() {
             debug_assert!(
                 matches!(var, VarType::Custom(_) | VarType::Attr(_)),
                 "Non-custom property has references?"

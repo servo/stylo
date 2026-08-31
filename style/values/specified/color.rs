@@ -887,7 +887,7 @@ impl Color {
             Color::ContrastColor(ref c) => {
                 let computed = c.to_computed_color(context)?;
                 if let Some(abs) = computed.as_absolute() {
-                    ComputedColor::Absolute(ComputedColor::resolve_contrast_color(&abs))
+                    ComputedColor::Absolute(ComputedColor::resolve_contrast_color(abs))
                 } else {
                     ComputedColor::ContrastColor(Box::new(computed))
                 }
@@ -915,7 +915,7 @@ impl ToComputedValue for Color {
 
     fn from_computed_value(computed: &ComputedColor) -> Self {
         match *computed {
-            ComputedColor::Absolute(ref color) => Self::from_absolute_color(color.clone()),
+            ComputedColor::Absolute(ref color) => Self::from_absolute_color(*color),
             ComputedColor::ColorFunction(ref color_function) => {
                 let color_function = color_function
                     .map_origin_color(|o| Ok(Self::from_computed_value(o)))
@@ -981,7 +981,7 @@ impl ToComputedValue for ColorPropertyValue {
 
     #[inline]
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
-        ColorPropertyValue(Color::from_absolute_color(*computed).into())
+        ColorPropertyValue(Color::from_absolute_color(*computed))
     }
 }
 

@@ -136,7 +136,7 @@ impl MediaList {
     pub fn append_medium(&mut self, context: &ParserContext, new_medium: &str) -> bool {
         let mut input = ParserInput::new(new_medium);
         let mut parser = Parser::new(&mut input);
-        let new_query = match MediaQuery::parse(&context, &mut parser) {
+        let new_query = match MediaQuery::parse(context, &mut parser) {
             Ok(query) => query,
             Err(_) => {
                 return false;

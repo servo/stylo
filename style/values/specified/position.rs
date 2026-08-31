@@ -221,18 +221,12 @@ impl ToCss for Position {
         W: Write,
     {
         match (&self.horizontal, &self.vertical) {
-            (
-                x_pos @ &PositionComponent::Side(_, Some(_)),
-                &PositionComponent::Length(ref y_lp),
-            ) => {
+            (x_pos @ &PositionComponent::Side(_, Some(_)), PositionComponent::Length(y_lp)) => {
                 x_pos.to_css(dest)?;
                 dest.write_str(" top ")?;
                 y_lp.to_css(dest)
             },
-            (
-                &PositionComponent::Length(ref x_lp),
-                y_pos @ &PositionComponent::Side(_, Some(_)),
-            ) => {
+            (PositionComponent::Length(x_lp), y_pos @ &PositionComponent::Side(_, Some(_))) => {
                 dest.write_str("left ")?;
                 x_lp.to_css(dest)?;
                 dest.write_char(' ')?;
@@ -678,7 +672,7 @@ impl Parse for DashedIdentAndOrTryTactic {
         if result.ident.is_empty() && result.try_tactic.is_empty() {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
-        return Ok(result);
+        Ok(result)
     }
 }
 
@@ -2064,11 +2058,11 @@ impl<'a> Iterator for TemplateAreasTokenizer<'a> {
 }
 
 fn is_name_code_point(c: char) -> bool {
-    c >= 'A' && c <= 'Z'
-        || c >= 'a' && c <= 'z'
+    c.is_ascii_uppercase()
+        || c.is_ascii_lowercase()
         || c >= '\u{80}'
         || c == '_'
-        || c >= '0' && c <= '9'
+        || c.is_ascii_digit()
         || c == '-'
 }
 

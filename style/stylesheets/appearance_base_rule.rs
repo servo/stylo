@@ -45,7 +45,7 @@ impl DeepCloneWithLock for AppearanceBaseRule {
         let rules = self.rules.read_with(guard);
         AppearanceBaseRule {
             rules: Arc::new(lock.wrap(rules.deep_clone_with_lock(lock, guard))),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }

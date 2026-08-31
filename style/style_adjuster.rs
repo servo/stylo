@@ -646,7 +646,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             // line break suppression flag while they shouldn't. However, it is
             // generally fine as far as they can't break the line inside them.
             Display::RubyBaseContainer | Display::RubyTextContainer
-                if element.map_or(true, |e| e.is_html_element()) =>
+                if element.is_none_or(|e| e.is_html_element()) =>
             {
                 false
             },
@@ -724,7 +724,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             return;
         }
 
-        let is_link_element = self.style.pseudo.is_none() && element.map_or(false, |e| e.is_link());
+        let is_link_element = self.style.pseudo.is_none() && element.is_some_and(|e| e.is_link());
 
         if !is_link_element {
             return;
@@ -791,9 +791,8 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             if self.style.pseudo.is_some() {
                 return;
             }
-            let is_html_select_element = element.map_or(false, |e| {
-                e.is_html_element() && e.local_name() == &*atom!("select")
-            });
+            let is_html_select_element =
+                element.is_some_and(|e| e.is_html_element() && e.local_name() == &*atom!("select"));
             if !is_html_select_element {
                 return;
             }
@@ -819,7 +818,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         use crate::values::computed::font::{FontFamily, FontSynthesis, FontSynthesisStyle};
         use crate::values::computed::text::{LetterSpacing, WordSpacing};
 
-        let is_legacy_marker = self.style.pseudo.map_or(false, |p| p.is_marker())
+        let is_legacy_marker = self.style.pseudo.is_some_and(|p| p.is_marker())
             && self.style.get_list().clone_list_style_type().is_bullet()
             && self.style.get_counters().clone_content() == Content::Normal;
         if !is_legacy_marker {

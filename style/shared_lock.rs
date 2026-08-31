@@ -41,6 +41,12 @@ impl fmt::Debug for SharedRwLock {
     }
 }
 
+impl Default for SharedRwLock {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SharedRwLock {
     /// Create a new shared lock.
     pub fn new() -> Self {
@@ -155,7 +161,7 @@ impl<T> Locked<T> {
     }
 
     /// Access the data for reading without verifying the lock. Use with caution.
-    pub unsafe fn read_unchecked<'a>(&'a self) -> &'a T {
+    pub unsafe fn read_unchecked(&self) -> &T {
         unsafe {
             let ptr = self.data.get();
             &*ptr
@@ -250,8 +256,8 @@ impl<'a> StylesheetGuards<'a> {
     /// Get the guard for a given stylesheet origin.
     pub fn for_origin(&self, origin: Origin) -> &SharedRwLockReadGuard<'a> {
         match origin {
-            Origin::Author => &self.author,
-            _ => &self.ua_or_user,
+            Origin::Author => self.author,
+            _ => self.ua_or_user,
         }
     }
 

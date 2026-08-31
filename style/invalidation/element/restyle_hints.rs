@@ -107,8 +107,6 @@ impl RestyleHint {
 
     /// Propagates this restyle hint to a child element.
     pub fn propagate(&mut self, traversal_flags: &TraversalFlags) -> Self {
-        use std::mem;
-
         // In the middle of an animation only restyle, we don't need to
         // propagate any restyle hints, and we need to remove ourselves.
         if traversal_flags.for_animation_only() {
@@ -123,7 +121,7 @@ impl RestyleHint {
         );
 
         // Else we should clear ourselves, and return the propagated hint.
-        mem::replace(self, Self::empty()).propagate_for_non_animation_restyle()
+        std::mem::take(self).propagate_for_non_animation_restyle()
     }
 
     /// Returns a new `RestyleHint` appropriate for children of the current element.

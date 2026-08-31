@@ -90,11 +90,11 @@ impl Bezier {
 
         Bezier {
             ax: 1.0 - cx - bx,
-            bx: bx,
-            cx: cx,
+            bx,
+            cx,
             ay: 1.0 - cy - by,
-            by: by,
-            cy: cy,
+            by,
+            cy,
         }
     }
 

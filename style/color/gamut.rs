@@ -82,7 +82,7 @@ impl AbsoluteColor {
         //     See [`Self::clip`] and [`Self::clip_to_dest_space`].
 
         // 11. set current to origin_OkLCh
-        let mut current_oklch = origin_oklch.clone();
+        let mut current_oklch = origin_oklch;
 
         // 12. set clipped to clip(current)
         let mut clipped = current_oklch.clip_to_dest_space(dest_color_space);
@@ -158,7 +158,7 @@ impl AbsoluteColor {
     /// NOTE this assumes RGB ranges and will not work for Lab, Oklab, or
     ///      other color spaces with different ranges, or limitless ranges
     fn clip(&self) -> Self {
-        let mut result = self.clone();
+        let mut result = *self;
         result.components = result.components.map(|c| c.clamp(0.0, 1.0));
         result
     }

@@ -31,7 +31,7 @@ impl<'scope, T: Send> ScopedTLS<'scope, T> {
     /// Create a new scoped TLS that will last as long as this rayon threadpool
     /// reference.
     pub fn new(pool: Option<&'scope rayon::ThreadPool>) -> Self {
-        debug_assert!(pool.map_or(true, |p| p.current_num_threads() <= STYLO_MAX_THREADS));
+        debug_assert!(pool.is_none_or(|p| p.current_num_threads() <= STYLO_MAX_THREADS));
         ScopedTLS {
             pool,
             slots: Default::default(),

@@ -277,7 +277,7 @@ impl ToTyped for CSSPixelLength {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         dest.push(TypedValue::Numeric(NumericValue::Unit(UnitValue {
             numeric_type: NumericType::length(),
-            value: self.0 as f32,
+            value: self.0,
             unit: CssString::from("px"),
         })));
         Ok(())

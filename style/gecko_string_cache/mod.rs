@@ -104,7 +104,7 @@ impl<'de> Deserialize<'de> for Atom {
 pub struct WeakAtom(nsAtom);
 
 /// The number of static atoms we have.
-const STATIC_ATOM_COUNT: usize = kStaticAtomCount as usize;
+const STATIC_ATOM_COUNT: usize = kStaticAtomCount;
 
 impl Deref for Atom {
     type Target = WeakAtom;
@@ -497,7 +497,7 @@ impl fmt::Display for Atom {
     }
 }
 
-impl<'a> From<&'a str> for Atom {
+impl From<&str> for Atom {
     #[inline]
     fn from(string: &str) -> Atom {
         debug_assert!(string.len() <= u32::MAX as usize);
@@ -510,14 +510,14 @@ impl<'a> From<&'a str> for Atom {
     }
 }
 
-impl<'a> From<&'a [u16]> for Atom {
+impl From<&[u16]> for Atom {
     #[inline]
     fn from(slice: &[u16]) -> Atom {
         Atom::from(&*nsStr::from(slice))
     }
 }
 
-impl<'a> From<&'a nsAString> for Atom {
+impl From<&nsAString> for Atom {
     #[inline]
     fn from(string: &nsAString) -> Atom {
         unsafe { Atom::from_addrefed(Gecko_Atomize16(string)) }

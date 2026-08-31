@@ -165,7 +165,7 @@ impl<T> PerOrigin<T> {
     /// level (author) to lowest (user agent).
     pub fn iter_origins(&self) -> PerOriginIter<'_, T> {
         PerOriginIter {
-            data: &self,
+            data: self,
             cur: 0,
             rev: false,
         }
@@ -175,7 +175,7 @@ impl<T> PerOrigin<T> {
     /// level (user agent) to highest (author).
     pub fn iter_origins_rev(&self) -> PerOriginIter<'_, T> {
         PerOriginIter {
-            data: &self,
+            data: self,
             cur: 2,
             rev: true,
         }

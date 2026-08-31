@@ -255,7 +255,7 @@ impl PrecomputedHash for AtomString {
     }
 }
 
-impl<'a> From<&'a str> for AtomString {
+impl From<&str> for AtomString {
     #[inline]
     fn from(string: &str) -> Self {
         Self(Atom::from(string))
@@ -432,7 +432,7 @@ impl PrecomputedHash for AtomIdent {
 }
 
 #[cfg(feature = "gecko")]
-impl<'a> From<&'a str> for AtomIdent {
+impl From<&str> for AtomIdent {
     #[inline]
     fn from(string: &str) -> Self {
         Self(Atom::from(string))
@@ -463,7 +463,7 @@ impl AtomIdent {
 
     /// Cast an atom ref to an AtomIdent ref.
     #[inline]
-    pub fn cast<'a>(atom: &'a Atom) -> &'a Self {
+    pub fn cast(atom: &Atom) -> &Self {
         let ptr = atom as *const _ as *const Self;
         // safety: repr(transparent)
         unsafe { &*ptr }

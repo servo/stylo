@@ -184,7 +184,7 @@ impl DeepCloneWithLock for LayerBlockRule {
                         .deep_clone_with_lock(lock, guard),
                 ),
             ),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }

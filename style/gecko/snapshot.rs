@@ -101,7 +101,7 @@ impl ElementSnapshot for GeckoElementSnapshot {
         unsafe {
             bindings::Gecko_Snapshot_DebugListAttributes(self, &mut string);
         }
-        String::from_utf8_lossy(&*string).into_owned()
+        String::from_utf8_lossy(&string).into_owned()
     }
 
     fn state(&self) -> Option<ElementState> {
@@ -123,12 +123,12 @@ impl ElementSnapshot for GeckoElementSnapshot {
             return None;
         }
 
-        snapshot_helpers::get_id(&*self.mAttrs)
+        snapshot_helpers::get_id(&self.mAttrs)
     }
 
     #[inline]
     fn is_part(&self, name: &AtomIdent) -> bool {
-        let attr = match snapshot_helpers::find_attr(&*self.mAttrs, &atom!("part")) {
+        let attr = match snapshot_helpers::find_attr(&self.mAttrs, &atom!("part")) {
             Some(attr) => attr,
             None => return false,
         };
@@ -138,7 +138,7 @@ impl ElementSnapshot for GeckoElementSnapshot {
 
     #[inline]
     fn imported_part(&self, name: &AtomIdent) -> Option<AtomIdent> {
-        snapshot_helpers::imported_part(&*self.mAttrs, name)
+        snapshot_helpers::imported_part(&self.mAttrs, name)
     }
 
     #[inline]

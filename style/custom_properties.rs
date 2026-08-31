@@ -241,7 +241,7 @@ pub type Name = Atom;
 
 impl LocalName {
     #[cfg(feature = "gecko")]
-    fn with_name<'a, R>(name: &'a Name, callback: impl FnOnce(&Self) -> R) -> R {
+    fn with_name<R>(name: &Name, callback: impl FnOnce(&Self) -> R) -> R {
         callback(Self::cast(name))
     }
 
@@ -399,7 +399,7 @@ fn reify_variable_value_range(
         }
 
         let (fallback, has_fallback) = if let Some(fallback) = &reference.fallback {
-            debug_assert!(fallback.start.get() <= reference.end - 1);
+            debug_assert!(fallback.start.get() < reference.end);
 
             (
                 reify_variable_value_range(
@@ -1263,7 +1263,7 @@ fn parse_declaration_value_block(
                                 kind: attribute_kind,
                                 namespace,
                             },
-                            substitution_kind: substitution_kind.clone(),
+                            substitution_kind,
                         });
 
                         let mut fallback = None;
@@ -1308,7 +1308,7 @@ fn parse_declaration_value_block(
                         Ok(fallback)
                     })?;
                     if input_end_position.unwrap() == input.position() {
-                        missing_closing_characters.push_str(")");
+                        missing_closing_characters.push(')');
                     }
                     prev_reference_index = Some(our_ref_index);
                     let reference = &mut references.refs[our_ref_index];
@@ -1360,10 +1360,10 @@ fn parse_declaration_value_block(
                     // Check the value in case the final backslash was itself escaped.
                     // Serialize as escaped U+FFFD, which is also interpreted as U+FFFD.
                     // (Unescaped U+FFFD would also work, but removing the backslash is annoying.)
-                    missing_closing_characters.push_str("�")
+                    missing_closing_characters.push('�')
                 }
                 if is_unquoted_url && !input.slice_from(token_start).ends_with(")") {
-                    missing_closing_characters.push_str(")");
+                    missing_closing_characters.push(')');
                 }
             },
             _ => {},
@@ -1415,7 +1415,7 @@ pub fn get_attr_value_for_cycle_resolution(
     let mut input = ParserInput::new(&attr);
     let mut parser = Parser::new(&mut input);
     // TODO(Bug 2021110): Support namespaced attributes in chained references.
-    let value = VariableValue::parse(&mut parser, None, &url_data).map_err(|_| ())?;
+    let value = VariableValue::parse(&mut parser, None, url_data).map_err(|_| ())?;
     Ok(ComputedRegisteredValue::universal(Arc::new(value)))
 }
 
@@ -1472,7 +1472,7 @@ pub fn substitute_references_if_needed_and_apply(
 ) {
     debug_assert_ne!(kind, SubstitutionFunctionKind::Env);
     let is_var = matches!(kind, SubstitutionFunctionKind::Var);
-    let registration = stylist.get_custom_property_registration(&name);
+    let registration = stylist.get_custom_property_registration(name);
     if is_var && !value.has_references() && registration.is_universal() {
         // Trivial path: no references and no need to compute the value, just apply it directly.
         let computed_value = ComputedRegisteredValue::universal(Arc::clone(value));
@@ -1508,7 +1508,7 @@ pub fn substitute_references_if_needed_and_apply(
     if is_var {
         let css = &substitution.css;
         let css_wide_kw = {
-            let mut input = ParserInput::new(&css);
+            let mut input = ParserInput::new(css);
             let mut input = Parser::new(&mut input);
             input.try_parse(CSSWideKeyword::parse)
         };
@@ -1672,7 +1672,7 @@ fn compute_value(
 ) -> Result<ComputedRegisteredValue, ()> {
     debug_assert!(!registration.is_universal());
 
-    let mut input = ParserInput::new(&css);
+    let mut input = ParserInput::new(css);
     let mut input = Parser::new(&mut input);
 
     SpecifiedRegisteredValue::compute(
@@ -1733,8 +1733,8 @@ fn do_substitute_chunk<'a>(
     let mut next_token_type = first_token_type;
     let mut cur_pos = start;
     let mut attr_tainted = false;
-    let mut references = references.iter();
-    while let Some(reference) = references.next() {
+    let references = references.iter();
+    for reference in references {
         if reference.start != cur_pos {
             substituted.push(
                 &css[cur_pos..reference.start],
@@ -1931,7 +1931,7 @@ fn substitute_one_reference<'a>(
                             AttributeType::Type(syntax) => {
                                 let value = SpecifiedRegisteredValue::parse(
                                     &mut parser,
-                                    &syntax,
+                                    syntax,
                                     url_data,
                                     None,
                                     AllowComputationallyDependent::Yes,
@@ -1986,7 +1986,7 @@ fn substitute_internal<'a>(
     computed_context: &computed::Context,
     attribute_tracker: &mut AttributeTracker,
     seen: &mut SmallVec<[&'a Name; 8]>,
-    mut attr_taint: Option<&mut AttrTaint>,
+    attr_taint: Option<&mut AttrTaint>,
 ) -> Result<Substitution<'a>, ()> {
     do_substitute_chunk(
         &variable_value.css,
@@ -2001,7 +2001,7 @@ fn substitute_internal<'a>(
         &variable_value.references.refs,
         attribute_tracker,
         seen,
-        attr_taint.as_deref_mut(),
+        attr_taint,
     )
 }
 

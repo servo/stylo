@@ -212,12 +212,12 @@ impl Device {
     /// the font metrics have changed since the previous restyle.
     pub fn update_root_font_metrics(&self) -> bool {
         let root_style = self.root_style.read();
-        let root_effective_zoom = (*root_style).effective_zoom;
+        let root_effective_zoom = root_style.effective_zoom;
         let root_font_size = (*root_style).get_font().clone_font_size().computed_size();
 
         let root_font_metrics = self.query_font_metrics(
-            (*root_style).writing_mode.is_upright(),
-            &(*root_style).get_font(),
+            root_style.writing_mode.is_upright(),
+            (*root_style).get_font(),
             root_font_size,
             QueryFontMetricsFlags::USE_USER_FONT_SET
                 | QueryFontMetricsFlags::NEEDS_CH
@@ -234,7 +234,7 @@ impl Device {
                 root_font_metrics
                     .zero_advance_measure_or_default(
                         root_font_size,
-                        (*root_style).writing_mode.is_upright(),
+                        root_style.writing_mode.is_upright(),
                     )
                     .px(),
             ),

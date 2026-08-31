@@ -86,7 +86,7 @@ impl StylesheetContents {
             css,
             &url_data,
             origin,
-            &shared_lock,
+            shared_lock,
             stylesheet_loader,
             error_reporter,
             quirks_mode,
@@ -96,7 +96,7 @@ impl StylesheetContents {
         );
 
         Arc::new(Self {
-            rules: CssRules::new(rules, &shared_lock),
+            rules: CssRules::new(rules, shared_lock),
             origin,
             url_data,
             namespaces,
@@ -466,7 +466,7 @@ impl Stylesheet {
                     Ok(rule_start) => {
                         // TODO(emilio, nesting): sanitize nested CSS rules, probably?
                         if let Some(ref mut data) = sanitization_data {
-                            if let Some(ref rule) = iter.parser.rules.last() {
+                            if let Some(rule) = iter.parser.rules.last() {
                                 if !data.kind.allows(rule, &shared_lock.read()) {
                                     iter.parser.rules.pop();
                                     continue;

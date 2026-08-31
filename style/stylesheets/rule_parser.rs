@@ -512,7 +512,7 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
                 let import_rule = loader.request_stylesheet(
                     url,
                     start.source_location(),
-                    &self.shared_lock,
+                    self.shared_lock,
                     media,
                     supports,
                     layer,
@@ -745,7 +745,7 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
                 input, rule_type, /* wants_first_declaration_block = */ false,
             )
             .rules;
-        CssRules::new(rules, &self.shared_lock)
+        CssRules::new(rules, self.shared_lock)
     }
 
     fn parse_nested(
@@ -908,10 +908,11 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
         self.flush_declarations();
         let rule = match prelude {
             AtRulePrelude::FontFace => self.nest_for_rule(CssRuleType::FontFace, |p| {
-                CssRule::FontFace(Arc::new(
-                    p.shared_lock
-                        .wrap(parse_font_face_block(&p.context, input, source_location).into()),
-                ))
+                CssRule::FontFace(Arc::new(p.shared_lock.wrap(parse_font_face_block(
+                    &p.context,
+                    input,
+                    source_location,
+                ))))
             }),
             AtRulePrelude::FontFeatureValues(family_names) => {
                 self.nest_for_rule(CssRuleType::FontFeatureValues, |p| {

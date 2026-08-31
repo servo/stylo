@@ -35,6 +35,15 @@ pub use self::GenericAuthorStyles as AuthorStyles;
 static EMPTY_CASCADE_DATA: LazyLock<Arc<CascadeData>> =
     LazyLock::new(|| Arc::new_leaked(CascadeData::new()));
 
+impl<S> Default for GenericAuthorStyles<S>
+where
+    S: StylesheetInDocument + PartialEq + 'static,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S> GenericAuthorStyles<S>
 where
     S: StylesheetInDocument + PartialEq + 'static,

@@ -78,7 +78,7 @@ where
         current = element.parent_element();
     }
 
-    return None;
+    None
 }
 
 /// A selector query abstraction, in order to be generic over QuerySelector and
@@ -201,8 +201,8 @@ where
         for dependency in self.dependencies.iter() {
             target_vector.push(Invalidation::new(
                 dependency,
-                self.matching_context.current_host.clone(),
-                self.matching_context.scope_element.clone(),
+                self.matching_context.current_host,
+                self.matching_context.scope_element,
             ))
         }
 
@@ -219,7 +219,7 @@ where
 
     fn should_process_descendants(&mut self, _: E) -> bool {
         if Q::should_stop_after_first_match() {
-            return Q::is_empty(&self.results);
+            return Q::is_empty(self.results);
         }
 
         true
@@ -619,17 +619,16 @@ where
     let selector = &selector_list.slice()[0];
     let class_and_id_case_sensitivity = matching_context.classes_and_ids_case_sensitivity();
     // Let's just care about the easy cases for now.
-    if selector.len() == 1 {
-        if query_selector_single_query::<E, Q>(
+    if selector.len() == 1
+        && query_selector_single_query::<E, Q>(
             root,
             selector.iter().next().unwrap(),
             results,
             class_and_id_case_sensitivity,
         )
         .is_ok()
-        {
-            return Ok(());
-        }
+    {
+        return Ok(());
     }
 
     let mut iter = selector.iter();
@@ -641,7 +640,7 @@ where
     let mut simple_filter = None;
 
     'selector_loop: loop {
-        debug_assert!(combinator.map_or(true, |c| !c.is_sibling()));
+        debug_assert!(combinator.is_none_or(|c| !c.is_sibling()));
 
         'component_loop: for component in &mut iter {
             match *component {
@@ -721,7 +720,7 @@ where
                                 matching_context,
                             );
 
-                            if Q::should_stop_after_first_match() && !Q::is_empty(&results) {
+                            if Q::should_stop_after_first_match() && !Q::is_empty(results) {
                                 break;
                             }
                         }
@@ -765,7 +764,7 @@ where
     };
 
     match simple_filter {
-        SimpleFilter::Class(ref class) => {
+        SimpleFilter::Class(class) => {
             // Bloom filter can only be used when case sensitive.
             let bloom_hash = if class_and_id_case_sensitivity == CaseSensitivity::CaseSensitive {
                 Some(E::hash_for_bloom_filter(class.0.get_hash()))
@@ -786,7 +785,7 @@ where
                 )
             });
         },
-        SimpleFilter::LocalName(ref local_name) => {
+        SimpleFilter::LocalName(local_name) => {
             let hash = E::hash_for_bloom_filter(local_name.name.0.get_hash());
             let hash_lower = if local_name.name == local_name.lower_name {
                 hash
@@ -811,7 +810,7 @@ where
                 ))
             });
         },
-        SimpleFilter::Attr(ref local_name) => {
+        SimpleFilter::Attr(local_name) => {
             let hash = E::hash_for_bloom_filter(local_name.0.get_hash());
             collect_all_elements::<E, Q, _>(root, results, |element| {
                 if !element.bloom_may_have_hash(hash) {

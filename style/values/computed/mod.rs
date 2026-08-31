@@ -247,7 +247,7 @@ impl<'a> Context<'a> {
     /// Lazily evaluate the container size query, returning the result.
     pub fn get_container_size_query(&self) -> ContainerSizeQueryResult {
         let mut resolved = self.container_size_query.borrow_mut();
-        resolved.get().clone()
+        resolved.get()
     }
 
     /// Creates a suitable context for media query evaluation, in which
@@ -299,7 +299,7 @@ impl<'a> Context<'a> {
             None => (None, None),
         };
 
-        let style = style.as_ref().map(|s| &**s);
+        let style = style.as_deref();
         let quirks_mode = device.quirks_mode();
         let context = Context {
             builder: StyleBuilder::for_inheritance(device, stylist, style, None),
@@ -416,7 +416,7 @@ impl<'a> Context<'a> {
 
     /// Get the inherited custom properties map.
     pub fn inherited_custom_properties(&self) -> &ComputedCustomProperties {
-        &self.builder.inherited_custom_properties()
+        self.builder.inherited_custom_properties()
     }
 
     /// Whether the style is for the root element.

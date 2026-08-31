@@ -165,7 +165,7 @@ where
                     );
                 }
             }
-            if let Some(map) = cascade_data.normal_rules(&collector.pseudo_elements) {
+            if let Some(map) = cascade_data.normal_rules(collector.pseudo_elements) {
                 collector.collect_rules_in_map(map, cascade_level, cascade_data);
             }
         });
@@ -240,11 +240,11 @@ where
         SelectorMap::get_matching_rules(
             self.element,
             part_rules,
-            &mut self.rules,
-            &mut self.context,
+            self.rules,
+            self.context,
             cascade_level,
             cascade_data,
-            &self.stylist,
+            self.stylist,
         );
     }
 
@@ -275,11 +275,11 @@ where
         map.get_all_matching_rules(
             self.element,
             rule_hash_target,
-            &mut self.rules,
-            &mut self.context,
+            self.rules,
+            self.context,
             cascade_level,
             cascade_data,
-            &self.stylist,
+            self.stylist,
         );
     }
 
@@ -323,7 +323,7 @@ where
                 None => continue,
             };
 
-            let slotted_rules = match data.slotted_rules(&self.pseudo_elements) {
+            let slotted_rules = match data.slotted_rules(self.pseudo_elements) {
                 Some(r) => r,
                 None => continue,
             };
@@ -355,7 +355,7 @@ where
 
         let cascade_level = CascadeLevel::same_tree_author_normal();
         self.in_shadow_tree(containing_shadow.host(), |collector| {
-            if let Some(map) = cascade_data.normal_rules(&collector.pseudo_elements) {
+            if let Some(map) = cascade_data.normal_rules(collector.pseudo_elements) {
                 collector.collect_rules_in_map(map, cascade_level, cascade_data);
             }
 
@@ -365,7 +365,7 @@ where
                 return;
             }
 
-            let part_rules = match cascade_data.part_rules(&collector.pseudo_elements) {
+            let part_rules = match cascade_data.part_rules(collector.pseudo_elements) {
                 Some(p) => p,
                 None => return,
             };
@@ -389,8 +389,7 @@ where
         let rule_hash_target = self.rule_hash_target;
         let cascade_level = CascadeLevel::author_normal(shadow_cascade_order);
         self.in_shadow_tree(rule_hash_target, |collector| {
-            if let Some(host_rules) =
-                cascade_data.featureless_host_rules(&collector.pseudo_elements)
+            if let Some(host_rules) = cascade_data.featureless_host_rules(collector.pseudo_elements)
             {
                 debug_assert!(!collector.context.featureless(), "How?");
                 collector.context.featureless = true;
@@ -452,7 +451,7 @@ where
             };
 
             if let Some(cascade_data) = cascade_data {
-                if let Some(part_rules) = cascade_data.part_rules(&self.pseudo_elements) {
+                if let Some(part_rules) = cascade_data.part_rules(self.pseudo_elements) {
                     let containing_host = outer_shadow.map(|s| s.host());
                     let cascade_level = CascadeLevel::author_normal(shadow_cascade_order);
                     self.in_tree(containing_host, |collector| {

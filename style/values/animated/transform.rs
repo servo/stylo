@@ -203,9 +203,9 @@ impl From<Matrix3D> for MatrixDecomposed2D {
         // Convert into degrees because our rotation functions expect it.
         angle = angle.to_degrees();
         MatrixDecomposed2D {
-            translate: translate,
-            scale: scale,
-            angle: angle,
+            translate,
+            scale,
+            angle,
             matrix: m,
         }
     }
@@ -1099,75 +1099,66 @@ impl ComputeSquaredDistance for ComputedTransform {
 impl Animate for ComputedTransformOperation {
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
         match (self, other) {
-            (&TransformOperation::Matrix3D(ref this), &TransformOperation::Matrix3D(ref other)) => {
-                Ok(TransformOperation::Matrix3D(
-                    this.animate(other, procedure)?,
-                ))
-            },
-            (&TransformOperation::Matrix(ref this), &TransformOperation::Matrix(ref other)) => {
+            (TransformOperation::Matrix3D(this), TransformOperation::Matrix3D(other)) => Ok(
+                TransformOperation::Matrix3D(this.animate(other, procedure)?),
+            ),
+            (TransformOperation::Matrix(this), TransformOperation::Matrix(other)) => {
                 Ok(TransformOperation::Matrix(this.animate(other, procedure)?))
             },
-            (
-                &TransformOperation::Skew(ref fx, ref fy),
-                &TransformOperation::Skew(ref tx, ref ty),
-            ) => Ok(TransformOperation::Skew(
-                fx.animate(tx, procedure)?,
-                fy.animate(ty, procedure)?,
-            )),
-            (&TransformOperation::SkewX(ref f), &TransformOperation::SkewX(ref t)) => {
+            (TransformOperation::Skew(fx, fy), TransformOperation::Skew(tx, ty)) => Ok(
+                TransformOperation::Skew(fx.animate(tx, procedure)?, fy.animate(ty, procedure)?),
+            ),
+            (TransformOperation::SkewX(f), TransformOperation::SkewX(t)) => {
                 Ok(TransformOperation::SkewX(f.animate(t, procedure)?))
             },
-            (&TransformOperation::SkewY(ref f), &TransformOperation::SkewY(ref t)) => {
+            (TransformOperation::SkewY(f), TransformOperation::SkewY(t)) => {
                 Ok(TransformOperation::SkewY(f.animate(t, procedure)?))
             },
             (
-                &TransformOperation::Translate3D(ref fx, ref fy, ref fz),
-                &TransformOperation::Translate3D(ref tx, ref ty, ref tz),
+                TransformOperation::Translate3D(fx, fy, fz),
+                TransformOperation::Translate3D(tx, ty, tz),
             ) => Ok(TransformOperation::Translate3D(
                 fx.animate(tx, procedure)?,
                 fy.animate(ty, procedure)?,
                 fz.animate(tz, procedure)?,
             )),
-            (
-                &TransformOperation::Translate(ref fx, ref fy),
-                &TransformOperation::Translate(ref tx, ref ty),
-            ) => Ok(TransformOperation::Translate(
-                fx.animate(tx, procedure)?,
-                fy.animate(ty, procedure)?,
-            )),
-            (&TransformOperation::TranslateX(ref f), &TransformOperation::TranslateX(ref t)) => {
+            (TransformOperation::Translate(fx, fy), TransformOperation::Translate(tx, ty)) => {
+                Ok(TransformOperation::Translate(
+                    fx.animate(tx, procedure)?,
+                    fy.animate(ty, procedure)?,
+                ))
+            },
+            (TransformOperation::TranslateX(f), TransformOperation::TranslateX(t)) => {
                 Ok(TransformOperation::TranslateX(f.animate(t, procedure)?))
             },
-            (&TransformOperation::TranslateY(ref f), &TransformOperation::TranslateY(ref t)) => {
+            (TransformOperation::TranslateY(f), TransformOperation::TranslateY(t)) => {
                 Ok(TransformOperation::TranslateY(f.animate(t, procedure)?))
             },
-            (&TransformOperation::TranslateZ(ref f), &TransformOperation::TranslateZ(ref t)) => {
+            (TransformOperation::TranslateZ(f), TransformOperation::TranslateZ(t)) => {
                 Ok(TransformOperation::TranslateZ(f.animate(t, procedure)?))
             },
-            (
-                &TransformOperation::Scale3D(ref fx, ref fy, ref fz),
-                &TransformOperation::Scale3D(ref tx, ref ty, ref tz),
-            ) => Ok(TransformOperation::Scale3D(
-                animate_multiplicative_factor(*fx, *tx, procedure)?,
-                animate_multiplicative_factor(*fy, *ty, procedure)?,
-                animate_multiplicative_factor(*fz, *tz, procedure)?,
-            )),
-            (&TransformOperation::ScaleX(ref f), &TransformOperation::ScaleX(ref t)) => Ok(
+            (TransformOperation::Scale3D(fx, fy, fz), TransformOperation::Scale3D(tx, ty, tz)) => {
+                Ok(TransformOperation::Scale3D(
+                    animate_multiplicative_factor(*fx, *tx, procedure)?,
+                    animate_multiplicative_factor(*fy, *ty, procedure)?,
+                    animate_multiplicative_factor(*fz, *tz, procedure)?,
+                ))
+            },
+            (TransformOperation::ScaleX(f), TransformOperation::ScaleX(t)) => Ok(
                 TransformOperation::ScaleX(animate_multiplicative_factor(*f, *t, procedure)?),
             ),
-            (&TransformOperation::ScaleY(ref f), &TransformOperation::ScaleY(ref t)) => Ok(
+            (TransformOperation::ScaleY(f), TransformOperation::ScaleY(t)) => Ok(
                 TransformOperation::ScaleY(animate_multiplicative_factor(*f, *t, procedure)?),
             ),
-            (&TransformOperation::ScaleZ(ref f), &TransformOperation::ScaleZ(ref t)) => Ok(
+            (TransformOperation::ScaleZ(f), TransformOperation::ScaleZ(t)) => Ok(
                 TransformOperation::ScaleZ(animate_multiplicative_factor(*f, *t, procedure)?),
             ),
-            (
-                &TransformOperation::Scale(ref fx, ref fy),
-                &TransformOperation::Scale(ref tx, ref ty),
-            ) => Ok(TransformOperation::Scale(
-                animate_multiplicative_factor(*fx, *tx, procedure)?,
-                animate_multiplicative_factor(*fy, *ty, procedure)?,
-            )),
+            (TransformOperation::Scale(fx, fy), TransformOperation::Scale(tx, ty)) => {
+                Ok(TransformOperation::Scale(
+                    animate_multiplicative_factor(*fx, *tx, procedure)?,
+                    animate_multiplicative_factor(*fy, *ty, procedure)?,
+                ))
+            },
             (
                 &TransformOperation::Rotate3D(fx, fy, fz, fa),
                 &TransformOperation::Rotate3D(tx, ty, tz, ta),
@@ -1195,10 +1186,7 @@ impl Animate for ComputedTransformOperation {
             (&TransformOperation::RotateZ(fa), &TransformOperation::Rotate(ta)) => {
                 Ok(TransformOperation::Rotate(fa.animate(&ta, procedure)?))
             },
-            (
-                &TransformOperation::Perspective(ref fd),
-                &TransformOperation::Perspective(ref td),
-            ) => {
+            (TransformOperation::Perspective(fd), TransformOperation::Perspective(td)) => {
                 use crate::values::computed::CSSPixelLength;
                 use crate::values::generics::transform::create_perspective_matrix;
 
@@ -1296,25 +1284,24 @@ impl ComputedTransformOperation {
 impl ComputeSquaredDistance for ComputedTransformOperation {
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
         match (self, other) {
-            (&TransformOperation::Matrix3D(ref this), &TransformOperation::Matrix3D(ref other)) => {
+            (TransformOperation::Matrix3D(this), TransformOperation::Matrix3D(other)) => {
                 this.compute_squared_distance(other)
             },
-            (&TransformOperation::Matrix(ref this), &TransformOperation::Matrix(ref other)) => {
+            (TransformOperation::Matrix(this), TransformOperation::Matrix(other)) => {
                 let this: Matrix3D = (*this).into();
                 let other: Matrix3D = (*other).into();
                 this.compute_squared_distance(&other)
             },
-            (
-                &TransformOperation::Skew(ref fx, ref fy),
-                &TransformOperation::Skew(ref tx, ref ty),
-            ) => Ok(fx.compute_squared_distance(&tx)? + fy.compute_squared_distance(&ty)?),
+            (TransformOperation::Skew(fx, fy), TransformOperation::Skew(tx, ty)) => {
+                Ok(fx.compute_squared_distance(tx)? + fy.compute_squared_distance(ty)?)
+            },
             (&TransformOperation::SkewX(ref f), &TransformOperation::SkewX(ref t))
             | (&TransformOperation::SkewY(ref f), &TransformOperation::SkewY(ref t)) => {
-                f.compute_squared_distance(&t)
+                f.compute_squared_distance(t)
             },
             (
-                &TransformOperation::Translate3D(ref fx, ref fy, ref fz),
-                &TransformOperation::Translate3D(ref tx, ref ty, ref tz),
+                TransformOperation::Translate3D(fx, fy, fz),
+                TransformOperation::Translate3D(tx, ty, tz),
             ) => {
                 // For translate, We don't want to require doing layout in order
                 // to calculate the result, so drop the percentage part.
@@ -1330,14 +1317,13 @@ impl ComputeSquaredDistance for ComputedTransformOperation {
 
                 Ok(fx.compute_squared_distance(&tx)?
                     + fy.compute_squared_distance(&ty)?
-                    + fz.compute_squared_distance(&tz)?)
+                    + fz.compute_squared_distance(tz)?)
             },
-            (
-                &TransformOperation::Scale3D(ref fx, ref fy, ref fz),
-                &TransformOperation::Scale3D(ref tx, ref ty, ref tz),
-            ) => Ok(fx.compute_squared_distance(&tx)?
-                + fy.compute_squared_distance(&ty)?
-                + fz.compute_squared_distance(&tz)?),
+            (TransformOperation::Scale3D(fx, fy, fz), TransformOperation::Scale3D(tx, ty, tz)) => {
+                Ok(fx.compute_squared_distance(tx)?
+                    + fy.compute_squared_distance(ty)?
+                    + fz.compute_squared_distance(tz)?)
+            },
             (
                 &TransformOperation::Rotate3D(fx, fy, fz, fa),
                 &TransformOperation::Rotate3D(tx, ty, tz, ta),
@@ -1349,10 +1335,7 @@ impl ComputeSquaredDistance for ComputedTransformOperation {
             | (&TransformOperation::Rotate(fa), &TransformOperation::Rotate(ta)) => {
                 fa.compute_squared_distance(&ta)
             },
-            (
-                &TransformOperation::Perspective(ref fd),
-                &TransformOperation::Perspective(ref td),
-            ) => fd
+            (TransformOperation::Perspective(fd), TransformOperation::Perspective(td)) => fd
                 .infinity_or(|l| l.px())
                 .compute_squared_distance(&td.infinity_or(|l| l.px())),
             (&TransformOperation::Perspective(ref p), &TransformOperation::Matrix3D(ref m))
@@ -1364,7 +1347,7 @@ impl ComputeSquaredDistance for ComputedTransformOperation {
                 if p >= 0. {
                     p_matrix.m34 = -1. / p.max(1.);
                 }
-                p_matrix.compute_squared_distance(&m)
+                p_matrix.compute_squared_distance(m)
             },
             // Gecko cross-interpolates amongst all translate and all scale
             // functions (See ToPrimitive in layout/style/StyleAnimationValue.cpp)
@@ -1430,7 +1413,7 @@ impl Animate for ComputedRotate {
                     Angle::zero().animate(&ta, procedure)?,
                 ))
             },
-            (&Rotate::Rotate3D(_, ..), _) | (_, &Rotate::Rotate3D(_, ..)) => {
+            (&Rotate::Rotate3D(..), _) | (_, &Rotate::Rotate3D(..)) => {
                 // https://drafts.csswg.org/css-transforms-2/#interpolation-of-transform-functions
 
                 let (from, to) = (self.resolve(), other.resolve());
@@ -1530,7 +1513,7 @@ impl ComputeSquaredDistance for ComputedRotate {
             | (&Rotate::None, &Rotate::Rotate3D(_, _, _, a)) => {
                 a.compute_squared_distance(&Angle::zero())
             },
-            (&Rotate::Rotate3D(_, ..), _) | (_, &Rotate::Rotate3D(_, ..)) => {
+            (&Rotate::Rotate3D(..), _) | (_, &Rotate::Rotate3D(..)) => {
                 let (from, to) = (self.resolve(), other.resolve());
                 let (mut fx, mut fy, mut fz, angle1) =
                     transform::get_normalized_vector_and_angle(from.0, from.1, from.2, from.3);
@@ -1577,7 +1560,7 @@ impl ComputedTranslate {
                 LengthPercentage::zero(),
                 Length::zero(),
             ),
-            Translate::Translate(ref tx, ref ty, ref tz) => (tx.clone(), ty.clone(), tz.clone()),
+            Translate::Translate(ref tx, ref ty, ref tz) => (tx.clone(), ty.clone(), *tz),
         }
     }
 }
@@ -1587,7 +1570,7 @@ impl Animate for ComputedTranslate {
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
         match (self, other) {
             (&Translate::None, &Translate::None) => Ok(Translate::None),
-            (&Translate::Translate(_, ..), _) | (_, &Translate::Translate(_, ..)) => {
+            (&Translate::Translate(..), _) | (_, &Translate::Translate(..)) => {
                 let (from, to) = (self.resolve(), other.resolve());
                 Ok(Translate::Translate(
                     from.0.animate(&to.0, procedure)?,
@@ -1628,7 +1611,7 @@ impl Animate for ComputedScale {
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
         match (self, other) {
             (&Scale::None, &Scale::None) => Ok(Scale::None),
-            (&Scale::Scale(_, ..), _) | (_, &Scale::Scale(_, ..)) => {
+            (&Scale::Scale(..), _) | (_, &Scale::Scale(..)) => {
                 let (from, to) = (self.resolve(), other.resolve());
                 // For transform lists, we add by appending to the list of
                 // transform functions. However, ComputedScale cannot be

@@ -178,7 +178,7 @@ impl PseudoElement {
         match *self {
             % for pseudo in PSEUDOS:
             % if pseudo.name.startswith("-moz-tree-"):
-            PseudoElement::${pseudo.capitalized}(ref args) => &args,
+            PseudoElement::${pseudo.capitalized}(ref args) => args,
             % endif
             % endfor
             _ => &[],

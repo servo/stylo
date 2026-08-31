@@ -25,20 +25,11 @@ use std::hash::{BuildHasherDefault, Hash, Hasher};
 
 /// A hasher implementation that doesn't hash anything, because it expects its
 /// input to be a suitable u32 hash.
+#[derive(Default)]
 pub struct PrecomputedHasher {
     hash: u32,
     #[cfg(debug_assertions)]
     initialized: bool,
-}
-
-impl Default for PrecomputedHasher {
-    fn default() -> Self {
-        Self {
-            hash: 0,
-            #[cfg(debug_assertions)]
-            initialized: false,
-        }
-    }
 }
 
 /// A vector of relevant attributes, that can be useful for revalidation.
@@ -263,7 +254,7 @@ impl SelectorMap<Rule> {
         }
 
         rule_hash_target.each_class(|class| {
-            if let Some(rules) = self.class_hash.get(&class, quirks_mode) {
+            if let Some(rules) = self.class_hash.get(class, quirks_mode) {
                 SelectorMap::get_matching_rules(
                     element,
                     rules,
@@ -367,15 +358,15 @@ impl SelectorMap<Rule> {
                 result
             };
 
-            if rule.container_condition_id != ContainerConditionId::none() {
-                if !cascade_data.container_condition_matches(
+            if rule.container_condition_id != ContainerConditionId::none()
+                && !cascade_data.container_condition_matches(
                     rule.container_condition_id,
                     stylist,
                     element,
                     matching_context,
-                ) {
-                    continue;
-                }
+                )
+            {
+                continue;
             }
             matching_rules.push(rule.to_applicable_declaration_block(
                 cascade_level,
@@ -541,7 +532,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
     {
         if element.is_root() {
             for entry in self.root.iter() {
-                if !f(&entry) {
+                if !f(entry) {
                     return false;
                 }
             }
@@ -550,7 +541,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
         if let Some(id) = element.id() {
             if let Some(v) = self.id_hash.get(id, quirks_mode) {
                 for entry in v.iter() {
-                    if !f(&entry) {
+                    if !f(entry) {
                         return false;
                     }
                 }
@@ -564,7 +555,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
             }
             if let Some(v) = self.class_hash.get(class, quirks_mode) {
                 for entry in v.iter() {
-                    if !f(&entry) {
+                    if !f(entry) {
                         done = true;
                         return;
                     }
@@ -585,7 +576,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
                     relevant_attributes.push(name.clone());
                 }
                 for entry in v.iter() {
-                    if !f(&entry) {
+                    if !f(entry) {
                         done = true;
                         return;
                     }
@@ -599,7 +590,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
 
         if let Some(v) = self.local_name_hash.get(element.local_name()) {
             for entry in v.iter() {
-                if !f(&entry) {
+                if !f(entry) {
                     return false;
                 }
             }
@@ -607,7 +598,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
 
         if let Some(v) = self.namespace_hash.get(element.namespace()) {
             for entry in v.iter() {
-                if !f(&entry) {
+                if !f(entry) {
                     return false;
                 }
             }
@@ -615,14 +606,14 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
 
         if element_state.intersects(RARE_PSEUDO_CLASS_STATES) {
             for entry in self.rare_pseudo_classes.iter() {
-                if !f(&entry) {
+                if !f(entry) {
                     return false;
                 }
             }
         }
 
         for entry in self.other.iter() {
-            if !f(&entry) {
+            if !f(entry) {
                 return false;
             }
         }
@@ -657,7 +648,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
             element.state() | additional_states,
             quirks_mode,
             /* relevant_attributes = */ None,
-            |entry| f(entry),
+            &mut f,
         ) {
             return false;
         }
@@ -666,7 +657,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
         if let Some(id) = additional_id {
             if let Some(v) = self.id_hash.get(id, quirks_mode) {
                 for entry in v.iter() {
-                    if !f(&entry) {
+                    if !f(entry) {
                         return false;
                     }
                 }
@@ -677,7 +668,7 @@ impl<T: SelectorMapEntry> SelectorMap<T> {
         for class in additional_classes {
             if let Some(v) = self.class_hash.get(class, quirks_mode) {
                 for entry in v.iter() {
-                    if !f(&entry) {
+                    if !f(entry) {
                         return false;
                     }
                 }

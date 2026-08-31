@@ -64,7 +64,7 @@ impl<T> Deref for CopyablePtr<T> {
 }
 
 impl<T> DerefMut for CopyablePtr<T> {
-    fn deref_mut<'a>(&'a mut self) -> &'a mut T {
+    fn deref_mut(&mut self) -> &mut T {
         &mut self.mPtr
     }
 }

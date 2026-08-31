@@ -39,10 +39,11 @@ where
 }
 
 /// The validity of the data in a given cascade origin.
-#[derive(Clone, Copy, Debug, Eq, MallocSizeOf, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, Eq, MallocSizeOf, Ord, PartialEq, PartialOrd)]
 pub enum DataValidity {
     /// The origin is clean, all the data already there is valid, though we may
     /// have new sheets at the end.
+    #[default]
     Valid = 0,
 
     /// The cascade data is invalid, but not the invalidation data (which is
@@ -51,12 +52,6 @@ pub enum DataValidity {
 
     /// Everything needs to be rebuilt.
     FullyInvalid = 2,
-}
-
-impl Default for DataValidity {
-    fn default() -> Self {
-        DataValidity::Valid
-    }
 }
 
 /// A struct to iterate over the different stylesheets to be flushed.
@@ -130,7 +125,7 @@ where
     }
 
     /// Returns an iterator over the remaining list of sheets to consume.
-    pub fn sheets<'b>(&'b self) -> impl Iterator<Item = &'b S> {
+    pub fn sheets(&self) -> impl Iterator<Item = &S> {
         self.entries.iter().map(|entry| &entry.sheet)
     }
 }
@@ -449,6 +444,15 @@ macro_rules! sheet_set_methods {
     };
 }
 
+impl<S> Default for DocumentStylesheetSet<S>
+where
+    S: StylesheetInDocument + PartialEq + 'static,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S> DocumentStylesheetSet<S>
 where
     S: StylesheetInDocument + PartialEq + 'static,
@@ -575,6 +579,15 @@ where
 {
     /// The actual flusher for the collection.
     pub sheets: SheetCollectionFlusher<'a, S>,
+}
+
+impl<S> Default for AuthorStylesheetSet<S>
+where
+    S: StylesheetInDocument + PartialEq + 'static,
+{
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<S> AuthorStylesheetSet<S>

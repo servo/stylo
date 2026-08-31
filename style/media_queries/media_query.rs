@@ -120,10 +120,9 @@ impl MediaQuery {
 
     /// Returns whether this media query depends on the viewport.
     pub fn is_viewport_dependent(&self) -> bool {
-        self.condition.as_ref().map_or(false, |c| {
-            return c
-                .cumulative_flags()
-                .contains(FeatureFlags::VIEWPORT_DEPENDENT);
+        self.condition.as_ref().is_some_and(|c| {
+            c.cumulative_flags()
+                .contains(FeatureFlags::VIEWPORT_DEPENDENT)
         })
     }
 
@@ -135,7 +134,7 @@ impl MediaQuery {
             .try_parse(|input| -> Result<_, ()> {
                 let qualifier = input.try_parse(Qualifier::parse).ok();
                 let ident = input.expect_ident().map_err(|_| ())?;
-                let media_type = MediaQueryType::parse(&ident)?;
+                let media_type = MediaQueryType::parse(ident)?;
                 Ok((qualifier, Some(media_type)))
             })
             .unwrap_or_default();

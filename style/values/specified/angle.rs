@@ -277,7 +277,7 @@ impl ToComputedValue for Angle {
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         let degrees = match self.0.unpack() {
             Unpacked::Inline(unit, value) => NoCalcAngle::new(unit, value).degrees(),
-            Unpacked::Boxed(ref calc) => calc.resolve(context, |result| match result {
+            Unpacked::Boxed(calc) => calc.resolve(context, |result| match result {
                 Ok(Leaf::Angle(a)) => a.degrees(),
                 _ => {
                     debug_assert!(false, "Unexpected Angle::Calc without resolved angle");
@@ -342,7 +342,7 @@ impl Angle {
     pub fn degrees(&self) -> Option<CSSFloat> {
         match self.0.unpack() {
             Unpacked::Inline(unit, value) => Some(NoCalcAngle::new(unit, value).degrees()),
-            Unpacked::Boxed(ref calc) => calc
+            Unpacked::Boxed(calc) => calc
                 .as_angle()
                 .map(|a| calc.clamping_mode.clamp(a.degrees())),
         }

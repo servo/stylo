@@ -124,14 +124,13 @@ impl Parse for BoxShadow {
         let mut inset = false;
 
         loop {
-            if !inset {
-                if input
+            if !inset
+                && input
                     .try_parse(|input| input.expect_ident_matching("inset"))
                     .is_ok()
-                {
-                    inset = true;
-                    continue;
-                }
+            {
+                inset = true;
+                continue;
             }
             if lengths.is_none() {
                 let value = input.try_parse::<_, _, ParseError>(|i| {
@@ -164,13 +163,13 @@ impl Parse for BoxShadow {
         let lengths = lengths.ok_or(ParseError::custom(StyleParseErrorKind::UnspecifiedError))?;
         Ok(BoxShadow {
             base: SimpleShadow {
-                color: color,
+                color,
                 horizontal: lengths.0,
                 vertical: lengths.1,
                 blur: lengths.2,
             },
             spread: lengths.3,
-            inset: inset,
+            inset,
         })
     }
 }

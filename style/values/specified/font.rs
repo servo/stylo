@@ -166,7 +166,7 @@ impl FontWeight {
 
     /// Get a specified FontWeight from a gecko keyword
     pub fn from_gecko_keyword(kw: u32) -> Self {
-        debug_assert!(kw % 100 == 0);
+        debug_assert!(kw.is_multiple_of(100));
         debug_assert!(kw as f32 <= MAX_FONT_WEIGHT);
         FontWeight::Absolute(AbsoluteFontWeight::Weight(Number::new(kw as f32)))
     }
@@ -252,7 +252,8 @@ impl Parse for AbsoluteFontWeight {
             // We could add another AllowedNumericType value, but it doesn't
             // seem worth it just for a single property with such a weird range,
             // so we do the clamping here manually.
-            if matches!(number.get(), Some(v) if v < MIN_FONT_WEIGHT || v > MAX_FONT_WEIGHT) {
+            if matches!(number.get(), Some(v) if !(MIN_FONT_WEIGHT..=MAX_FONT_WEIGHT).contains(&v))
+            {
                 return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             }
             return Ok(AbsoluteFontWeight::Weight(number));
@@ -351,12 +352,12 @@ impl SpecifiedFontStyle {
         }
 
         let degrees = angle.degrees().unwrap();
-        if degrees < FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES
-            || degrees > FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES
+        if !(FONT_STYLE_OBLIQUE_MIN_ANGLE_DEGREES..=FONT_STYLE_OBLIQUE_MAX_ANGLE_DEGREES)
+            .contains(&degrees)
         {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
-        return Ok(angle);
+        Ok(angle)
     }
 
     /// The default angle for `font-style: oblique`.
@@ -483,6 +484,7 @@ impl ToComputedValue for FontWidth {
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Default,
     MallocSizeOf,
     Parse,
     PartialEq,
@@ -504,6 +506,7 @@ pub enum FontSizeKeyword {
     XXSmall,
     XSmall,
     Small,
+    #[default]
     Medium,
     Large,
     XLarge,
@@ -536,12 +539,6 @@ impl FontSizeKeyword {
     #[cfg(feature = "servo")]
     pub fn is_math(self) -> bool {
         false
-    }
-}
-
-impl Default for FontSizeKeyword {
-    fn default() -> Self {
-        FontSizeKeyword::Medium
     }
 }
 
@@ -875,7 +872,7 @@ impl FontSizeKeyword {
         static FONT_SIZE_FACTORS: [i32; 8] = [60, 75, 89, 100, 120, 150, 200, 300];
         let base_size_px = base_size.px().round() as i32;
         let html_size = self.html_size() as usize;
-        NonNegative(if base_size_px >= 9 && base_size_px <= 16 {
+        NonNegative(if (9..=16).contains(&base_size_px) {
             let mapping = if quirks_mode == QuirksMode::Quirks {
                 QUIRKS_FONT_SIZE_MAPPING
             } else {
@@ -1214,7 +1211,7 @@ impl Parse for FontVariantAlternates {
                 parsed_alternates |= $flag;
             )
         );
-        while let Ok(_) = input.try_parse(|input| match *input.next()? {
+        while input.try_parse(|input| match *input.next()? {
             Token::Ident(ref value) if value.eq_ignore_ascii_case("historical-forms") => {
                 check_if_parsed!(input, VariantAlternatesParsingFlags::HISTORICAL_FORMS);
                 historical = Some(VariantAlternates::HistoricalForms);
@@ -1264,12 +1261,12 @@ impl Parse for FontVariantAlternates {
                             character_variant = Some(VariantAlternates::CharacterVariant(idents.into()));
                             Ok(())
                         },
-                        _ => return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
+                        _ => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
                     }
                 })
             },
             _ => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
-        }) {}
+        }).is_ok() {}
 
         if parsed_alternates.is_empty() {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));

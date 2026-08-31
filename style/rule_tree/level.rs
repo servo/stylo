@@ -283,7 +283,7 @@ impl CascadeLevel {
     /// Returns an author normal cascade level with the given shadow cascade order.
     #[inline]
     pub fn author_normal(shadow_cascade_order: ShadowCascadeOrder) -> Self {
-        let abs = (shadow_cascade_order.0.abs() as u8) << Self::CASCADE_ORDER_SHIFT;
+        let abs = shadow_cascade_order.0.unsigned_abs() << Self::CASCADE_ORDER_SHIFT;
         let mut result = Self::new(CascadeOrigin::Author);
         result |= Self::from_bits_truncate(abs);
         result.set(Self::CASCADE_ORDER_SIGN, shadow_cascade_order.0 < 0);

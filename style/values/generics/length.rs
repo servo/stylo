@@ -518,7 +518,7 @@ impl<LengthPercentage> GenericAnchorSizeFunction<LengthPercentage> {
                 .ok();
             Ok(GenericAnchorSizeFunction {
                 target_element: TreeScoped::with_default_level(target_element),
-                size: size.into(),
+                size,
                 fallback: fallback.into(),
             })
         })

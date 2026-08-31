@@ -401,6 +401,12 @@ pub struct AdditionalRelativeSelectorInvalidationMap {
     pub needs_ancestors_traversal: bool,
 }
 
+impl Default for AdditionalRelativeSelectorInvalidationMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AdditionalRelativeSelectorInvalidationMap {
     /// Creates an empty `InvalidationMap`.
     pub fn new() -> Self {
@@ -427,6 +433,12 @@ impl AdditionalRelativeSelectorInvalidationMap {
     }
 }
 
+impl Default for InvalidationMap {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InvalidationMap {
     /// Creates an empty `InvalidationMap`.
     pub fn new() -> Self {
@@ -447,19 +459,19 @@ impl InvalidationMap {
             + self
                 .other_attribute_affecting_selectors
                 .iter()
-                .fold(0, |accum, (_, ref v)| accum + v.len())
+                .fold(0, |accum, (_, v)| accum + v.len())
             + self
                 .id_to_selector
                 .iter()
-                .fold(0, |accum, (_, ref v)| accum + v.len())
+                .fold(0, |accum, (_, v)| accum + v.len())
             + self
                 .class_to_selector
                 .iter()
-                .fold(0, |accum, (_, ref v)| accum + v.len())
+                .fold(0, |accum, (_, v)| accum + v.len())
             + self
                 .custom_state_affecting_selectors
                 .iter()
-                .fold(0, |accum, (_, ref v)| accum + v.len())
+                .fold(0, |accum, (_, v)| accum + v.len())
     }
 
     /// Clears this map, leaving it empty.
@@ -823,7 +835,7 @@ fn next_dependency(
                 selector_offset,
                 next_scope_dependencies
                     .is_some()
-                    .then(|| scope_kind)
+                    .then_some(scope_kind)
                     .flatten(),
             ),
         };
@@ -864,13 +876,13 @@ impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
         Dependency {
             selector: self.selector.clone(),
             selector_offset: offset,
-            next: next,
+            next,
             kind: get_non_relative_invalidation_kind(
                 self.selector,
                 offset,
                 scope_dependencies
                     .is_some()
-                    .then(|| self.scope_dependencies.scope_kind)
+                    .then_some(self.scope_dependencies.scope_kind)
                     .flatten(),
             ),
         }
@@ -1017,7 +1029,7 @@ impl<'a, 'b, 'c> SelectorDependencyCollector<'a, 'b, 'c> {
                 if !state.added_entry {
                     // Not great - we didn't add any uniquely identifiable information.
                     if let Err(err) =
-                        add_non_unique_info(&self.selector, self.compound_state.offset, self)
+                        add_non_unique_info(self.selector, self.compound_state.offset, self)
                     {
                         *self.alloc_error = Some(err);
                         return false;
@@ -1079,7 +1091,7 @@ impl<'a, 'b, 'c> SelectorVisitor for SelectorDependencyCollector<'a, 'b, 'c> {
             if self.relative_inner_collector.is_none() {
                 self.next_selectors.push(NextDependencyEntry {
                     selector: self.selector.clone(),
-                    offset: offset,
+                    offset,
                     cached_dependency: None,
                 });
             }
@@ -1103,7 +1115,7 @@ impl<'a, 'b, 'c> SelectorVisitor for SelectorDependencyCollector<'a, 'b, 'c> {
                         relative_compound_state: RelativeSelectorCompoundStateAttributes::new(),
                     },
                 ),
-                scope_dependencies: &mut self.scope_dependencies,
+                scope_dependencies: self.scope_dependencies,
                 alloc_error: &mut *self.alloc_error,
             };
             if !nested.visit_whole_selector_from(iter, index) {
@@ -1138,13 +1150,13 @@ impl<'a, 'b, 'c> SelectorVisitor for SelectorDependencyCollector<'a, 'b, 'c> {
                 additional_relative_selector_invalidation_map: &mut *self
                     .additional_relative_selector_invalidation_map,
                 document_state: &mut *self.document_state,
-                selector: &relative_selector,
+                selector: relative_selector,
                 combinator_count: RelativeSelectorCombinatorCount::new(relative_selector),
                 next_selectors: &mut *self.next_selectors,
                 quirks_mode: self.quirks_mode,
                 compound_state: PerCompoundState::new(0),
                 compound_state_attributes: RelativeSelectorCompoundStateAttributes::new(),
-                scope_dependencies: &mut self.scope_dependencies,
+                scope_dependencies: self.scope_dependencies,
                 alloc_error: &mut *self.alloc_error,
             };
             if !nested.visit_whole_selector() {
@@ -1170,7 +1182,7 @@ impl<'a, 'b, 'c> SelectorVisitor for SelectorDependencyCollector<'a, 'b, 'c> {
                 true
             },
             Err(err) => {
-                *self.alloc_error = Some(err.into());
+                *self.alloc_error = Some(err);
                 false
             },
         }
@@ -1255,21 +1267,14 @@ fn add_non_unique_info<C: Collector>(
 ) -> Result<(), AllocErr> {
     // Go through this compound again.
     for ss in selector.iter_from(offset) {
-        match ss {
-            Component::LocalName(name) => {
+        if let Component::LocalName(name) = ss {
+            let dependency = collector.dependency();
+            add_local_name(name.name.clone(), dependency, collector.type_map())?;
+            if name.name != name.lower_name {
                 let dependency = collector.dependency();
-                add_local_name(name.name.clone(), dependency, &mut collector.type_map())?;
-                if name.name != name.lower_name {
-                    let dependency = collector.dependency();
-                    add_local_name(
-                        name.lower_name.clone(),
-                        dependency,
-                        &mut collector.type_map(),
-                    )?;
-                }
-                return Ok(());
-            },
-            _ => (),
+                add_local_name(name.lower_name.clone(), dependency, collector.type_map())?;
+            }
+            return Ok(());
         };
     }
     // Ouch. Add one for *.
@@ -1416,7 +1421,7 @@ impl<'a, 'b> Collector for RelativeSelectorDependencyCollector<'a, 'b> {
                     },
                 },
             ),
-            next: next,
+            next,
         }
     }
 
@@ -1576,7 +1581,7 @@ impl<'a, 'b> SelectorVisitor for RelativeSelectorDependencyCollector<'a, 'b> {
                     next_dependency: &next_dependency,
                     relative_compound_state: RelativeSelectorCompoundStateAttributes::new(),
                 }),
-                scope_dependencies: &mut self.scope_dependencies,
+                scope_dependencies: self.scope_dependencies,
                 alloc_error: &mut *self.alloc_error,
             };
             if !nested.visit_whole_selector_from(iter, index) {
@@ -1604,7 +1609,7 @@ impl<'a, 'b> SelectorVisitor for RelativeSelectorDependencyCollector<'a, 'b> {
                 true
             },
             Err(err) => {
-                *self.alloc_error = Some(err.into());
+                *self.alloc_error = Some(err);
                 false
             },
         }

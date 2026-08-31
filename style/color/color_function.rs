@@ -117,7 +117,7 @@ impl ColorFunction<SpecifiedColor> {
         };
         // We can only resolve to an absolute color if there is no origin color or
         // it is already absolute.
-        let resolvable = origin.as_ref().map_or(true, |o| o.is_absolute());
+        let resolvable = origin.as_ref().is_none_or(|o| o.is_absolute());
 
         let computed = self.to_computed_value(context, origin);
         if resolvable {
@@ -169,9 +169,9 @@ impl<Color> ColorFunction<Color> {
                 c1.clone(),
                 c2.clone(),
                 alpha.clone(),
-                color_space.clone(),
+                *color_space,
             ),
-            ColorFunction::Alpha(o, alpha) => ColorFunction::Alpha(f(o)?.into(), alpha.clone()),
+            ColorFunction::Alpha(o, alpha) => ColorFunction::Alpha(f(o)?, alpha.clone()),
         })
     }
 

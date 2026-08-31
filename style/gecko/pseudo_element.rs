@@ -566,10 +566,10 @@ impl PseudoElement {
         if !matches!(next, Token::Colon) {
             // Parse a CSS2 pseudo-element.
             let name = match next {
-                Token::Ident(name) if is_css2_pseudo_element(&name) => name,
+                Token::Ident(name) if is_css2_pseudo_element(name) => name,
                 _ => return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
             };
-            return PseudoElement::from_slice(&name).ok_or(ParseError::custom(
+            return PseudoElement::from_slice(name).ok_or(ParseError::custom(
                 SelectorParseErrorKind::UnsupportedPseudoClassOrElement,
             ));
         }
@@ -593,7 +593,7 @@ impl PseudoElement {
                     )
                 })
             },
-            _ => return Err(ParseError::unexpected_token()),
+            _ => Err(ParseError::unexpected_token()),
         }
     }
 

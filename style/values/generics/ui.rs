@@ -64,7 +64,7 @@ impl<Image> ToTyped for Cursor<Image> {
     // coverage (cursor.html). Syncing spec with UA/WPT behavior tracked in
     // https://github.com/w3c/csswg-drafts/issues/13907
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        if self.images.len() != 0 {
+        if !self.images.is_empty() {
             return Err(());
         }
 

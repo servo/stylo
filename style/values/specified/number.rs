@@ -116,7 +116,7 @@ impl NoCalcNumber {
         if !unit.eq_ignore_ascii_case("number") {
             return Err(());
         }
-        Ok(self.clone())
+        Ok(*self)
     }
 }
 
@@ -214,7 +214,7 @@ impl Number {
     pub fn to_percentage(&self) -> Option<Percentage> {
         Some(match self.0.unpack() {
             Unpacked::Inline((), n) => Percentage::new(n),
-            Unpacked::Boxed(ref calc) => {
+            Unpacked::Boxed(calc) => {
                 let n = calc.as_number()?.get();
                 Percentage::new_calc(Box::new(calc.with_leaf_node(Leaf::Percentage(
                     CalcPercentageLeaf::new(n, Optional::Some(NumericBaseType::Percent)),
@@ -239,7 +239,7 @@ impl Number {
     pub fn resolve(&self) -> Option<f32> {
         match self.0.unpack() {
             Unpacked::Inline((), f) => Some(NoCalcNumber(f).get()),
-            Unpacked::Boxed(ref calc) => calc.as_number().map(|n| n.get()),
+            Unpacked::Boxed(calc) => calc.as_number().map(|n| n.get()),
         }
     }
 
@@ -248,7 +248,7 @@ impl Number {
     pub fn as_calc(&self) -> Option<&CalcNumeric> {
         match self.0.unpack() {
             Unpacked::Inline(..) => None,
-            Unpacked::Boxed(ref calc) => Some(calc),
+            Unpacked::Boxed(calc) => Some(calc),
         }
     }
 
@@ -297,7 +297,7 @@ impl ToComputedValue for Number {
     fn to_computed_value(&self, context: &Context) -> CSSFloat {
         match self.0.unpack() {
             Unpacked::Inline((), n) => NoCalcNumber(n).to_computed_value(context),
-            Unpacked::Boxed(ref calc) => {
+            Unpacked::Boxed(calc) => {
                 let value = calc.resolve(context, |result| match result {
                     Ok(Leaf::Number(n)) => n.get(),
                     _ => {
@@ -480,7 +480,7 @@ impl Integer {
     pub fn resolve(&self) -> Option<CSSInteger> {
         Some(match self.0.unpack() {
             Unpacked::Inline((), v) => v,
-            Unpacked::Boxed(ref calc) => {
+            Unpacked::Boxed(calc) => {
                 let value = calc.as_number()?.get();
                 (value + 0.5).floor() as CSSInteger
             },
@@ -570,7 +570,7 @@ impl ToComputedValue for Integer {
     fn to_computed_value(&self, context: &Context) -> i32 {
         match self.0.unpack() {
             Unpacked::Inline((), i) => i,
-            Unpacked::Boxed(ref calc) => {
+            Unpacked::Boxed(calc) => {
                 let value = calc.resolve(context, |result| match result {
                     Ok(Leaf::Number(n)) => n.get(),
                     _ => {

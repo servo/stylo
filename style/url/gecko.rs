@@ -169,13 +169,13 @@ impl CssUrlData {
             .as_bytes()
             .iter()
             .next()
-            .map_or(false, |b| *b == b'#')
+            .is_some_and(|b| *b == b'#')
     }
 
     /// Return the unresolved url as string, or the empty string if it's
     /// invalid.
     pub fn as_str(&self) -> &str {
-        &*self.serialization
+        &self.serialization
     }
 }
 
@@ -287,7 +287,7 @@ impl LoadDataSource {
             }
         }
         let mut guard = LOAD_DATA_TABLE.write().unwrap();
-        let r = guard.entry(key).or_insert_with(Default::default);
+        let r = guard.entry(key).or_default();
         &**r
     }
 }
@@ -364,4 +364,4 @@ impl ToCss for ComputedUrl {
 /// A table mapping CssUrlData objects to their lazily created LoadData
 /// objects.
 static LOAD_DATA_TABLE: LazyLock<RwLock<HashMap<LoadDataKey, Box<LoadData>>>> =
-    LazyLock::new(|| Default::default());
+    LazyLock::new(Default::default);

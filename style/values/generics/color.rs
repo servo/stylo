@@ -107,9 +107,9 @@ impl<Color: ToCss, Percentage: ToCss + ToPercentage> ToCss for ColorMix<Color, P
         // Per https://drafts.csswg.org/css-color-5/#serial-color-mix: omit every
         // percentage iff all are known (specified, non-calc) and equal to 100%/N.
         let omit_all = self.items.iter().all(|item| {
-            item.percentage.as_ref().map_or(false, |p| {
-                !p.is_calc() && p.to_percentage() == Some(uniform_value)
-            })
+            item.percentage
+                .as_ref()
+                .is_some_and(|p| !p.is_calc() && p.to_percentage() == Some(uniform_value))
         });
 
         for (index, item) in self.items.iter().enumerate() {

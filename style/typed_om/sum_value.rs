@@ -386,7 +386,7 @@ impl SumValue {
         for unit in units {
             // Step 5.1.
             let mut temp = UnitValue {
-                numeric_type: NumericType::from_unit_unchecked(*unit),
+                numeric_type: NumericType::from_unit_unchecked(unit),
                 value: 0.0,
                 unit: CssString::from(*unit),
             };
@@ -400,7 +400,7 @@ impl SumValue {
                 let value_unit = value.unit_str();
 
                 // Step 5.2.2 & 5.2.2.1.
-                let numeric = NoCalcNumeric::parse_unit_value(value.value, &value_unit)?;
+                let numeric = NoCalcNumeric::parse_unit_value(value.value, value_unit)?;
                 if let Ok(converted) = numeric.to(unit) {
                     // Step 5.2.2.2.
                     temp.value += converted.unitless_value();

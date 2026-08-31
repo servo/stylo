@@ -71,6 +71,12 @@ struct ChildKey(CascadePriority, ptr::NonNull<()>);
 unsafe impl Send for ChildKey {}
 unsafe impl Sync for ChildKey {}
 
+impl Default for RuleTree {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RuleTree {
     /// Construct a new rule tree.
     pub fn new() -> Self {
@@ -529,7 +535,7 @@ malloc_size_of::malloc_size_of_is_0!(StrongRuleNode);
 
 impl StrongRuleNode {
     fn new(n: Box<RuleNode>) -> Self {
-        debug_assert_eq!(n.parent.is_none(), !n.source.is_some());
+        debug_assert_eq!(n.parent.is_none(), n.source.is_none());
 
         log_new(&*n);
 
@@ -661,7 +667,7 @@ impl StrongRuleNode {
             let _ = write!(writer, "(root)");
         }
 
-        let _ = write!(writer, "\n");
+        let _ = writeln!(writer);
         for child in &*self.p.children.read() {
             unsafe {
                 child

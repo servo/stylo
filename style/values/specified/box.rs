@@ -599,7 +599,7 @@ impl ToTyped for Display {
         debug_assert!(!AsRef::<[u8]>::as_ref(&keyword).contains(&b' '));
 
         dest.push(TypedValue::Keyword(KeywordValue(keyword)));
-        return Ok(());
+        Ok(())
     }
 }
 
@@ -642,7 +642,7 @@ impl Parse for Display {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
-        return Ok(Display::from3(outside, inside, got_list_item));
+        Ok(Display::from3(outside, inside, got_list_item))
     }
 }
 
@@ -1285,7 +1285,7 @@ impl Parse for WillChange {
             } else if ident.0 == atom!("scroll-position") {
                 bits |= WillChangeBits::SCROLL;
             } else {
-                bits |= change_bits_for_maybe_property(&parser_ident, context);
+                bits |= change_bits_for_maybe_property(parser_ident, context);
             }
             Ok(ident)
         })?;
@@ -1651,7 +1651,7 @@ impl ContainerName {
         if !for_query && first.eq_ignore_ascii_case("none") {
             return Ok(Self::none());
         }
-        const DISALLOWED_CONTAINER_NAMES: &'static [&'static str] = &["none", "not", "or", "and"];
+        const DISALLOWED_CONTAINER_NAMES: &[&str] = &["none", "not", "or", "and"];
         idents.push(CustomIdent::from_ident(first, DISALLOWED_CONTAINER_NAMES)?);
         if !for_query {
             while let Ok(name) =

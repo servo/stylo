@@ -665,6 +665,12 @@ pub struct ThreadLocalStyleContext<E: TElement> {
     pub tree_counting_caches: TreeCountingCaches,
 }
 
+impl<E: TElement> Default for ThreadLocalStyleContext<E> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<E: TElement> ThreadLocalStyleContext<E> {
     /// Creates a new `ThreadLocalStyleContext`
     pub fn new() -> Self {

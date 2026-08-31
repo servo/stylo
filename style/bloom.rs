@@ -140,6 +140,12 @@ impl<E: TElement> Drop for StyleBloom<E> {
     }
 }
 
+impl<E: TElement> Default for StyleBloom<E> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<E: TElement> StyleBloom<E> {
     /// Create an empty `StyleBloom`. Because StyleBloom acquires the thread-
     /// local filter buffer, creating multiple live StyleBloom instances at
@@ -165,16 +171,14 @@ impl<E: TElement> StyleBloom<E> {
 
     /// Return the bloom filter used properly by the `selectors` crate.
     pub fn filter(&self) -> &BloomFilter {
-        &*self.filter
+        &self.filter
     }
 
     /// Push an element to the bloom filter, knowing that it's a child of the
     /// last element parent.
     pub fn push(&mut self, element: E) {
-        if cfg!(debug_assertions) {
-            if self.elements.is_empty() {
-                assert!(element.traversal_parent().is_none());
-            }
+        if cfg!(debug_assertions) && self.elements.is_empty() {
+            assert!(element.traversal_parent().is_none());
         }
         self.push_internal(element);
     }
@@ -276,7 +280,7 @@ impl<E: TElement> StyleBloom<E> {
     /// (if any) and its ancestors.
     #[inline]
     pub fn current_parent(&self) -> Option<E> {
-        self.elements.last().map(|ref el| *el.element)
+        self.elements.last().map(|el| *el.element)
     }
 
     /// Insert the parents of an element in the bloom filter, trying to recover

@@ -167,12 +167,12 @@ impl calc::CalcNodeLeaf for ComputedLeaf {
         }
 
         match (self, other) {
-            (&Length(ref one), &Length(ref other)) => one.partial_cmp(other),
-            (&Percentage(ref one), &Percentage(ref other)) => one.value.partial_cmp(&other.value),
-            (&Number(ref one), &Number(ref other)) => one.partial_cmp(other),
-            (&Angle(ref one), &Angle(ref other)) => one.partial_cmp(other),
-            (&Time(ref one), &Time(ref other)) => one.partial_cmp(other),
-            (&Resolution(ref one), &Resolution(ref other)) => one.partial_cmp(other),
+            (Length(one), Length(other)) => one.partial_cmp(other),
+            (Percentage(one), Percentage(other)) => one.value.partial_cmp(&other.value),
+            (Number(one), Number(other)) => one.partial_cmp(other),
+            (Angle(one), Angle(other)) => one.partial_cmp(other),
+            (Time(one), Time(other)) => one.partial_cmp(other),
+            (Resolution(one), Resolution(other)) => one.partial_cmp(other),
             _ => unsafe {
                 match *self {
                     Length(..) | Percentage(..) | Number(..) | Angle(..) | Time(..)
@@ -201,22 +201,22 @@ impl calc::CalcNodeLeaf for ComputedLeaf {
         }
 
         match (self, other) {
-            (&mut Length(ref mut one), &Length(ref other)) => {
+            (&mut Length(ref mut one), Length(other)) => {
                 *one += *other;
             },
-            (&mut Percentage(ref mut one), &Percentage(ref other)) => {
+            (&mut Percentage(ref mut one), Percentage(other)) => {
                 *one = CalcPercentageLeaf::new(one.get() + other.get(), one.combined_hint(other));
             },
-            (&mut Number(ref mut one), &Number(ref other)) => {
+            (&mut Number(ref mut one), Number(other)) => {
                 *one += *other;
             },
-            (&mut Angle(ref mut one), &Angle(ref other)) => {
+            (&mut Angle(ref mut one), Angle(other)) => {
                 *one += *other;
             },
-            (&mut Time(ref mut one), &Time(ref other)) => {
+            (&mut Time(ref mut one), Time(other)) => {
                 *one += *other;
             },
-            (&mut Resolution(ref mut one), &Resolution(ref other)) => {
+            (&mut Resolution(ref mut one), Resolution(other)) => {
                 *one += *other;
             },
             _ => unsafe {
@@ -266,22 +266,21 @@ impl calc::CalcNodeLeaf for ComputedLeaf {
             return Err(());
         }
         Ok(match (self, other) {
-            (&Length(ref one), &Length(ref other)) => {
-                Length(super::Length::new(op(one.px(), other.px())))
-            },
-            (&Percentage(ref one), &Percentage(ref other)) => Self::Percentage(
-                CalcPercentageLeaf::new(op(one.get(), other.get()), one.combined_hint(other)),
-            ),
+            (Length(one), Length(other)) => Length(super::Length::new(op(one.px(), other.px()))),
+            (Percentage(one), Percentage(other)) => Self::Percentage(CalcPercentageLeaf::new(
+                op(one.get(), other.get()),
+                one.combined_hint(other),
+            )),
             (&Number(one), &Number(other)) => Self::Number(op(one, other)),
-            (&Angle(ref one), &Angle(ref other)) => Self::Angle(super::Angle::from_degrees(op(
+            (Angle(one), Angle(other)) => Self::Angle(super::Angle::from_degrees(op(
                 one.degrees(),
                 other.degrees(),
             ))),
-            (&Time(ref one), &Time(ref other)) => Self::Time(super::Time::from_seconds(op(
+            (Time(one), Time(other)) => Self::Time(super::Time::from_seconds(op(
                 one.seconds(),
                 other.seconds(),
             ))),
-            (&Resolution(ref one), &Resolution(ref other)) => {
+            (Resolution(one), Resolution(other)) => {
                 Self::Resolution(super::Resolution::from_dppx(op(one.dppx(), other.dppx())))
             },
             _ => unsafe {
@@ -295,7 +294,7 @@ impl calc::CalcNodeLeaf for ComputedLeaf {
     }
 
     fn map(&mut self, mut op: impl FnMut(f32) -> f32) -> Result<(), ()> {
-        Ok(match self {
+        let _: () = match self {
             Self::Length(value) => {
                 *value = Length::new(op(value.px()));
             },
@@ -314,11 +313,12 @@ impl calc::CalcNodeLeaf for ComputedLeaf {
             Self::Resolution(value) => {
                 *value = Resolution::from_dppx(op(value.dppx()));
             },
-        })
+        };
+        Ok(())
     }
 
     fn simplify(&mut self) -> SimplificationResult {
-        return SimplificationResult::Unchanged;
+        SimplificationResult::Unchanged
     }
 
     fn sort_key(&self) -> calc::SortKey {

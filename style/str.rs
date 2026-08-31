@@ -159,7 +159,7 @@ pub fn starts_with_ignore_ascii_case(string: &str, prefix: &str) -> bool {
 
 /// Returns an ascii lowercase version of a string, only allocating if needed.
 pub fn string_as_ascii_lowercase<'a>(input: &'a str) -> Cow<'a, str> {
-    if input.bytes().any(|c| matches!(c, b'A'..=b'Z')) {
+    if input.bytes().any(|c| c.is_ascii_uppercase()) {
         input.to_ascii_lowercase().into()
     } else {
         // Already ascii lowercase.

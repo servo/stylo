@@ -38,7 +38,7 @@ impl ToComputedValue for specified::PageSize {
     type ComputedValue = PageSize;
 
     fn to_computed_value(&self, ctx: &Context) -> Self::ComputedValue {
-        match &*self {
+        match self {
             Self::Size(s) => PageSize::Size(s.to_computed_value(ctx)),
             Self::PaperSize(p, PageSizeOrientation::Landscape) => PageSize::Size(Size2D {
                 width: p.long_edge().to_computed_value(ctx),

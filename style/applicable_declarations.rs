@@ -217,7 +217,7 @@ impl ScopeProximity {
 
     /// If the proximity is finite, get the value.
     pub fn get(&self) -> Option<u16> {
-        (self.0 != PROXIMITY_INFINITY).then(|| self.0)
+        (self.0 != PROXIMITY_INFINITY).then_some(self.0)
     }
 }
 

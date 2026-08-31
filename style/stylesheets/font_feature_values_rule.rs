@@ -79,7 +79,7 @@ impl Parse for SingleValue {
 #[cfg(feature = "gecko")]
 impl ToGeckoFontFeatureValues for SingleValue {
     fn to_gecko_font_feature_values(&self) -> ThinVec<u32> {
-        thin_vec::thin_vec![self.0 as u32]
+        thin_vec::thin_vec![self.0]
     }
 }
 
@@ -110,9 +110,9 @@ impl Parse for PairValues {
 #[cfg(feature = "gecko")]
 impl ToGeckoFontFeatureValues for PairValues {
     fn to_gecko_font_feature_values(&self) -> ThinVec<u32> {
-        let mut result = thin_vec::thin_vec![self.0 as u32];
+        let mut result = thin_vec::thin_vec![self.0];
         if let Some(second) = self.1 {
-            result.push(second as u32);
+            result.push(second);
         }
         result
     }
@@ -138,7 +138,7 @@ impl Parse for VectorValues {
             }
         }
 
-        if vec.len() == 0 {
+        if vec.is_empty() {
             return Err(ParseError::from_basic_kind(BasicParseErrorKind::EndOfInput));
         }
 
@@ -201,7 +201,7 @@ where
             name: Atom::from(&*name),
             value,
         };
-        update_or_push(&mut self.declarations, new);
+        update_or_push(self.declarations, new);
         Ok(())
     }
 }
@@ -246,7 +246,7 @@ macro_rules! font_feature_values_blocks {
             /// Creates an empty FontFeatureValuesRule with given location and family name list.
             fn new(family_names: Vec<FamilyName>, location: SourceLocation) -> Self {
                 FontFeatureValuesRule {
-                    family_names: family_names,
+                    family_names,
                     $(
                         $ident: vec![],
                     )*

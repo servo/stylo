@@ -249,7 +249,7 @@ impl Time {
                 .map(Box::new)
                 .map(Self::new_calc)
             },
-            _ => return Err(ParseError::unexpected_token()),
+            _ => Err(ParseError::unexpected_token()),
         }
     }
 

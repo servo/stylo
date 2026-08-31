@@ -192,7 +192,7 @@ impl ImportRule {
                     input.expect_function_matching("layer")?;
                     input
                         .parse_nested_block(|input| LayerName::parse(context, input))
-                        .map(|name| ImportLayer::Named(name))
+                        .map(ImportLayer::Named)
                 })
                 .ok()
                 .unwrap_or(ImportLayer::None)
@@ -226,7 +226,7 @@ impl DeepCloneWithLock for ImportRule {
             stylesheet: self.stylesheet.deep_clone_with_lock(lock, guard),
             supports: self.supports.clone(),
             layer: self.layer.clone(),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }

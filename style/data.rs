@@ -110,7 +110,7 @@ impl fmt::Debug for EagerPseudoArray {
 
 // Can't use [None; EAGER_PSEUDO_COUNT] here because it complains
 // about Copy not being implemented for our Arc type.
-const EMPTY_PSEUDO_ARRAY: &'static EagerPseudoArrayInner = &[None, None, None, None];
+const EMPTY_PSEUDO_ARRAY: &EagerPseudoArrayInner = &[None, None, None, None];
 
 impl EagerPseudoStyles {
     /// Returns whether there are any pseudo styles.
@@ -244,10 +244,8 @@ impl ElementStyles {
         let primary = self.primary();
         let mut usage = usage_from_flags(primary.flags);
 
-        for pseudo_style in self.pseudos.as_array() {
-            if let Some(pseudo_style) = pseudo_style {
-                usage |= usage_from_flags(pseudo_style.flags);
-            }
+        for pseudo_style in self.pseudos.as_array().iter().flatten() {
+            usage |= usage_from_flags(pseudo_style.flags);
         }
 
         usage
@@ -356,7 +354,7 @@ impl<'a> Deref for ElementDataRef<'a> {
     type Target = ElementData;
     #[inline]
     fn deref(&self) -> &Self::Target {
-        &*self.v
+        self.v
     }
 }
 
@@ -431,19 +429,19 @@ fn needs_to_recascade_self(hint: RestyleHint, style: &ComputedValues) -> bool {
     {
         return true;
     }
-    return false;
+    false
 }
 
 impl ElementData {
     /// Invalidates style for this element, its descendants, and later siblings,
     /// based on the snapshot of the element that we took when attributes or
     /// state changed.
-    pub fn invalidate_style_if_needed<'a, E: TElement>(
+    pub fn invalidate_style_if_needed<E: TElement>(
         &mut self,
         element: E,
         shared_context: &SharedStyleContext,
         stack_limit_checker: Option<&StackLimitChecker>,
-        selector_caches: &'a mut SelectorCaches,
+        selector_caches: &mut SelectorCaches,
     ) -> InvalidationResult {
         // In animation-only restyle we shouldn't touch snapshot at all.
         if shared_context.traversal_flags.for_animation_only() {
@@ -600,7 +598,7 @@ impl ElementData {
         if needs_to_recascade_self(hint, style) {
             return Some(RestyleKind::CascadeOnly);
         }
-        return None;
+        None
     }
 
     /// Drops any restyle state from the element.

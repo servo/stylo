@@ -20,7 +20,7 @@ where
             return Err(());
         }
         match (self, other) {
-            (&SVGStrokeDashArray::Values(ref this), &SVGStrokeDashArray::Values(ref other)) => {
+            (SVGStrokeDashArray::Values(this), SVGStrokeDashArray::Values(other)) => {
                 Ok(SVGStrokeDashArray::Values(
                     super::lists::repeatable_list::animate(this, other, procedure)?,
                 ))
@@ -37,7 +37,7 @@ where
     #[inline]
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
         match (self, other) {
-            (&SVGStrokeDashArray::Values(ref this), &SVGStrokeDashArray::Values(ref other)) => {
+            (SVGStrokeDashArray::Values(this), SVGStrokeDashArray::Values(other)) => {
                 super::lists::repeatable_list::squared_distance(this, other)
             },
             _ => Err(()),

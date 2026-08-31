@@ -87,7 +87,7 @@ impl Parse for NumericDeclaration {
                 Ok(Self::Calc(node))
             },
 
-            _ => return Err(ParseError::unexpected_token()),
+            _ => Err(ParseError::unexpected_token()),
         }
     }
 }

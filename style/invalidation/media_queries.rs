@@ -56,6 +56,12 @@ pub struct EffectiveMediaQueryResults {
     set: FxHashSet<MediaListKey>,
 }
 
+impl Default for EffectiveMediaQueryResults {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EffectiveMediaQueryResults {
     /// Trivially constructs an empty `EffectiveMediaQueryResults`.
     pub fn new() -> Self {

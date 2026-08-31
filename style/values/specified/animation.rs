@@ -57,7 +57,7 @@ impl Parse for TransitionProperty {
     fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let ident = input.expect_ident()?;
 
-        let id = match PropertyId::parse_ignoring_rule_type(&ident, context) {
+        let id = match PropertyId::parse_ignoring_rule_type(ident, context) {
             Ok(id) => id,
             Err(..) => {
                 // None is not acceptable as a single transition-property.

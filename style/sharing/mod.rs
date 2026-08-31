@@ -196,7 +196,7 @@ pub struct ValidationData {
 impl ValidationData {
     /// Move the cached data to a new instance, and return it.
     pub fn take(&mut self) -> Self {
-        mem::replace(self, Self::default())
+        std::mem::take(self)
     }
 
     /// Get or compute the list of presentational attributes associated with
@@ -404,7 +404,7 @@ impl<E: TElement> StyleSharingTarget<E> {
     /// Trivially construct a new StyleSharingTarget to test against the cache.
     pub fn new(element: E) -> Self {
         Self {
-            element: element,
+            element,
             validation_data: ValidationData::default(),
         }
     }
@@ -579,6 +579,12 @@ impl<E: TElement> Drop for StyleSharingCache<E> {
     }
 }
 
+impl<E: TElement> Default for StyleSharingCache<E> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<E: TElement> StyleSharingCache<E> {
     fn cache_mut_at(&mut self, index: usize) -> &mut SharingCache<E> {
         let base: &mut TypelessSharingCache = &mut self.cache_typeless[index % SHARING_MAX_LEVELS];
@@ -730,7 +736,7 @@ impl<E: TElement> StyleSharingCache<E> {
             Self::test_candidate(
                 target,
                 candidate,
-                &shared_context,
+                shared_context,
                 bloom_filter,
                 selector_caches,
                 shared_context,
@@ -917,7 +923,7 @@ impl<E: TElement> StyleSharingCache<E> {
             }
             let data = candidate.element.borrow_data().unwrap();
             let style = data.styles.primary();
-            if style.rules.as_ref() != Some(&inputs.rules.as_ref().unwrap()) {
+            if style.rules.as_ref() != Some(inputs.rules.as_ref().unwrap()) {
                 return None;
             }
             if style.visited_rules() != inputs.visited_rules.as_ref() {

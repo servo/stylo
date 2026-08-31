@@ -129,7 +129,7 @@ pub trait DomTraversal<E: TElement>: Sync {
         let traversal_flags = shared_context.traversal_flags;
 
         let mut data = root.mutate_data();
-        let mut data = data.as_mut().map(|d| &mut **d);
+        let mut data = data.as_deref_mut();
 
         if let Some(ref mut data) = data {
             if !traversal_flags.for_animation_only() {
@@ -237,8 +237,8 @@ where
 {
     debug_assert!(
         rule_inclusion == RuleInclusion::DefaultOnly
-            || pseudo.map_or(false, |p| p.is_before_or_after())
-            || element.borrow_data().map_or(true, |d| !d.has_styles()),
+            || pseudo.is_some_and(|p| p.is_before_or_after())
+            || element.borrow_data().is_none_or(|d| !d.has_styles()),
         "Why are we here?"
     );
     debug_assert!(
@@ -360,7 +360,7 @@ pub fn recalc_style_at<E, D, F>(
         "Should've handled snapshots here already"
     );
 
-    let restyle_kind = data.restyle_kind(&context.shared);
+    let restyle_kind = data.restyle_kind(context.shared);
     debug!(
         "recalc_style_at: {:?} (restyle_kind={:?}, dirty_descendants={:?}, data={:?})",
         element,
@@ -548,7 +548,7 @@ where
                         &new_styles.primary,
                         Some(&mut target),
                         dom_depth,
-                        &context.shared,
+                        context.shared,
                     );
 
                     new_styles
@@ -605,7 +605,7 @@ where
                     &new_styles.primary,
                     None,
                     context.thread_local.current_dom_depth,
-                    &context.shared,
+                    context.shared,
                 );
             }
 
@@ -683,7 +683,7 @@ fn note_children<E, D, F>(
         };
 
         let mut child_data = child.mutate_data();
-        let mut child_data = child_data.as_mut().map(|d| &mut **d);
+        let mut child_data = child_data.as_deref_mut();
         trace!(
             " > {:?} -> {:?} + {:?}, pseudo: {:?}",
             child,
@@ -701,7 +701,7 @@ fn note_children<E, D, F>(
             // NB: This will be a no-op if there's no snapshot.
             child_data.invalidate_style_if_needed(
                 child,
-                &context.shared,
+                context.shared,
                 Some(&context.thread_local.stack_limit_checker),
                 &mut context.thread_local.selector_caches,
             );

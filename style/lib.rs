@@ -27,6 +27,8 @@
 
 #![deny(missing_docs)]
 
+// Needed by macros that refer to `$crate::cssparser`.
+#[allow(clippy::single_component_path_imports)]
 pub(crate) use cssparser;
 
 #[macro_use]

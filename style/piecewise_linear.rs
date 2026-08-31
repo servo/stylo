@@ -93,7 +93,7 @@ impl PiecewiseLinearFunction {
             return next.y;
         }
         let slope = (next.y - prev.y) / (next.x - prev.x);
-        return slope * (x - asymptote.x) + asymptote.y;
+        slope * (x - asymptote.x) + asymptote.y
     }
 
     /// Get the y value of the piecewise linear function given the x value, as per

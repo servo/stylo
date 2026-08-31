@@ -233,7 +233,7 @@ impl ToComputedValue for PositionArea {
     type ComputedValue = Self;
 
     fn to_computed_value(&self, _context: &Context) -> Self {
-        let mut computed = self.clone();
+        let mut computed = *self;
         let pair_type = self.get_type();
         if pair_type == PositionAreaType::Logical || pair_type == PositionAreaType::SelfLogical {
             if computed.second != PositionAreaKeyword::None {
@@ -262,7 +262,7 @@ impl ToComputedValue for PositionArea {
     }
 
     fn from_computed_value(computed: &Self) -> Self {
-        computed.clone()
+        *computed
     }
 }
 

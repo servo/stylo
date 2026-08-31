@@ -198,7 +198,7 @@ impl QueryFeatureExpressionKind {
         T: PartialOrd + Zero,
     {
         match *self {
-            Self::Empty => return !context_value.is_zero(),
+            Self::Empty => !context_value.is_zero(),
             Self::Single(ref value) => {
                 let value = compute(value);
                 let cmp = match context_value.partial_cmp(&value) {
@@ -313,7 +313,7 @@ fn consume_operation_or_colon(input: &mut Parser) -> Result<Option<Operator>, Pa
     if input.try_parse(|input| input.expect_colon()).is_ok() {
         return Ok(None);
     }
-    Operator::parse(input).map(|op| Some(op))
+    Operator::parse(input).map(Some)
 }
 
 #[allow(unused_variables)]
@@ -720,7 +720,7 @@ impl QueryExpressionValue {
                 .feature()
                 .evaluator
             {
-                Evaluator::Enumerated { serializer, .. } => dest.write_str(&*serializer(value)),
+                Evaluator::Enumerated { serializer, .. } => dest.write_str(&serializer(value)),
                 _ => unreachable!(),
             },
         }
@@ -821,9 +821,8 @@ impl QueryExpressionValue {
     }
 
     fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
-        match self {
-            Self::Function(f) => f.collect_attribute_references(references),
-            _ => {},
+        if let Self::Function(f) = self {
+            f.collect_attribute_references(references)
         }
     }
 }
@@ -1046,7 +1045,7 @@ impl QueryStyleRange {
                     .stylist
                     .expect("container queries should have a stylist around");
                 let substituted = custom_properties::substitute(
-                    &value,
+                    value,
                     &sub_funcs,
                     stylist,
                     context,
@@ -1119,14 +1118,14 @@ impl QueryStyleRange {
         let value1 = value1?;
         let value2 = value2?;
         match (value1, value2) {
-            (Component::Length(v1), Component::Length(v2)) => v1.partial_cmp(&v2),
-            (Component::Number(v1), Component::Number(v2)) => v1.partial_cmp(&v2),
+            (Component::Length(v1), Component::Length(v2)) => v1.partial_cmp(v2),
+            (Component::Number(v1), Component::Number(v2)) => v1.partial_cmp(v2),
             (Component::Resolution(v1), Component::Resolution(v2)) => {
                 v1.dppx().partial_cmp(&v2.dppx())
             },
-            (Component::Percentage(v1), Component::Percentage(v2)) => v1.partial_cmp(&v2),
-            (Component::Angle(v1), Component::Angle(v2)) => v1.partial_cmp(&v2),
-            (Component::Time(v1), Component::Time(v2)) => v1.partial_cmp(&v2),
+            (Component::Percentage(v1), Component::Percentage(v2)) => v1.partial_cmp(v2),
+            (Component::Angle(v1), Component::Angle(v2)) => v1.partial_cmp(v2),
+            (Component::Time(v1), Component::Time(v2)) => v1.partial_cmp(v2),
             (Component::Length(v1), Component::Number(v2)) => {
                 if v2.is_zero() {
                     v1.partial_cmp(&CSSPixelLength::zero())
@@ -1136,7 +1135,7 @@ impl QueryStyleRange {
             },
             (Component::Number(v1), Component::Length(v2)) => {
                 if v1.is_zero() {
-                    CSSPixelLength::zero().partial_cmp(&v2)
+                    CSSPixelLength::zero().partial_cmp(v2)
                 } else {
                     None
                 }

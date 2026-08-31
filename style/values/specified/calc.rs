@@ -97,7 +97,7 @@ pub enum MathFunction {
 impl MathFunction {
     /// Returns an iterator for the enum variants
     pub fn variants() -> MathFunctionIter {
-        return MathFunction::iter();
+        MathFunction::iter()
     }
 }
 
@@ -501,16 +501,14 @@ impl generic::CalcNodeLeaf for Leaf {
         }
 
         match (self, other) {
-            (&Percentage(ref one), &Percentage(ref other)) => one.get().partial_cmp(&other.get()),
-            (&Length(ref one), &Length(ref other)) => one.partial_cmp(other),
-            (&Angle(ref one), &Angle(ref other)) => one.degrees().partial_cmp(&other.degrees()),
-            (&Time(ref one), &Time(ref other)) => one.seconds().partial_cmp(&other.seconds()),
-            (&Resolution(ref one), &Resolution(ref other)) => one.dppx().partial_cmp(&other.dppx()),
-            (&Number(ref one), &Number(ref other)) => one.partial_cmp(other),
-            (&ColorComponent(ref one), &ColorComponent(ref other)) => one.partial_cmp(other),
-            (&TreeCountingFunction(ref one), &TreeCountingFunction(ref other)) => {
-                one.partial_cmp(other)
-            },
+            (Percentage(one), Percentage(other)) => one.get().partial_cmp(&other.get()),
+            (Length(one), Length(other)) => one.partial_cmp(other),
+            (Angle(one), Angle(other)) => one.degrees().partial_cmp(&other.degrees()),
+            (Time(one), Time(other)) => one.seconds().partial_cmp(&other.seconds()),
+            (Resolution(one), Resolution(other)) => one.dppx().partial_cmp(&other.dppx()),
+            (Number(one), Number(other)) => one.partial_cmp(other),
+            (ColorComponent(one), ColorComponent(other)) => one.partial_cmp(other),
+            (TreeCountingFunction(one), TreeCountingFunction(other)) => one.partial_cmp(other),
             _ => {
                 match *self {
                     Length(..)
@@ -577,7 +575,7 @@ impl generic::CalcNodeLeaf for Leaf {
             },
             _ => (),
         }
-        return SimplificationResult::Unchanged;
+        SimplificationResult::Unchanged
     }
 
     /// Tries to merge one sum to another, that is, perform `x` + `y`.
@@ -592,22 +590,22 @@ impl generic::CalcNodeLeaf for Leaf {
         }
 
         match (self, other) {
-            (&mut Number(ref mut one), &Number(ref other)) => {
+            (&mut Number(ref mut one), Number(other)) => {
                 *one = NoCalcNumber::new(one.value() + other.value());
             },
-            (&mut Percentage(ref mut one), &Percentage(ref other)) => {
+            (&mut Percentage(ref mut one), Percentage(other)) => {
                 *one = CalcPercentageLeaf::new(one.get() + other.get(), one.combined_hint(other));
             },
-            (&mut Angle(ref mut one), &Angle(ref other)) => {
+            (&mut Angle(ref mut one), Angle(other)) => {
                 *one = NoCalcAngle::from_degrees(one.degrees() + other.degrees());
             },
-            (&mut Time(ref mut one), &Time(ref other)) => {
+            (&mut Time(ref mut one), Time(other)) => {
                 *one = NoCalcTime::from_seconds(one.seconds() + other.seconds());
             },
-            (&mut Resolution(ref mut one), &Resolution(ref other)) => {
+            (&mut Resolution(ref mut one), Resolution(other)) => {
                 *one = NoCalcResolution::from_dppx(one.dppx() + other.dppx());
             },
-            (&mut Length(ref mut one), &Length(ref other)) => {
+            (&mut Length(ref mut one), Length(other)) => {
                 *one = one.try_op(other, std::ops::Add::add)?;
             },
             (&mut ColorComponent(_), &ColorComponent(_)) => {
@@ -677,45 +675,28 @@ impl generic::CalcNodeLeaf for Leaf {
         }
 
         match (self, other) {
-            (&Number(one), &Number(other)) => {
-                return Ok(Leaf::Number(NoCalcNumber::new(op(
-                    one.value(),
-                    other.value(),
-                ))));
-            },
-            (&Percentage(ref one), &Percentage(ref other)) => {
-                return Ok(Leaf::Percentage(CalcPercentageLeaf::new(
-                    op(one.get(), other.get()),
-                    one.combined_hint(other),
-                )));
-            },
-            (&Angle(ref one), &Angle(ref other)) => {
-                return Ok(Leaf::Angle(NoCalcAngle::from_degrees(op(
-                    one.degrees(),
-                    other.degrees(),
-                ))));
-            },
-            (&Resolution(ref one), &Resolution(ref other)) => {
-                return Ok(Leaf::Resolution(NoCalcResolution::from_dppx(op(
-                    one.dppx(),
-                    other.dppx(),
-                ))));
-            },
-            (&Time(ref one), &Time(ref other)) => {
-                return Ok(Leaf::Time(NoCalcTime::from_seconds(op(
-                    one.seconds(),
-                    other.seconds(),
-                ))));
-            },
-            (&Length(ref one), &Length(ref other)) => {
-                return Ok(Leaf::Length(one.try_op(other, op)?));
-            },
-            (&ColorComponent(..), &ColorComponent(..)) => {
-                return Err(());
-            },
-            (&TreeCountingFunction(_), &TreeCountingFunction(_)) => {
-                return Err(());
-            },
+            (&Number(one), &Number(other)) => Ok(Leaf::Number(NoCalcNumber::new(op(
+                one.value(),
+                other.value(),
+            )))),
+            (Percentage(one), Percentage(other)) => Ok(Leaf::Percentage(CalcPercentageLeaf::new(
+                op(one.get(), other.get()),
+                one.combined_hint(other),
+            ))),
+            (Angle(one), Angle(other)) => Ok(Leaf::Angle(NoCalcAngle::from_degrees(op(
+                one.degrees(),
+                other.degrees(),
+            )))),
+            (Resolution(one), Resolution(other)) => Ok(Leaf::Resolution(
+                NoCalcResolution::from_dppx(op(one.dppx(), other.dppx())),
+            )),
+            (Time(one), Time(other)) => Ok(Leaf::Time(NoCalcTime::from_seconds(op(
+                one.seconds(),
+                other.seconds(),
+            )))),
+            (Length(one), Length(other)) => Ok(Leaf::Length(one.try_op(other, op)?)),
+            (&ColorComponent(..), &ColorComponent(..)) => Err(()),
+            (&TreeCountingFunction(_), &TreeCountingFunction(_)) => Err(()),
             _ => {
                 match *other {
                     Number(..)
@@ -735,7 +716,7 @@ impl generic::CalcNodeLeaf for Leaf {
     }
 
     fn map(&mut self, mut op: impl FnMut(f32) -> f32) -> Result<(), ()> {
-        Ok(match self {
+        let _: () = match self {
             Leaf::Length(one) => *one = one.map(op),
             Leaf::Angle(one) => *one = NoCalcAngle::from_degrees(op(one.degrees())),
             Leaf::Time(one) => *one = NoCalcTime::from_seconds(op(one.seconds())),
@@ -743,7 +724,8 @@ impl generic::CalcNodeLeaf for Leaf {
             Leaf::Percentage(one) => *one = CalcPercentageLeaf::new(op(one.get()), one.hint),
             Leaf::Number(one) => *one = NoCalcNumber::new(op(one.value())),
             Leaf::ColorComponent(..) | Leaf::TreeCountingFunction(..) => return Err(()),
-        })
+        };
+        Ok(())
     }
 
     fn should_serialize_with_root_calc_wrapper(&self) -> bool {
@@ -781,20 +763,20 @@ fn parse_anchor_function_fallback(
     input: &mut Parser,
 ) -> Result<Box<GenericAnchorFunctionFallback<Leaf>>, ParseError> {
     if let Ok(l) = input.try_parse(|i| -> Result<CalcNode, ParseError> {
-        Ok(CalcNode::Leaf(match i.next()? {
-            &Token::Number { value, .. } => {
+        Ok(CalcNode::Leaf(match *(i.next()?) {
+            Token::Number { value, .. } => {
                 if value != 0.0 {
                     return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                 }
                 Leaf::Length(NoCalcLength::from_px(0.0))
             },
-            &Token::Dimension {
+            Token::Dimension {
                 value, ref unit, ..
             } => Leaf::Length(
                 NoCalcLength::parse_dimension_with_context(context, value, unit)
                     .map_err(|_| ParseError::custom(StyleParseErrorKind::UnspecifiedError))?,
             ),
-            &Token::Percentage { unit_value, .. } => Leaf::Percentage(CalcPercentageLeaf::new(
+            Token::Percentage { unit_value, .. } => Leaf::Percentage(CalcPercentageLeaf::new(
                 unit_value,
                 Optional::Some(NumericBaseType::Length),
             )),
@@ -904,7 +886,7 @@ impl CalcNode {
                 if let Ok(t) = NoCalcResolution::parse_dimension(value, unit) {
                     return Ok(CalcNode::Leaf(Leaf::Resolution(t)));
                 }
-                return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
+                Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
             },
             &Token::Percentage { unit_value, .. } => {
                 let hint = match flags.percentage_context {
@@ -920,7 +902,7 @@ impl CalcNode {
             &Token::ParenthesisBlock => {
                 input.parse_nested_block(|input| CalcNode::parse_argument(context, input, flags))
             },
-            &Token::Function(ref name)
+            Token::Function(name)
                 if flags
                     .additional_functions
                     .intersects(AdditionalFunctions::ANCHOR)
@@ -933,7 +915,7 @@ impl CalcNode {
                 )?;
                 Ok(CalcNode::Anchor(Box::new(anchor_function)))
             },
-            &Token::Function(ref name)
+            Token::Function(name)
                 if flags
                     .additional_functions
                     .intersects(AdditionalFunctions::ANCHOR_SIZE)
@@ -943,11 +925,11 @@ impl CalcNode {
                     GenericAnchorSizeFunction::parse_in_calc(context, input)?;
                 Ok(CalcNode::AnchorSize(Box::new(anchor_size_function)))
             },
-            &Token::Function(ref name) => {
-                let function = CalcNode::math_function(context, &name)?;
+            Token::Function(name) => {
+                let function = CalcNode::math_function(context, name)?;
                 CalcNode::parse(context, input, function, flags)
             },
-            &Token::Ident(ref ident) => {
+            Token::Ident(ident) => {
                 let leaf = match_ignore_ascii_case! { &**ident,
                     "e" => Leaf::Number(NoCalcNumber::new(std::f32::consts::E)),
                     "pi" => Leaf::Number(NoCalcNumber::new(std::f32::consts::PI)),
@@ -955,7 +937,7 @@ impl CalcNode {
                     "-infinity" => Leaf::Number(NoCalcNumber::new(f32::NEG_INFINITY)),
                     "nan" => Leaf::Number(NoCalcNumber::new(f32::NAN)),
                     _ => {
-                        match ChannelKeyword::from_ident(&ident) {
+                        match ChannelKeyword::from_ident(ident) {
                             Ok(channel_keyword) if flags.color_components.contains(channel_keyword) => Leaf::ColorComponent(channel_keyword),
                             _ => return Err(ParseError::unexpected_token()),
                         }
@@ -1372,7 +1354,7 @@ impl CalcNode {
                     // and merged, so no further work is required. Otherwise, the right-hand
                     // side is emitted as an Invert node.
                     match try_division_in_place(
-                        &mut product.last_mut().unwrap(),
+                        product.last_mut().unwrap(),
                         &rhs,
                         flags.in_place_operations,
                     ) {
@@ -1526,7 +1508,7 @@ impl CalcNode {
         _: &ParserContext,
         name: &CowRcStr<'i>,
     ) -> Result<MathFunction, ParseError> {
-        let function = match MathFunction::from_ident(&*name) {
+        let function = match MathFunction::from_ident(name) {
             Ok(f) => f,
             Err(()) => return Err(ParseError::unexpected_token()),
         };

@@ -920,7 +920,7 @@ pub trait ToTyped {
     }
 }
 
-impl<'a, T> ToTyped for &'a T
+impl<T> ToTyped for &T
 where
     T: ToTyped + ?Sized,
 {

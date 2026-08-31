@@ -624,7 +624,7 @@ impl AbsoluteColor {
         use ColorSpace::*;
 
         if self.color_space == color_space {
-            return self.clone();
+            return *self;
         }
 
         // Missing components are treated as 0 for the conversion math.

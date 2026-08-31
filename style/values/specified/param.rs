@@ -94,7 +94,7 @@ impl Parse for LinkParameters {
                 input.expect_comma()?;
                 // if a comma exists then parse it and set value as specified, even if no value provided
                 // need to handle url references properly https://bugzilla.mozilla.org/show_bug.cgi?id=2028998
-                let parsed = VariableValue::parse(input, None, &context.url_data)?;
+                let parsed = VariableValue::parse(input, None, context.url_data)?;
                 let value = LinkParamValue(OwnedStr::from(parsed.css));
                 Ok(LinkParam { name, value })
             })

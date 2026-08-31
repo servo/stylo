@@ -298,7 +298,7 @@ pub fn from_xyz<To: ColorSpaceConversion>(
     from: &ColorComponents,
     white_point: WhitePoint,
 ) -> ColorComponents {
-    let mut xyz = from.clone();
+    let mut xyz = *from;
 
     // Convert the white point if needed.
     convert_white_point(white_point, To::WHITE_POINT, &mut xyz);
@@ -337,7 +337,7 @@ impl ColorSpaceConversion for Srgb {
     const WHITE_POINT: WhitePoint = WhitePoint::D65;
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
-        from.clone().map(|value| {
+        (*from).map(|value| {
             let abs = value.abs();
 
             if abs < 0.04045 {
@@ -357,7 +357,7 @@ impl ColorSpaceConversion for Srgb {
     }
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
-        from.clone().map(|value| {
+        (*from).map(|value| {
             let abs = value.abs();
 
             if abs > 0.0031308 {
@@ -428,7 +428,7 @@ impl ColorSpaceConversion for SrgbLinear {
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
         // Already in linear light form.
-        from.clone()
+        *from
     }
 
     fn to_xyz(from: &ColorComponents) -> ColorComponents {
@@ -441,7 +441,7 @@ impl ColorSpaceConversion for SrgbLinear {
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
         // Stay in linear light form.
-        from.clone()
+        *from
     }
 }
 
@@ -535,7 +535,7 @@ impl ColorSpaceConversion for A98Rgb {
     const WHITE_POINT: WhitePoint = WhitePoint::D65;
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
-        from.clone().map(|v| v.signum() * v.abs().powf(2.19921875))
+        (*from).map(|v| v.signum() * v.abs().powf(2.19921875))
     }
 
     fn to_xyz(from: &ColorComponents) -> ColorComponents {
@@ -547,8 +547,7 @@ impl ColorSpaceConversion for A98Rgb {
     }
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
-        from.clone()
-            .map(|v| v.signum() * v.abs().powf(0.4547069271758437))
+        (*from).map(|v| v.signum() * v.abs().powf(0.4547069271758437))
     }
 }
 
@@ -578,7 +577,7 @@ impl ColorSpaceConversion for ProphotoRgb {
     const WHITE_POINT: WhitePoint = WhitePoint::D50;
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
-        from.clone().map(|value| {
+        (*from).map(|value| {
             const ET2: f32 = 16.0 / 512.0;
 
             let abs = value.abs();
@@ -602,7 +601,7 @@ impl ColorSpaceConversion for ProphotoRgb {
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
         const ET: f32 = 1.0 / 512.0;
 
-        from.clone().map(|v| {
+        (*from).map(|v| {
             let abs = v.abs();
             if abs >= ET {
                 v.signum() * abs.powf(1.0 / 1.8)
@@ -642,7 +641,7 @@ impl ColorSpaceConversion for Rec2020 {
     const WHITE_POINT: WhitePoint = WhitePoint::D65;
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
-        from.clone().map(|value| {
+        (*from).map(|value| {
             let abs = value.abs();
 
             if abs < Self::BETA * 4.5 {
@@ -662,7 +661,7 @@ impl ColorSpaceConversion for Rec2020 {
     }
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
-        from.clone().map(|v| {
+        (*from).map(|v| {
             let abs = v.abs();
 
             if abs > Self::BETA {
@@ -682,19 +681,19 @@ impl ColorSpaceConversion for XyzD50 {
     const WHITE_POINT: WhitePoint = WhitePoint::D50;
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
-        from.clone()
+        *from
     }
 
     fn to_xyz(from: &ColorComponents) -> ColorComponents {
-        from.clone()
+        *from
     }
 
     fn from_xyz(from: &ColorComponents) -> ColorComponents {
-        from.clone()
+        *from
     }
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
-        from.clone()
+        *from
     }
 }
 
@@ -706,19 +705,19 @@ impl ColorSpaceConversion for XyzD65 {
     const WHITE_POINT: WhitePoint = WhitePoint::D65;
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
-        from.clone()
+        *from
     }
 
     fn to_xyz(from: &ColorComponents) -> ColorComponents {
-        from.clone()
+        *from
     }
 
     fn from_xyz(from: &ColorComponents) -> ColorComponents {
-        from.clone()
+        *from
     }
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
-        from.clone()
+        *from
     }
 }
 
@@ -736,7 +735,7 @@ impl ColorSpaceConversion for Lab {
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
         // No need for conversion.
-        from.clone()
+        *from
     }
 
     /// Convert a CIELAB color to XYZ as specified in [1] and [2].
@@ -799,7 +798,7 @@ impl ColorSpaceConversion for Lab {
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
         // No need for conversion.
-        from.clone()
+        *from
     }
 }
 
@@ -812,7 +811,7 @@ impl ColorSpaceConversion for Lch {
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
         // No need for conversion.
-        from.clone()
+        *from
     }
 
     fn to_xyz(from: &ColorComponents) -> ColorComponents {
@@ -825,7 +824,7 @@ impl ColorSpaceConversion for Lch {
 
     fn from_xyz(from: &ColorComponents) -> ColorComponents {
         // First convert the XYZ to LAB.
-        let lab = Lab::from_xyz(&from);
+        let lab = Lab::from_xyz(from);
 
         // Then convert the Lab to LCH.
         orthogonal_to_polar(&lab, epsilon_for_range(0.0, 100.0))
@@ -833,7 +832,7 @@ impl ColorSpaceConversion for Lch {
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
         // No need for conversion.
-        from.clone()
+        *from
     }
 }
 
@@ -880,24 +879,24 @@ impl ColorSpaceConversion for Oklab {
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
         // No need for conversion.
-        from.clone()
+        *from
     }
 
     fn to_xyz(from: &ColorComponents) -> ColorComponents {
-        let lms = transform(&from, &Self::OKLAB_TO_LMS);
+        let lms = transform(from, &Self::OKLAB_TO_LMS);
         let lms = lms.map(|v| v * v * v);
         transform(&lms, &Self::LMS_TO_XYZ)
     }
 
     fn from_xyz(from: &ColorComponents) -> ColorComponents {
-        let lms = transform(&from, &Self::XYZ_TO_LMS);
+        let lms = transform(from, &Self::XYZ_TO_LMS);
         let lms = lms.map(|v| v.cbrt());
         transform(&lms, &Self::LMS_TO_OKLAB)
     }
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
         // No need for conversion.
-        from.clone()
+        *from
     }
 }
 
@@ -910,7 +909,7 @@ impl ColorSpaceConversion for Oklch {
 
     fn to_linear_light(from: &ColorComponents) -> ColorComponents {
         // No need for conversion.
-        from.clone()
+        *from
     }
 
     fn to_xyz(from: &ColorComponents) -> ColorComponents {
@@ -923,7 +922,7 @@ impl ColorSpaceConversion for Oklch {
 
     fn from_xyz(from: &ColorComponents) -> ColorComponents {
         // First convert XYZ to Oklab.
-        let lab = Oklab::from_xyz(&from);
+        let lab = Oklab::from_xyz(from);
 
         // Then convert Oklab to OkLCH.
         orthogonal_to_polar(&lab, epsilon_for_range(0.0, 1.0))
@@ -931,6 +930,6 @@ impl ColorSpaceConversion for Oklch {
 
     fn to_gamma_encoded(from: &ColorComponents) -> ColorComponents {
         // No need for conversion.
-        from.clone()
+        *from
     }
 }

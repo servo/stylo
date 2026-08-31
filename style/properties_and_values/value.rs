@@ -345,7 +345,7 @@ impl SpecifiedValue {
     /// Parse and validate a registered custom property value according to its syntax descriptor,
     /// and check for computational independence.
     pub fn parse(
-        mut input: &mut CSSParser,
+        input: &mut CSSParser,
         syntax: &Descriptor,
         url_data: &UrlExtraData,
         namespaces: Option<&FxHashMap<Prefix, Namespace>>,
@@ -353,7 +353,7 @@ impl SpecifiedValue {
         attr_taint: AttrTaint,
     ) -> Result<Self, StyleParseError> {
         if syntax.is_universal() {
-            let parsed = ComputedPropertyValue::parse(&mut input, namespaces, url_data)?;
+            let parsed = ComputedPropertyValue::parse(input, namespaces, url_data)?;
             return Ok(Self::new(
                 ValueInner::Universal(Arc::new(parsed)),
                 url_data.clone(),
@@ -364,12 +364,7 @@ impl SpecifiedValue {
         let mut multiplier = None;
         {
             let mut parser = Parser::new(syntax, &mut values, &mut multiplier);
-            parser.parse(
-                &mut input,
-                url_data,
-                allow_computationally_dependent,
-                attr_taint,
-            )?;
+            parser.parse(input, url_data, allow_computationally_dependent, attr_taint)?;
         }
         let v = if let Some(multiplier) = multiplier {
             ValueInner::List(ComponentList {
@@ -460,7 +455,7 @@ impl<'a> Parser<'a> {
             No => ParsingMode::DISALLOW_COMPUTATIONALLY_DEPENDENT,
             Yes => ParsingMode::DEFAULT,
         };
-        let ref context = ParserContext::new(
+        let context = &ParserContext::new(
             Origin::Author,
             url_data,
             Some(CssRuleType::Style),

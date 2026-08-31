@@ -586,7 +586,7 @@ fn eval_gtk_theme_family(_: &Context, query_value: Option<GtkThemeFamily>) -> bo
     let family = unsafe { bindings::Gecko_MediaFeatures_GtkThemeFamily() };
     match query_value {
         Some(v) => v == family,
-        None => return family != GtkThemeFamily::Unknown,
+        None => family != GtkThemeFamily::Unknown,
     }
 }
 

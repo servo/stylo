@@ -61,7 +61,7 @@ impl DeepCloneWithLock for DocumentRule {
         DocumentRule {
             condition: self.condition.clone(),
             rules: Arc::new(lock.wrap(rules.deep_clone_with_lock(lock, guard))),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }

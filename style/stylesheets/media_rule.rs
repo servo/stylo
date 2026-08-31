@@ -65,7 +65,7 @@ impl DeepCloneWithLock for MediaRule {
         MediaRule {
             media_queries: Arc::new(lock.wrap(media_queries.clone())),
             rules: Arc::new(lock.wrap(rules.deep_clone_with_lock(lock, guard))),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }
@@ -118,7 +118,7 @@ impl DeepCloneWithLock for CustomMediaRule {
         Self {
             name: self.name.clone(),
             condition: self.condition.deep_clone_with_lock(lock, guard),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }
@@ -186,6 +186,6 @@ impl<'a> CustomMediaEvaluator<'a> {
         }
         let result = media.read_with(guard).matches(context, self);
         self.currently_evaluating.remove(&ident.0);
-        result.into()
+        result
     }
 }

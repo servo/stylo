@@ -93,7 +93,7 @@ impl FontMetrics {
         //     determine the cap-height, the font’s ascent must be
         //     used.
         //
-        self.cap_height.unwrap_or_else(|| self.ascent)
+        self.cap_height.unwrap_or(self.ascent)
     }
 
     /// Returns the ideographic advance measure, computing a fallback value if not present
@@ -106,7 +106,7 @@ impl FontMetrics {
         //
         // Same caveat about computed vs. used as for other
         // metric-dependent units.
-        self.ic_width.unwrap_or_else(|| reference_font_size)
+        self.ic_width.unwrap_or(reference_font_size)
     }
 }
 

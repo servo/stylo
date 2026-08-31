@@ -109,7 +109,7 @@ where
         ElementWrapper {
             element: el,
             cached_snapshot: Cell::new(None),
-            snapshot_map: snapshot_map,
+            snapshot_map,
         }
     }
 
@@ -368,7 +368,7 @@ where
         match self.snapshot() {
             Some(snapshot) if snapshot.has_attrs() => snapshot
                 .id_attr()
-                .map_or(false, |atom| case_sensitivity.eq_atom(&atom, id)),
+                .is_some_and(|atom| case_sensitivity.eq_atom(atom, id)),
             _ => self.element.has_id(id, case_sensitivity),
         }
     }

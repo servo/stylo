@@ -14,6 +14,6 @@ pub type NonNegativeLengthOrNumberRect = Rect<NonNegativeLengthOrNumber>;
 
 impl ToTyped for NonNegativeLengthOrNumberRect {
     fn to_typed(&self, _dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
-        return Err(());
+        Err(())
     }
 }

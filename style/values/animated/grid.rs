@@ -49,22 +49,21 @@ fn animate_with_discrete_fallback<T: Animate + Clone>(
 impl Animate for TrackSize {
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
         match (self, other) {
-            (&generics::TrackSize::Breadth(ref from), &generics::TrackSize::Breadth(ref to)) => {
+            (generics::TrackSize::Breadth(from), generics::TrackSize::Breadth(to)) => {
                 animate_with_discrete_fallback(from, to, procedure)
                     .map(generics::TrackSize::Breadth)
             },
             (
-                &generics::TrackSize::Minmax(ref from_min, ref from_max),
-                &generics::TrackSize::Minmax(ref to_min, ref to_max),
+                generics::TrackSize::Minmax(from_min, from_max),
+                generics::TrackSize::Minmax(to_min, to_max),
             ) => Ok(generics::TrackSize::Minmax(
                 animate_with_discrete_fallback(from_min, to_min, procedure)?,
                 animate_with_discrete_fallback(from_max, to_max, procedure)?,
             )),
-            (
-                &generics::TrackSize::FitContent(ref from),
-                &generics::TrackSize::FitContent(ref to),
-            ) => animate_with_discrete_fallback(from, to, procedure)
-                .map(generics::TrackSize::FitContent),
+            (generics::TrackSize::FitContent(from), generics::TrackSize::FitContent(to)) => {
+                animate_with_discrete_fallback(from, to, procedure)
+                    .map(generics::TrackSize::FitContent)
+            },
             (_, _) => discrete(self, other, procedure),
         }
     }
@@ -82,10 +81,7 @@ impl Animate for generics::TrackRepeat<LengthPercentage, Integer> {
         // https://github.com/w3c/csswg-drafts/issues/3503
         match (&self.count, &other.count) {
             (&generics::RepeatCount::Number(from), &generics::RepeatCount::Number(to))
-                if from == to =>
-            {
-                ()
-            },
+                if from == to => {},
             (_, _) => return Err(()),
         }
 

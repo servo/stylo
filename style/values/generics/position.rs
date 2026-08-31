@@ -122,7 +122,7 @@ where
             scope: if context.current_scope().is_tree() {
                 context.current_scope()
             } else {
-                self.scope.clone()
+                self.scope
             },
         }
     }
@@ -130,7 +130,7 @@ where
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
         Self {
             value: ToComputedValue::from_computed_value(&computed.value),
-            scope: computed.scope.clone(),
+            scope: computed.scope,
         }
     }
 }

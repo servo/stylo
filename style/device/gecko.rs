@@ -52,8 +52,8 @@ impl Device {
         let default_values = ComputedValues::default_values(doc);
         let root_style = RwLock::new(Arc::clone(&default_values));
         Device {
-            default_values: default_values,
-            root_style: root_style,
+            default_values,
+            root_style,
             root_font_size: AtomicU32::new(FONT_MEDIUM_PX.to_bits()),
             root_line_height: AtomicU32::new(FONT_MEDIUM_LINE_HEIGHT_PX.to_bits()),
             root_font_metrics_ex: AtomicU32::new(FONT_MEDIUM_EX_PX.to_bits()),
@@ -477,9 +477,7 @@ impl fmt::Debug for Device {
         use nsstring::nsCString;
 
         let mut doc_uri = nsCString::new();
-        unsafe {
-            bindings::Gecko_nsIURI_Debug((*self.document()).mDocumentURI.raw(), &mut doc_uri)
-        };
+        unsafe { bindings::Gecko_nsIURI_Debug(self.document().mDocumentURI.raw(), &mut doc_uri) };
 
         f.debug_struct("Device")
             .field("document_url", &doc_uri)

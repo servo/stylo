@@ -266,8 +266,8 @@ pub fn parse_counter_style_body(
             context,
             descriptors: &mut rule.descriptors,
         };
-        let mut iter = RuleBodyParser::new(input, &mut parser);
-        while let Some(declaration) = iter.next() {
+        let iter = RuleBodyParser::new(input, &mut parser);
+        for declaration in iter {
             if let Err((error, slice, location)) = declaration {
                 let error = ContextualParseError::UnsupportedCounterStyleDescriptorDeclaration(
                     slice, error,
@@ -331,7 +331,7 @@ impl ToCssWithGuard for CounterStyleRule {
 impl CounterStyleRule {
     fn empty(name: CustomIdent, source_location: SourceLocation) -> Self {
         Self {
-            name: name,
+            name,
             generation: Wrapping(0),
             descriptors: Descriptors::default(),
             source_location,
@@ -732,7 +732,7 @@ impl Parse for SpeakAs {
         let mut is_spell_out = false;
         let result = input.try_parse(|input| {
             let ident = input.expect_ident().map_err(|_| ())?;
-            match_ignore_ascii_case! { &*ident,
+            match_ignore_ascii_case! { ident,
                 "auto" => Ok(SpeakAs::Auto),
                 "bullets" => Ok(SpeakAs::Bullets),
                 "numbers" => Ok(SpeakAs::Numbers),

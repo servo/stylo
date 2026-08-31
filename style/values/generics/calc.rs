@@ -968,7 +968,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
     /// Tries to merge one node into another using the sum, that is, perform `x` + `y`.
     pub fn try_sum_in_place(&mut self, other: &Self) -> Result<(), ()> {
         match (self, other) {
-            (&mut CalcNode::Leaf(ref mut one), &CalcNode::Leaf(ref other)) => {
+            (&mut CalcNode::Leaf(ref mut one), CalcNode::Leaf(other)) => {
                 one.try_sum_in_place(other)
             },
             _ => Err(()),
@@ -1018,7 +1018,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
         O: Fn(f32, f32) -> f32,
     {
         match (self, other) {
-            (&CalcNode::Leaf(ref one), &CalcNode::Leaf(ref other)) => {
+            (CalcNode::Leaf(one), CalcNode::Leaf(other)) => {
                 Ok(CalcNode::Leaf(one.try_op(other, op)?))
             },
             _ => Err(()),
@@ -1811,7 +1811,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 ref mut max,
             } => {
                 // NOTE: clamp() is max(min, min(center, max))
-                let min_cmp_center = match min.compare(&center) {
+                let min_cmp_center = match min.compare(center) {
                     Some(o) => o,
                     None => return SimplificationResult::Unchanged,
                 };
@@ -1824,7 +1824,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
 
                 // Otherwise try with max.
-                let max_cmp_center = match max.compare(&center) {
+                let max_cmp_center = match max.compare(center) {
                     Some(o) => o,
                     None => return SimplificationResult::Unchanged,
                 };
@@ -1832,7 +1832,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 if matches!(max_cmp_center, cmp::Ordering::Less) {
                     // max is less than center, so we need to return effectively
                     // `max(min, max)`.
-                    let max_cmp_min = match max.compare(&min) {
+                    let max_cmp_min = match max.compare(min) {
                         Some(o) => o,
                         None => return SimplificationResult::Unchanged,
                     };
@@ -1848,7 +1848,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 // Otherwise we're the center node.
                 replace_self_with!(&mut **center);
-                return SimplificationResult::Simplified;
+                SimplificationResult::Simplified
             },
             Self::Round {
                 strategy,
@@ -1933,12 +1933,12 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 let (mut lower_bound, mut upper_bound) = if value_or_stop!(value.is_negative_leaf())
                 {
                     let upper_bound = value_or_stop!(value.try_op(&remainder, Sub::sub));
-                    let lower_bound = value_or_stop!(upper_bound.try_op(&step, Sub::sub));
+                    let lower_bound = value_or_stop!(upper_bound.try_op(step, Sub::sub));
 
                     (lower_bound, upper_bound)
                 } else {
                     let lower_bound = value_or_stop!(value.try_op(&remainder, Sub::sub));
-                    let upper_bound = value_or_stop!(lower_bound.try_op(&step, Add::add));
+                    let upper_bound = value_or_stop!(lower_bound.try_op(step, Add::add));
 
                     (lower_bound, upper_bound)
                 };
@@ -1980,7 +1980,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         }
                     },
                 };
-                return SimplificationResult::Simplified;
+                SimplificationResult::Simplified
             },
             Self::ModRem {
                 ref dividend,
@@ -1989,7 +1989,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             } => {
                 let mut result = value_or_stop!(dividend.try_op(divisor, |a, b| op.apply(a, b)));
                 replace_self_with!(&mut result);
-                return SimplificationResult::Simplified;
+                SimplificationResult::Simplified
             },
             Self::MinMax(ref mut children, op) => {
                 let winning_order = match op {
@@ -2025,7 +2025,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 }
 
                 replace_self_with!(&mut children[result]);
-                return SimplificationResult::Simplified;
+                SimplificationResult::Simplified
             },
             Self::Sum(ref mut children_slot) => {
                 let mut sums_to_merge = SmallVec::<[_; 3]>::new();
@@ -2082,11 +2082,11 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     *children_slot = children.into_boxed_slice().into();
                 }
 
-                return if updated_children_len != children_len {
+                if updated_children_len != children_len {
                     SimplificationResult::Simplified
                 } else {
                     SimplificationResult::Unchanged
-                };
+                }
             },
             Self::Product(ref mut children_slot) => {
                 let mut products_to_merge = SmallVec::<[_; 3]>::new();
@@ -2188,7 +2188,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 // Else put our simplified children back.
                 *children_slot = children.into_boxed_slice().into();
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Sin(ref mut child) => {
                 if let CalcNode::Leaf(ref leaf) = **child {
@@ -2198,7 +2198,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Cos(ref mut child) => {
                 if let CalcNode::Leaf(ref leaf) = **child {
@@ -2208,7 +2208,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Tan(ref mut child) => {
                 if let CalcNode::Leaf(ref leaf) = **child {
@@ -2218,7 +2218,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Asin(ref mut child) => {
                 if let CalcNode::Leaf(ref leaf) = **child {
@@ -2228,7 +2228,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Acos(ref mut child) => {
                 if let CalcNode::Leaf(ref leaf) = **child {
@@ -2238,7 +2238,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Atan(ref mut child) => {
                 if let CalcNode::Leaf(ref leaf) = **child {
@@ -2248,7 +2248,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Atan2(ref mut a, ref mut b) => {
                 if let (CalcNode::Leaf(la), CalcNode::Leaf(lb)) = (&**a, &**b) {
@@ -2263,7 +2263,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         }
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Pow(ref mut a, ref mut b) => {
                 if let (CalcNode::Leaf(la), CalcNode::Leaf(lb)) = (&**a, &**b) {
@@ -2273,7 +2273,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Sqrt(ref mut child) => {
                 if let CalcNode::Leaf(ref leaf) = **child {
@@ -2283,20 +2283,20 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Hypot(ref children) => {
                 let mut result = value_or_stop!(children[0].try_op(&children[0], Mul::mul));
 
                 for child in children.iter().skip(1) {
-                    let square = value_or_stop!(child.try_op(&child, Mul::mul));
+                    let square = value_or_stop!(child.try_op(child, Mul::mul));
                     result = value_or_stop!(result.try_op(&square, Add::add));
                 }
 
                 result = value_or_stop!(result.try_op(&result, |a, _| a.sqrt()));
 
                 replace_self_with!(&mut result);
-                return SimplificationResult::Simplified;
+                SimplificationResult::Simplified
             },
             Self::Log(ref mut a, ref mut b) => {
                 if let CalcNode::Leaf(ref la) = **a {
@@ -2318,7 +2318,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         }
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Exp(ref mut child) => {
                 if let CalcNode::Leaf(ref leaf) = **child {
@@ -2328,7 +2328,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         return SimplificationResult::Simplified;
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Abs(ref mut child) => {
                 if let CalcNode::Leaf(leaf) = child.as_mut() {
@@ -2336,7 +2336,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     replace_self_with!(&mut **child);
                     return SimplificationResult::Simplified;
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Sign(ref mut child) => {
                 if let CalcNode::Leaf(leaf) = child.as_mut() {
@@ -2344,7 +2344,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     replace_self_with!(&mut result);
                     return SimplificationResult::Simplified;
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::Negate(ref mut child) => {
                 // Step 6.
@@ -2354,16 +2354,16 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         // with the value negated (0 - value).
                         child.negate();
                         replace_self_with!(&mut **child);
-                        return SimplificationResult::Simplified;
+                        SimplificationResult::Simplified
                     },
                     CalcNode::Negate(value) => {
                         // 2. If root’s child is a Negate node, return the child’s child.
                         replace_self_with!(&mut **value);
-                        return SimplificationResult::Simplified;
+                        SimplificationResult::Simplified
                     },
                     _ => {
                         // 3. Return root.
-                        return SimplificationResult::Unchanged;
+                        SimplificationResult::Unchanged
                     },
                 }
             },
@@ -2378,16 +2378,16 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                             replace_self_with!(&mut **child);
                             return SimplificationResult::Simplified;
                         }
-                        return SimplificationResult::Unchanged;
+                        SimplificationResult::Unchanged
                     },
                     CalcNode::Invert(value) => {
                         // 2. If root’s child is an Invert node, return the child’s child.
                         replace_self_with!(&mut **value);
-                        return SimplificationResult::Simplified;
+                        SimplificationResult::Simplified
                     },
                     _ => {
                         // 3. Return root.
-                        return SimplificationResult::Unchanged;
+                        SimplificationResult::Unchanged
                     },
                 }
             },
@@ -2414,11 +2414,9 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                         }
                     }
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
-            Self::Leaf(ref mut l) => {
-                return l.simplify();
-            },
+            Self::Leaf(ref mut l) => l.simplify(),
             Self::Anchor(ref mut f) => {
                 if let GenericAnchorSide::Percentage(ref mut n) = f.side {
                     n.simplify_and_sort();
@@ -2427,13 +2425,13 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 if let Some(fallback) = f.fallback.as_mut() {
                     return fallback.node.simplify_and_sort();
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
             Self::AnchorSize(ref mut f) => {
                 if let Some(fallback) = f.fallback.as_mut() {
                     return fallback.node.simplify_and_sort();
                 }
-                return SimplificationResult::Unchanged;
+                SimplificationResult::Unchanged
             },
         }
     }
@@ -2441,11 +2439,10 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
     /// Simplifies and sorts the kids in the whole calculation subtree.
     pub fn simplify_and_sort(&mut self) -> SimplificationResult {
         let mut res = SimplificationResult::Unchanged;
-        self.visit_depth_first(|node| match node.simplify_and_sort_direct_children() {
-            SimplificationResult::Simplified => {
+        self.visit_depth_first(|node| {
+            if let SimplificationResult::Simplified = node.simplify_and_sort_direct_children() {
                 res = SimplificationResult::Simplified;
-            },
-            _ => {},
+            }
         });
         res
     }
@@ -2931,7 +2928,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
     fn compare(&self, other: &Self) -> Option<cmp::Ordering> {
         match (self, other) {
-            (&CalcNode::Leaf(ref one), &CalcNode::Leaf(ref other)) => one.compare(other),
+            (CalcNode::Leaf(one), CalcNode::Leaf(other)) => one.compare(other),
             _ => None,
         }
     }

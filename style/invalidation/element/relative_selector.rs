@@ -124,8 +124,8 @@ impl<'a, E: TElement> OptimizationContext<'a, E> {
         };
         {
             // Run through the affected compund.
-            let mut iter = dependency.selector.iter_from(dependency.selector_offset);
-            while let Some(c) = iter.next() {
+            let iter = dependency.selector.iter_from(dependency.selector_offset);
+            for c in iter {
                 if c.has_indexed_selector_in_subject() {
                     // We do not calculate indices during invalidation as they're wasteful - as a side effect,
                     // such selectors always return true, breaking this optimization. Note that we only check
@@ -195,7 +195,7 @@ impl<'a, E: TElement> OptimizationContext<'a, E> {
                 dependency.next.is_some(),
                 "No relative selector outer dependency?"
             );
-            return dependency.next.as_ref().map_or(false, |deps| {
+            return dependency.next.as_ref().is_some_and(|deps| {
                 // ... However, if the standin sibling can be the anchor, we can't skip it, since
                 // that sibling should be invlidated to become the anchor.
                 let next = &deps.as_ref().slice()[0];
@@ -584,51 +584,45 @@ where
         additional_relative_selector_invalidation_map: &'a AdditionalRelativeSelectorInvalidationMap,
         operation: DomMutationOperation,
     ) {
-        element
-            .id()
-            .map(|v| match map.id_to_selector.get(v, quirks_mode) {
-                Some(v) => {
-                    for dependency in v {
-                        if !operation.accept(dependency, element) {
-                            continue;
-                        }
-                        self.add_dependency(dependency, element, scope);
-                    }
-                },
-                None => (),
-            });
-        element.each_class(|v| match map.class_to_selector.get(v, quirks_mode) {
-            Some(v) => {
+        element.id().map(|v| {
+            if let Some(v) = map.id_to_selector.get(v, quirks_mode) {
                 for dependency in v {
                     if !operation.accept(dependency, element) {
                         continue;
                     }
                     self.add_dependency(dependency, element, scope);
                 }
-            },
-            None => (),
+            }
         });
-        element.each_custom_state(|v| match map.custom_state_affecting_selectors.get(v) {
-            Some(v) => {
+        element.each_class(|v| {
+            if let Some(v) = map.class_to_selector.get(v, quirks_mode) {
                 for dependency in v {
                     if !operation.accept(dependency, element) {
                         continue;
                     }
                     self.add_dependency(dependency, element, scope);
                 }
-            },
-            None => (),
+            }
         });
-        element.each_attr_name(|v| match map.other_attribute_affecting_selectors.get(v) {
-            Some(v) => {
+        element.each_custom_state(|v| {
+            if let Some(v) = map.custom_state_affecting_selectors.get(v) {
                 for dependency in v {
                     if !operation.accept(dependency, element) {
                         continue;
                     }
                     self.add_dependency(dependency, element, scope);
                 }
-            },
-            None => (),
+            }
+        });
+        element.each_attr_name(|v| {
+            if let Some(v) = map.other_attribute_affecting_selectors.get(v) {
+                for dependency in v {
+                    if !operation.accept(dependency, element) {
+                        continue;
+                    }
+                    self.add_dependency(dependency, element, scope);
+                }
+            }
         });
         let state = element.state();
         map.state_affecting_selectors.lookup_with_additional(
@@ -1004,7 +998,7 @@ where
             element,
             host,
             data: data.deref_mut(),
-            dependency: &*outer_dependency,
+            dependency: outer_dependency,
             matching_context,
             traversal_map: &self.sibling_traversal_map,
         };
@@ -1029,11 +1023,10 @@ where
             if matches!(
                 outer_dependency.invalidation_kind(),
                 DependencyInvalidationKind::Normal(..)
-            ) {
-                if !Self::is_subject(&x.as_ref().slice()[0]) {
-                    // Not subject in outer selector.
-                    return false;
-                }
+            ) && !Self::is_subject(&x.as_ref().slice()[0])
+            {
+                // Not subject in outer selector.
+                return false;
             }
         }
         outer_dependency
@@ -1139,7 +1132,7 @@ where
                         if scope_kind == ScopeDependencyInvalidationKind::ScopeEnd {
                             let invalidations = note_scope_dependency_force_at_subject(
                                 d,
-                                self.matching_context.current_host.clone(),
+                                self.matching_context.current_host,
                                 self.matching_context.scope_element,
                                 false,
                             );
@@ -1169,7 +1162,7 @@ where
                 }
                 debug_assert_ne!(d.selector_offset, 0);
                 debug_assert_ne!(d.selector_offset, d.selector.len());
-                let invalidation = Invalidation::new(&d, self.host, None);
+                let invalidation = Invalidation::new(d, self.host, None);
                 invalidated |= push_invalidation(
                     invalidation,
                     d.invalidation_kind(),
@@ -1188,12 +1181,12 @@ where
 
     fn should_process_descendants(&mut self, element: E) -> bool {
         if element == self.element {
-            return should_process_descendants(&self.data);
+            return should_process_descendants(self.data);
         }
 
         match element.borrow_data() {
             Some(d) => should_process_descendants(&d),
-            None => return false,
+            None => false,
         }
     }
 
@@ -1298,7 +1291,7 @@ where
             }
             return;
         }
-        let invalidation = Invalidation::new(&dependency, None, None);
+        let invalidation = Invalidation::new(dependency, None, None);
         match dependency.normal_invalidation_kind() {
             NormalDependencyInvalidationKind::Descendants => {
                 // Descendant invalidations are simplified due to pseudo-elements not being available within the relative selector.
@@ -1345,7 +1338,7 @@ where
     }
 
     fn matching_context(&mut self) -> &mut MatchingContext<'b, E::Impl> {
-        return &mut self.matching_context;
+        &mut self.matching_context
     }
 
     fn collect_invalidations(
@@ -1401,6 +1394,6 @@ where
     }
 
     fn sibling_traversal_map(&self) -> &SiblingTraversalMap<E> {
-        &self.traversal_map
+        self.traversal_map
     }
 }

@@ -263,7 +263,7 @@ impl PageSelectors {
     /// Get the underlying PageSelector data as a slice
     #[inline]
     pub fn as_slice(&self) -> &[PageSelector] {
-        &*self.0
+        &self.0
     }
 }
 
@@ -343,12 +343,12 @@ impl ToCssWithGuard for PageRule {
 
 impl DeepCloneWithLock for PageRule {
     fn deep_clone_with_lock(&self, lock: &SharedRwLock, guard: &SharedRwLockReadGuard) -> Self {
-        let rules = self.rules.read_with(&guard);
+        let rules = self.rules.read_with(guard);
         PageRule {
             selectors: self.selectors.clone(),
-            block: Arc::new(lock.wrap(self.block.read_with(&guard).clone())),
+            block: Arc::new(lock.wrap(self.block.read_with(guard).clone())),
             rules: Arc::new(lock.wrap(rules.deep_clone_with_lock(lock, guard))),
-            source_location: self.source_location.clone(),
+            source_location: self.source_location,
         }
     }
 }

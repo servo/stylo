@@ -235,31 +235,27 @@ impl LengthPercentage {
         node.simplify_and_sort();
 
         match node {
-            CalcNode::Leaf(l) => {
-                return match l {
-                    ComputedLeaf::Length(l) => {
-                        Self::new_length(Length::new(clamping_mode.clamp(l.px())).finite())
-                    },
-                    ComputedLeaf::Percentage(p) => Self::new_percent(Percentage(
-                        clamping_mode.clamp(crate::values::normalize(p.get())),
-                    )),
-                    ComputedLeaf::Number(number) => {
-                        debug_assert!(
-                            false,
-                            "The final result of a <length-percentage> should never be a number"
-                        );
-                        Self::new_length(Length::new(number))
-                    },
-                    ComputedLeaf::Angle(..)
-                    | ComputedLeaf::Time(..)
-                    | ComputedLeaf::Resolution(..) => {
-                        debug_assert!(
+            CalcNode::Leaf(l) => match l {
+                ComputedLeaf::Length(l) => {
+                    Self::new_length(Length::new(clamping_mode.clamp(l.px())).finite())
+                },
+                ComputedLeaf::Percentage(p) => Self::new_percent(Percentage(
+                    clamping_mode.clamp(crate::values::normalize(p.get())),
+                )),
+                ComputedLeaf::Number(number) => {
+                    debug_assert!(
+                        false,
+                        "The final result of a <length-percentage> should never be a number"
+                    );
+                    Self::new_length(Length::new(number))
+                },
+                ComputedLeaf::Angle(..) | ComputedLeaf::Time(..) | ComputedLeaf::Resolution(..) => {
+                    debug_assert!(
                             false,
                             "The final result of a <length-percentage> should never be an angle, time, or resolution"
                         );
-                        Self::zero()
-                    },
-                };
+                    Self::zero()
+                },
             },
             _ => Self::new_calc_unchecked(Box::new(CalcLengthPercentage {
                 clamping_mode,
@@ -324,7 +320,7 @@ impl LengthPercentage {
         match self.unpack() {
             Unpacked::Length(l) => l,
             Unpacked::Percentage(p) => (basis * p.0).normalized(),
-            Unpacked::Calc(ref c) => c.resolve(basis),
+            Unpacked::Calc(c) => c.resolve(basis),
         }
     }
 
@@ -349,7 +345,7 @@ impl LengthPercentage {
             Unpacked::Length(l) => Some(l),
             Unpacked::Percentage(..) | Unpacked::Calc(..) => {
                 debug_assert!(self.has_percentage());
-                return None;
+                None
             },
         }
     }
@@ -372,7 +368,7 @@ impl LengthPercentage {
         Some(match self.unpack() {
             Unpacked::Length(l) => Percentage(l.px() / basis.px()),
             Unpacked::Percentage(p) => p,
-            Unpacked::Calc(ref c) => Percentage(c.resolve(basis).px() / basis.px()),
+            Unpacked::Calc(c) => Percentage(c.resolve(basis).px() / basis.px()),
         })
     }
 

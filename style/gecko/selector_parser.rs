@@ -69,7 +69,7 @@ impl HeadingSelectorData {
         }
         let level = (bits >> HEADING_LEVEL_OFFSET) as i32;
         debug_assert!(level > 0 && level < 16);
-        self.0.iter().any(|item| *item == level)
+        self.0.contains(&level)
     }
 }
 
@@ -364,11 +364,11 @@ impl<'a> SelectorParser<'a> {
             return true;
         }
 
-        return false;
+        false
     }
 
     fn is_pseudo_element_enabled(&self, pseudo_element: &PseudoElement) -> bool {
-        if pseudo_element.enabled_in_content(&self.url_data, self.for_supports_rule) {
+        if pseudo_element.enabled_in_content(self.url_data, self.for_supports_rule) {
             return true;
         }
 
@@ -380,7 +380,7 @@ impl<'a> SelectorParser<'a> {
             return true;
         }
 
-        return false;
+        false
     }
 }
 
@@ -400,7 +400,7 @@ pub fn parse_functional_pseudo_element_with_name<'i>(
         let mut args = ThinVec::new();
         loop {
             match parser.next() {
-                Ok(&Token::Ident(ref ident)) => args.push(Atom::from(ident.as_ref())),
+                Ok(Token::Ident(ident)) => args.push(Atom::from(ident.as_ref())),
                 Ok(&Token::Comma) => {},
                 Ok(_) => return Err(ParseError::unexpected_token()),
                 Err(BasicParseError {

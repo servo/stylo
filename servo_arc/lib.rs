@@ -259,9 +259,9 @@ impl<T> Arc<T> {
     pub unsafe fn from_raw(ptr: *const T) -> Self {
         // To find the corresponding pointer to the `ArcInner` we need
         // to subtract the offset of the `data` field from the pointer.
-        let ptr = (ptr as *const u8).sub(data_offset::<T>());
+        let ptr = unsafe { (ptr as *const u8).sub(data_offset::<T>()) };
         Arc {
-            p: ptr::NonNull::new_unchecked(ptr as *mut ArcInner<T>),
+            p: unsafe { ptr::NonNull::new_unchecked(ptr as *mut ArcInner<T>) },
             phantom: PhantomData,
         }
     }
@@ -269,7 +269,7 @@ impl<T> Arc<T> {
     /// Like from_raw, but returns an addrefed arc instead.
     #[inline]
     pub unsafe fn from_raw_addrefed(ptr: *const T) -> Self {
-        let arc = Self::from_raw(ptr);
+        let arc = unsafe { Self::from_raw(ptr) };
         mem::forget(arc.clone());
         arc
     }
@@ -296,10 +296,12 @@ impl<T> Arc<T> {
             data,
         };
 
-        ptr::write(ptr, x);
+        unsafe {
+            ptr::write(ptr, x);
+        }
 
         Arc {
-            p: ptr::NonNull::new_unchecked(ptr),
+            p: unsafe { ptr::NonNull::new_unchecked(ptr) },
             phantom: PhantomData,
         }
     }
@@ -367,12 +369,14 @@ impl<T: ?Sized> Arc<T> {
         self.record_drop();
         let inner = self.ptr();
 
-        let layout = Layout::for_value(&*inner);
-        #[cfg(feature = "track_alloc_size")]
-        let layout = Layout::from_size_align_unchecked((*inner).alloc_size, layout.align());
+        unsafe {
+            let layout = Layout::for_value(&*inner);
+            #[cfg(feature = "track_alloc_size")]
+            let layout = Layout::from_size_align_unchecked((*inner).alloc_size, layout.align());
 
-        std::ptr::drop_in_place(inner);
-        alloc::dealloc(inner as *mut _, layout);
+            std::ptr::drop_in_place(inner);
+            alloc::dealloc(inner as *mut _, layout);
+        }
     }
 
     /// Test pointer equality between the two Arcs, i.e. they must be the _same_
@@ -393,7 +397,7 @@ impl<T: ?Sized> Arc<T> {
 }
 
 #[cfg(feature = "gecko_refcount_logging")]
-extern "C" {
+unsafe extern "C" {
     fn NS_LogCtor(
         aPtr: *mut std::os::raw::c_void,
         aTypeName: *const std::os::raw::c_char,
@@ -1049,7 +1053,7 @@ pub enum ArcUnionBorrow<'a, A: 'a, B: 'a> {
 impl<A, B> ArcUnion<A, B> {
     unsafe fn new(ptr: *mut ()) -> Self {
         ArcUnion {
-            p: ptr::NonNull::new_unchecked(ptr),
+            p: unsafe { ptr::NonNull::new_unchecked(ptr) },
             phantom_a: PhantomData,
             phantom_b: PhantomData,
         }

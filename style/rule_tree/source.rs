@@ -68,10 +68,13 @@ impl StyleSource {
         // Locked<PropertyDeclarationBlock>, but that is kind of a PITA.
         #[allow(unsafe_code)]
         unsafe {
-            self.0
-                .read_unchecked()
-                .immutable
-                .store(true, Ordering::Relaxed);
+            // Load before storing: the flag is never cleared, so after the first mark every
+            // store is redundant, and an unconditional store would still take the cache line
+            // exclusive and invalidate it for every other thread reading this block.
+            let immutable = &self.0.read_unchecked().immutable;
+            if !immutable.load(Ordering::Relaxed) {
+                immutable.store(true, Ordering::Relaxed);
+            }
         }
     }
 }

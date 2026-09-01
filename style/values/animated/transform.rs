@@ -249,18 +249,6 @@ impl From<MatrixDecomposed2D> for Matrix3D {
 }
 
 impl Animate for Matrix {
-    #[cfg(feature = "servo")]
-    fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
-        let this = Matrix3D::from(*self);
-        let other = Matrix3D::from(*other);
-        let this = MatrixDecomposed2D::from(this);
-        let other = MatrixDecomposed2D::from(other);
-        Matrix3D::from(this.animate(&other, procedure)?).into_2d()
-    }
-
-    #[cfg(feature = "gecko")]
-    // Gecko doesn't exactly follow the spec here; we use a different procedure
-    // to match it
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
         let this = Matrix3D::from(*self);
         let other = Matrix3D::from(*other);
@@ -836,8 +824,7 @@ fn decompose_3d_matrix(mut matrix: Matrix3D) -> Result<MatrixDecomposed3D, ()> {
  *     [ tan(φ)    1   ]
  */
 
-/// Decompose a 2D matrix for Gecko. This implements the above decomposition algorithm.
-#[cfg(feature = "gecko")]
+/// Decompose a 2D matrix. This implements the above decomposition algorithm.
 fn decompose_2d_matrix(matrix: &Matrix3D) -> Result<MatrixDecomposed3D, ()> {
     // The index is column-major, so the equivalent transform matrix is:
     // | m11 m21  0 m41 |  =>  | m11 m21 | and translate(m41, m42)
@@ -890,28 +877,6 @@ fn decompose_2d_matrix(matrix: &Matrix3D) -> Result<MatrixDecomposed3D, ()> {
 }
 
 impl Animate for Matrix3D {
-    #[cfg(feature = "servo")]
-    fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
-        if self.is_3d() || other.is_3d() {
-            let decomposed_from = decompose_3d_matrix(*self);
-            let decomposed_to = decompose_3d_matrix(*other);
-            match (decomposed_from, decomposed_to) {
-                (Ok(this), Ok(other)) => Ok(Matrix3D::from(this.animate(&other, procedure)?)),
-                // Matrices can be undecomposable due to couple reasons, e.g.,
-                // non-invertible matrices. In this case, we should report Err
-                // here, and let the caller do the fallback procedure.
-                _ => Err(()),
-            }
-        } else {
-            let this = MatrixDecomposed2D::from(*self);
-            let other = MatrixDecomposed2D::from(*other);
-            Ok(Matrix3D::from(this.animate(&other, procedure)?))
-        }
-    }
-
-    #[cfg(feature = "gecko")]
-    // Gecko doesn't exactly follow the spec here; we use a different procedure
-    // to match it
     fn animate(&self, other: &Self, procedure: Procedure) -> Result<Self, ()> {
         let (from, to) = if self.is_3d() || other.is_3d() {
             (decompose_3d_matrix(*self)?, decompose_3d_matrix(*other)?)
@@ -927,21 +892,6 @@ impl Animate for Matrix3D {
 
 impl ComputeSquaredDistance for Matrix3D {
     #[inline]
-    #[cfg(feature = "servo")]
-    fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
-        if self.is_3d() || other.is_3d() {
-            let from = decompose_3d_matrix(*self)?;
-            let to = decompose_3d_matrix(*other)?;
-            from.compute_squared_distance(&to)
-        } else {
-            let from = MatrixDecomposed2D::from(*self);
-            let to = MatrixDecomposed2D::from(*other);
-            from.compute_squared_distance(&to)
-        }
-    }
-
-    #[inline]
-    #[cfg(feature = "gecko")]
     fn compute_squared_distance(&self, other: &Self) -> Result<SquaredDistance, ()> {
         let (from, to) = if self.is_3d() || other.is_3d() {
             (decompose_3d_matrix(*self)?, decompose_3d_matrix(*other)?)

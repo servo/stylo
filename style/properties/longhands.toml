@@ -538,7 +538,7 @@ struct = "svg"
 extra_prefixes = ["webkit"]
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-clip-path"
 affects = "paint"
-servo_restyle_damage = "repaint"
+servo_restyle_damage = "rebuild_stacking_context"
 
 [clip-rule]
 type = "FillRule"
@@ -562,10 +562,10 @@ affects = "paint"
 type = "ColorScheme"
 initial = "specified::color::ColorScheme::normal()"
 struct = "inherited_ui"
-servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-color-adjust/#color-scheme-prop"
 animation_type = "discrete"
 ignored_when_colors_disabled = true
+servo_restyle_damage = "repaint"
 affects = "paint"
 
 [column-count]
@@ -2078,7 +2078,6 @@ affects = "layout"
 type = "TouchAction"
 initial = "computed::TouchAction::auto()"
 struct = "box"
-servo_pref = "layout.unimplemented"
 animation_type = "discrete"
 spec = "https://compat.spec.whatwg.org/#touch-action"
 affects = "paint"
@@ -2246,7 +2245,6 @@ initial = "computed::AnimationComposition::Replace"
 struct = "ui"
 vector = { need_index = true }
 animation_type = "none"
-servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-animations-2/#animation-composition"
 affects = ""
 

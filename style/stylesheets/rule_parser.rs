@@ -277,7 +277,7 @@ impl AtRuleType {
     fn from_name(name: &str, context: &ParserContext) -> Option<Self> {
         Some(match_ignore_ascii_case! { name,
             "font-face" => Self::FontFace,
-            "font-feature-values" if cfg!(feature = "gecko") => Self::FontFeatureValues,
+            "font-feature-values" => Self::FontFeatureValues,
             "font-palette-values" => Self::FontPaletteValues,
             "counter-style" if cfg!(feature = "gecko") => Self::CounterStyle,
             "media" => Self::Media,

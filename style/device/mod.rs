@@ -81,11 +81,10 @@ pub struct Device {
     /// The CssEnvironment object responsible of getting CSS environment
     /// variables.
     environment: CssEnvironment,
-    /// The body text color, stored as an `nscolor`, used for the "tables
-    /// inherit from body" quirk.
+    /// The body text color, used for the "tables inherit from body" quirk.
     ///
     /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
-    body_text_color: AtomicU32,
+    body_text_color: RwLock<AbsoluteColor>,
 
     /// Extra Gecko-specific or Servo-specific data.
     extra: ExtraDeviceData,
@@ -281,15 +280,14 @@ impl Device {
 
     /// Returns the body text color.
     pub fn body_text_color(&self) -> AbsoluteColor {
-        AbsoluteColor::from_nscolor(self.body_text_color.load(Ordering::Relaxed))
+        *self.body_text_color.read()
     }
 
     /// Sets the body text color for the "inherit color from body" quirk.
     ///
     /// <https://quirks.spec.whatwg.org/#the-tables-inherit-color-from-body-quirk>
     pub fn set_body_text_color(&self, color: AbsoluteColor) {
-        self.body_text_color
-            .store(color.to_nscolor(), Ordering::Relaxed)
+        *self.body_text_color.write() = color;
     }
 
     /// Applies text zoom to a font-size or line-height value (see nsStyleFont::ZoomText).

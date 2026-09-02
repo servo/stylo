@@ -69,7 +69,7 @@ impl Device {
             environment: CssEnvironment,
             // This gets updated when we see the <body>, so it doesn't really
             // matter which color-scheme we look at here.
-            body_text_color: AtomicU32::new(prefs.mLightColors.mDefault),
+            body_text_color: RwLock::new(AbsoluteColor::from_nscolor(prefs.mLightColors.mDefault)),
             extra: ExtraDeviceData { document },
         }
     }

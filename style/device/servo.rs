@@ -111,7 +111,7 @@ impl Device {
             used_dynamic_viewport_size: AtomicBool::new(false),
             environment: CssEnvironment,
             default_values,
-            body_text_color: AtomicU32::new(AbsoluteColor::BLACK.to_nscolor()),
+            body_text_color: RwLock::new(AbsoluteColor::BLACK),
             extra: ExtraDeviceData {
                 media_type,
                 viewport_size,

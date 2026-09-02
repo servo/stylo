@@ -719,17 +719,6 @@ impl AbsoluteColor {
         )
     }
 
-    /// Convert a color value to `nscolor`.
-    pub fn to_nscolor(&self) -> u32 {
-        let srgb = self.to_color_space(ColorSpace::Srgb);
-        u32::from_le_bytes([
-            (srgb.components.0 * 255.0).round() as u8,
-            (srgb.components.1 * 255.0).round() as u8,
-            (srgb.components.2 * 255.0).round() as u8,
-            (srgb.alpha * 255.0).round() as u8,
-        ])
-    }
-
     /// Convert a given `nscolor` to a Servo AbsoluteColor value.
     pub fn from_nscolor(color: u32) -> Self {
         let [r, g, b, a] = color.to_le_bytes();

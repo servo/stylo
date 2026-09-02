@@ -523,6 +523,12 @@ impl<T> MallocSizeOf for std::marker::PhantomData<T> {
 //impl<T> !MallocSizeOf for Arc<T> { }
 //impl<T> !MallocShallowSizeOf for Arc<T> { }
 
+impl<T> MallocSizeOf for servo_arc::ArcBorrow<'_, T> {
+    fn size_of(&self, _ops: &mut MallocSizeOfOps) -> usize {
+        0
+    }
+}
+
 impl<T> MallocUnconditionalShallowSizeOf for servo_arc::Arc<T> {
     fn unconditional_shallow_size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
         unsafe { ops.malloc_size_of(self.heap_ptr()) }

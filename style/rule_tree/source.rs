@@ -4,9 +4,10 @@
 
 #![deny(unsafe_code)]
 
+use crate::derives::*;
 use crate::properties::PropertyDeclarationBlock;
 use crate::shared_lock::{Locked, SharedRwLockReadGuard};
-use servo_arc::Arc;
+use servo_arc::{Arc, ArcBorrow};
 use std::io::Write;
 use std::ptr;
 
@@ -19,16 +20,68 @@ use std::ptr;
 #[derive(Clone, Debug)]
 pub struct StyleSource(Arc<Locked<PropertyDeclarationBlock>>);
 
+/// A borrowed version of `StyleSource`.
+///
+/// This is what we use during selector matching, so that we only need to touch the refcount of
+/// the declarations when we actually insert them in the rule tree.
+#[derive(Clone, Copy, Debug, MallocSizeOf)]
+pub struct StyleSourceBorrow<'a>(ArcBorrow<'a, Locked<PropertyDeclarationBlock>>);
+
+// The declaration block is measured as part of the stylesheet (or as part of whatever object owns
+// it, like the element for the style attribute).
+malloc_size_of::malloc_size_of_is_0!(StyleSource);
+
 impl PartialEq for StyleSource {
     fn eq(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.0, &other.0)
     }
 }
 
+impl<'a> PartialEq for StyleSourceBorrow<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        ArcBorrow::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<'a> StyleSourceBorrow<'a> {
+    /// Creates a borrowed style source from a borrowed declaration block.
+    #[inline]
+    pub fn from_declarations(decls: ArcBorrow<'a, Locked<PropertyDeclarationBlock>>) -> Self {
+        Self(decls)
+    }
+
+    /// Creates an owned style source from this borrow, bumping the refcount.
+    #[inline]
+    pub fn to_owned(&self) -> StyleSource {
+        StyleSource(self.0.clone_arc())
+    }
+
+    #[inline]
+    pub(super) fn key(&self) -> ptr::NonNull<()> {
+        ptr::NonNull::from(self.0.get()).cast()
+    }
+
+    /// Read the style source guard, and obtain thus read access to the underlying property
+    /// declaration block.
+    #[inline]
+    pub fn read<'b>(&self, guard: &'b SharedRwLockReadGuard) -> &'b PropertyDeclarationBlock
+    where
+        'a: 'b,
+    {
+        self.0.get().read_with(guard)
+    }
+}
+
 impl StyleSource {
     #[inline]
     pub(super) fn key(&self) -> ptr::NonNull<()> {
-        self.0.raw_ptr()
+        ptr::NonNull::from(&*self.0).cast()
+    }
+
+    /// Borrows this style source.
+    #[inline]
+    pub fn borrow(&self) -> StyleSourceBorrow<'_> {
+        StyleSourceBorrow(self.0.borrow_arc())
     }
 
     /// Creates a StyleSource from a PropertyDeclarationBlock.

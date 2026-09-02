@@ -632,12 +632,12 @@ pub enum SingleFontFamily {
 }
 
 fn system_ui_enabled(_: &ParserContext) -> bool {
-    static_prefs::pref!("layout.css.system-ui.enabled")
+    crate::pref!("layout.css.system-ui.enabled")
 }
 
 #[cfg(feature = "gecko")]
 fn math_enabled(context: &ParserContext) -> bool {
-    context.chrome_rules_enabled() || static_prefs::pref!("mathml.font_family_math.enabled")
+    context.chrome_rules_enabled() || crate::pref!("mathml.font_family_math.enabled")
 }
 
 /// A generic font-family name.

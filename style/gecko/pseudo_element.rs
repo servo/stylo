@@ -9,6 +9,7 @@
 //! need to update the checked-in files for Servo.
 
 use crate::gecko_bindings::structs::PseudoStyleType;
+use crate::pref;
 use crate::properties::longhands::display::computed_value::T as Display;
 use crate::properties::{ComputedValues, PropertyFlags};
 use crate::selector_parser::PseudoElementCascadeType;
@@ -18,7 +19,6 @@ use crate::values::serialize_atom_identifier;
 use crate::values::AtomIdent;
 use cssparser::{Parser, ToCss};
 use selectors::parser::PseudoElement as PseudoElementTrait;
-use static_prefs::pref;
 use std::fmt;
 use style_traits::ParseError;
 

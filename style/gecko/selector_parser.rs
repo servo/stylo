@@ -219,13 +219,13 @@ impl NonTSPseudoClass {
     #[inline]
     fn is_enabled_in_content(&self) -> bool {
         if matches!(*self, Self::Heading(..)) {
-            return static_prefs::pref!("dom.headingoffset.enabled");
+            return crate::pref!("dom.headingoffset.enabled");
         }
         if matches!(*self, Self::PictureInPicture) {
-            return static_prefs::pref!("dom.media-pip.enabled");
+            return crate::pref!("dom.media-pip.enabled");
         }
         if matches!(*self, NonTSPseudoClass::MozPlaceholder) {
-            return static_prefs::pref!("layout.css.moz-placeholder.content.enabled");
+            return crate::pref!("layout.css.moz-placeholder.content.enabled");
         }
         !self.has_any_flag(NonTSPseudoClassFlag::PSEUDO_CLASS_ENABLED_IN_UA_SHEETS_AND_CHROME)
     }

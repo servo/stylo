@@ -142,7 +142,7 @@ impl SupportsCondition {
     /// Parses a functional supports condition.
     fn parse_functional(function: &str, input: &mut Parser) -> Result<Self, ParseError> {
         match_ignore_ascii_case! { function,
-            "at-rule" if static_prefs::pref!("layout.css.supports.at-rule.enabled") => {
+            "at-rule" if crate::pref!("layout.css.supports.at-rule.enabled") => {
                 let kw = AtRuleKeyword::parse(input)?;
                 Ok(SupportsCondition::AtRule(kw))
             },
@@ -153,11 +153,11 @@ impl SupportsCondition {
                     input.slice_from(pos).to_owned()
                 )))
             },
-            "font-format" => {
+            "font-format" if crate::pref!("layout.css.font-tech.enabled", gecko = true) => {
                 let kw = FontFaceSourceFormatKeyword::parse(input)?;
                 Ok(SupportsCondition::FontFormat(kw))
             },
-            "font-tech" => {
+            "font-tech" if crate::pref!("layout.css.font-tech.enabled", gecko = true) => {
                 let flag = FontFaceSourceTechFlags::parse_one(input)?;
                 Ok(SupportsCondition::FontTech(flag))
             },
@@ -469,7 +469,7 @@ impl NamedFeature {
     pub fn eval(self) -> bool {
         match self {
             Self::AnchorPositionFollowsTransforms => {
-                static_prefs::pref!("layout.css.anchor-positioning.follows-transforms.enabled")
+                crate::pref!("layout.css.anchor-positioning.follows-transforms.enabled")
             },
             // Not implemented. See Bug 2044147.
             Self::SingleAxisScrollContainer => false,

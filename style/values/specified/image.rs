@@ -123,14 +123,8 @@ fn default_color_interpolation_method<T>(
     }
 }
 
-#[cfg(feature = "gecko")]
 fn cross_fade_enabled() -> bool {
-    static_prefs::pref!("layout.css.cross-fade.enabled")
-}
-
-#[cfg(feature = "servo")]
-fn cross_fade_enabled() -> bool {
-    false
+    crate::pref!("layout.css.cross-fade.enabled")
 }
 
 impl SpecifiedValueInfo for Gradient {

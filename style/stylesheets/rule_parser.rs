@@ -278,29 +278,29 @@ impl AtRuleType {
         Some(match_ignore_ascii_case! { name,
             "font-face" => Self::FontFace,
             "font-feature-values" => Self::FontFeatureValues,
-            "font-palette-values" => Self::FontPaletteValues,
+            "font-palette-values" if crate::pref!("layout.css.font-palette.enabled", gecko = true) => Self::FontPaletteValues,
             "counter-style" if cfg!(feature = "gecko") => Self::CounterStyle,
             "media" => Self::Media,
-            "custom-media" if static_prefs::pref!("layout.css.custom-media.enabled") => Self::CustomMedia,
+            "custom-media" if crate::pref!("layout.css.custom-media.enabled") => Self::CustomMedia,
             "container" if cfg!(feature = "gecko") => Self::Container,
             "supports" => Self::Supports,
             "keyframes" => Self::Keyframes(None),
             "-webkit-keyframes" => Self::Keyframes(Some(VendorPrefix::WebKit)),
             "-moz-keyframes" if cfg!(feature = "gecko") => Self::Keyframes(Some(VendorPrefix::Moz)),
             "page" if cfg!(feature = "gecko") => Self::Page,
-            "property" if static_prefs::pref!("layout.css.properties-and-values.enabled") => Self::Property,
+            "property" if crate::pref!("layout.css.properties-and-values.enabled") => Self::Property,
             "-moz-document" if cfg!(feature = "gecko") => Self::Document,
             "import" => Self::Import,
             "namespace" => Self::Namespace,
             "layer" => Self::Layer,
-            "scope" if static_prefs::pref!("layout.css.at-scope.enabled") => Self::Scope,
-            "starting-style" if static_prefs::pref!("layout.css.starting-style-at-rules.enabled") => Self::StartingStyle,
+            "scope" if crate::pref!("layout.css.at-scope.enabled") => Self::Scope,
+            "starting-style" if crate::pref!("layout.css.starting-style-at-rules.enabled") => Self::StartingStyle,
             "appearance-base" if context.chrome_rules_enabled() => Self::AppearanceBase,
             "position-try" => Self::PositionTry,
-            "view-transition" if static_prefs::pref!("dom.viewTransitions.cross-document.enabled") => Self::ViewTransition,
+            "view-transition" if crate::pref!("dom.viewTransitions.cross-document.enabled") => Self::ViewTransition,
             _ => {
                 // The margin at-rules supported within @page.
-                if cfg!(feature = "gecko") && static_prefs::pref!("layout.css.margin-rules.enabled") {
+                if cfg!(feature = "gecko") && crate::pref!("layout.css.margin-rules.enabled") {
                     if let Some(rule_type) = MarginRuleType::from_name(name) {
                         return Some(Self::Margin(rule_type));
                     }
@@ -967,7 +967,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
                 })
             },
             AtRulePrelude::Page(selectors) => {
-                let page_rule = if !static_prefs::pref!("layout.css.margin-rules.enabled") {
+                let page_rule = if !crate::pref!("layout.css.margin-rules.enabled") {
                     let declarations = self.nest_for_rule(CssRuleType::Page, |p| {
                         parse_property_declaration_list(&p.context, input, &[])
                     });

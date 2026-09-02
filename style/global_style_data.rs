@@ -156,12 +156,12 @@ impl StyleThreadPool {
 
 #[cfg(feature = "servo")]
 fn stylo_threads_pref() -> i32 {
-    static_prefs::pref!("layout.threads")
+    crate::pref!("layout.threads")
 }
 
 #[cfg(feature = "gecko")]
 fn stylo_threads_pref() -> i32 {
-    static_prefs::pref!("layout.css.stylo-threads")
+    crate::pref!("layout.css.stylo-threads")
 }
 
 /// The performance benefit of additional threads seems to level off at around six, so we cap it

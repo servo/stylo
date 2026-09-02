@@ -32,15 +32,8 @@ pub type SVGWidth = generic::GenericSVGLength<NonNegativeLengthPercentage>;
 pub type SVGStrokeDashArray = generic::GenericSVGStrokeDashArray<NonNegativeLengthPercentage>;
 
 /// Whether the `context-value` value is enabled.
-#[cfg(feature = "gecko")]
 pub fn is_context_value_enabled() -> bool {
-    static_prefs::pref!("gfx.font_rendering.opentype_svg.enabled")
-}
-
-/// Whether the `context-value` value is enabled.
-#[cfg(not(feature = "gecko"))]
-pub fn is_context_value_enabled() -> bool {
-    false
+    crate::pref!("gfx.font_rendering.opentype_svg.enabled")
 }
 
 macro_rules! parse_svg_length {

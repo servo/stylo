@@ -381,7 +381,7 @@ impl NonCustomPropertyId {
                 % for (index, property) in enumerate(data.longhands + data.shorthands + data.all_aliases()):
                     <% preference = getattr(property, "servo_pref") %>
                     % if preference:
-                        ${index} => static_prefs::pref!("${preference}"),
+                        ${index} => crate::pref!("${preference}"),
                     % endif %
                 % endfor
                     _ => true,

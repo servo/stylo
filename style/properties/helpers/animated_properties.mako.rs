@@ -660,7 +660,7 @@ impl Animate for Display {
         match procedure {
             Procedure::Interpolate { progress } => {
                 debug_assert!(
-                    static_prefs::pref!("layout.css.display-animations.enabled"),
+                    crate::pref!("layout.css.display-animations.enabled"),
                     "animating display with the pref disabled",
                 );
                 let (this_weight, other_weight) = procedure.weights();

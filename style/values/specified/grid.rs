@@ -267,28 +267,14 @@ impl Parse for TrackList<LengthPercentage, Integer> {
     }
 }
 
-#[cfg(feature = "gecko")]
 #[inline]
 fn allow_grid_template_subgrids() -> bool {
-    true
+    crate::pref!("layout.css.grid-template-subgrid-value.enabled", gecko = true)
 }
 
-#[cfg(feature = "servo")]
-#[inline]
-fn allow_grid_template_subgrids() -> bool {
-    false
-}
-
-#[cfg(feature = "gecko")]
 #[inline]
 fn allow_grid_template_masonry() -> bool {
-    static_prefs::pref!("layout.css.grid-template-masonry-value.enabled")
-}
-
-#[cfg(feature = "servo")]
-#[inline]
-fn allow_grid_template_masonry() -> bool {
-    false
+    crate::pref!("layout.css.grid-template-masonry-value.enabled")
 }
 
 impl Parse for GridTemplateComponent<LengthPercentage, Integer> {

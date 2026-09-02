@@ -179,7 +179,7 @@ impl KeyframeSelector {
         }
 
         // We parse the the extension of keyframe selector for scroll-driven animation.
-        if !static_prefs::pref!("layout.css.scroll-driven-animations.enabled") {
+        if !crate::pref!("layout.css.scroll-driven-animations.enabled") {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
@@ -476,7 +476,7 @@ fn has_animated_properties(
             let declaration_id = declaration.id();
 
             if declaration_id == PropertyDeclarationId::Longhand(LonghandId::Display)
-                && !static_prefs::pref!("layout.css.display-animations.enabled")
+                && !crate::pref!("layout.css.display-animations.enabled")
             {
                 continue;
             }

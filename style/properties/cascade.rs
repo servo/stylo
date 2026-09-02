@@ -582,7 +582,7 @@ fn tweak_when_ignoring_colors(
         #[cfg(feature = "gecko")]
         PropertyDeclaration::BackgroundImage(ref bkg) => {
             use crate::values::generics::image::Image;
-            if static_prefs::pref!("browser.display.permit_backplate")
+            if crate::pref!("browser.display.permit_backplate")
                 && bkg
                     .0
                     .iter()
@@ -1375,7 +1375,7 @@ impl<'a> Cascade<'a> {
 
         // Check the use_document_fonts setting for content, but for chrome
         // documents they're treated as always enabled.
-        if static_prefs::pref!("browser.display.use_document_fonts") != 0
+        if crate::pref!("browser.display.use_document_fonts") != 0
             || builder.device.chrome_rules_enabled_for_document()
         {
             return;

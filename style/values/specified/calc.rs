@@ -1181,7 +1181,7 @@ impl CalcNode {
                     Ok(Self::Sign(Box::new(node)))
                 },
                 MathFunction::Progress => {
-                    if !static_prefs::pref!("layout.css.progress-function.enabled") {
+                    if !crate::pref!("layout.css.progress-function.enabled") {
                         return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                     }
 
@@ -1207,7 +1207,7 @@ impl CalcNode {
                     })
                 },
                 MathFunction::SiblingCount | MathFunction::SiblingIndex => {
-                    if !static_prefs::pref!("layout.css.tree-counting-functions.enabled") {
+                    if !crate::pref!("layout.css.tree-counting-functions.enabled") {
                         return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                     }
 

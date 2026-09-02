@@ -80,7 +80,7 @@ fn eval_device_orientation(context: &Context, value: Option<Orientation>) -> boo
 }
 
 fn document_picture_in_picture_enabled(context: &ParserContext) -> bool {
-    static_prefs::pref!("dom.documentpip.enabled") || context.chrome_rules_enabled()
+    crate::pref!("dom.documentpip.enabled") || context.chrome_rules_enabled()
 }
 
 /// Values for the display-mode media feature.
@@ -627,7 +627,7 @@ fn eval_moz_native_theme(context: &Context) -> bool {
     if context.device().document().mForceNonNativeTheme() {
         return false;
     }
-    static_prefs::pref!("browser.theme.native-theme")
+    crate::pref!("browser.theme.native-theme")
 }
 
 fn get_lnf_int(int_id: i32) -> i32 {

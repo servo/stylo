@@ -399,7 +399,7 @@ pub enum GenericCalcNode<L> {
 pub use self::GenericCalcNode as CalcNode;
 
 fn typed_arithmetic_enabled() -> bool {
-    static_prefs::pref!("layout.css.calc-typed-arithmetic.enabled")
+    crate::pref!("layout.css.calc-typed-arithmetic.enabled")
 }
 
 /// The non-mixed types that a math function can return. Note that

@@ -914,7 +914,7 @@ pub enum MozControlCharacterVisibility {
 #[cfg(feature = "gecko")]
 impl Default for MozControlCharacterVisibility {
     fn default() -> Self {
-        if static_prefs::pref!("layout.css.control-characters.visible") {
+        if crate::pref!("layout.css.control-characters.visible") {
             Self::Visible
         } else {
             Self::Hidden
@@ -1087,7 +1087,7 @@ fn parse_inset_endpoint(
     ctx: &ParserContext,
     input: &mut Parser,
 ) -> Result<LengthPercentage, ParseError> {
-    if !static_prefs::pref!("layout.css.text-decoration-inset-percentage.enabled") {
+    if !crate::pref!("layout.css.text-decoration-inset-percentage.enabled") {
         Length::parse(ctx, input).map(|l| l.into())
     } else {
         LengthPercentage::parse(ctx, input)

@@ -216,7 +216,7 @@ impl StyleQuery {
         input: &mut Parser,
         feature_type: FeatureType,
     ) -> Result<Self, ParseError> {
-        if !static_prefs::pref!("layout.css.style-queries.enabled")
+        if !crate::pref!("layout.css.style-queries.enabled")
             || feature_type != FeatureType::Container
         {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
@@ -801,7 +801,7 @@ impl QueryCondition {
             Ok(expr) => return Ok(Self::Feature(expr)),
             Err(e) => e,
         };
-        if static_prefs::pref!("layout.css.custom-media.enabled") {
+        if crate::pref!("layout.css.custom-media.enabled") {
             if let Ok(custom) = input.try_parse(|input| DashedIdent::parse(context, input)) {
                 return Ok(Self::Custom(custom));
             }

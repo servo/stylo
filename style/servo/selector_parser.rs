@@ -290,7 +290,7 @@ impl PseudoElement {
     pub fn property_restriction(&self) -> Option<PropertyFlags> {
         Some(match self {
             PseudoElement::FirstLetter => PropertyFlags::APPLIES_TO_FIRST_LETTER,
-            PseudoElement::Marker if static_prefs::pref!("layout.css.marker.restricted") => {
+            PseudoElement::Marker if crate::pref!("layout.css.marker.restricted") => {
                 PropertyFlags::APPLIES_TO_MARKER
             },
             PseudoElement::Placeholder => PropertyFlags::APPLIES_TO_PLACEHOLDER,
@@ -583,7 +583,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
 
     #[inline]
     fn parse_nth_child_of(&self) -> bool {
-        static_prefs::pref!("layout.css.nth-child-of.enabled")
+        crate::pref!("layout.css.nth-child-of.enabled")
     }
 
     #[inline]
@@ -593,7 +593,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
 
     #[inline]
     fn parse_has(&self) -> bool {
-        static_prefs::pref!("layout.css.has-selector.enabled")
+        crate::pref!("layout.css.has-selector.enabled")
     }
 
     #[inline]

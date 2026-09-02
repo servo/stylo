@@ -24,24 +24,19 @@ use style_traits::{CssWriter, KeywordsCollectFn, ParseError /*CssString*/};
 use style_traits::{SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;
 
-#[cfg(not(feature = "servo"))]
+#[inline]
 fn grid_enabled() -> bool {
-    true
-}
-
-#[cfg(feature = "servo")]
-fn grid_enabled() -> bool {
-    static_prefs::pref!("layout.grid.enabled")
+    crate::pref!("layout.grid.enabled", gecko = true)
 }
 
 #[inline]
 fn appearance_base_enabled(_context: &ParserContext) -> bool {
-    static_prefs::pref!("layout.css.appearance-base.enabled")
+    crate::pref!("layout.css.appearance-base.enabled")
 }
 
 #[inline]
 fn appearance_base_select_enabled(_context: &ParserContext) -> bool {
-    static_prefs::pref!("dom.select.customizable_select.enabled")
+    crate::pref!("dom.select.customizable_select.enabled")
 }
 
 #[derive(
@@ -1614,7 +1609,7 @@ impl ContainerType {
             return false;
         }
         if self.contains(Self::SCROLL_STATE)
-            && !static_prefs::pref!("layout.css.scroll-state.enabled")
+            && !crate::pref!("layout.css.scroll-state.enabled")
         {
             return false;
         }
@@ -2138,8 +2133,7 @@ impl Parse for Overflow {
             "scroll" => Self::Scroll,
             "auto" | "overlay" => Self::Auto,
             "clip" => Self::Clip,
-            #[cfg(feature = "gecko")]
-            "-moz-hidden-unscrollable" if static_prefs::pref!("layout.css.overflow-moz-hidden-unscrollable.enabled") => {
+            "-moz-hidden-unscrollable" if crate::pref!("layout.css.overflow-moz-hidden-unscrollable.enabled") => {
                 Overflow::Clip
             },
         })

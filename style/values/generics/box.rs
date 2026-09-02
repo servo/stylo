@@ -342,7 +342,7 @@ impl<I: ToCss> ToCss for LineClamp<I> {
         if !self.block_ellipsis.is_ellipsis() {
             writer.item(&self.block_ellipsis)?;
         }
-        if self.webkit_legacy && static_prefs::pref!("layout.css.line-clamp.enabled") {
+        if self.webkit_legacy && crate::pref!("layout.css.line-clamp.enabled") {
             writer.raw_item("-webkit-legacy")?;
         }
         Ok(())

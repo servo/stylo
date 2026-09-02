@@ -330,7 +330,7 @@ impl BasicShape {
                 },
                 "shape"
                     if flags.contains(AllowedBasicShapes::SHAPE)
-                        && static_prefs::pref!("layout.css.basic-shape-shape.enabled") =>
+                        && crate::pref!("layout.css.basic-shape-shape.enabled") =>
                 {
                     generic::Shape::parse_function_arguments(context, i, shape_type)
                         .map(PathOrShapeFunction::Shape)
@@ -420,7 +420,7 @@ impl Ellipse {
             .try_parse(|i| -> Result<_, ParseError> {
                 let s_x = ShapeRadius::parse(context, i)?;
                 let s_y = ShapeRadius::parse(context, i)?;
-                if !static_prefs::pref!("layout.css.ellipse-corners.enabled")
+                if !crate::pref!("layout.css.ellipse-corners.enabled")
                     && (matches!(
                         s_x,
                         ShapeRadius::ClosestCorner | ShapeRadius::FarthestCorner

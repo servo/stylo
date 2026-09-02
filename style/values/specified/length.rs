@@ -1781,23 +1781,23 @@ macro_rules! parse_size_non_length {
 }
 
 fn is_webkit_fill_available_enabled_in_width_and_height() -> bool {
-    static_prefs::pref!("layout.css.webkit-fill-available.enabled")
+    crate::pref!("layout.css.webkit-fill-available.enabled")
 }
 
 fn is_webkit_fill_available_enabled_in_all_size_properties() -> bool {
     // For convenience at the callsites, we check both prefs here,
     // since both must be 'true' in order for the keyword to be
     // enabled in all size properties.
-    static_prefs::pref!("layout.css.webkit-fill-available.enabled")
-        && static_prefs::pref!("layout.css.webkit-fill-available.all-size-properties.enabled")
+    crate::pref!("layout.css.webkit-fill-available.enabled")
+        && crate::pref!("layout.css.webkit-fill-available.all-size-properties.enabled")
 }
 
 fn is_stretch_enabled() -> bool {
-    static_prefs::pref!("layout.css.stretch-size-keyword.enabled")
+    crate::pref!("layout.css.stretch-size-keyword.enabled")
 }
 
 fn is_fit_content_function_enabled() -> bool {
-    static_prefs::pref!("layout.css.fit-content-function.enabled")
+    crate::pref!("layout.css.fit-content-function.enabled")
 }
 
 macro_rules! parse_fit_content_function {

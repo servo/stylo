@@ -126,7 +126,7 @@ impl CSSWideKeyword {
             "unset" => Self::Unset,
             "revert" => Self::Revert,
             "revert-layer" => Self::RevertLayer,
-            "revert-rule" if static_prefs::pref!("layout.css.revert-rule.enabled") => Self::RevertRule,
+            "revert-rule" if crate::pref!("layout.css.revert-rule.enabled") => Self::RevertRule,
             _ => return Err(()),
         })
     }

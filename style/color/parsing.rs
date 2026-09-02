@@ -232,7 +232,7 @@ fn parse_color_function<'i>(
         "oklab" => parse_lab_like(context, arguments, origin_color, ColorFunction::Oklab),
         "oklch" => parse_lch_like(context, arguments, origin_color, ColorFunction::Oklch),
         "color" => parse_color_with_color_space(context, arguments, origin_color),
-        "alpha" if static_prefs::pref!("layout.css.alpha-color-function.enabled") => {
+        "alpha" if crate::pref!("layout.css.alpha-color-function.enabled") => {
             parse_relative_alpha(
                 context,
                 arguments,

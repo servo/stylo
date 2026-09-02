@@ -159,9 +159,9 @@ pub fn style_trees<'a, 'scope, E, D>(
     D: DomTraversal<E>,
 {
     let local_queue_size = if tls.current_thread_index() == 0 {
-        static_prefs::pref!("layout.css.stylo-local-work-queue.in-main-thread")
+        crate::pref!("layout.css.stylo-local-work-queue.in-main-thread")
     } else {
-        static_prefs::pref!("layout.css.stylo-local-work-queue.in-worker")
+        crate::pref!("layout.css.stylo-local-work-queue.in-worker")
     } as usize;
 
     let mut nodes_remaining_at_current_depth = discovered.len();

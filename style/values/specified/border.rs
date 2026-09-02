@@ -274,7 +274,7 @@ impl ToComputedValue for BorderSideOffset {
     #[inline]
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         let offset = Au::from_f32_px(self.0.to_computed_value(context).px());
-        let should_snap = match static_prefs::pref!("layout.css.outline-offset.snapping") {
+        let should_snap = match crate::pref!("layout.css.outline-offset.snapping") {
             1 => true,
             2 => context.device().chrome_rules_enabled_for_document(),
             _ => false,

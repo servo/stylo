@@ -1542,7 +1542,7 @@ impl<'le> TElement for GeckoElement<'le> {
         let existing_transitions = self.css_transitions_info();
 
         if after_change_style.get_box().clone_display().is_none()
-            && !static_prefs::pref!("layout.css.display-animations.enabled")
+            && !crate::pref!("layout.css.display-animations.enabled")
         {
             // We need to cancel existing transitions.
             return !existing_transitions.is_empty();
@@ -1765,7 +1765,7 @@ impl<'le> TElement for GeckoElement<'le> {
         }
 
         // MathML's default lang has precedence over both `lang` and `xml:lang`
-        if !static_prefs::pref!("mathml.font_family_math.enabled")
+        if !crate::pref!("mathml.font_family_math.enabled")
             && ns == structs::kNameSpaceID_MathML as i32
             && self.local_name().as_ptr() == atom!("math").as_ptr()
         {

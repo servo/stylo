@@ -60,7 +60,7 @@ impl ColorMix {
             };
 
             let allow_multiple_items =
-                static_prefs::pref!("layout.css.color-mix-multi-color.enabled");
+                crate::pref!("layout.css.color-mix-multi-color.enabled");
 
             let mut items = ColorMixItemList::default();
 

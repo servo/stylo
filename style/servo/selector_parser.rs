@@ -583,7 +583,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
 
     #[inline]
     fn parse_nth_child_of(&self) -> bool {
-        false
+        static_prefs::pref!("layout.css.nth-child-of.enabled")
     }
 
     #[inline]
@@ -593,7 +593,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
 
     #[inline]
     fn parse_has(&self) -> bool {
-        false
+        static_prefs::pref!("layout.css.has-selector.enabled")
     }
 
     #[inline]

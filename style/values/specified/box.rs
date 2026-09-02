@@ -11,8 +11,8 @@ use crate::properties::{LonghandId, PropertyDeclarationId, PropertyId};
 pub use crate::typed_om::{KeywordValue, ToTyped, TypedValue};
 use crate::values::generics::box_::{
     BaselineShiftKeyword, BlockEllipsis, GenericBaselineShift, GenericContainIntrinsicSize,
-    GenericLineClamp, GenericOverflowClipMargin, GenericPerspective, MaxLines,
-    OverflowClipMarginBox,
+    GenericLineClamp, GenericOverflowClipMargin, GenericPerspective, GenericScrollbarInset,
+    MaxLines, OverflowClipMarginBox,
 };
 use crate::values::specified::length::{LengthPercentage, NonNegativeLength};
 use crate::values::specified::{AllowQuirks, NonNegativeNumberOrPercentage, PositiveInteger};
@@ -114,6 +114,20 @@ impl Parse for OverflowClipMargin {
             offset: offset.unwrap_or_else(NonNegativeLength::zero),
             visual_box: visual_box.unwrap_or(OverflowClipMarginBox::PaddingBox),
         })
+    }
+}
+
+/// The specified value of `-moz-scrollbar-inset-block` / `-inline`.
+pub type ScrollbarInset = GenericScrollbarInset<NonNegativeLength>;
+
+impl Parse for ScrollbarInset {
+    // <length>{1,2}
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        let start = NonNegativeLength::parse(context, input)?;
+        let end = input
+            .try_parse(|i| NonNegativeLength::parse(context, i))
+            .unwrap_or_else(|_| start.clone());
+        Ok(Self { start, end })
     }
 }
 

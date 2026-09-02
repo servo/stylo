@@ -566,10 +566,10 @@ affects = "paint"
 type = "ColorScheme"
 initial = "specified::color::ColorScheme::normal()"
 struct = "inherited_ui"
-servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-color-adjust/#color-scheme-prop"
 animation_type = "discrete"
 ignored_when_colors_disabled = true
+servo_restyle_damage = "repaint"
 affects = "paint"
 
 [column-count]

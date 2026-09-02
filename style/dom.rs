@@ -937,19 +937,21 @@ pub trait TElement:
 
     /// Generate the proper applicable declarations due to presentational hints,
     /// and insert them into `hints`.
-    fn synthesize_presentational_hints_for_legacy_attributes<V>(
+    fn synthesize_presentational_hints_for_legacy_attributes<'a, V>(
         &self,
         visited_handling: VisitedHandlingMode,
         hints: &mut V,
     ) where
-        V: Push<ApplicableDeclarationBlock>;
+        V: Push<ApplicableDeclarationBlock<'a>>,
+        Self: 'a;
 
     /// Generate the proper applicable declarations due to view transition dynamic rules, and
     /// insert them into `rules`.
     /// https://drafts.csswg.org/css-view-transitions-1/#document-dynamic-view-transition-style-sheet
-    fn synthesize_view_transition_dynamic_rules<V>(&self, _rules: &mut V)
+    fn synthesize_view_transition_dynamic_rules<'a, V>(&self, _rules: &mut V)
     where
-        V: Push<ApplicableDeclarationBlock>,
+        V: Push<ApplicableDeclarationBlock<'a>>,
+        Self: 'a,
     {
     }
 

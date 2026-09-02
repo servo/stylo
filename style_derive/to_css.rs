@@ -57,7 +57,7 @@ fn derive_bitflags(input: &syn::DeriveInput, bitflags: &CssBitflagAttrs) -> Toke
     }
 
     body.append_all(quote! {
-        Ok(())
+        Ok::<(), std::fmt::Error>(())
     });
 
     quote! {
@@ -155,7 +155,7 @@ fn derive_variant_arm(variant: &VariantInfo, generics: &mut Option<WhereClause>)
     let separator = if variant_attrs.comma { ", " } else { " " };
 
     if variant_attrs.skip {
-        return quote!(Ok(()));
+        return quote!(Ok::<(), std::fmt::Error>(()));
     }
 
     let mut expr = if let Some(keyword) = variant_attrs.keyword {
@@ -201,7 +201,7 @@ fn derive_variant_fields_expr(
 
     let (first, attrs) = match iter.next() {
         Some(pair) => pair,
-        None => return quote! { Ok(()) },
+        None => return quote! { Ok::<(), std::fmt::Error>(()) },
     };
     if attrs.field_bound {
         let ty = &first.ast().ty;
@@ -243,7 +243,7 @@ fn derive_variant_fields_expr(
     quote! {{
         let mut writer = style_traits::values::SequenceWriter::new(dest, #separator);
         #expr
-        Ok(())
+        Ok::<(), std::fmt::Error>(())
     }}
 }
 

@@ -387,7 +387,7 @@ impl<'a> SelectorParser<'a> {
 /// Parse the functional pseudo-element with the function name.
 pub fn parse_functional_pseudo_element_with_name<'i>(
     name: &CowRcStr<'i>,
-    parser: &mut Parser<'i, '_>,
+    parser: &mut Parser<'i>,
     target: Target,
 ) -> Result<PseudoElement, ParseError> {
     use crate::gecko::pseudo_element::PtNameAndClassSelector;
@@ -513,7 +513,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     fn parse_non_ts_functional_pseudo_class(
         &self,
         name: CowRcStr<'i>,
-        parser: &mut Parser<'i, '_>,
+        parser: &mut Parser<'i>,
         _after_part: bool,
     ) -> Result<NonTSPseudoClass, ParseError> {
         let pseudo_class = match_ignore_ascii_case! { &name,
@@ -585,7 +585,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     fn parse_functional_pseudo_element(
         &self,
         name: CowRcStr<'i>,
-        parser: &mut Parser<'i, '_>,
+        parser: &mut Parser<'i>,
     ) -> Result<PseudoElement, ParseError> {
         let pseudo = parse_functional_pseudo_element_with_name(&name, parser, Target::Selector)?;
         if self.is_pseudo_element_enabled(&pseudo) {

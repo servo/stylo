@@ -27,7 +27,7 @@ use crate::values::specified::{
 };
 use crate::values::DashedIdent;
 use crate::{Atom, Zero};
-use cssparser::{Parser, ParserInput, Token};
+use cssparser::{Parser, Token};
 use selectors::kleene_value::KleeneValue;
 use std::cmp::Ordering;
 use std::fmt::{self, Write};
@@ -805,9 +805,8 @@ impl QueryExpressionValue {
             // name and parenthesized argument) into a CustomVariableValue.
             let parse_func = |input: &mut Parser| -> Result<CustomVariableValue, ParseError> {
                 input.parse_nested_block(|i| i.expect_no_error_token().map_err(Into::into))?;
-                let mut input = ParserInput::new(input.slice_from(start));
                 CustomVariableValue::parse(
-                    &mut Parser::new(&mut input),
+                    &mut Parser::new(input.slice_from(start)),
                     Some(&context.namespaces.prefixes),
                     context.url_data,
                 )
@@ -1106,8 +1105,7 @@ impl QueryStyleRange {
             /* use_counters = */ None,
             /* attr_taint */ Default::default(),
         );
-        let mut input = ParserInput::new(css_text);
-        QueryExpressionValue::parse_for_style_range(&parser_context, &mut Parser::new(&mut input))
+        QueryExpressionValue::parse_for_style_range(&parser_context, &mut Parser::new(css_text))
             .ok()
             .and_then(|parsed| {
                 Self::resolve_value(&parsed, context, attribute_tracker, visited_set)

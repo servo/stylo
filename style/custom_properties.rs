@@ -28,9 +28,7 @@ use crate::values::computed;
 use crate::values::generics::calc::SortKey as AttrUnit;
 use crate::values::specified::{NoCalcLength, ParsedNamespace};
 use crate::{derives::*, Atom, LocalName, Namespace, Prefix};
-use cssparser::{
-    CowRcStr, Delimiter, Parser, ParserInput, SourcePosition, Token, TokenSerializationType,
-};
+use cssparser::{CowRcStr, Delimiter, Parser, SourcePosition, Token, TokenSerializationType};
 use rustc_hash::FxHashMap;
 use selectors::parser::SelectorParseErrorKind;
 use servo_arc::Arc;
@@ -215,8 +213,7 @@ impl CssEnvironment {
                 .0
                 .iter()
                 .find(|p| p.name.0 == *name)?;
-            let mut input = cssparser::ParserInput::new(param.value.0.as_ref());
-            let mut parser = cssparser::Parser::new(&mut input);
+            let mut parser = cssparser::Parser::new(param.value.0.as_ref());
             // need to carry around full variable value https://bugzilla.mozilla.org/show_bug.cgi?id=2028998
             return VariableValue::parse(&mut parser, None, url_data).ok();
         }
@@ -1412,8 +1409,7 @@ pub fn get_attr_value_for_cycle_resolution(
     let attr = LocalName::with_name(name, |local_name| {
         attribute_tracker.query(local_name, namespace).ok_or(())
     })?;
-    let mut input = ParserInput::new(&attr);
-    let mut parser = Parser::new(&mut input);
+    let mut parser = Parser::new(&attr);
     // TODO(Bug 2021110): Support namespaced attributes in chained references.
     let value = VariableValue::parse(&mut parser, None, url_data).map_err(|_| ())?;
     Ok(ComputedRegisteredValue::universal(Arc::new(value)))
@@ -1508,8 +1504,7 @@ pub fn substitute_references_if_needed_and_apply(
     if is_var {
         let css = &substitution.css;
         let css_wide_kw = {
-            let mut input = ParserInput::new(css);
-            let mut input = Parser::new(&mut input);
+            let mut input = Parser::new(css);
             input.try_parse(CSSWideKeyword::parse)
         };
 
@@ -1672,9 +1667,7 @@ fn compute_value(
 ) -> Result<ComputedRegisteredValue, ()> {
     debug_assert!(!registration.is_universal());
 
-    let mut input = ParserInput::new(css);
-    let mut input = Parser::new(&mut input);
-
+    let mut input = Parser::new(css);
     SpecifiedRegisteredValue::compute(
         &mut input,
         registration,
@@ -1906,8 +1899,7 @@ fn substitute_one_reference<'a>(
                         } else {
                             attr
                         };
-                        let mut input = ParserInput::new(&attr);
-                        let mut parser = Parser::new(&mut input);
+                        let mut parser = Parser::new(&attr);
                         match &reference.attribute_data.kind {
                             AttributeType::Unit(unit) => {
                                 let css = {

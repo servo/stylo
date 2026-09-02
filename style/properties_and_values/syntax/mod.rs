@@ -12,7 +12,7 @@ use std::{borrow::Cow, fmt::Write};
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::values::CustomIdent;
-use cssparser::{Parser as CSSParser, ParserInput as CSSParserInput, Token};
+use cssparser::{Parser as CSSParser, Token};
 use style_traits::{
     CssWriter, ParseError as StyleParseError, PropertySyntaxParseError as ParseError,
     StyleParseErrorKind, ToCss,
@@ -403,8 +403,7 @@ impl<'a> Parser<'a> {
         }
 
         let input = &self.input[self.position..];
-        let mut input = CSSParserInput::new(input);
-        let mut input = CSSParser::new(&mut input);
+        let mut input = CSSParser::new(input);
         let name = match CustomIdent::parse(&mut input, &[]) {
             Ok(name) => name,
             Err(_) => return Err(ParseError::InvalidName),

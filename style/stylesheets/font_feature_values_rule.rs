@@ -193,7 +193,7 @@ where
     fn parse_value(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
         _declaration_start: &ParserState,
     ) -> Result<(), ParseError> {
         let value = input.parse_entirely(|i| T::parse(self.context, i))?;
@@ -395,7 +395,7 @@ macro_rules! font_feature_values_blocks {
             fn parse_prelude(
                 &mut self,
                 name: CowRcStr<'i>,
-                _input: &mut Parser<'i, '_>,
+                _input: &mut Parser<'i>,
             ) -> Result<FontFeatureValuesBlockType, ParseError> {
                 FontFeatureValuesBlockType::from_name(&name)
                     .ok_or_else(|| ParseError::from_basic_kind(BasicParseErrorKind::AtRuleBodyInvalid))
@@ -405,7 +405,7 @@ macro_rules! font_feature_values_blocks {
                 &mut self,
                 prelude: FontFeatureValuesBlockType,
                 _: &ParserState,
-                input: &mut Parser<'i, '_>
+                input: &mut Parser<'i>
             ) -> Result<Self::AtRule, ParseError> {
                 debug_assert!(self.context.rule_types().contains(CssRuleType::FontFeatureValues));
                 match prelude {

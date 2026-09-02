@@ -1946,9 +1946,9 @@ pub type LineHeight = GenericLineHeight<NonNegativeNumber, NonNegativeLengthPerc
 /// Parses a line height <number> value. Percentages in <number>-typed calc expressions
 /// are allowed in the `line-height` property, relative to the computed value of 1em.
 /// https://drafts.csswg.org/css-inline/#line-height-property
-fn parse_line_height_number<'i, 't>(
+fn parse_line_height_number(
     context: &ParserContext,
-    input: &mut Parser<'i, 't>,
+    input: &mut Parser,
 ) -> Result<NonNegativeNumber, ParseError> {
     parse_number_with_clamping_mode(
         context,
@@ -1960,10 +1960,7 @@ fn parse_line_height_number<'i, 't>(
 }
 
 impl Parse for LineHeight {
-    fn parse<'i, 't>(
-        context: &ParserContext,
-        input: &mut Parser<'i, 't>,
-    ) -> Result<Self, ParseError> {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(v) = input.try_parse(|input| parse_line_height_number(context, input)) {
             return Ok(GenericLineHeight::Number(v));
         }

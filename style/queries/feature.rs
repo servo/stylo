@@ -27,7 +27,7 @@ pub type KeywordSerializer = fn(KeywordDiscriminant) -> String;
 /// Parses a given identifier.
 pub type KeywordParser = for<'a, 'i, 't> fn(
     context: &'a ParserContext,
-    input: &'a mut Parser<'i, 't>,
+    input: &'a mut Parser<'i>,
 ) -> Result<KeywordDiscriminant, ParseError>;
 
 /// An evaluator for a given feature.

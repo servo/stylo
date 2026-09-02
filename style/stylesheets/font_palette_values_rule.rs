@@ -273,7 +273,7 @@ impl<'a, 'b, 'i> DeclarationParser<'i> for FontPaletteValuesDeclarationParser<'a
     fn parse_value(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
         _declaration_start: &ParserState,
     ) -> Result<(), ParseError> {
         match_ignore_ascii_case! { &*name,

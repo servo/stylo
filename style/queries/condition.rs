@@ -25,8 +25,7 @@ use crate::stylist::Stylist;
 use crate::values::{computed, AtomString, DashedIdent};
 use crate::{error_reporting::ContextualParseError, parser::Parse, parser::ParserContext};
 use cssparser::{
-    match_ignore_ascii_case, parse_important, Parser, ParserInput, SourceLocation, SourcePosition,
-    Token,
+    match_ignore_ascii_case, parse_important, Parser, SourceLocation, SourcePosition, Token,
 };
 use selectors::kleene_value::KleeneValue;
 use servo_arc::Arc;
@@ -119,13 +118,13 @@ trait OperationParser: Sized {
 
 fn try_parse_block<'i, T, F>(
     context: &ParserContext,
-    input: &mut Parser<'i, '_>,
+    input: &mut Parser<'i>,
     start: SourcePosition,
     start_location: SourceLocation,
     parse: F,
 ) -> Option<T>
 where
-    F: for<'tt> FnOnce(&mut Parser<'i, 'tt>) -> Result<T, ParseError>,
+    F: FnOnce(&mut Parser<'i>) -> Result<T, ParseError>,
 {
     input
         .try_parse(|input| {
@@ -454,8 +453,7 @@ impl StyleFeaturePlain {
                 None => css.is_empty(),
             };
         }
-        let mut input = cssparser::ParserInput::new(&css);
-        let mut parser = Parser::new(&mut input);
+        let mut parser = Parser::new(&css);
         let computed = SpecifiedRegisteredValue::compute(
             &mut parser,
             registration,
@@ -870,9 +868,8 @@ impl QueryCondition {
             .expect("container query should provide a Stylist");
 
         // Parse the text as a custom-property value to identify references.
-        let mut input = ParserInput::new(css_text);
         let value = match custom_properties::SpecifiedValue::parse(
-            &mut Parser::new(&mut input),
+            &mut Parser::new(css_text),
             None, // TODO: what Namespaces should we pass here?
             url_data,
         ) {
@@ -914,10 +911,9 @@ impl QueryCondition {
             /* use_counters = */ None,
             attr_taint,
         );
-        let mut input = ParserInput::new(&css);
         let result = match Self::parse(
             &parser_context,
-            &mut Parser::new(&mut input),
+            &mut Parser::new(&css),
             FeatureType::Container,
         ) {
             Ok(Self::GeneralEnclosed(..)) => {

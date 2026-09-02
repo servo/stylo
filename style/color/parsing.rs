@@ -220,7 +220,7 @@ pub fn parse_color_with(
 fn parse_color_function<'i>(
     context: &ParserContext,
     name: CowRcStr<'i>,
-    arguments: &mut Parser<'i, '_>,
+    arguments: &mut Parser<'i>,
 ) -> Result<ColorFunction<SpecifiedColor>, ParseError> {
     let origin_color = parse_origin_color(context, arguments)?;
     let color = match_ignore_ascii_case! { &name,

@@ -3061,7 +3061,7 @@ impl<'a, 'b, 'i> cssparser::DeclarationParser<'i> for DescriptorParser<'a, 'b> {
     fn parse_value(
         &mut self,
         name: cssparser::CowRcStr<'i>,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
         _declaration_start: &cssparser::ParserState,
     ) -> Result<(), ParseError> {
         let Ok(id) = DescriptorId::from_ident(name.as_ref()) else {

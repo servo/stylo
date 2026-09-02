@@ -19,9 +19,7 @@ use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
 use crate::values::{computed, serialize_atom_name};
-use cssparser::{
-    BasicParseErrorKind, ParseErrorKind, Parser, ParserInput, RuleBodyParser, SourceLocation,
-};
+use cssparser::{BasicParseErrorKind, ParseErrorKind, Parser, RuleBodyParser, SourceLocation};
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use servo_arc::Arc;
 use std::fmt::{self, Write};
@@ -162,8 +160,7 @@ impl PropertyRegistration {
             return Ok(ComputedRegisteredValue::universal(Arc::clone(initial)));
         }
 
-        let mut input = ParserInput::new(initial.css_text());
-        let mut input = Parser::new(&mut input);
+        let mut input = Parser::new(initial.css_text());
         input.skip_whitespace();
 
         match SpecifiedRegisteredValue::compute(
@@ -208,8 +205,7 @@ impl PropertyRegistration {
             return Err(PropertyRegistrationError::InitialValueNotComputationallyIndependent);
         }
 
-        let mut input = ParserInput::new(initial.css_text());
-        let mut input = Parser::new(&mut input);
+        let mut input = Parser::new(initial.css_text());
         input.skip_whitespace();
 
         // The initial-value cannot include CSS-wide keywords.

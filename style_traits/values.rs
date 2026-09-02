@@ -377,12 +377,9 @@ pub trait Separator {
     ///
     /// This method returns `Err(_)` the first time a closure does or if
     /// the separators aren't correct.
-    fn parse<'i, 't, F, T, E>(
-        parser: &mut Parser<'i, 't>,
-        parse_one: F,
-    ) -> Result<Vec<T>, ParseError<E>>
+    fn parse<'i, F, T, E>(parser: &mut Parser<'i>, parse_one: F) -> Result<Vec<T>, ParseError<E>>
     where
-        F: for<'tt> FnMut(&mut Parser<'i, 'tt>) -> Result<T, ParseError<E>>;
+        F: FnMut(&mut Parser<'i>) -> Result<T, ParseError<E>>;
 }
 
 impl Separator for Comma {
@@ -390,12 +387,9 @@ impl Separator for Comma {
         ", "
     }
 
-    fn parse<'i, 't, F, T, E>(
-        input: &mut Parser<'i, 't>,
-        parse_one: F,
-    ) -> Result<Vec<T>, ParseError<E>>
+    fn parse<'i, F, T, E>(input: &mut Parser<'i>, parse_one: F) -> Result<Vec<T>, ParseError<E>>
     where
-        F: for<'tt> FnMut(&mut Parser<'i, 'tt>) -> Result<T, ParseError<E>>,
+        F: FnMut(&mut Parser<'i>) -> Result<T, ParseError<E>>,
     {
         input.parse_comma_separated(parse_one)
     }
@@ -406,12 +400,9 @@ impl Separator for Space {
         " "
     }
 
-    fn parse<'i, 't, F, T, E>(
-        input: &mut Parser<'i, 't>,
-        mut parse_one: F,
-    ) -> Result<Vec<T>, ParseError<E>>
+    fn parse<'i, F, T, E>(input: &mut Parser<'i>, mut parse_one: F) -> Result<Vec<T>, ParseError<E>>
     where
-        F: for<'tt> FnMut(&mut Parser<'i, 'tt>) -> Result<T, ParseError<E>>,
+        F: FnMut(&mut Parser<'i>) -> Result<T, ParseError<E>>,
     {
         input.skip_whitespace(); // Unnecessary for correctness, but may help try_parse() rewind less.
         let mut results = vec![parse_one(input)?];
@@ -431,12 +422,9 @@ impl Separator for CommaWithSpace {
         ", "
     }
 
-    fn parse<'i, 't, F, T, E>(
-        input: &mut Parser<'i, 't>,
-        mut parse_one: F,
-    ) -> Result<Vec<T>, ParseError<E>>
+    fn parse<'i, F, T, E>(input: &mut Parser<'i>, mut parse_one: F) -> Result<Vec<T>, ParseError<E>>
     where
-        F: for<'tt> FnMut(&mut Parser<'i, 'tt>) -> Result<T, ParseError<E>>,
+        F: FnMut(&mut Parser<'i>) -> Result<T, ParseError<E>>,
     {
         input.skip_whitespace(); // Unnecessary for correctness, but may help try_parse() rewind less.
         let mut results = vec![parse_one(input)?];

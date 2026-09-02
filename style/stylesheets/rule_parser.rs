@@ -383,7 +383,7 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
     fn parse_prelude(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
     ) -> Result<AtRulePrelude, ParseError> {
         // @charset is removed by rust-cssparser if it’s the first rule in the stylesheet
         // anything left is invalid.
@@ -487,7 +487,7 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
         &mut self,
         prelude: AtRulePrelude,
         start: &ParserState,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
     ) -> Result<Self::AtRule, ParseError> {
         if !self.check_state(State::Body) {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
@@ -559,7 +559,7 @@ impl<'a, 'i> QualifiedRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
     type Error = StyleParseErrorKind;
 
     #[inline]
-    fn parse_prelude(&mut self, input: &mut Parser<'i, '_>) -> Result<Self::Prelude, ParseError> {
+    fn parse_prelude(&mut self, input: &mut Parser<'i>) -> Result<Self::Prelude, ParseError> {
         if !self.check_state(State::Body) {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
@@ -572,7 +572,7 @@ impl<'a, 'i> QualifiedRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
         &mut self,
         prelude: Self::Prelude,
         start: &ParserState,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
     ) -> Result<Self::QualifiedRule, ParseError> {
         QualifiedRuleParser::parse_block(self.nested(), prelude, start, input)?;
         self.state = State::Body;
@@ -593,7 +593,7 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
     fn parse_at_rule_prelude(
         &mut self,
         rule_type: AtRuleType,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
     ) -> Result<AtRulePrelude, ParseError> {
         Ok(match rule_type {
             AtRuleType::Media => {
@@ -737,7 +737,7 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
 
     fn parse_nested_rules(
         &mut self,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
         rule_type: CssRuleType,
     ) -> Arc<Locked<CssRules>> {
         let rules = self
@@ -750,7 +750,7 @@ impl<'a, 'i> NestedRuleParser<'a, 'i> {
 
     fn parse_nested(
         &mut self,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
         rule_type: CssRuleType,
         wants_first_declaration_block: bool,
     ) -> NestedParseResult {
@@ -881,7 +881,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
     fn parse_prelude(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
     ) -> Result<Self::Prelude, ParseError> {
         let Some(rule_type) = AtRuleType::from_name(&name, &self.context) else {
             return Err(ParseError::from_basic_kind(
@@ -896,7 +896,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
         &mut self,
         prelude: AtRulePrelude,
         start: &ParserState,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
     ) -> Result<(), ParseError> {
         if !self.at_rule_allowed(&prelude) {
             self.dom_error = Some(RulesMutateError::HierarchyRequest);
@@ -1118,7 +1118,7 @@ impl<'a, 'i> QualifiedRuleParser<'i> for NestedRuleParser<'a, 'i> {
     type QualifiedRule = ();
     type Error = StyleParseErrorKind;
 
-    fn parse_prelude(&mut self, input: &mut Parser<'i, '_>) -> Result<Self::Prelude, ParseError> {
+    fn parse_prelude(&mut self, input: &mut Parser<'i>) -> Result<Self::Prelude, ParseError> {
         let selector_parser = SelectorParser {
             stylesheet_origin: self.context.stylesheet_origin,
             namespaces: &self.context.namespaces,
@@ -1132,7 +1132,7 @@ impl<'a, 'i> QualifiedRuleParser<'i> for NestedRuleParser<'a, 'i> {
         &mut self,
         selectors: Self::Prelude,
         start: &ParserState,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
     ) -> Result<(), ParseError> {
         let source_location = start.source_location();
         let reporting_errors = self.context.error_reporting_enabled();
@@ -1167,7 +1167,7 @@ impl<'a, 'i> DeclarationParser<'i> for NestedRuleParser<'a, 'i> {
     fn parse_value(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
         declaration_start: &ParserState,
     ) -> Result<(), ParseError> {
         let top = &mut **self;

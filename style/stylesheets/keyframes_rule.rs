@@ -23,8 +23,8 @@ use crate::values::specified::animation::TimelineRangeName;
 use crate::values::specified::{Number, Percentage};
 use crate::values::{serialize_percentage, KeyframesName};
 use cssparser::{
-    parse_one_rule, AtRuleParser, DeclarationParser, Parser, ParserInput, ParserState,
-    QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourceLocation, Token,
+    parse_one_rule, AtRuleParser, DeclarationParser, Parser, ParserState, QualifiedRuleParser,
+    RuleBodyItemParser, RuleBodyParser, SourceLocation, Token,
 };
 use servo_arc::Arc;
 use std::borrow::Cow;
@@ -71,8 +71,7 @@ impl KeyframesRule {
     /// Related spec:
     /// <https://drafts.csswg.org/css-animations-1/#interface-csskeyframesrule-findrule>
     pub fn find_rule(&self, guard: &SharedRwLockReadGuard, selector: &str) -> Option<usize> {
-        let mut input = ParserInput::new(selector);
-        if let Ok(selector) = Parser::new(&mut input).parse_entirely(KeyframeSelectors::parse) {
+        if let Ok(selector) = Parser::new(selector).parse_entirely(KeyframeSelectors::parse) {
             for (i, keyframe) in self.keyframes.iter().enumerate().rev() {
                 if keyframe.read_with(guard).selector == selector {
                     return Some(i);
@@ -269,8 +268,7 @@ impl Keyframe {
             None,
             /* attr_taint */ Default::default(),
         );
-        let mut input = ParserInput::new(css);
-        let mut input = Parser::new(&mut input);
+        let mut input = Parser::new(css);
 
         let mut rule_parser = KeyframeListParser {
             context: &mut context,
@@ -594,7 +592,7 @@ impl<'a, 'b, 'i> QualifiedRuleParser<'i> for KeyframeListParser<'a, 'b> {
     type QualifiedRule = Arc<Locked<Keyframe>>;
     type Error = StyleParseErrorKind;
 
-    fn parse_prelude(&mut self, input: &mut Parser<'i, '_>) -> Result<Self::Prelude, ParseError> {
+    fn parse_prelude(&mut self, input: &mut Parser<'i>) -> Result<Self::Prelude, ParseError> {
         let start_position = input.position();
         let start_location = input.current_source_location();
         KeyframeSelectors::parse(input).inspect_err(|e| {
@@ -610,7 +608,7 @@ impl<'a, 'b, 'i> QualifiedRuleParser<'i> for KeyframeListParser<'a, 'b> {
         &mut self,
         selector: Self::Prelude,
         start: &ParserState,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
     ) -> Result<Self::QualifiedRule, ParseError> {
         let block = self.context.nest_for_rule(CssRuleType::Keyframe, |p| {
             parse_property_declaration_list(p, input, &[])

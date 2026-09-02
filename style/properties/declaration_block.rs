@@ -35,8 +35,7 @@ use crate::typed_om::TypedValueList;
 use crate::values::computed::Context;
 use cssparser::{
     parse_important, AtRuleParser, CowRcStr, DeclarationParser, Delimiter, ParseErrorKind, Parser,
-    ParserInput, ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser,
-    SourceLocation,
+    ParserState, QualifiedRuleParser, RuleBodyItemParser, RuleBodyParser, SourceLocation,
 };
 use itertools::Itertools;
 use selectors::SelectorList;
@@ -1435,8 +1434,7 @@ pub fn parse_style_attribute(
         /* attr_taint */ Default::default(),
     );
 
-    let mut input = ParserInput::new(input);
-    parse_property_declaration_list(&context, &mut Parser::new(&mut input), &[])
+    parse_property_declaration_list(&context, &mut Parser::new(input), &[])
 }
 
 /// Parse a given property declaration. Can result in multiple
@@ -1473,8 +1471,7 @@ pub fn parse_one_declaration_into(
         None
     };
 
-    let mut input = ParserInput::new(input);
-    let mut parser = Parser::new(&mut input);
+    let mut parser = Parser::new(input);
     let start_position = parser.position();
     let start_location = parser.current_source_location();
     parser
@@ -1543,7 +1540,7 @@ impl<'i> DeclarationParserState<'i> {
         &mut self,
         context: &ParserContext,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
         declaration_start: &ParserState,
     ) -> Result<(), ParseError> {
         let id = match PropertyId::parse(&name, context) {
@@ -1662,7 +1659,7 @@ impl<'a, 'b, 'i> DeclarationParser<'i> for PropertyDeclarationParser<'a, 'b, 'i>
     fn parse_value(
         &mut self,
         name: CowRcStr<'i>,
-        input: &mut Parser<'i, '_>,
+        input: &mut Parser<'i>,
         declaration_start: &ParserState,
     ) -> Result<(), ParseError> {
         self.state

@@ -15,8 +15,8 @@ use crate::error_reporting::ContextualParseError;
 use crate::parser::ParserContext;
 use crate::stylesheets::CustomMediaEvaluator;
 use crate::values::computed;
+use cssparser::Token;
 use cssparser::{Delimiter, Parser};
-use cssparser::{ParserInput, Token};
 use selectors::kleene_value::KleeneValue;
 use style_traits::ParsingMode;
 
@@ -134,8 +134,7 @@ impl MediaList {
     ///
     /// Returns true if added, false if fail to parse the medium string.
     pub fn append_medium(&mut self, context: &ParserContext, new_medium: &str) -> bool {
-        let mut input = ParserInput::new(new_medium);
-        let mut parser = Parser::new(&mut input);
+        let mut parser = Parser::new(new_medium);
         let new_query = match MediaQuery::parse(context, &mut parser) {
             Ok(query) => query,
             Err(_) => {
@@ -155,8 +154,7 @@ impl MediaList {
     ///
     /// Returns true if found and deleted, false otherwise.
     pub fn delete_medium(&mut self, context: &ParserContext, old_medium: &str) -> bool {
-        let mut input = ParserInput::new(old_medium);
-        let mut parser = Parser::new(&mut input);
+        let mut parser = Parser::new(old_medium);
         let old_query = match MediaQuery::parse(context, &mut parser) {
             Ok(query) => query,
             Err(_) => {

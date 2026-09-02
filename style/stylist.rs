@@ -76,7 +76,6 @@ use crate::values::{computed, AtomIdent, Parser, SourceLocation};
 use crate::AllocErr;
 use crate::ArcSlice;
 use crate::{Atom, LocalName, Namespace, ShrinkIfNeeded, WeakAtom};
-use cssparser::ParserInput;
 use dom::{DocumentState, ElementState};
 #[cfg(feature = "gecko")]
 use malloc_size_of::MallocUnconditionalShallowSizeOf;
@@ -2129,8 +2128,7 @@ impl Stylist {
 
         let initial_value = match initial_value {
             Some(value) => {
-                let mut input = ParserInput::new(value);
-                let parsed = Parser::new(&mut input)
+                let parsed = Parser::new(value)
                     .parse_entirely(|input| {
                         input.skip_whitespace();
                         SpecifiedValue::parse(input, None, url_data).map(Arc::new)

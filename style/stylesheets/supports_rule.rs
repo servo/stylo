@@ -14,7 +14,7 @@ use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
 use crate::stylesheets::rule_parser::AtRuleType;
 use crate::stylesheets::{CssRuleType, CssRules};
 use cssparser::{Delimiter, Parser, SourceLocation, Token};
-use cssparser::{ParseError as CssParseError, ParserInput, match_ignore_ascii_case};
+use cssparser::{ParseError as CssParseError, match_ignore_ascii_case};
 use cssparser::{parse_important, serialize_identifier};
 #[cfg(feature = "gecko")]
 use malloc_size_of::{MallocSizeOfOps, MallocUnconditionalShallowSizeOf};
@@ -345,8 +345,7 @@ impl ToCss for RawSelector {
 impl RawSelector {
     /// Tries to evaluate a `selector()` function.
     pub fn eval(&self, context: &ParserContext) -> bool {
-        let mut input = ParserInput::new(&self.0);
-        let mut input = Parser::new(&mut input);
+        let mut input = Parser::new(&self.0);
         input
             .parse_entirely(|input| -> Result<(), CssParseError<()>> {
                 let parser = SelectorParser {
@@ -399,8 +398,7 @@ impl Declaration {
     pub fn eval(&self, context: &ParserContext) -> bool {
         debug_assert!(context.rule_types().contains(CssRuleType::Style));
 
-        let mut input = ParserInput::new(&self.0);
-        let mut input = Parser::new(&mut input);
+        let mut input = Parser::new(&self.0);
         input
             .parse_entirely(|input| -> Result<(), CssParseError<()>> {
                 let prop = input.expect_ident_cloned().unwrap();

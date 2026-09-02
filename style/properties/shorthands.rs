@@ -2775,8 +2775,8 @@ pub mod font_variant {
     #[cfg(feature = "gecko")]
     use crate::properties::longhands::font_variant_emoji;
     use crate::properties::longhands::{
-        font_variant_alternates, font_variant_caps, font_variant_east_asian, font_variant_ligatures,
-        font_variant_numeric, font_variant_position,
+        font_variant_alternates, font_variant_caps, font_variant_east_asian,
+        font_variant_ligatures, font_variant_numeric, font_variant_position,
     };
     use crate::values::specified::FontVariantLigatures;
 
@@ -3132,7 +3132,6 @@ pub mod text_decoration {
     pub use crate::properties::generated::shorthands::text_decoration::*;
 
     use super::*;
-    #[cfg(feature = "gecko")]
     use crate::properties::longhands::text_decoration_thickness;
     use crate::properties::longhands::{
         text_decoration_color, text_decoration_line, text_decoration_style,
@@ -3145,7 +3144,6 @@ pub mod text_decoration {
         let mut line = None;
         let mut style = None;
         let mut color = None;
-        #[cfg(feature = "gecko")]
         let mut thickness = None;
 
         let mut parsed = 0;
@@ -3154,7 +3152,6 @@ pub mod text_decoration {
             try_parse_one!(context, input, line, text_decoration_line::parse);
             try_parse_one!(context, input, style, text_decoration_style::parse);
             try_parse_one!(context, input, color, text_decoration_color::parse);
-            #[cfg(feature = "gecko")]
             try_parse_one!(context, input, thickness, text_decoration_thickness::parse);
             parsed -= 1;
             break;
@@ -3164,18 +3161,11 @@ pub mod text_decoration {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
 
-        #[cfg(feature = "gecko")]
         return Ok(expanded! {
             text_decoration_line: unwrap_or_initial!(text_decoration_line, line),
             text_decoration_style: unwrap_or_initial!(text_decoration_style, style),
             text_decoration_color: unwrap_or_initial!(text_decoration_color, color),
             text_decoration_thickness: unwrap_or_initial!(text_decoration_thickness, thickness),
-        });
-        #[cfg(feature = "servo")]
-        return Ok(expanded! {
-            text_decoration_line: unwrap_or_initial!(text_decoration_line, line),
-            text_decoration_style: unwrap_or_initial!(text_decoration_style, style),
-            text_decoration_color: unwrap_or_initial!(text_decoration_color, color),
         });
     }
 
@@ -3191,17 +3181,13 @@ pub mod text_decoration {
             let is_solid_style =
                 *self.text_decoration_style == text_decoration_style::SpecifiedValue::Solid;
             let is_current_color = *self.text_decoration_color == Color::CurrentColor;
-            #[cfg(feature = "gecko")]
             let is_auto_thickness = self.text_decoration_thickness.is_auto();
-            #[cfg(feature = "servo")]
-            let is_auto_thickness = true;
             let is_none = *self.text_decoration_line == TextDecorationLine::none();
 
             let mut writer = SequenceWriter::new(dest, " ");
             if (is_solid_style && is_current_color && is_auto_thickness) || !is_none {
                 writer.item(self.text_decoration_line)?;
             }
-            #[cfg(feature = "gecko")]
             if !is_auto_thickness {
                 writer.item(self.text_decoration_thickness)?;
             }

@@ -333,6 +333,11 @@ impl NonCustomPropertyId {
     pub const fn from_alias(id: AliasId) -> Self {
         Self((id as u16) + (property_counts::LONGHANDS_AND_SHORTHANDS as u16))
     }
+
+    /// Iterate over all non-custom properties in arbitrary order.
+    pub fn iter() -> impl Iterator<Item = Self> {
+        (0..property_counts::NON_CUSTOM as u16).map(|index| Self(index))
+    }
 }
 
 impl From<LonghandId> for NonCustomPropertyId {
@@ -358,7 +363,7 @@ impl From<AliasId> for NonCustomPropertyId {
 
 /// Representation of a CSS property, that is, either a longhand, a shorthand, or a custom
 /// property.
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Debug, Eq, MallocSizeOf, PartialEq)]
 pub enum PropertyId {
     /// An alias for a shorthand property.
     NonCustom(NonCustomPropertyId),

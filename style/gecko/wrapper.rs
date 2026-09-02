@@ -31,7 +31,6 @@ use crate::gecko_bindings::bindings::Gecko_GetActiveLinkAttrDeclarationBlock;
 use crate::gecko_bindings::bindings::Gecko_GetAnimationEffectCount;
 use crate::gecko_bindings::bindings::Gecko_GetAnimationRule;
 use crate::gecko_bindings::bindings::Gecko_GetExtraContentStyleDeclarations;
-use crate::gecko_bindings::bindings::Gecko_GetHTMLPresentationAttrDeclarationBlock;
 use crate::gecko_bindings::bindings::Gecko_GetStyleAttrDeclarationBlock;
 use crate::gecko_bindings::bindings::Gecko_GetUnvisitedLinkAttrDeclarationBlock;
 use crate::gecko_bindings::bindings::Gecko_GetVisitedLinkAttrDeclarationBlock;
@@ -1713,7 +1712,7 @@ impl<'le> TElement for GeckoElement<'le> {
             hints.push(SVG_TEXT_DISABLE_SCALE_RULE.clone());
         }
         let declarations =
-            unsafe { Gecko_GetHTMLPresentationAttrDeclarationBlock(self.0).as_ref() };
+            unsafe { bindings::Gecko_GetMappedAttributeDeclarations(self.0).as_ref() };
         if let Some(decl) = declarations {
             hints.push(ApplicableDeclarationBlock::from_declarations(
                 unsafe { Arc::from_raw_addrefed(decl) },
@@ -1772,25 +1771,6 @@ impl<'le> TElement for GeckoElement<'le> {
             }
         }
 
-        // xml:lang has precedence over lang, which can be
-        // set by Gecko_GetHTMLPresentationAttrDeclarationBlock
-        //
-        // http://www.whatwg.org/specs/web-apps/current-work/multipage/elements.html#language
-        let ptr = unsafe { bindings::Gecko_GetXMLLangValue(self.0) };
-        if !ptr.is_null() {
-            let global_style_data = &*GLOBAL_STYLE_DATA;
-
-            let pdb = PropertyDeclarationBlock::with_one(
-                PropertyDeclaration::XLang(SpecifiedLang(unsafe { Atom::from_addrefed(ptr) })),
-                Importance::Normal,
-            );
-            let arc = Arc::new(global_style_data.shared_lock.wrap(pdb));
-            hints.push(ApplicableDeclarationBlock::from_declarations(
-                arc,
-                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
-                LayerOrder::root(),
-            ))
-        }
         // MathML's default lang has precedence over both `lang` and `xml:lang`
         if !static_prefs::pref!("mathml.font_family_math.enabled")
             && ns == structs::kNameSpaceID_MathML as i32

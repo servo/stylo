@@ -2600,13 +2600,27 @@ pub mod font {
                 CheckSystemResult::None => {},
             }
 
+            #[cfg(feature = "gecko")]
             if self.font_optical_sizing != &font_optical_sizing::get_initial_specified_value() {
                 return Ok(());
             }
+            #[cfg(feature = "servo")]
+            if let Some(v) = self.font_optical_sizing {
+                if v != &font_optical_sizing::get_initial_specified_value() {
+                    return Ok(());
+                }
+            }
+            #[cfg(feature = "gecko")]
             if self.font_variation_settings
                 != &font_variation_settings::get_initial_specified_value()
             {
                 return Ok(());
+            }
+            #[cfg(feature = "servo")]
+            if let Some(v) = self.font_variation_settings {
+                if v != &font_variation_settings::get_initial_specified_value() {
+                    return Ok(());
+                }
             }
             #[cfg(feature = "gecko")]
             if self.font_variant_emoji != &font_variant_emoji::get_initial_specified_value() {

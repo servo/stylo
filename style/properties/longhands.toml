@@ -2266,7 +2266,6 @@ initial = "computed::AnimationComposition::Replace"
 struct = "ui"
 vector = { need_index = true }
 animation_type = "none"
-servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-animations-2/#animation-composition"
 affects = ""
 

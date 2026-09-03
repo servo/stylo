@@ -649,6 +649,7 @@ class Longhand(Property):
                 "Display",
                 "DominantBaseline",
                 "FillRule",
+                "FlexWrap",
                 "Float",
                 "FontLanguageOverride",
                 "FontSynthesis",

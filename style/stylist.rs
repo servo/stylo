@@ -3710,7 +3710,7 @@ impl CascadeData {
         );
         for candidate in result.candidates {
             if context.nest_for_scope(Some(candidate.root), |context| {
-                rule.matches_selector(element, context)
+                rule.matches_selector(&element, context)
             }) {
                 return candidate.proximity;
             }
@@ -5012,25 +5012,27 @@ impl Rule {
     #[inline(always)]
     pub fn matches_selector<E: TElement>(
         &self,
-        mut element: E,
+        element: &E,
         context: &mut MatchingContext<E::Impl>,
     ) -> bool {
-        if self.bucket_matches == BucketMatches::Full {
-            return true;
-        }
         if context
             .bloom_filter
             .is_some_and(|f| !selector_may_match(&self.hashes, f))
         {
             return false;
         }
-        let mut iter = self.selector.iter();
-        let mut subject = SubjectOrPseudoElement::Yes;
-        if self.bucket_matches == BucketMatches::Subject {
-            (element, iter) = Self::iter_past_subject(&self.selector, element, context);
-            subject = SubjectOrPseudoElement::No;
+        if self.bucket_matches == BucketMatches::Full {
+            return true;
         }
-        matches_complex_selector(iter, &element, context, subject).to_bool(true)
+        let originating_element;
+        let (element, iter, subject) = if self.bucket_matches == BucketMatches::Subject {
+            let (e, iter) = Self::iter_past_subject(&self.selector, *element, context);
+            originating_element = e;
+            (&originating_element, iter, SubjectOrPseudoElement::No)
+        } else {
+            (element, self.selector.iter(), SubjectOrPseudoElement::Yes)
+        };
+        matches_complex_selector(iter, element, context, subject).to_bool(true)
     }
 }
 

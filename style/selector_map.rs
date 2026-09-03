@@ -345,7 +345,7 @@ impl SelectorMap<Rule> {
     {
         for rule in rules {
             let scope_proximity = if rule.scope_condition_id == ScopeConditionId::none() {
-                if !rule.matches_selector(element, matching_context) {
+                if !rule.matches_selector(&element, matching_context) {
                     continue;
                 }
                 ScopeProximity::infinity()

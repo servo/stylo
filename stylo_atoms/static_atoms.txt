@@ -45,6 +45,7 @@ compositionend
 compositionstart
 compositionupdate
 controllerchange
+cuechange
 cursive
 dark
 datachannel
@@ -59,7 +60,9 @@ email
 emptied
 end
 ended
+enter
 error
+exit
 fantasy
 fetch
 file

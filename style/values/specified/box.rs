@@ -1104,6 +1104,7 @@ pub enum ScrollSnapStop {
 pub enum OverscrollBehavior {
     Auto,
     Contain,
+    Chain,
     None,
 }
 

@@ -2161,9 +2161,13 @@ impl Inset {
         {
             return Ok(Self::LengthPercentage(l));
         }
-        if input.try_parse(|i| i.expect_ident_matching("auto")).is_ok() {
-            return Ok(Self::Auto);
-        }
+        match input.try_parse(|i| i.expect_ident_matching("auto")) {
+            Ok(_) => return Ok(Self::Auto),
+            Err(e) if !crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) => {
+                return Err(e.into());
+            },
+            Err(_) => (),
+        };
         Self::parse_anchor_functions_quirky(context, input, allow_quirks)
     }
 
@@ -2184,6 +2188,10 @@ impl Inset {
         input: &mut Parser,
         allow_quirks: AllowQuirks,
     ) -> Result<Self, ParseError> {
+        debug_assert!(
+            crate::pref!("layout.css.anchor-positioning.enabled", gecko = true),
+            "How are we parsing with pref off?"
+        );
         if let Ok(inner) = input.try_parse(|i| AnchorFunction::parse(context, i)) {
             return Ok(Self::AnchorFunction(Box::new(inner)));
         }
@@ -2209,6 +2217,9 @@ pub type AnchorFunction = GenericAnchorFunction<specified::Percentage, Inset>;
 
 impl Parse for AnchorFunction {
     fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        if !crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) {
+            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+        }
         input.expect_function_matching("anchor")?;
         input.parse_nested_block(|i| {
             let target_element = i.try_parse(|i| DashedIdent::parse(context, i)).ok();

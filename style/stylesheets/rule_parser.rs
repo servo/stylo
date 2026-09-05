@@ -296,7 +296,7 @@ impl AtRuleType {
             "scope" if crate::pref!("layout.css.at-scope.enabled") => Self::Scope,
             "starting-style" if crate::pref!("layout.css.starting-style-at-rules.enabled") => Self::StartingStyle,
             "appearance-base" if context.chrome_rules_enabled() => Self::AppearanceBase,
-            "position-try" => Self::PositionTry,
+            "position-try" if crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) => Self::PositionTry,
             "view-transition" if crate::pref!("dom.viewTransitions.cross-document.enabled") => Self::ViewTransition,
             _ => {
                 // The margin at-rules supported within @page.

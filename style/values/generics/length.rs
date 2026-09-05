@@ -187,8 +187,10 @@ where
             "fit-content",
             "max-content",
             "min-content",
-            "anchor-size",
         ]);
+        if crate::pref!("layout.css.webkit-fill-available.enabled", gecko = true) {
+            f(&["anchor-size"]);
+        }
         if cfg!(feature = "gecko") {
             f(&["-moz-available"]);
         }
@@ -628,7 +630,10 @@ where
 {
     fn collect_completion_keywords(f: style_traits::KeywordsCollectFn) {
         LP::collect_completion_keywords(f);
-        f(&["auto", "anchor-size"]);
+        f(&["auto"]);
+        if crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) {
+            f(&["anchor-size"]);
+        }
     }
 }
 

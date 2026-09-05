@@ -1867,7 +1867,8 @@ impl Size {
                                "auto" => Auto);
         parse_fit_content_function!(Size, input, context, allow_quirks);
 
-        let allow_anchor = allow_anchor_functions == ParseAnchorFunctions::Yes;
+        let allow_anchor = allow_anchor_functions == ParseAnchorFunctions::Yes
+            && crate::pref!("layout.css.anchor-positioning.enabled", gecko = true);
         match input
             .try_parse(|i| NonNegativeLengthPercentage::parse_quirky(context, i, allow_quirks))
         {
@@ -1956,11 +1957,15 @@ impl MaxSize {
                                "none" => None);
         parse_fit_content_function!(MaxSize, input, context, allow_quirks);
 
-        if let Ok(length) =
-            input.try_parse(|i| NonNegativeLengthPercentage::parse_quirky(context, i, allow_quirks))
+        match input
+            .try_parse(|i| NonNegativeLengthPercentage::parse_quirky(context, i, allow_quirks))
         {
-            return Ok(GenericMaxSize::LengthPercentage(length));
-        }
+            Ok(length) => return Ok(GenericMaxSize::LengthPercentage(length)),
+            Err(e) if !crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) => {
+                return Err(e.into())
+            },
+            Err(_) => (),
+        };
         if let Ok(length) = input.try_parse(|i| {
             NonNegativeLengthPercentage::parse_non_negative_with_anchor_size(
                 context,
@@ -1995,9 +2000,13 @@ impl Margin {
         {
             return Ok(Self::LengthPercentage(l));
         }
-        if input.try_parse(|i| i.expect_ident_matching("auto")).is_ok() {
-            return Ok(Self::Auto);
-        }
+        match input.try_parse(|i| i.expect_ident_matching("auto")) {
+            Ok(_) => return Ok(Self::Auto),
+            Err(e) if !crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) => {
+                return Err(e.into())
+            },
+            Err(_) => (),
+        };
         if let Ok(l) = input.try_parse(|i| {
             LengthPercentage::parse_quirky_with_anchor_size_function(context, i, allow_quirks)
         }) {

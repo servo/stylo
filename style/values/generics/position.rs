@@ -420,7 +420,10 @@ where
 {
     fn collect_completion_keywords(f: style_traits::KeywordsCollectFn) {
         LP::collect_completion_keywords(f);
-        f(&["auto", "anchor", "anchor-size"]);
+        f(&["auto"]);
+        if crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) {
+            f(&["anchor", "anchor-size"]);
+        }
     }
 }
 

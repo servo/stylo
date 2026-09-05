@@ -530,12 +530,18 @@ impl Animate for AnimationValue {
             }
 
             match *self {
-                <% keyfunc = lambda x: (x.animated_type(), x.animation_type == "discrete") %>
-                % for (ty, discrete), props in groupby(animated, key=keyfunc):
+                <% keyfunc = lambda x: (x.animated_type(), x.animation_type == "discrete", x.ident == "display") %>
+                % for (ty, discrete, is_display), props in groupby(animated, key=keyfunc):
                 ${" |\n".join("{}(ref this)".format(prop.camel_case) for prop in props)} => {
                     let other_repr =
                         &*(other as *const _ as *const AnimationValueVariantRepr<${ty}>);
-                    % if discrete:
+                    % if is_display:
+                    let value = if crate::pref!("layout.css.display-animations.enabled") {
+                        this.animate(&other_repr.value, procedure)
+                    } else {
+                        animate_discrete(this, &other_repr.value, procedure)
+                    }?;
+                    % elif discrete:
                     let value = animate_discrete(this, &other_repr.value, procedure)?;
                     % else:
                     let value = this.animate(&other_repr.value, procedure)?;

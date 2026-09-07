@@ -1965,6 +1965,7 @@ pub enum Appearance {
 
 impl Appearance {
     /// Parses a `-moz-appearance` value.
+    #[cfg_attr(feature = "servo", allow(unused))]
     pub(crate) fn parse_legacy(
         context: &ParserContext,
         input: &mut Parser,

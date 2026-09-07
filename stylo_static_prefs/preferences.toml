@@ -20,7 +20,6 @@
 "layout.css.fit-content-function.enabled" = true
 "layout.css.font-palette.enabled" = false
 "layout.css.font-tech.enabled" = false
-"layout.css.gradient-color-interpolation-method.enabled" = true
 "layout.css.grid-template-masonry-value.enabled" = false
 "layout.css.has-selector.enabled" = false
 "layout.css.light-dark.images.enabled" = false

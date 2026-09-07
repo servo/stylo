@@ -20,6 +20,7 @@
 "layout.css.font-palette.enabled" = false
 "layout.css.font-tech.enabled" = false
 "layout.css.grid-template-masonry-value.enabled" = false
+"layout.css.grid-template-subgrid-value.enabled" = false
 "layout.css.has-selector.enabled" = false
 "layout.css.light-dark.images.enabled" = false
 "layout.css.line-clamp.enabled" = false

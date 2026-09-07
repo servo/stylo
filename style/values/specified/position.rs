@@ -2218,7 +2218,7 @@ pub type AnchorFunction = GenericAnchorFunction<specified::Percentage, Inset>;
 impl Parse for AnchorFunction {
     fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if !crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) {
-            return Err(input.new_custom_error(StyleParseErrorKind::UnspecifiedError));
+            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         input.expect_function_matching("anchor")?;
         input.parse_nested_block(|i| {

@@ -34,7 +34,6 @@
 "layout.css.overflow-moz-hidden-unscrollable.enabled" = false
 "layout.css.progress-function.enabled" = false
 "layout.css.properties-and-values.enabled" = true
-"layout.css.relative-color-syntax.enabled" = true
 "layout.css.revert-rule.enabled" = true
 "layout.css.scroll-driven-animations.enabled" = false
 "layout.css.scroll-state.enabled" = false

@@ -46,7 +46,6 @@ use crate::rule_cache::{RuleCache, RuleCacheConditions};
 use crate::rule_collector::RuleCollector;
 use crate::rule_tree::{
     CascadeLevel, CascadeOrigin, RuleCascadeFlags, RuleTree, StrongRuleNode, StyleSource,
-    StyleSourceBorrow,
 };
 use crate::selector_map::{
     BucketMatches, PrecomputedHashMap, PrecomputedHashSet, SelectorMap, SelectorMapEntry,
@@ -406,12 +405,7 @@ impl CascadeDataCacheEntry for UserAgentCascadeData {
 
 type UserAgentCascadeDataCache = CascadeDataCache<UserAgentCascadeData>;
 
-/// The declarations for the precomputed pseudo-elements.
-///
-/// We don't need the rest of the fields of `ApplicableDeclarationBlock`: These are never sorted
-/// (they're in document order, and their selectors are all universal), and they're all UA rules in
-/// the root layer.
-type PrecomputedPseudoElementDeclarations = PerPseudoElementMap<Vec<StyleSource>>;
+type PrecomputedPseudoElementDeclarations = PerPseudoElementMap<Vec<ApplicableDeclarationBlock>>;
 
 #[derive(Default)]
 struct UserAgentCascadeData {
@@ -1209,7 +1203,7 @@ impl Stylist {
     {
         debug_assert!(pseudo.is_precomputed());
 
-        let rule_node = self.rule_node_for_precomputed_pseudo(guards, pseudo, &[]);
+        let rule_node = self.rule_node_for_precomputed_pseudo(guards, pseudo, vec![]);
 
         self.precomputed_values_for_pseudo_with_rule_node::<E>(guards, pseudo, parent, rule_node)
     }
@@ -1252,28 +1246,29 @@ impl Stylist {
         &self,
         guards: &StylesheetGuards,
         pseudo: &PseudoElement,
-        extra_declarations: &[ApplicableDeclarationBlock],
+        mut extra_declarations: Vec<ApplicableDeclarationBlock>,
     ) -> StrongRuleNode {
+        let mut declarations_with_extra;
         let declarations = match self
             .cascade_data
             .user_agent
             .precomputed_pseudo_element_decls
             .get(pseudo)
         {
-            Some(declarations) => &**declarations,
+            Some(declarations) => {
+                if !extra_declarations.is_empty() {
+                    declarations_with_extra = declarations.clone();
+                    declarations_with_extra.append(&mut extra_declarations);
+                    &*declarations_with_extra
+                } else {
+                    &**declarations
+                }
+            },
             None => &[],
         };
 
-        let cascade_priority = CascadePriority::new(
-            CascadeLevel::new(CascadeOrigin::UA),
-            LayerOrder::root(),
-            RuleCascadeFlags::empty(),
-        );
         self.rule_tree.insert_ordered_rules_with_important(
-            declarations
-                .iter()
-                .map(|source| (source.borrow(), cascade_priority))
-                .chain(extra_declarations.iter().map(|d| d.for_rule_tree())),
+            declarations.iter().map(|a| a.clone().for_rule_tree()),
             guards,
         )
     }
@@ -1562,7 +1557,6 @@ impl Stylist {
             NeedsSelectorFlags::Yes
         };
 
-        let animation_declarations = AnimationDeclarations::default();
         let mut declarations = ApplicableDeclarationList::new();
         let mut matching_context = MatchingContext::<'_, E::Impl>::new(
             MatchingMode::ForStatelessPseudoElement,
@@ -1581,7 +1575,7 @@ impl Stylist {
             Some(pseudo),
             None,
             None,
-            &animation_declarations,
+            /* animation_declarations = */ Default::default(),
             rule_inclusion,
             &mut declarations,
             &mut matching_context,
@@ -1615,7 +1609,7 @@ impl Stylist {
                 Some(pseudo),
                 None,
                 None,
-                &animation_declarations,
+                /* animation_declarations = */ Default::default(),
                 rule_inclusion,
                 &mut declarations,
                 &mut matching_context,
@@ -1705,18 +1699,18 @@ impl Stylist {
     }
 
     /// Returns the applicable CSS declarations for the given element.
-    pub fn push_applicable_declarations<'a, E>(
-        &'a self,
+    pub fn push_applicable_declarations<E>(
+        &self,
         element: E,
         pseudo_element: Option<&PseudoElement>,
-        style_attribute: Option<ArcBorrow<'a, Locked<PropertyDeclarationBlock>>>,
-        smil_override: Option<ArcBorrow<'a, Locked<PropertyDeclarationBlock>>>,
-        animation_declarations: &'a AnimationDeclarations,
+        style_attribute: Option<ArcBorrow<Locked<PropertyDeclarationBlock>>>,
+        smil_override: Option<ArcBorrow<Locked<PropertyDeclarationBlock>>>,
+        animation_declarations: AnimationDeclarations,
         rule_inclusion: RuleInclusion,
-        applicable_declarations: &mut ApplicableDeclarationList<'a>,
+        applicable_declarations: &mut ApplicableDeclarationList,
         context: &mut MatchingContext<E::Impl>,
     ) where
-        E: TElement + 'a,
+        E: TElement,
     {
         let mut cur = element;
         let mut pseudos = SmallVec::<[_; 2]>::new();
@@ -2275,12 +2269,12 @@ impl PageRuleMap {
     /// Uses page-name and pseudo-classes to match all applicable
     /// page-rules and append them to the matched_rules vec.
     /// This will ensure correct rule order for cascading.
-    pub fn match_and_append_rules<'a>(
-        &'a self,
-        matched_rules: &mut Vec<ApplicableDeclarationBlock<'a>>,
+    pub fn match_and_append_rules(
+        &self,
+        matched_rules: &mut Vec<ApplicableDeclarationBlock>,
         origin: Origin,
-        guards: &'a StylesheetGuards,
-        cascade_data: &'a DocumentCascadeData,
+        guards: &StylesheetGuards,
+        cascade_data: &DocumentCascadeData,
         name: &Option<Atom>,
         pseudos: PagePseudoClassFlags,
     ) {
@@ -2309,12 +2303,12 @@ impl PageRuleMap {
         matched_rules[start..].sort_by_key(|block| block.sort_key());
     }
 
-    fn match_and_add_rules<'a>(
-        &'a self,
-        extra_declarations: &mut Vec<ApplicableDeclarationBlock<'a>>,
+    fn match_and_add_rules(
+        &self,
+        extra_declarations: &mut Vec<ApplicableDeclarationBlock>,
         level: CascadeLevel,
-        guards: &'a StylesheetGuards,
-        cascade_data: &'a CascadeData,
+        guards: &StylesheetGuards,
+        cascade_data: &CascadeData,
         name: &Atom,
         pseudos: PagePseudoClassFlags,
     ) {
@@ -2328,8 +2322,9 @@ impl PageRuleMap {
                 Some(specificity) => specificity,
                 None => continue,
             };
+            let block = rule.block.clone();
             extra_declarations.push(ApplicableDeclarationBlock::new(
-                StyleSourceBorrow::from_declarations(rule.block.borrow_arc()),
+                StyleSource::from_declarations(block),
                 0,
                 level,
                 specificity,
@@ -3870,7 +3865,15 @@ impl CascadeData {
                         .as_mut()
                         .expect("Expected precomputed declarations for the UA level")
                         .get_or_insert_with(pseudo, Vec::new)
-                        .push(StyleSource::from_declarations(declarations.clone()));
+                        .push(ApplicableDeclarationBlock::new(
+                            StyleSource::from_declarations(declarations.clone()),
+                            self.rules_source_order,
+                            CascadeLevel::new(CascadeOrigin::UA),
+                            selector.specificity(),
+                            LayerOrder::root(),
+                            ScopeProximity::infinity(),
+                            RuleCascadeFlags::empty(),
+                        ));
                     continue;
                 }
                 if pseudo_elements
@@ -4939,9 +4942,9 @@ impl Rule {
         level: CascadeLevel,
         cascade_data: &CascadeData,
         scope_proximity: ScopeProximity,
-    ) -> ApplicableDeclarationBlock<'_> {
+    ) -> ApplicableDeclarationBlock {
         ApplicableDeclarationBlock::new(
-            self.style_source.borrow(),
+            self.style_source.clone(),
             self.source_order,
             level,
             self.specificity(),

@@ -11,7 +11,7 @@ use crate::data::{EagerPseudoStyles, ElementStyles};
 use crate::dom::{TElement, TNode};
 use crate::matching::MatchMethods;
 use crate::properties::longhands::display::computed_value::T as Display;
-use crate::properties::{AnimationDeclarations, ComputedValues, FirstLineReparenting};
+use crate::properties::{ComputedValues, FirstLineReparenting};
 use crate::rule_tree::{RuleCascadeFlags, RuleTree, StrongRuleNode};
 use crate::selector_parser::{PseudoElement, SelectorImpl};
 use crate::stylist::RuleInclusion;
@@ -502,7 +502,6 @@ where
             "Match primary for {:?}, visited: {:?}",
             self.element, visited_handling
         );
-        let animation_declarations = self.element.animation_declarations(self.context.shared);
         let mut applicable_declarations = ApplicableDeclarationList::new();
 
         let bloom_filter = self.context.thread_local.bloom_filter.filter();
@@ -524,7 +523,7 @@ where
             None,
             self.element.style_attribute(),
             self.element.smil_override(),
-            &animation_declarations,
+            self.element.animation_declarations(self.context.shared),
             self.rule_inclusion,
             &mut applicable_declarations,
             &mut matching_context,
@@ -562,7 +561,6 @@ where
         );
         debug_assert!(pseudo_element.is_eager());
 
-        let animation_declarations = AnimationDeclarations::default();
         let mut applicable_declarations = ApplicableDeclarationList::new();
 
         let stylist = &self.context.shared.stylist;
@@ -595,7 +593,7 @@ where
             Some(pseudo_element),
             None,
             None,
-            &animation_declarations,
+            /* animation_declarations = */ Default::default(),
             self.rule_inclusion,
             &mut applicable_declarations,
             &mut matching_context,

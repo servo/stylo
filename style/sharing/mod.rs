@@ -64,12 +64,12 @@
 //! selectors are effectively stripped off, so that matching them all against
 //! elements makes sense.
 
+use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::StyleBloom;
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::{CascadeInputs, SharedStyleContext, StyleContext};
 use crate::dom::{SendElement, TElement, TNode};
 use crate::properties::ComputedValues;
-use crate::rule_tree::StyleSource;
 use crate::selector_map::RelevantAttributes;
 use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles};
 use crate::stylist::Stylist;
@@ -183,10 +183,7 @@ pub struct ValidationData {
     part_list: Option<ThinVec<AtomIdent>>,
 
     /// The list of presentational attributes of the element.
-    ///
-    /// We only need the declaration blocks, since all the other fields of the applicable
-    /// declaration are the same for all presentational hints.
-    pres_hints: Option<ThinVec<StyleSource>>,
+    pres_hints: Option<ThinVec<ApplicableDeclarationBlock>>,
 
     /// The pointer identity of the parent ComputedValues.
     parent_style_identity: Option<OpaqueComputedValues>,
@@ -204,7 +201,7 @@ impl ValidationData {
 
     /// Get or compute the list of presentational attributes associated with
     /// this element.
-    pub fn pres_hints<E>(&mut self, element: E) -> &[StyleSource]
+    pub fn pres_hints<E>(&mut self, element: E) -> &[ApplicableDeclarationBlock]
     where
         E: TElement,
     {
@@ -215,7 +212,7 @@ impl ValidationData {
                 VisitedHandlingMode::AllLinksUnvisited,
                 &mut pres_hints,
             );
-            ThinVec::from_iter(pres_hints.drain(..).map(|d| d.source.to_owned()))
+            ThinVec::from_iter(pres_hints.drain(..))
         })
     }
 
@@ -345,7 +342,7 @@ impl<E: TElement> StyleSharingCandidate<E> {
     }
 
     /// Get the pres hints of this candidate.
-    fn pres_hints(&mut self) -> &[StyleSource] {
+    fn pres_hints(&mut self) -> &[ApplicableDeclarationBlock] {
         self.validation_data.pres_hints(self.element)
     }
 
@@ -421,7 +418,7 @@ impl<E: TElement> StyleSharingTarget<E> {
     }
 
     /// Get the pres hints of this candidate.
-    fn pres_hints(&mut self) -> &[StyleSource] {
+    fn pres_hints(&mut self) -> &[ApplicableDeclarationBlock] {
         self.validation_data.pres_hints(self.element)
     }
 

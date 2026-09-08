@@ -209,14 +209,14 @@ impl SelectorMap<Rule> {
     ///
     /// Extract matching rules as per element's ID, classes, tag name, etc..
     /// Sort the Rules at the end to maintain cascading order.
-    pub fn get_all_matching_rules<'a, E>(
-        &'a self,
+    pub fn get_all_matching_rules<E>(
+        &self,
         element: E,
         rule_hash_target: E,
-        matching_rules_list: &mut ApplicableDeclarationList<'a>,
+        matching_rules_list: &mut ApplicableDeclarationList,
         matching_context: &mut MatchingContext<E::Impl>,
         cascade_level: CascadeLevel,
-        cascade_data: &'a CascadeData,
+        cascade_data: &CascadeData,
         stylist: &Stylist,
     ) where
         E: TElement,
@@ -332,13 +332,13 @@ impl SelectorMap<Rule> {
     }
 
     /// Adds rules in `rules` that match `element` to the `matching_rules` list.
-    pub(crate) fn get_matching_rules<'a, E>(
+    pub(crate) fn get_matching_rules<E>(
         element: E,
-        rules: &'a [Rule],
-        matching_rules: &mut ApplicableDeclarationList<'a>,
+        rules: &[Rule],
+        matching_rules: &mut ApplicableDeclarationList,
         matching_context: &mut MatchingContext<E::Impl>,
         cascade_level: CascadeLevel,
-        cascade_data: &'a CascadeData,
+        cascade_data: &CascadeData,
         stylist: &Stylist,
     ) where
         E: TElement,

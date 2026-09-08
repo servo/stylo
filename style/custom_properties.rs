@@ -18,8 +18,8 @@ use crate::properties_and_values::{
         SpecifiedValue as SpecifiedRegisteredValue,
     },
 };
-use crate::stylesheets::container_rule::AttrReferenceSet;
 use crate::stylesheets::UrlExtraData;
+use crate::stylesheets::container_rule::AttrReferenceSet;
 use crate::stylist::Stylist;
 use crate::typed_om::{
     ToTyped, TypedValue, UnparsedSegment, UnparsedValue, VariableReferenceValue,
@@ -27,7 +27,7 @@ use crate::typed_om::{
 use crate::values::computed;
 use crate::values::generics::calc::SortKey as AttrUnit;
 use crate::values::specified::{NoCalcLength, ParsedNamespace};
-use crate::{derives::*, Atom, LocalName, Namespace, Prefix};
+use crate::{Atom, LocalName, Namespace, Prefix, derives::*};
 use cssparser::{CowRcStr, Delimiter, Parser, SourcePosition, Token, TokenSerializationType};
 use rustc_hash::FxHashMap;
 use selectors::parser::SelectorParseErrorKind;
@@ -244,7 +244,7 @@ impl LocalName {
 
     #[cfg(feature = "servo")]
     fn with_name<'a, R>(name: &'a Name, callback: impl FnOnce(&Self) -> R) -> R {
-        callback(&name.as_ref().into())
+        callback(&name.as_str().into())
     }
 }
 
@@ -256,7 +256,7 @@ impl From<Name> for LocalName {
 
     #[cfg(feature = "servo")]
     fn from(name: Name) -> Self {
-        name.as_ref().into()
+        name.as_str().into()
     }
 }
 

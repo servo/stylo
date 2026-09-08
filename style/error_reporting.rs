@@ -9,9 +9,9 @@
 use crate::selector_parser::SelectorImpl;
 use crate::stylesheets::UrlExtraData;
 use cssparser::{BasicParseErrorKind, ParseErrorKind, SourceLocation};
+use selectors::SelectorList;
 use selectors::parser::{Combinator, Component, RelativeSelector, Selector};
 use selectors::visitor::{SelectorListKind, SelectorVisitor};
-use selectors::SelectorList;
 use std::fmt;
 use style_traits::ParseError;
 

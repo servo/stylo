@@ -499,7 +499,7 @@ sub_properties = [
   "font-variant-numeric",
   "font-variant-position",
   "font-weight",
-  "font-stretch",
+  "font-width",
   "font-size",
   "line-height",
   "font-family",

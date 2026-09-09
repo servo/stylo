@@ -76,7 +76,7 @@ pub use self::flex::FlexBasis;
 pub use self::font::{FontFamily, FontLanguageOverride, FontPalette, FontStyle};
 pub use self::font::{FontFeatureSettings, FontVariantLigatures, FontVariantNumeric};
 pub use self::font::{
-    FontSize, FontSizeAdjust, FontStretch, FontSynthesis, FontSynthesisStyle, LineHeight,
+    FontSize, FontSizeAdjust, FontSynthesis, FontSynthesisStyle, FontWidth, LineHeight,
 };
 pub use self::font::{FontVariantAlternates, FontWeight};
 pub use self::font::{FontVariantEastAsian, FontVariationSettings};

@@ -11,6 +11,7 @@ use crate::error_reporting::ContextualParseError;
 use crate::parser::{Parse, ParserContext};
 use crate::shared_lock::{SharedRwLockReadGuard, ToCssWithGuard};
 use crate::values::computed::FontWeight;
+use crate::values::computed::font::FontFamilyNameSyntax;
 use crate::values::generics::font::FontStyle as GenericFontStyle;
 use crate::values::specified::{Angle, url::SpecifiedUrl};
 use cssparser::{Parser, RuleBodyParser, SourceLocation};
@@ -501,9 +502,11 @@ impl Parse for Source {
             .try_parse(|input| input.expect_function_matching("local"))
             .is_ok()
         {
-            return input
-                .parse_nested_block(|input| FamilyName::parse(context, input))
-                .map(Source::Local);
+            let mut family_name =
+                input.parse_nested_block(|input| FamilyName::parse(context, input))?;
+            // Force src:local() names to always serialize as quoted strings.
+            family_name.syntax = FontFamilyNameSyntax::Quoted;
+            return Ok(Source::Local(family_name));
         }
 
         let url = SpecifiedUrl::parse(context, input)?;

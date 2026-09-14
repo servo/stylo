@@ -1095,11 +1095,6 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     #[inline]
-    fn subtree_bloom_filter(&self) -> u64 {
-        unsafe { bindings::Gecko_Element_GetSubtreeBloomFilter(self.0) }
-    }
-
-    #[inline]
     fn local_name(&self) -> &WeakAtom {
         unsafe { WeakAtom::new(self.as_node().node_info().mInner.mName) }
     }
@@ -2239,5 +2234,10 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
     fn add_element_unique_hashes(&self, filter: &mut BloomFilter) -> bool {
         each_relevant_element_hash(*self, |hash| filter.insert_hash(hash & BLOOM_HASH_MASK));
         true
+    }
+
+    #[inline]
+    fn subtree_filter(&self) -> u64 {
+        unsafe { bindings::Gecko_Element_GetSubtreeBloomFilter(self.0) }
     }
 }

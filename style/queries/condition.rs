@@ -211,17 +211,15 @@ impl StyleQuery {
         }
     }
 
+    fn enabled(feature_type: FeatureType) -> bool {
+        crate::pref!("layout.css.style-queries.enabled") && feature_type == FeatureType::Container
+    }
+
     fn parse(
         context: &ParserContext,
         input: &mut Parser,
         feature_type: FeatureType,
     ) -> Result<Self, ParseError> {
-        if !crate::pref!("layout.css.style-queries.enabled")
-            || feature_type != FeatureType::Container
-        {
-            return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
-        }
-
         if let Ok(feature) = input.try_parse(|input| StyleFeature::parse(context, input)) {
             return Ok(Self::Feature(feature));
         }
@@ -674,7 +672,7 @@ pub enum QueryCondition {
     /// A -moz-pref() query.
     MozPref(MozPrefFeature),
     /// [ <function-token> <any-value>? ) ] | [ ( <any-value>? ) ]
-    GeneralEnclosed(String, UrlExtraData),
+    GeneralEnclosed(String, UrlExtraData, FeatureFlags),
 }
 
 impl ToCss for QueryCondition {
@@ -685,32 +683,32 @@ impl ToCss for QueryCondition {
         match *self {
             // NOTE(emilio): QueryFeatureExpression already includes the
             // parenthesis.
-            QueryCondition::Feature(ref f) => f.to_css(dest),
-            QueryCondition::Custom(ref name) => {
+            Self::Feature(ref f) => f.to_css(dest),
+            Self::Custom(ref name) => {
                 dest.write_char('(')?;
                 name.to_css(dest)?;
                 dest.write_char(')')
             },
-            QueryCondition::Not(ref c) => {
+            Self::Not(ref c) => {
                 dest.write_str("not ")?;
                 c.to_css(dest)
             },
-            QueryCondition::InParens(ref c) => {
+            Self::InParens(ref c) => {
                 dest.write_char('(')?;
                 c.to_css(dest)?;
                 dest.write_char(')')
             },
-            QueryCondition::Style(ref c) => {
+            Self::Style(ref c) => {
                 dest.write_str("style(")?;
                 c.to_css(dest)?;
                 dest.write_char(')')
             },
-            QueryCondition::MozPref(ref c) => {
+            Self::MozPref(ref c) => {
                 dest.write_str("-moz-pref(")?;
                 c.to_css(dest)?;
                 dest.write_char(')')
             },
-            QueryCondition::Operation(ref list, op) => {
+            Self::Operation(ref list, op) => {
                 let mut iter = list.iter();
                 iter.next().unwrap().to_css(dest)?;
                 for item in iter {
@@ -721,7 +719,7 @@ impl ToCss for QueryCondition {
                 }
                 Ok(())
             },
-            QueryCondition::GeneralEnclosed(ref s, _) => dest.write_str(s),
+            Self::GeneralEnclosed(ref s, ..) => dest.write_str(s),
         }
     }
 }
@@ -766,13 +764,11 @@ impl QueryCondition {
     /// container queries.
     pub fn cumulative_flags(&self) -> FeatureFlags {
         let mut result = FeatureFlags::empty();
-        self.visit(&mut |condition| {
-            if let Self::Style(..) = condition {
-                result.insert(FeatureFlags::STYLE);
-            }
-            if let Self::Feature(f) = condition {
-                result.insert(f.feature_flags())
-            }
+        self.visit(&mut |condition| match condition {
+            Self::Style(..) => result.insert(FeatureFlags::STYLE),
+            Self::Feature(f) => result.insert(f.feature_flags()),
+            Self::GeneralEnclosed(_, _, flags) => result.insert(*flags),
+            _ => {},
         });
         result
     }
@@ -826,7 +822,7 @@ impl QueryCondition {
         match *self {
             Self::Custom(ref f) => custom.matches(f, context),
             Self::Feature(ref f) => f.matches(context),
-            Self::GeneralEnclosed(ref str, ref url_data) => {
+            Self::GeneralEnclosed(ref str, ref url_data, _) => {
                 self.matches_general(str, url_data, context, custom, attribute_tracker)
             },
             Self::InParens(ref c) => c.matches(context, custom, attribute_tracker),
@@ -946,6 +942,7 @@ impl OperationParser for QueryCondition {
         input.skip_whitespace();
         let start = input.position();
         let start_location = input.current_source_location();
+        let mut flags = FeatureFlags::empty();
         match *input.next()? {
             Token::ParenthesisBlock => {
                 let nested = try_parse_block(context, input, start, start_location, |input| {
@@ -957,13 +954,14 @@ impl OperationParser for QueryCondition {
             },
             Token::Function(ref name) => {
                 match_ignore_ascii_case! { name,
-                    "style" => {
+                    "style" if StyleQuery::enabled(feature_type) => {
                         let query = try_parse_block(context, input, start, start_location, |input| {
                             StyleQuery::parse(context, input, feature_type)
                         });
                         if let Some(query) = query {
                             return Ok(Self::Style(query));
                         }
+                        flags.insert(FeatureFlags::STYLE);
                     },
                     "-moz-pref" => {
                         let feature = try_parse_block(context, input, start, start_location, |input| {
@@ -982,6 +980,7 @@ impl OperationParser for QueryCondition {
         Ok(Self::GeneralEnclosed(
             input.slice_from(start).to_owned(),
             context.url_data.clone(),
+            flags,
         ))
     }
 

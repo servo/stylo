@@ -104,7 +104,7 @@ macro_rules! keyword_evaluator {
 
 /// Different flags or toggles that change how a expression is parsed or
 /// evaluated.
-#[derive(Clone, Copy, Debug, ToShmem)]
+#[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToShmem)]
 pub struct FeatureFlags(u8);
 bitflags! {
     impl FeatureFlags : u8 {

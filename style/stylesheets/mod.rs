@@ -645,6 +645,7 @@ impl CssRuleTypes {
         CssRuleType::CounterStyle.bit()
             | CssRuleType::FontFace.bit()
             | CssRuleType::FontFeatureValues.bit()
+            | CssRuleType::FontPaletteValues.bit()
             | CssRuleType::Page.bit(),
     );
 

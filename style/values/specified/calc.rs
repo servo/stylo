@@ -16,14 +16,15 @@ use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::Optional;
 use crate::values::generics::calc::{
     self as generic, CalcNodeLeaf, CalcType, GenericAnchorFunctionFallback,
-    GenericCalcPercentageLeaf, MinMaxOp, ModRemOp, ProgressClampingMode, RoundingStrategy,
-    SimplificationResult, SortKey,
+    GenericCalcPercentageLeaf, GenericRandomFunction, MinMaxOp, ModRemOp, ProgressClampingMode,
+    RoundingStrategy, SimplificationResult, SortKey,
 };
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{
     AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide, TreeScoped,
 };
 use crate::values::specified::length::NoCalcLength;
+use crate::values::specified::random::RandomKey;
 use crate::values::specified::{
     NoCalcAngle, NoCalcNumber, NoCalcPercentage, NoCalcResolution, NoCalcTime, TreeCountingFunction,
 };
@@ -86,6 +87,8 @@ pub enum MathFunction {
     Sign,
     /// `progress()`: https://drafts.csswg.org/css-values-5/#funcdef-progress
     Progress,
+    /// `random()`: https://drafts.csswg.org/css-values-5/#funcdef-random
+    Random,
     /// `sibling-count()`: https://drafts.csswg.org/css-values-5/#funcdef-sibling-count
     #[strum(serialize = "sibling-count")]
     SiblingCount,
@@ -124,6 +127,8 @@ pub enum Leaf {
     Number(NoCalcNumber),
     /// A tree-counting function.
     TreeCountingFunction(TreeCountingFunction),
+    /// `<random-key>`
+    RandomKey(Box<RandomKey>),
 }
 
 impl ToTyped for Leaf {
@@ -165,6 +170,10 @@ impl Leaf {
                 Some(context) => {
                     Self::Number(NoCalcNumber::new(f.to_computed_value(context) as f32))
                 },
+                None => self.clone(),
+            },
+            Self::RandomKey(key) => match context {
+                Some(context) => Self::Number(NoCalcNumber::new(*key.to_computed_value(context))),
                 None => self.clone(),
             },
             Self::ColorComponent(channel_keyword) => match origin_color {
@@ -373,9 +382,10 @@ impl generic::CalcNodeLeaf for Leaf {
             Leaf::Time(_) => NumericType::time(),
             Leaf::Resolution(_) => NumericType::resolution(),
             Leaf::Percentage(p) => p.numeric_type(),
-            Leaf::ColorComponent(_) | Leaf::Number(_) | Leaf::TreeCountingFunction(_) => {
-                NumericType::number()
-            },
+            Leaf::ColorComponent(_)
+            | Leaf::Number(_)
+            | Leaf::TreeCountingFunction(_)
+            | Leaf::RandomKey(_) => NumericType::number(),
         }
     }
 
@@ -387,6 +397,12 @@ impl generic::CalcNodeLeaf for Leaf {
             Self::Resolution(ref r) => r.dppx(),
             Self::Angle(ref a) => a.degrees(),
             Self::Time(ref t) => t.seconds(),
+            Self::RandomKey(ref k) => {
+                return match &**k {
+                    RandomKey::Fixed(number) => number.resolve(),
+                    RandomKey::CacheKey(_) => None,
+                };
+            },
             Self::ColorComponent(_) | Self::TreeCountingFunction(_) => return None,
         })
     }
@@ -405,6 +421,12 @@ impl generic::CalcNodeLeaf for Leaf {
             Self::Resolution(ref r) => r.dppx(),
             Self::Angle(ref a) => a.degrees(),
             Self::Time(ref t) => t.seconds(),
+            Self::RandomKey(ref k) => {
+                return match &**k {
+                    RandomKey::Fixed(number) => number.resolve(),
+                    RandomKey::CacheKey(_) => None,
+                };
+            },
             Self::ColorComponent(_) | Self::TreeCountingFunction(_) => return None,
         })
     }
@@ -424,7 +446,8 @@ impl generic::CalcNodeLeaf for Leaf {
             (ColorComponent(_), ColorComponent(_))
             | (Percentage(_), Percentage(_))
             | (Number(_), Number(_))
-            | (TreeCountingFunction(_), TreeCountingFunction(_)) => true,
+            | (TreeCountingFunction(_), TreeCountingFunction(_))
+            | (RandomKey(_), RandomKey(_)) => true,
             _ => {
                 match *other {
                     Number(..)
@@ -434,7 +457,8 @@ impl generic::CalcNodeLeaf for Leaf {
                     | Resolution(..)
                     | Length(..)
                     | ColorComponent(..)
-                    | TreeCountingFunction(..) => {},
+                    | TreeCountingFunction(..)
+                    | RandomKey(..) => {},
                 }
                 unsafe {
                     debug_unreachable!();
@@ -509,6 +533,7 @@ impl generic::CalcNodeLeaf for Leaf {
             (Number(one), Number(other)) => one.partial_cmp(other),
             (ColorComponent(one), ColorComponent(other)) => one.partial_cmp(other),
             (TreeCountingFunction(one), TreeCountingFunction(other)) => one.partial_cmp(other),
+            (RandomKey(_), RandomKey(_)) => None,
             _ => {
                 match *self {
                     Length(..)
@@ -518,7 +543,8 @@ impl generic::CalcNodeLeaf for Leaf {
                     | Number(..)
                     | Resolution(..)
                     | ColorComponent(..)
-                    | TreeCountingFunction(..) => {},
+                    | TreeCountingFunction(..)
+                    | RandomKey(..) => {},
                 }
                 unsafe {
                     debug_unreachable!("Forgot a branch?");
@@ -535,7 +561,8 @@ impl generic::CalcNodeLeaf for Leaf {
             | Leaf::Resolution(_)
             | Leaf::Percentage(_)
             | Leaf::ColorComponent(_)
-            | Leaf::TreeCountingFunction(_) => None,
+            | Leaf::TreeCountingFunction(_)
+            | Leaf::RandomKey(_) => None,
             Leaf::Number(n) => Some(n.value()),
         }
     }
@@ -549,7 +576,7 @@ impl generic::CalcNodeLeaf for Leaf {
             Self::Angle(..) => SortKey::Deg,
             Self::Length(ref l) => l.sort_key(),
             Self::ColorComponent(..) => SortKey::ColorComponent,
-            Self::TreeCountingFunction(..) => SortKey::Other,
+            Self::TreeCountingFunction(..) | Self::RandomKey(..) => SortKey::Other,
         }
     }
 
@@ -616,6 +643,10 @@ impl generic::CalcNodeLeaf for Leaf {
                 // Can not get the sum of tree counting functions, because they haven't been resolved yet.
                 return Err(());
             },
+            (&mut RandomKey(_), &RandomKey(_)) => {
+                // Can not get the sum of random cache keys.
+                return Err(());
+            },
             _ => {
                 match *other {
                     Number(..)
@@ -625,7 +656,8 @@ impl generic::CalcNodeLeaf for Leaf {
                     | Resolution(..)
                     | Length(..)
                     | ColorComponent(..)
-                    | TreeCountingFunction(..) => {},
+                    | TreeCountingFunction(..)
+                    | RandomKey(..) => {},
                 }
                 unsafe {
                     debug_unreachable!();
@@ -697,6 +729,7 @@ impl generic::CalcNodeLeaf for Leaf {
             (Length(one), Length(other)) => Ok(Leaf::Length(one.try_op(other, op)?)),
             (&ColorComponent(..), &ColorComponent(..)) => Err(()),
             (&TreeCountingFunction(_), &TreeCountingFunction(_)) => Err(()),
+            (&RandomKey(_), &RandomKey(_)) => Err(()),
             _ => {
                 match *other {
                     Number(..)
@@ -706,7 +739,8 @@ impl generic::CalcNodeLeaf for Leaf {
                     | Length(..)
                     | Resolution(..)
                     | ColorComponent(..)
-                    | TreeCountingFunction(..) => {},
+                    | TreeCountingFunction(..)
+                    | RandomKey(..) => {},
                 }
                 unsafe {
                     debug_unreachable!();
@@ -723,7 +757,9 @@ impl generic::CalcNodeLeaf for Leaf {
             Leaf::Resolution(one) => *one = NoCalcResolution::from_dppx(op(one.dppx())),
             Leaf::Percentage(one) => *one = CalcPercentageLeaf::new(op(one.get()), one.hint),
             Leaf::Number(one) => *one = NoCalcNumber::new(op(one.value())),
-            Leaf::ColorComponent(..) | Leaf::TreeCountingFunction(..) => return Err(()),
+            Leaf::ColorComponent(..) | Leaf::TreeCountingFunction(..) | Leaf::RandomKey(..) => {
+                return Err(());
+            },
         };
         Ok(())
     }
@@ -737,7 +773,7 @@ impl generic::CalcNodeLeaf for Leaf {
             | Leaf::ColorComponent(_)
             | Leaf::Percentage(_)
             | Leaf::Number(_) => true,
-            Leaf::TreeCountingFunction(_) => false,
+            Leaf::TreeCountingFunction(_) | Leaf::RandomKey(_) => false,
         }
     }
 }
@@ -1205,6 +1241,40 @@ impl CalcNode {
                         start: Box::new(start),
                         end: Box::new(end),
                     })
+                },
+                MathFunction::Random => {
+                    if !crate::pref!("layout.css.random.enabled") {
+                        return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
+                    }
+
+                    // Increment the random() function count so that any `property-index-scoped`
+                    // random keys construct the correct random cache name when parsed.
+                    context
+                        .property_declaration_context
+                        .increment_random_count();
+
+                    let key = match input.try_parse(|input| RandomKey::parse(context, input)) {
+                        Ok(key) => {
+                            input.expect_comma()?;
+                            key
+                        },
+                        // The <random-key> is optional, and behaves as `auto`.
+                        Err(_) => RandomKey::auto(context)?,
+                    };
+                    let min = Self::parse_argument(context, input, flags)?;
+                    input.expect_comma()?;
+                    let max = Self::parse_argument(context, input, flags)?;
+                    let step = input.try_parse(|input| {
+                        input.expect_comma()?;
+                        Self::parse_argument(context, input, flags)
+                    });
+
+                    Ok(Self::Random(Box::new(GenericRandomFunction {
+                        key: Self::Leaf(Leaf::RandomKey(Box::new(key))),
+                        min,
+                        max,
+                        step: step.ok().into(),
+                    })))
                 },
                 MathFunction::SiblingCount | MathFunction::SiblingIndex => {
                     if !crate::pref!("layout.css.tree-counting-functions.enabled") {

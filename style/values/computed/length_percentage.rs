@@ -843,6 +843,7 @@ impl specified::CalcLengthPercentage {
             Leaf::TreeCountingFunction(t) => {
                 ComputedLeaf::Number(t.to_computed_value(context) as f32)
             },
+            Leaf::RandomKey(ref key) => ComputedLeaf::Number(*key.to_computed_value(context)),
         });
 
         LengthPercentage::new_calc(node, self.0.clamping_mode)

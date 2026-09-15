@@ -75,6 +75,10 @@ impl NestingContext {
 pub struct PropertyDeclarationContext<'a> {
     /// Reference to the current property's name/ID.
     property_id: Option<PropertyIdRef<'a>>,
+    /// Current count of random() functions that have been parsed so far
+    /// in the current property declaration. Used when a random() function
+    /// has a `property-index-scoped` key.
+    random_count: Cell<i32>,
 }
 
 impl<'a> PropertyDeclarationContext<'a> {
@@ -84,10 +88,31 @@ impl<'a> PropertyDeclarationContext<'a> {
             "Previous declaration should be empty"
         );
         self.property_id = Some(property_id);
+        self.random_count.set(0);
     }
 
     fn clear(&mut self) {
         self.property_id = None;
+        self.random_count.set(0);
+    }
+
+    /// The declaration being parsed, if any.
+    pub fn property_id(&self) -> Option<PropertyIdRef<'a>> {
+        self.property_id
+    }
+
+    /// The index of the current random() function in this declaration.
+    pub fn current_random_index(&self) -> i32 {
+        self.random_count.get()
+    }
+
+    /// Claims the next index for a random() function in this declaration. The
+    /// index is 1-based and follows the order the functions appear in the
+    /// parsed value.
+    pub fn increment_random_count(&self) -> i32 {
+        let index = self.random_count.get() + 1;
+        self.random_count.set(index);
+        index
     }
 }
 
@@ -208,6 +233,10 @@ impl<'a> ParserContext<'a> {
             .parsing_mode
             .intersects(ParsingMode::MEDIA_QUERY_CONDITION)
         {
+            return false;
+        }
+
+        if !self.allows_computational_dependence() {
             return false;
         }
 

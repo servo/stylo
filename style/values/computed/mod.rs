@@ -34,12 +34,17 @@ use crate::stylist::Stylist;
 use crate::values::generics::ClampToNonNegative;
 use crate::values::specified::font::QueryFontMetricsFlags;
 use crate::values::specified::length::FontBaseSize;
+use crate::values::specified::random::RandomCacheKey;
 use crate::{ArcSlice, Atom, One};
 use euclid::{Point2D, Rect, Size2D, default};
+use rand::rngs::SmallRng;
+use rand::{Rng, SeedableRng};
+use rustc_hash::FxHasher;
 use servo_arc::Arc;
 use std::cell::RefCell;
 use std::cmp;
 use std::f32;
+use std::hash::{Hash, Hasher};
 use std::ops::{Add, Sub};
 
 pub use self::align::{ContentDistribution, ItemPlacement, JustifyItems, SelfAlignment};
@@ -513,6 +518,28 @@ impl<'a> Context<'a> {
             .add_flags(ComputedValueFlags::USES_SIBLING_INDEX);
         self.rule_cache_conditions.borrow_mut().set_uncacheable();
         self.resolve_tree_counting_result().sibling_index
+    }
+
+    /// Returns the random base value for the given random cache key. This constructs a
+    /// PRNG seed by hashing the components of the key's specified random cache name,
+    /// and then generating a random value from the seed. This ensures that the same
+    /// random cache name always results in the same random base value.
+    /// https://drafts.csswg.org/css-values-5/#random-caching
+    pub fn random_base_value(&self, key: &RandomCacheKey) -> f32 {
+        let mut hasher = FxHasher::default();
+        key.name.hash(&mut hasher);
+        key.ua_ident.hash(&mut hasher);
+        if key.is_element_scoped {
+            debug_assert!(
+                self.element_context.opaque_element().is_some(),
+                "Element-scoped random without element context"
+            );
+            self.element_context.opaque_element().hash(&mut hasher);
+        }
+        self.device().document_random_seed().hash(&mut hasher);
+
+        // Returns a float in the range [0, 1).
+        SmallRng::seed_from_u64(hasher.finish()).r#gen()
     }
 
     /// Whether we're in a media or container query.

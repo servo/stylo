@@ -227,6 +227,7 @@ pub use text::NumberOrAuto;
     ComputeSquaredDistance,
     Copy,
     Debug,
+    Hash,
     MallocSizeOf,
     Parse,
     PartialEq,

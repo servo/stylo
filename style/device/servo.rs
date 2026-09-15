@@ -149,6 +149,14 @@ impl Device {
         self.extra.quirks_mode
     }
 
+    /// Returns a value that identifies this document, used to vary the random
+    /// base values of `random()` functions between document instances.
+    #[inline]
+    pub fn document_random_seed(&self) -> u64 {
+        // TODO: Implement a document-specific value.
+        0
+    }
+
     /// Gets the base size given a generic font family.
     pub fn base_size_for_generic(&self, generic: GenericFontFamily) -> Length {
         self.extra

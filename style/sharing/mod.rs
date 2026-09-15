@@ -869,8 +869,8 @@ impl<E: TElement> StyleSharingCache<E> {
             return None;
         }
 
-        if !checks::have_shareable_tree_counting_functions(target, candidate) {
-            trace!("Miss: Tree counting functions");
+        if !checks::have_shareable_element_dependent_functions(target, candidate) {
+            trace!("Miss: Element-dependent functions");
             return None;
         }
 
@@ -935,7 +935,7 @@ impl<E: TElement> StyleSharingCache<E> {
             if !checks::have_same_referenced_attrs(&sharing_target, candidate) {
                 return None;
             }
-            if !checks::have_shareable_tree_counting_functions(&sharing_target, candidate) {
+            if !checks::have_shareable_element_dependent_functions(&sharing_target, candidate) {
                 return None;
             }
             // NOTE(emilio): We only need to check name / namespace because we

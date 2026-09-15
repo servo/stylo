@@ -1330,7 +1330,8 @@ impl<'a> Cascade<'a> {
             | ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY
             | ComputedValueFlags::USES_SIBLING_COUNT
             | ComputedValueFlags::USES_SIBLING_INDEX
-            | ComputedValueFlags::USES_VISITED_DEPENDENT_PROPERTIES;
+            | ComputedValueFlags::USES_VISITED_DEPENDENT_PROPERTIES
+            | ComputedValueFlags::USES_ELEMENT_SCOPED_RANDOM;
         context.builder.add_flags(style.flags & bits_to_copy);
 
         true

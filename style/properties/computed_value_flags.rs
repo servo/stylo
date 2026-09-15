@@ -140,6 +140,9 @@ bitflags! {
 
         /// Whether this style uses any visited-dependent properties.
         const USES_VISITED_DEPENDENT_PROPERTIES = 1 << 28;
+
+        /// Whether this style uses an element-scoped `random()`.
+        const USES_ELEMENT_SCOPED_RANDOM = 1 << 29;
     }
 }
 

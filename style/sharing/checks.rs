@@ -183,8 +183,9 @@ where
     true
 }
 
-/// Whether two elements have compatible tree-counting functions.
-pub fn have_shareable_tree_counting_functions<E>(
+/// Whether two elements have compatible element-dependent functions, like
+/// `sibling-index()`, `sibling-count()`, and element-scoped `random()`.
+pub fn have_shareable_element_dependent_functions<E>(
     target: &StyleSharingTarget<E>,
     candidate: &StyleSharingCandidate<E>,
 ) -> bool
@@ -195,13 +196,18 @@ where
     let styles = &borrowed_data.styles;
 
     if styles.uses_tree_counting_function(TreeCountingFunction::SiblingIndex) {
-        // Two elements with the same parent will always have a different index
+        // Two elements with the same parent will always have a different index.
         return false;
     }
 
     if styles.uses_tree_counting_function(TreeCountingFunction::SiblingCount)
         && target.parent_element() != candidate.parent_element()
     {
+        return false;
+    }
+
+    if styles.uses_element_scoped_random() {
+        // Two elements will always have different element-scoped random values.
         return false;
     }
 

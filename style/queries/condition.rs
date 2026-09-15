@@ -437,6 +437,7 @@ impl StyleFeaturePlain {
         let custom_properties::SubstitutionResult { css, attr_taint } =
             match custom_properties::substitute(
                 value,
+                /* property_id */ None,
                 &substitution_functions,
                 stylist,
                 ctx,
@@ -460,6 +461,7 @@ impl StyleFeaturePlain {
             ctx,
             AllowComputationallyDependent::Yes,
             attr_taint,
+            /* property_id */ None,
         )
         .ok();
         computed.as_ref() == current_value
@@ -496,7 +498,13 @@ impl StyleFeaturePlain {
                         current_value,
                     )
                 } else {
-                    custom_properties::compute_variable_value(v, registration, ctx).as_ref()
+                    custom_properties::compute_variable_value(
+                        v,
+                        registration,
+                        ctx,
+                        /* property_id */ None,
+                    )
+                    .as_ref()
                         == current_value
                 }
             },
@@ -510,6 +518,7 @@ impl StyleFeaturePlain {
                                 initial,
                                 registration,
                                 ctx,
+                                /* property_id */ None,
                             );
                             v.as_ref() == current_value
                         } else {
@@ -886,6 +895,7 @@ impl QueryCondition {
         let custom_properties::SubstitutionResult { css, attr_taint } =
             match custom_properties::substitute(
                 &value,
+                /* property_id */ None,
                 &substitution_functions,
                 stylist,
                 context,

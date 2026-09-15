@@ -791,7 +791,8 @@ impl CssRule {
         let error = parser.dom_error.take().unwrap_or(RulesMutateError::Syntax);
         // If new rule is a syntax error, and nested is set, perform the following substeps:
         if matches!(error, RulesMutateError::Syntax) && parser.can_parse_declarations() {
-            let declarations = parse_property_declaration_list(&parser.context, &mut input, &[]);
+            let declarations =
+                parse_property_declaration_list(&mut parser.context, &mut input, &[]);
             if !declarations.is_empty() {
                 return Ok(CssRule::NestedDeclarations(Arc::new(
                     parser.shared_lock.wrap(NestedDeclarationsRule {

@@ -946,7 +946,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             })),
             AtRulePrelude::Supports(condition) => {
                 let enabled =
-                    self.nest_for_rule(CssRuleType::Style, |p| condition.eval(&p.context));
+                    self.nest_for_rule(CssRuleType::Style, |p| condition.eval(&mut p.context));
                 CssRule::Supports(Arc::new(SupportsRule {
                     condition,
                     rules: self.parse_nested_rules(input, CssRuleType::Supports),
@@ -968,7 +968,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             AtRulePrelude::Page(selectors) => {
                 let page_rule = if !crate::pref!("layout.css.margin-rules.enabled") {
                     let declarations = self.nest_for_rule(CssRuleType::Page, |p| {
-                        parse_property_declaration_list(&p.context, input, &[])
+                        parse_property_declaration_list(&mut p.context, input, &[])
                     });
                     PageRule {
                         selectors,
@@ -1026,7 +1026,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             },
             AtRulePrelude::Margin(rule_type) => {
                 let declarations = self.nest_for_rule(CssRuleType::Margin, |p| {
-                    parse_property_declaration_list(&p.context, input, &[])
+                    parse_property_declaration_list(&mut p.context, input, &[])
                 });
                 CssRule::Margin(Arc::new(MarginRule {
                     rule_type,
@@ -1057,7 +1057,7 @@ impl<'a, 'i> AtRuleParser<'i> for NestedRuleParser<'a, 'i> {
             },
             AtRulePrelude::PositionTry(name) => {
                 let declarations = self.nest_for_rule(CssRuleType::PositionTry, |p| {
-                    parse_property_declaration_list(&p.context, input, &[])
+                    parse_property_declaration_list(&mut p.context, input, &[])
                 });
                 CssRule::PositionTry(Arc::new(self.shared_lock.wrap(PositionTryRule {
                     name,
@@ -1171,7 +1171,7 @@ impl<'a, 'i> DeclarationParser<'i> for NestedRuleParser<'a, 'i> {
     ) -> Result<(), ParseError> {
         let top = &mut **self;
         top.declaration_parser_state
-            .parse_value(&top.context, name, input, declaration_start)
+            .parse_value(&mut top.context, name, input, declaration_start)
     }
 }
 

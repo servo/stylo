@@ -375,19 +375,19 @@ macro_rules! font_feature_values_blocks {
         /// }
         /// <feature-type> = @stylistic | @historical-forms | @styleset |
         /// @character-variant | @swash | @ornaments | @annotation
-        struct FontFeatureValuesRuleParser<'a> {
-            context: &'a ParserContext<'a>,
-            rule: &'a mut FontFeatureValuesRule,
+        struct FontFeatureValuesRuleParser<'a, 'b> {
+            context: &'b ParserContext<'a>,
+            rule: &'b mut FontFeatureValuesRule,
         }
 
         /// Default methods reject all qualified rules.
-        impl<'a, 'i> QualifiedRuleParser<'i> for FontFeatureValuesRuleParser<'a> {
+        impl<'a, 'b, 'i> QualifiedRuleParser<'i> for FontFeatureValuesRuleParser<'a, 'b> {
             type Prelude = ();
             type QualifiedRule = ();
             type Error = StyleParseErrorKind;
         }
 
-        impl<'a, 'i> AtRuleParser<'i> for FontFeatureValuesRuleParser<'a> {
+        impl<'a, 'b, 'i> AtRuleParser<'i> for FontFeatureValuesRuleParser<'a, 'b> {
             type Prelude = FontFeatureValuesBlockType;
             type AtRule = ();
             type Error = StyleParseErrorKind;
@@ -433,12 +433,12 @@ macro_rules! font_feature_values_blocks {
             }
         }
 
-        impl<'a, 'i> DeclarationParser<'i> for FontFeatureValuesRuleParser<'a> {
+        impl<'a, 'b, 'i> DeclarationParser<'i> for FontFeatureValuesRuleParser<'a, 'b> {
             type Declaration = ();
             type Error = StyleParseErrorKind;
         }
 
-        impl<'a, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind> for FontFeatureValuesRuleParser<'a> {
+        impl<'a, 'b, 'i> RuleBodyItemParser<'i, (), StyleParseErrorKind> for FontFeatureValuesRuleParser<'a, 'b> {
             fn parse_declarations(&self) -> bool { false }
             fn parse_qualified(&self) -> bool { true }
         }

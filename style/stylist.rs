@@ -33,7 +33,7 @@ use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet
 use crate::properties::StyleBuilder;
 use crate::properties::{
     self, AnimationDeclarations, CascadeMode, ComputedValues, FirstLineReparenting,
-    PropertyDeclarationBlock,
+    PropertyDeclarationBlock, PropertyIdRef,
 };
 use crate::properties_and_values::registry::{
     PropertyRegistration, ScriptRegistry as CustomPropertyScriptRegistry,
@@ -2132,9 +2132,11 @@ impl Stylist {
             None => None,
         };
 
-        if let Err(error) =
-            PropertyRegistration::validate_initial_value(&syntax, initial_value.as_deref())
-        {
+        if let Err(error) = PropertyRegistration::validate_initial_value(
+            PropertyIdRef::from(&name),
+            &syntax,
+            initial_value.as_deref(),
+        ) {
             return match error {
                 PropertyRegistrationError::InitialValueNotComputationallyIndependent => {
                     InitialValueNotComputationallyIndependent

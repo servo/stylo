@@ -1045,6 +1045,7 @@ impl QueryStyleRange {
                     .expect("container queries should have a stylist around");
                 let substituted = custom_properties::substitute(
                     value,
+                    /* property_id */ None,
                     &sub_funcs,
                     stylist,
                     context,

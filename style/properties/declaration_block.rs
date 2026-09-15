@@ -1417,7 +1417,7 @@ pub fn parse_style_attribute(
     quirks_mode: QuirksMode,
     rule_type: CssRuleType,
 ) -> PropertyDeclarationBlock {
-    let context = ParserContext::new(
+    let mut context = ParserContext::new(
         Origin::Author,
         url_data,
         Some(rule_type),
@@ -1429,7 +1429,7 @@ pub fn parse_style_attribute(
         /* attr_taint */ Default::default(),
     );
 
-    parse_property_declaration_list(&context, &mut Parser::new(input), &[])
+    parse_property_declaration_list(&mut context, &mut Parser::new(input), &[])
 }
 
 /// Parse a given property declaration. Can result in multiple
@@ -1448,7 +1448,7 @@ pub fn parse_one_declaration_into(
     quirks_mode: QuirksMode,
     rule_type: CssRuleType,
 ) -> Result<(), ()> {
-    let context = ParserContext::new(
+    let mut context = ParserContext::new(
         origin,
         url_data,
         Some(rule_type),
@@ -1471,7 +1471,7 @@ pub fn parse_one_declaration_into(
     let start_location = parser.current_source_location();
     parser
         .parse_entirely(|parser| {
-            PropertyDeclaration::parse_into(declarations, id, &context, parser)
+            PropertyDeclaration::parse_into(declarations, id, &mut context, parser)
         })
         .map_err(|err| {
             if context.error_reporting_enabled() {
@@ -1490,7 +1490,7 @@ pub fn parse_one_declaration_into(
 
 /// A struct to parse property declarations.
 struct PropertyDeclarationParser<'a, 'b: 'a, 'i> {
-    context: &'a ParserContext<'b>,
+    context: &'a mut ParserContext<'b>,
     state: &'a mut DeclarationParserState<'i>,
 }
 
@@ -1533,7 +1533,7 @@ impl<'i> DeclarationParserState<'i> {
     /// Parse a single declaration value.
     pub fn parse_value(
         &mut self,
-        context: &ParserContext,
+        context: &mut ParserContext,
         name: CowRcStr<'i>,
         input: &mut Parser<'i>,
         declaration_start: &ParserState,
@@ -1760,7 +1760,7 @@ fn report_one_css_error(
 /// Parse a list of property declarations and return a property declaration
 /// block.
 pub fn parse_property_declaration_list(
-    context: &ParserContext,
+    context: &mut ParserContext,
     input: &mut Parser,
     selectors: &[SelectorList<SelectorImpl>],
 ) -> PropertyDeclarationBlock {
@@ -1774,10 +1774,15 @@ pub fn parse_property_declaration_list(
         match declaration {
             Ok(()) => {},
             Err((error, slice, location)) => {
-                iter.parser.state.did_error(context, error, slice, location)
+                let parser = &mut *iter.parser;
+                parser
+                    .state
+                    .did_error(parser.context, error, slice, location)
             },
         }
     }
-    parser.state.report_errors_if_needed(context, selectors);
+    parser
+        .state
+        .report_errors_if_needed(parser.context, selectors);
     state.output_block
 }

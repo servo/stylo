@@ -15,7 +15,7 @@ use crate::custom_properties::{AttrTaint, ComputedValue as ComputedPropertyValue
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties;
-use crate::properties::{CSSWideKeyword, CustomDeclarationValue};
+use crate::properties::{CSSWideKeyword, CustomDeclarationValue, PropertyIdRef};
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
 use crate::values::{
     CustomIdent,
@@ -322,6 +322,7 @@ impl SpecifiedValue {
         context: &computed::Context,
         allow_computationally_dependent: AllowComputationallyDependent,
         attr_taint: AttrTaint,
+        property_id: Option<PropertyIdRef>,
     ) -> Result<ComputedValue, ()> {
         debug_assert!(!registration.is_universal(), "Shouldn't be needed");
         let Some(ref syntax) = registration.syntax else {
@@ -334,6 +335,7 @@ impl SpecifiedValue {
             namespaces,
             allow_computationally_dependent,
             attr_taint,
+            property_id,
         ) else {
             return Err(());
         };
@@ -350,6 +352,7 @@ impl SpecifiedValue {
         namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         allow_computationally_dependent: AllowComputationallyDependent,
         attr_taint: AttrTaint,
+        property_id: Option<PropertyIdRef>,
     ) -> Result<Self, StyleParseError> {
         if syntax.is_universal() {
             let parsed = ComputedPropertyValue::parse(input, namespaces, url_data)?;
@@ -363,7 +366,13 @@ impl SpecifiedValue {
         let mut multiplier = None;
         {
             let mut parser = Parser::new(syntax, &mut values, &mut multiplier);
-            parser.parse(input, url_data, allow_computationally_dependent, attr_taint)?;
+            parser.parse(
+                input,
+                url_data,
+                allow_computationally_dependent,
+                attr_taint,
+                property_id,
+            )?;
         }
         let v = if let Some(multiplier) = multiplier {
             ValueInner::List(ComponentList {
@@ -448,13 +457,14 @@ impl<'a> Parser<'a> {
         url_data: &UrlExtraData,
         allow_computationally_dependent: AllowComputationallyDependent,
         attr_taint: AttrTaint,
+        property_id: Option<PropertyIdRef>,
     ) -> Result<(), StyleParseError> {
         use self::AllowComputationallyDependent::*;
         let parsing_mode = match allow_computationally_dependent {
             No => ParsingMode::DISALLOW_COMPUTATIONALLY_DEPENDENT,
             Yes => ParsingMode::DEFAULT,
         };
-        let context = &ParserContext::new(
+        let mut context = ParserContext::new(
             Origin::Author,
             url_data,
             Some(CssRuleType::Style),
@@ -465,16 +475,23 @@ impl<'a> Parser<'a> {
             None,
             attr_taint,
         );
-        for component in self.syntax.components.iter() {
-            let result = input.try_parse(|input| {
-                input.parse_entirely(|input| {
-                    Self::parse_value(context, input, &component.unpremultiplied())
-                })
-            });
-            let Ok(values) = result else { continue };
-            self.output.extend(values);
-            *self.output_multiplier = component.multiplier();
-            break;
+
+        let mut parse_components = |context: &ParserContext| {
+            for component in self.syntax.components.iter() {
+                let result = input.try_parse(|input| {
+                    input.parse_entirely(|input| {
+                        Self::parse_value(context, input, &component.unpremultiplied())
+                    })
+                });
+                let Ok(values) = result else { continue };
+                self.output.extend(values);
+                *self.output_multiplier = component.multiplier();
+                break;
+            }
+        };
+        match property_id {
+            Some(id) => context.with_property_declaration(id, parse_components),
+            None => parse_components(&context),
         }
         if self.output.is_empty() {
             return Err(StyleParseError::from_basic_kind(
@@ -695,6 +712,7 @@ impl CustomAnimatedValue {
                         context,
                         AllowComputationallyDependent::Yes,
                         /* attr_taint */ Default::default(),
+                        Some(PropertyIdRef::from(&declaration.name)),
                     )
                     .unwrap_or_else(|_| ComputedValue::universal(Arc::clone(value)))
                 }

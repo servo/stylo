@@ -10,7 +10,7 @@ use crate::FxHashMap;
 use crate::custom_properties_map::{CustomPropertiesMap, OwnMap};
 use crate::device::Device;
 use crate::dom::AttributeTracker;
-use crate::properties::{CSSWideKeyword, PrioritaryPropertyId};
+use crate::properties::{CSSWideKeyword, PrioritaryPropertyId, PropertyIdRef};
 use crate::properties_and_values::{
     rule::Descriptors as PropertyDescriptors,
     syntax::Descriptor as SyntaxDescriptor,
@@ -302,6 +302,7 @@ pub(crate) fn compute_variable_value(
     value: &Arc<VariableValue>,
     registration: &PropertyDescriptors,
     computed_context: &computed::Context,
+    property_id: Option<PropertyIdRef>,
 ) -> Option<ComputedRegisteredValue> {
     if registration.is_universal() {
         return Some(ComputedRegisteredValue::universal(Arc::clone(value)));
@@ -312,6 +313,7 @@ pub(crate) fn compute_variable_value(
         registration,
         computed_context,
         AttrTaint::default(),
+        property_id,
     )
     .ok()
 }
@@ -1439,6 +1441,7 @@ pub fn handle_invalid_at_computed_value_time(
                 registration,
                 context,
                 AttrTaint::default(),
+                Some(PropertyIdRef::from(name)),
             )
         {
             context
@@ -1479,6 +1482,7 @@ pub fn substitute_references_if_needed_and_apply(
     let url_data = &value.url_data;
     let substitution = substitute_internal(
         value,
+        Some(PropertyIdRef::from(name)),
         &context.builder.substitution_functions,
         stylist,
         context,
@@ -1554,7 +1558,12 @@ pub fn substitute_references_if_needed_and_apply(
 
     match kind {
         SubstitutionFunctionKind::Var => {
-            let value = match substitution.into_value(url_data, registration, context) {
+            let value = match substitution.into_value(
+                url_data,
+                registration,
+                context,
+                Some(PropertyIdRef::from(name)),
+            ) {
                 Ok(v) => v,
                 Err(()) => {
                     handle_invalid_at_computed_value_time(name, registration, context);
@@ -1606,6 +1615,7 @@ impl<'a> Substitution<'a> {
         url_data: &UrlExtraData,
         registration: &PropertyDescriptors,
         computed_context: &computed::Context,
+        property_id: Option<PropertyIdRef>,
     ) -> Result<ComputedRegisteredValue, ()> {
         if registration.is_universal() {
             let mut value = ComputedRegisteredValue::universal(Arc::new(VariableValue::new(
@@ -1626,7 +1636,14 @@ impl<'a> Substitution<'a> {
         } else {
             AttrTaint::default()
         };
-        let mut v = compute_value(&self.css, url_data, registration, computed_context, taint)?;
+        let mut v = compute_value(
+            &self.css,
+            url_data,
+            registration,
+            computed_context,
+            taint,
+            property_id,
+        )?;
         v.attr_tainted |= self.attr_tainted;
         Ok(v)
     }
@@ -1661,6 +1678,7 @@ fn compute_value(
     registration: &PropertyDescriptors,
     computed_context: &computed::Context,
     attr_taint: AttrTaint,
+    property_id: Option<PropertyIdRef>,
 ) -> Result<ComputedRegisteredValue, ()> {
     debug_assert!(!registration.is_universal());
 
@@ -1673,6 +1691,7 @@ fn compute_value(
         computed_context,
         AllowComputationallyDependent::Yes,
         attr_taint,
+        property_id,
     )
 }
 
@@ -1696,6 +1715,7 @@ fn do_substitute_chunk<'a>(
     first_token_type: TokenSerializationType,
     last_token_type: TokenSerializationType,
     url_data: &UrlExtraData,
+    property_id: Option<PropertyIdRef>,
     substitution_functions: &'a ComputedSubstitutionFunctions,
     stylist: &Stylist,
     computed_context: &computed::Context,
@@ -1737,6 +1757,7 @@ fn do_substitute_chunk<'a>(
         let substitution = substitute_one_reference(
             css,
             url_data,
+            property_id,
             substitution_functions,
             reference,
             stylist,
@@ -1786,6 +1807,7 @@ fn quoted_css_string(src: &str) -> String {
 fn substitute_one_reference<'a>(
     css: &'a str,
     url_data: &UrlExtraData,
+    property_id: Option<PropertyIdRef>,
     substitution_functions: &'a ComputedSubstitutionFunctions,
     reference: &'a SubstitutionFunctionReference,
     stylist: &Stylist,
@@ -1821,6 +1843,7 @@ fn substitute_one_reference<'a>(
                             seen.push(&reference.name);
                             let result = substitute_internal(
                                 u,
+                                property_id,
                                 substitution_functions,
                                 stylist,
                                 computed_context,
@@ -1925,6 +1948,7 @@ fn substitute_one_reference<'a>(
                                     None,
                                     AllowComputationallyDependent::Yes,
                                     AttrTaint::default(),
+                                    property_id,
                                 )
                                 .ok()?;
                                 let value = value.to_variable_value();
@@ -1957,6 +1981,7 @@ fn substitute_one_reference<'a>(
         fallback.first_token_type,
         fallback.last_token_type,
         url_data,
+        property_id,
         substitution_functions,
         stylist,
         computed_context,
@@ -1970,6 +1995,7 @@ fn substitute_one_reference<'a>(
 /// Replace `var()`, `env()`, and `attr()` functions. Return `Err(..)` for invalid at computed time.
 fn substitute_internal<'a>(
     variable_value: &'a VariableValue,
+    property_id: Option<PropertyIdRef>,
     substitution_functions: &'a ComputedSubstitutionFunctions,
     stylist: &Stylist,
     computed_context: &computed::Context,
@@ -1984,6 +2010,7 @@ fn substitute_internal<'a>(
         variable_value.first_token_type,
         variable_value.last_token_type,
         &variable_value.url_data,
+        property_id,
         substitution_functions,
         stylist,
         computed_context,
@@ -1997,6 +2024,7 @@ fn substitute_internal<'a>(
 /// Replace var(), env(), and attr() functions, returning the resulting CSS string.
 pub fn substitute<'a>(
     variable_value: &'a VariableValue,
+    property_id: Option<PropertyIdRef>,
     substitution_functions: &'a ComputedSubstitutionFunctions,
     stylist: &Stylist,
     computed_context: &computed::Context,
@@ -2006,6 +2034,7 @@ pub fn substitute<'a>(
     let mut attr_taint = AttrTaint::default();
     let v = substitute_internal(
         variable_value,
+        property_id,
         substitution_functions,
         stylist,
         computed_context,

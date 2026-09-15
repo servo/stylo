@@ -34,3 +34,5 @@ dom             = { version = "0.21.0", path = "./stylo_dom", package = "stylo_d
 style_traits    = { version = "0.21.0", path = "./style_traits", features = ["servo"], package = "stylo_traits"}
 style_derive    = { version = "0.21.0", path = "./style_derive", package = "stylo_derive"}
 stylo           = { version = "0.21.0", path = "./style" }
+
+# Note: external dependencies not specified here because this file isn’t synchronized with Gecko

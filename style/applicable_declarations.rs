@@ -5,11 +5,8 @@
 //! Applicable declarations management.
 
 use crate::derives::*;
-use crate::properties::PropertyDeclarationBlock;
-use crate::rule_tree::{CascadeLevel, RuleCascadeFlags, StyleSource};
-use crate::shared_lock::Locked;
+use crate::rule_tree::{CascadeLevel, RuleCascadeFlags, StyleSourceBorrow};
 use crate::stylesheets::layer_rule::LayerOrder;
-use servo_arc::Arc;
 use smallvec::SmallVec;
 
 /// List of applicable declarations. This is a transient structure that shuttles
@@ -19,7 +16,7 @@ use smallvec::SmallVec;
 /// In measurements on wikipedia, we pretty much never have more than 8 applicable
 /// declarations, so we could consider making this 8 entries instead of 16.
 /// However, it may depend a lot on workload, and stack space is cheap.
-pub type ApplicableDeclarationList = SmallVec<[ApplicableDeclarationBlock; 16]>;
+pub type ApplicableDeclarationList<'a> = SmallVec<[ApplicableDeclarationBlock<'a>; 16]>;
 
 /// Blink uses 18 bits to store source order, and does not check overflow [1].
 /// That's a limit that could be reached in realistic webpages, so we use
@@ -226,11 +223,10 @@ impl ScopeProximity {
 ///
 /// This represents the declarations in a given declaration block for a given
 /// importance.
-#[derive(Clone, Debug, MallocSizeOf, PartialEq)]
-pub struct ApplicableDeclarationBlock {
-    /// The style source, either a style rule, or a property declaration block.
-    #[ignore_malloc_size_of = "Arc"]
-    pub source: StyleSource,
+#[derive(Clone, Copy, Debug, MallocSizeOf, PartialEq)]
+pub struct ApplicableDeclarationBlock<'a> {
+    /// The style source.
+    pub source: StyleSourceBorrow<'a>,
     /// Order of appearance in which this rule appears - Set to 0 if not relevant
     /// (e.g. Declaration from `style="/*...*/"`, presentation hints, animations
     /// - See `CascadePriority` instead).
@@ -243,28 +239,30 @@ pub struct ApplicableDeclarationBlock {
     pub cascade_priority: CascadePriority,
 }
 
-impl ApplicableDeclarationBlock {
-    /// Constructs an applicable declaration block from a given property
-    /// declaration block and importance.
+impl<'a> ApplicableDeclarationBlock<'a> {
+    /// Constructs an applicable declaration block from a given property declaration block borrow
+    /// and importance.
     #[inline]
     pub fn from_declarations(
-        declarations: Arc<Locked<PropertyDeclarationBlock>>,
+        source: StyleSourceBorrow<'a>,
         level: CascadeLevel,
         layer_order: LayerOrder,
     ) -> Self {
-        ApplicableDeclarationBlock {
-            source: StyleSource::from_declarations(declarations),
-            source_order: 0,
-            specificity: 0,
-            scope_proximity: ScopeProximity::infinity(),
-            cascade_priority: CascadePriority::new(level, layer_order, RuleCascadeFlags::empty()),
-        }
+        Self::new(
+            source,
+            /* source_order = */ 0,
+            level,
+            /* specificity = */ 0,
+            layer_order,
+            ScopeProximity::infinity(),
+            RuleCascadeFlags::empty(),
+        )
     }
 
     /// Constructs an applicable declaration block from the given components.
     #[inline]
     pub fn new(
-        source: StyleSource,
+        source: StyleSourceBorrow<'a>,
         source_order: u32,
         level: CascadeLevel,
         specificity: u32,
@@ -272,7 +270,7 @@ impl ApplicableDeclarationBlock {
         scope_proximity: ScopeProximity,
         flags: RuleCascadeFlags,
     ) -> Self {
-        ApplicableDeclarationBlock {
+        Self {
             source,
             source_order: source_order & SOURCE_ORDER_MASK,
             specificity,
@@ -308,7 +306,7 @@ impl ApplicableDeclarationBlock {
     /// Convenience method to consume self and return the right thing for the
     /// rule tree to iterate over.
     #[inline]
-    pub fn for_rule_tree(self) -> (StyleSource, CascadePriority) {
+    pub fn for_rule_tree(self) -> (StyleSourceBorrow<'a>, CascadePriority) {
         (self.source, self.cascade_priority)
     }
 
@@ -325,4 +323,4 @@ impl ApplicableDeclarationBlock {
 }
 
 // Size of this struct determines sorting and selector-matching performance.
-size_of_test!(ApplicableDeclarationBlock, 24);
+size_of_test!(ApplicableDeclarationBlock<'static>, 24);

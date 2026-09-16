@@ -4186,7 +4186,8 @@ servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-scrollbars-1/#scrollbar-width"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["auto", "thin", "none"] }
+type = "ScrollbarWidth"
+initial = "computed::ScrollbarWidth::Auto"
 
 # Reserves space at each end of a vertical scrollbar.
 [-moz-scrollbar-inset-block]

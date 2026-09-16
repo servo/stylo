@@ -3957,7 +3957,8 @@ spec = "https://drafts.csswg.org/css-tables/#propdef-border-collapse"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["separate", "collapse"] }
+type = "BorderCollapse"
+initial = "computed::BorderCollapse::Separate"
 
 [empty-cells]
 struct = "inherited_table"

@@ -4060,7 +4060,8 @@ animation_type = "discrete"
 affects = "layout"
 extra_prefixes = ["webkit"]
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["row", "row-reverse", "column", "column-reverse"] }
+type = "FlexDirection"
+initial = "computed::FlexDirection::Row"
 
 [flex-wrap]
 type = "FlexWrap"

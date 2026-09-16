@@ -128,6 +128,7 @@ pub use self::position::{
     FlexWrap, GridAutoFlow, GridTemplateAreas, MasonryAutoFlow, Position, PositionOrAuto, ZIndex,
 };
 pub use self::position::{PositionArea, PositionAreaKeyword};
+pub use self::position::FlexDirection;
 pub use self::ratio::Ratio;
 pub use self::rect::NonNegativeLengthOrNumberRect;
 pub use self::resolution::Resolution;

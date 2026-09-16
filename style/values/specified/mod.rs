@@ -94,6 +94,7 @@ pub use self::font::FontVariantEmoji;
 pub use self::font::FontOpticalSizing;
 pub use self::font::FontKerning;
 pub use self::font::FontSmoothing;
+pub use self::font::FontVariantPosition;
 pub use self::image::{
     EndingShape as GradientEndingShape, Gradient, Image, ImageDecoding, ImageRendering,
 };

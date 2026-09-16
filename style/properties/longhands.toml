@@ -3819,7 +3819,8 @@ spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-position"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.variantPosition"
-keyword = { values = ["normal", "sub", "super"], gecko_constant_prefix = "NS_FONT_VARIANT_POSITION" }
+type = "FontVariantPosition"
+initial = "computed::FontVariantPosition::Normal"
 
 [font-optical-sizing]
 struct = "font"

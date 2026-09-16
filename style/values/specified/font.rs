@@ -2306,3 +2306,31 @@ pub enum FontSmoothing {
     Grayscale,
     SubpixelAntialiased,
 }
+
+/// https://drafts.csswg.org/css-fonts/#propdef-font-variant-position
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum FontVariantPosition {
+    Normal,
+    Sub,
+    Super,
+}

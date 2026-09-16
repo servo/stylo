@@ -3966,7 +3966,8 @@ spec = "https://drafts.csswg.org/css-tables/#propdef-empty-cells"
 animation_type = "discrete"
 affects = "paint"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["show", "hide"] }
+type = "EmptyCells"
+initial = "computed::EmptyCells::Show"
 
 [hyphens]
 struct = "inherited_text"

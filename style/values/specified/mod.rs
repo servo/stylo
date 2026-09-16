@@ -141,6 +141,7 @@ pub use self::ui::{
     BoolInteger, Cursor, Inert, MozTheme, PointerEvents, ScrollbarColor, UserFocus, UserSelect,
 };
 pub use self::table::BorderCollapse;
+pub use self::table::EmptyCells;
 pub use super::generics::grid::GridTemplateComponent as GenericGridTemplateComponent;
 
 pub mod align;

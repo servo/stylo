@@ -6,3 +6,4 @@
 
 pub use super::specified::table::CaptionSide;
 pub use crate::values::specified::table::BorderCollapse;
+pub use crate::values::specified::table::EmptyCells;

@@ -1813,3 +1813,37 @@ pub enum UnicodeBidi {
     IsolateOverride,
     Plaintext,
 }
+
+/// https://drafts.csswg.org/css-text-decor/#propdef-text-decoration-style
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum TextDecorationStyle {
+    // The discriminants are exposed through the LookAndFeel underline style
+    // integers, so keep them stable.
+    #[css(keyword = "-moz-none")]
+    None = 0,
+    Dotted = 1,
+    Dashed = 2,
+    Solid = 3,
+    Double = 4,
+    Wavy = 5,
+}

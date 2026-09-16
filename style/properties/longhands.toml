@@ -4171,7 +4171,8 @@ spec = "https://drafts.csswg.org/css-text-decor/#propdef-text-decoration-style"
 animation_type = "discrete"
 affects = "overflow"
 servo_restyle_damage = "recalculate_overflow"
-keyword = { values = ["solid", "double", "dotted", "dashed", "wavy", "-moz-none"] }
+type = "TextDecorationStyle"
+initial = "computed::TextDecorationStyle::Solid"
 
 [ime-mode]
 struct = "ui"

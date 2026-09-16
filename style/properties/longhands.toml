@@ -4286,7 +4286,8 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mBoxPack"
 aliases = ["-webkit-box-pack"]
-keyword = { values = ["start", "center", "end", "justify"] }
+type = "BoxPack"
+initial = "computed::BoxPack::Start"
 
 [mix-blend-mode]
 struct = "effects"

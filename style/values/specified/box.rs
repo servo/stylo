@@ -2390,7 +2390,7 @@ pub enum Visibility {
     Collapse,
 }
 
-/// None (internal)
+/// Whether flexbox visibility: collapse items use legacy -moz-box behavior or not.
 #[allow(missing_docs)]
 #[derive(
     Clone,
@@ -2557,4 +2557,33 @@ pub enum BoxOrient {
     Horizontal,
     #[cfg_attr(feature = "gecko", parse(aliases = "block-axis"))]
     Vertical,
+}
+
+/// Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/box-pack)
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum BoxPack {
+    Start,
+    Center,
+    End,
+    Justify,
 }

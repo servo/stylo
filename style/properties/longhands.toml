@@ -3907,7 +3907,8 @@ engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/text.html#TextAnchorProperty"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["start", "middle", "end"] }
+type = "TextAnchor"
+initial = "computed::TextAnchor::Start"
 
 [color-interpolation]
 struct = "inherited_svg"

@@ -19,6 +19,7 @@ use style_traits::{CssWriter, ToCss};
 
 pub use crate::values::specified::box_::BackfaceVisibility;
 pub use crate::values::specified::box_::Isolation;
+pub use crate::values::specified::box_::Orient;
 pub use crate::values::specified::box_::ScrollBehavior;
 pub use crate::values::specified::box_::TopLayer;
 pub use crate::values::specified::box_::{

@@ -3760,7 +3760,8 @@ spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-orien
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mOrient"
-keyword = { values = ["inline", "block", "horizontal", "vertical"] }
+type = "Orient"
+initial = "computed::Orient::Inline"
 
 [column-fill]
 struct = "column"

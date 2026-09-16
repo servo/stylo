@@ -34,6 +34,7 @@ pub use self::animation::{
     TransitionProperty, ViewTimelineInset, ViewTransitionClass, ViewTransitionName,
 };
 pub use self::background::{BackgroundClip, BackgroundRepeat, BackgroundSize};
+pub use self::background::ImageLayerAttachment;
 pub use self::basic_shape::FillRule;
 pub use self::border::BoxDecorationBreak;
 pub use self::border::{

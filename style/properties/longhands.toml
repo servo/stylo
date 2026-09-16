@@ -4014,7 +4014,8 @@ spec = "https://svgwg.org/svg2-draft/painting.html#TextRenderingProperty"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["auto", "optimizespeed", "optimizelegibility", "geometricprecision"] }
+type = "TextRendering"
+initial = "computed::TextRendering::Auto"
 
 [-webkit-text-security]
 struct = "inherited_text"

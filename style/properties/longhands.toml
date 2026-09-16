@@ -3996,7 +3996,8 @@ engine = "gecko"
 spec = "https://drafts.csswg.org/css-ruby/#ruby-align-property"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["space-around", "start", "center", "space-between"] }
+type = "RubyAlign"
+initial = "computed::RubyAlign::SpaceAround"
 
 [text-combine-upright]
 struct = "inherited_text"

@@ -54,6 +54,7 @@ pub use self::box_::{
 pub use self::box_::TopLayer;
 pub use self::box_::ScrollBehavior;
 pub use self::box_::Isolation;
+pub use self::box_::BackfaceVisibility;
 pub use self::calc::{CalcLengthPercentage, CalcNumeric};
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,

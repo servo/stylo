@@ -3750,7 +3750,8 @@ animation_type = "discrete"
 affects = "paint"
 extra_prefixes = ["moz:layout.css.prefixes.transforms", "webkit"]
 servo_restyle_damage = "repaint"
-keyword = { values = ["visible", "hidden"] }
+type = "BackfaceVisibility"
+initial = "computed::BackfaceVisibility::Visible"
 
 [-moz-orient]
 struct = "box"

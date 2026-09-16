@@ -4097,7 +4097,8 @@ servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-type"
 animation_type = "discrete"
 affects = "paint"
-keyword = { values = ["luminance", "alpha"] }
+type = "MaskType"
+initial = "computed::MaskType::Luminance"
 
 [mask-mode]
 struct = "svg"

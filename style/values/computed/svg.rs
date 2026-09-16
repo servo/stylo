@@ -9,6 +9,7 @@ use crate::values::computed::color::Color;
 use crate::values::computed::url::ComputedUrl;
 use crate::values::computed::{LengthPercentage, NonNegativeLengthPercentage, Opacity};
 use crate::values::generics::svg as generic;
+pub use crate::values::specified::svg::MaskType;
 pub use crate::values::specified::svg::ShapeRendering;
 pub use crate::values::specified::svg::StrokeLinecap;
 pub use crate::values::specified::svg::StrokeLinejoin;

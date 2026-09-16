@@ -2197,26 +2197,6 @@ pub mod background {
     };
     use crate::values::specified::{AllowQuirks, Color, Position, PositionComponent};
 
-    impl From<background_origin::single_value::SpecifiedValue>
-        for background_clip::single_value::SpecifiedValue
-    {
-        fn from(
-            origin: background_origin::single_value::SpecifiedValue,
-        ) -> background_clip::single_value::SpecifiedValue {
-            match origin {
-                background_origin::single_value::SpecifiedValue::ContentBox => {
-                    background_clip::single_value::SpecifiedValue::ContentBox
-                },
-                background_origin::single_value::SpecifiedValue::PaddingBox => {
-                    background_clip::single_value::SpecifiedValue::PaddingBox
-                },
-                background_origin::single_value::SpecifiedValue::BorderBox => {
-                    background_clip::single_value::SpecifiedValue::BorderBox
-                },
-            }
-        }
-    }
-
     pub fn parse_value(
         context: &ParserContext,
         input: &mut Parser,
@@ -3490,36 +3470,6 @@ pub mod mask {
     };
     use crate::properties::longhands::{mask_image, mask_size};
     use crate::values::specified::{Position, PositionComponent};
-
-    impl From<mask_origin::single_value::SpecifiedValue> for mask_clip::single_value::SpecifiedValue {
-        fn from(
-            origin: mask_origin::single_value::SpecifiedValue,
-        ) -> mask_clip::single_value::SpecifiedValue {
-            match origin {
-                mask_origin::single_value::SpecifiedValue::ContentBox => {
-                    mask_clip::single_value::SpecifiedValue::ContentBox
-                },
-                mask_origin::single_value::SpecifiedValue::PaddingBox => {
-                    mask_clip::single_value::SpecifiedValue::PaddingBox
-                },
-                mask_origin::single_value::SpecifiedValue::BorderBox => {
-                    mask_clip::single_value::SpecifiedValue::BorderBox
-                },
-                #[cfg(feature = "gecko")]
-                mask_origin::single_value::SpecifiedValue::FillBox => {
-                    mask_clip::single_value::SpecifiedValue::FillBox
-                },
-                #[cfg(feature = "gecko")]
-                mask_origin::single_value::SpecifiedValue::StrokeBox => {
-                    mask_clip::single_value::SpecifiedValue::StrokeBox
-                },
-                #[cfg(feature = "gecko")]
-                mask_origin::single_value::SpecifiedValue::ViewBox => {
-                    mask_clip::single_value::SpecifiedValue::ViewBox
-                },
-            }
-        }
-    }
 
     pub fn parse_value(
         context: &ParserContext,

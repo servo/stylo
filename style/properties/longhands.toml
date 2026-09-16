@@ -3661,6 +3661,9 @@ servo_restyle_damage = "repaint"
 vector = {}
 
 [background-origin]
+type = "BackgroundOrigin"
+initial = "computed::BackgroundOrigin::PaddingBox"
+parse_method = "parse_for_background"
 struct = "background"
 spec = "https://drafts.csswg.org/css-backgrounds/#the-background-origin"
 animation_type = "discrete"
@@ -3668,7 +3671,6 @@ affects = "paint"
 extra_prefixes = ["webkit"]
 servo_restyle_damage = "repaint"
 vector = {}
-keyword = { values = ["padding-box", "border-box", "content-box"], gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
 
 [background-blend-mode]
 struct = "background"
@@ -4122,6 +4124,8 @@ vector = {}
 extra_prefixes = ["webkit"]
 
 [mask-origin]
+type = "BackgroundOrigin"
+initial = "computed::BackgroundOrigin::BorderBox"
 struct = "svg"
 servo_pref = "layout.unimplemented"
 spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-origin"
@@ -4129,7 +4133,6 @@ animation_type = "discrete"
 affects = "paint"
 vector = {}
 extra_prefixes = ["webkit"]
-keyword = { values = ["border-box", "content-box", "padding-box"], extra_gecko_values = ["fill-box", "stroke-box", "view-box"], gecko_enum_prefix = "StyleGeometryBox", gecko_inexhaustive = true }
 
 [mask-composite]
 struct = "svg"

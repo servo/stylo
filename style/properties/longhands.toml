@@ -4088,7 +4088,8 @@ struct = "position"
 spec = "https://drafts.csswg.org/css-images/#propdef-object-fit"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["fill", "contain", "cover", "none", "scale-down"] }
+type = "ObjectFit"
+initial = "computed::ObjectFit::Fill"
 
 [mask-type]
 struct = "svg"

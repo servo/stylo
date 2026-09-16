@@ -22,6 +22,7 @@ use crate::values::generics::position::{
 };
 pub use crate::values::specified::position::BoxSizing;
 pub use crate::values::specified::position::FlexDirection;
+pub use crate::values::specified::position::ObjectFit;
 pub use crate::values::specified::position::{
     AnchorName, DashedIdentAndOrTryTactic, FlexWrap, GridAutoFlow, GridTemplateAreas,
     MasonryAutoFlow, PositionAnchor, PositionArea, PositionAreaAxis, PositionAreaKeyword,

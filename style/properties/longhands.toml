@@ -4295,7 +4295,8 @@ spec = "https://drafts.fxtf.org/compositing/#propdef-mix-blend-mode"
 animation_type = "discrete"
 affects = "paint"
 servo_restyle_damage = "repaint"
-keyword = { values = ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity", "plus-lighter"], gecko_enum_prefix = "StyleBlend" }
+type = "Blend"
+initial = "computed::Blend::Normal"
 
 [dominant-baseline]
 type = "DominantBaseline"

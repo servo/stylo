@@ -3731,7 +3731,8 @@ servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/cssom-view/#propdef-scroll-behavior"
 animation_type = "discrete"
 affects = ""
-keyword = { values = ["auto", "smooth"] }
+type = "ScrollBehavior"
+initial = "computed::ScrollBehavior::Auto"
 
 [isolation]
 struct = "box"

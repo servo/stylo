@@ -73,6 +73,7 @@ pub use self::box_::{
     TouchAction, WillChange, WritingModeProperty, Zoom,
 };
 pub use self::box_::TopLayer;
+pub use self::box_::ScrollBehavior;
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,
 };

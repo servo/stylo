@@ -4150,7 +4150,8 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mLayoutStrategy"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["auto", "fixed"] }
+type = "TableLayout"
+initial = "computed::TableLayout::Auto"
 
 [unicode-bidi]
 struct = "text"

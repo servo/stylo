@@ -157,6 +157,7 @@ pub use self::ui::{
 };
 pub use self::table::BorderCollapse;
 pub use self::table::EmptyCells;
+pub use self::table::TableLayout;
 pub use super::generics::grid::GridTemplateComponent as GenericGridTemplateComponent;
 
 pub mod align;

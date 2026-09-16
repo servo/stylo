@@ -172,6 +172,7 @@ pub use self::ui::{
 };
 pub use self::table::BorderCollapse;
 pub use self::table::EmptyCells;
+pub use self::table::TableLayout;
 pub use super::specified::TextTransform;
 pub use super::specified::ViewportVariant;
 pub use super::specified::{BorderStyle, TextDecorationLine};

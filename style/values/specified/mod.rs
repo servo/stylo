@@ -51,6 +51,7 @@ pub use self::box_::{
     ScrollSnapStop, ScrollSnapStrictness, ScrollSnapType, ScrollbarGutter, ScrollbarInset,
     TouchAction, WillChange, WillChangeBits, WritingModeProperty, Zoom,
 };
+pub use self::box_::TopLayer;
 pub use self::calc::{CalcLengthPercentage, CalcNumeric};
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,

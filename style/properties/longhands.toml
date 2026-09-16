@@ -3713,7 +3713,8 @@ animation_type = "discrete"
 enabled_in = "ua"
 affects = "layout"
 gecko_ffi_name = "mTopLayer"
-keyword = { values = ["none", "auto"] }
+type = "TopLayer"
+initial = "computed::TopLayer::None"
 
 [-servo-top-layer]
 struct = "box"

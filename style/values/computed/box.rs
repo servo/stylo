@@ -17,6 +17,7 @@ use crate::values::specified::box_ as specified;
 use std::fmt;
 use style_traits::{CssWriter, ToCss};
 
+pub use crate::values::specified::box_::TopLayer;
 pub use crate::values::specified::box_::{
     AlignmentBaseline, Appearance, BaselineSource, BreakBetween, BreakWithin, Clear, Contain,
     ContainerName, ContainerType, ContentVisibility, Display, DominantBaseline, Float, MarginTrim,

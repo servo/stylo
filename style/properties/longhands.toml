@@ -4275,7 +4275,8 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mBoxOrient"
 aliases = ["-webkit-box-orient"]
-keyword = { values = ["horizontal", "vertical"], gecko_aliases = ["inline-axis=horizontal", "block-axis=vertical"] }
+type = "BoxOrient"
+initial = "computed::BoxOrient::Horizontal"
 
 [-moz-box-pack]
 struct = "xul"

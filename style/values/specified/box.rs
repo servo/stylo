@@ -2529,3 +2529,32 @@ pub enum BoxDirection {
     Normal,
     Reverse,
 }
+
+/// Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/box-orient)
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum BoxOrient {
+    #[cfg_attr(feature = "gecko", parse(aliases = "inline-axis"))]
+    Horizontal,
+    #[cfg_attr(feature = "gecko", parse(aliases = "block-axis"))]
+    Vertical,
+}

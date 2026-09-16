@@ -4,7 +4,7 @@
 
 // `data` comes from components/style/properties.mako.rs; see build.rs for more details.
 
-<%! from data import to_camel_case, to_camel_case_lower, Keyword, SYSTEM_FONT_LONGHANDS %>
+<%! from data import to_camel_case, to_camel_case_lower, SYSTEM_FONT_LONGHANDS %>
 <%namespace name="helpers" file="/helpers.mako.rs" />
 
 use crate::Atom;
@@ -499,7 +499,6 @@ impl Clone for ${style_struct.gecko_struct_name} {
     def longhand_method(longhand):
         if longhand.logical:
             return
-        assert not longhand.keyword, "Keyword longhands should use a predefined type"
         impl_simple(
             ident=longhand.ident,
             gecko_ffi_name=longhand.gecko_ffi_name,
@@ -885,27 +884,16 @@ fn static_assert() {
     }
 </%def>
 
-<%def name="impl_simple_image_array_property(name, shorthand, layer_field_name, field_name, struct_name)">
-    <%
-        ident = "%s_%s" % (shorthand, name)
-        style_struct = next(x for x in data.style_structs if x.name == struct_name)
-        longhand = next(x for x in style_struct.longhands if x.ident == ident)
-        keyword = longhand.keyword
-    %>
+<%def name="impl_simple_image_array_property(name, shorthand, layer_field_name, field_name)">
+    <% ident = "%s_%s" % (shorthand, name) %>
 
     <% copy_simple_image_array_property(name, shorthand, layer_field_name, field_name) %>
 
-    // The `as` cast below normalizes mixed-type gecko constants to `u8`, so
-    // it's a no-op for some keywords' values.
-    #[allow(clippy::unnecessary_cast)]
     pub fn set_${ident}<I>(&mut self, v: I)
     where
         I: IntoIterator<Item=longhands::${ident}::computed_value::single_value::T>,
         I::IntoIter: ExactSizeIterator,
     {
-        % if keyword:
-        use crate::properties::longhands::${ident}::single_value::computed_value::T as Keyword;
-        % endif
         use crate::gecko_bindings::structs::nsStyleImageLayers_LayerType as LayerType;
 
         let v = v.into_iter();
@@ -917,59 +905,24 @@ fn static_assert() {
 
         self.${layer_field_name}.${field_name}Count = v.len() as u32;
         for (servo, geckolayer) in v.zip(self.${layer_field_name}.mLayers.iter_mut()) {
-            geckolayer.${field_name} = {
-                % if keyword:
-                match servo {
-                    % for value in keyword.values_for("gecko"):
-                    Keyword::${to_camel_case(value)} =>
-                        structs::${keyword.gecko_constant(value)} ${keyword.maybe_cast('u8')},
-                    % endfor
-                }
-                % else:
-                // The Gecko field stores the computed value directly.
-                servo
-                % endif
-            };
+            geckolayer.${field_name} = servo;
         }
     }
 
     ${impl_image_layer_eq(ident, layer_field_name, field_name)}
 
     pub fn slow_clone_${ident}(&self) -> longhands::${ident}::computed_value::T {
-        % if keyword:
-        use crate::properties::longhands::${ident}::single_value::computed_value::T as Keyword;
-        % endif
         longhands::${ident}::computed_value::List(
             self.${layer_field_name}.mLayers.iter()
                 .take(self.${layer_field_name}.${field_name}Count as usize)
-                .map(|layer| {
-                    % if keyword:
-                    match layer.${field_name} {
-                        % for value in longhand.keyword.values_for("gecko"):
-                        structs::${keyword.gecko_constant(value)}
-                            => Keyword::${to_camel_case(value)},
-                        % endfor
-                        % if keyword.gecko_inexhaustive:
-                        _ => panic!("Found unexpected value in style struct for ${ident} property"),
-                        % endif
-                    }
-                    % else:
-                    layer.${field_name}
-                    % endif
-                }).collect()
+                .map(|layer| layer.${field_name})
+                .collect()
         )
     }
 </%def>
 
 <%def name="impl_common_image_layer_properties(shorthand)">
-    <%
-        if shorthand == "background":
-            image_layers_field = "mImage"
-            struct_name = "Background"
-        else:
-            image_layers_field = "mMask"
-            struct_name = "SVG"
-    %>
+    <% image_layers_field = "mImage" if shorthand == "background" else "mMask" %>
 
     <%self:simple_image_array_property name="repeat" shorthand="${shorthand}" field_name="mRepeat"
         eq_expr="ours.mRepeat.mXRepeat == theirs.mRepeat.mXRepeat && ours.mRepeat.mYRepeat == theirs.mRepeat.mYRepeat">
@@ -1018,8 +971,8 @@ fn static_assert() {
         )
     }
 
-    <% impl_simple_image_array_property("clip", shorthand, image_layers_field, "mClip", struct_name) %>
-    <% impl_simple_image_array_property("origin", shorthand, image_layers_field, "mOrigin", struct_name) %>
+    <% impl_simple_image_array_property("clip", shorthand, image_layers_field, "mClip") %>
+    <% impl_simple_image_array_property("origin", shorthand, image_layers_field, "mOrigin") %>
 
     % for (orientation, keyword) in [("x", "horizontal"), ("y", "vertical")]:
     pub fn copy_${shorthand}_position_${orientation}_from(&mut self, other: &Self) {
@@ -1183,8 +1136,8 @@ fn static_assert() {
                   skip_longhands="${skip_background_longhands}">
 
     <% impl_common_image_layer_properties("background") %>
-    <% impl_simple_image_array_property("attachment", "background", "mImage", "mAttachment", "Background") %>
-    <% impl_simple_image_array_property("blend_mode", "background", "mImage", "mBlendMode", "Background") %>
+    <% impl_simple_image_array_property("attachment", "background", "mImage", "mAttachment") %>
+    <% impl_simple_image_array_property("blend_mode", "background", "mImage", "mBlendMode") %>
 </%self:impl_trait>
 
 <%self:impl_trait style_struct_name="List">
@@ -1215,8 +1168,8 @@ mask-mode mask-repeat mask-clip mask-origin mask-composite mask-position-x mask-
 <%self:impl_trait style_struct_name="SVG"
                   skip_longhands="${skip_svg_longhands}">
     <% impl_common_image_layer_properties("mask") %>
-    <% impl_simple_image_array_property("mode", "mask", "mMask", "mMaskMode", "SVG") %>
-    <% impl_simple_image_array_property("composite", "mask", "mMask", "mComposite", "SVG") %>
+    <% impl_simple_image_array_property("mode", "mask", "mMask", "mMaskMode") %>
+    <% impl_simple_image_array_property("composite", "mask", "mMask", "mComposite") %>
 </%self:impl_trait>
 
 <%self:impl_trait style_struct_name="InheritedSVG">

@@ -220,14 +220,6 @@ def to_idl_name(name):
     return re.sub("-([a-z])", lambda m: m.group(1).upper(), name)
 
 
-def parse_aliases(value):
-    aliases = {}
-    for pair in value:
-        [a, v] = pair.split("=")
-        aliases[a] = v
-    return aliases
-
-
 class Vector(object):
     def __init__(
         self,
@@ -242,74 +234,6 @@ class Vector(object):
         self.separator = separator
         self.animation_type = animation_type
         self.simple_bindings = simple_bindings
-
-
-class Keyword(object):
-    def __init__(
-        self,
-        name,
-        values,
-        gecko_constant_prefix=None,
-        gecko_enum_prefix=None,
-        extra_gecko_values=None,
-        extra_servo_values=None,
-        gecko_aliases=None,
-        servo_aliases=None,
-        gecko_inexhaustive=None,
-    ):
-        self.name = name
-        self.values = values
-        assert isinstance(values, list), name
-        if gecko_constant_prefix and gecko_enum_prefix:
-            raise TypeError(
-                "Only one of gecko_constant_prefix and gecko_enum_prefix "
-                "can be specified"
-            )
-        self.gecko_constant_prefix = gecko_constant_prefix
-        self.gecko_enum_prefix = gecko_enum_prefix
-        if not gecko_constant_prefix and not gecko_enum_prefix:
-            self.gecko_enum_prefix = "Style" + to_camel_case(
-                name.replace("-moz-", "").replace("-webkit-", "")
-            )
-        self.extra_gecko_values = extra_gecko_values or []
-        self.extra_servo_values = extra_servo_values or []
-        self.gecko_aliases = parse_aliases(gecko_aliases or [])
-        self.servo_aliases = parse_aliases(servo_aliases or [])
-        self.gecko_inexhaustive = (
-            gecko_inexhaustive or self.gecko_constant_prefix is not None
-        )
-
-    def values_for(self, engine):
-        if engine == "gecko":
-            return self.values + self.extra_gecko_values
-        elif engine == "servo":
-            return self.values + self.extra_servo_values
-        else:
-            raise Exception("Bad engine: " + engine)
-
-    def aliases_for(self, engine):
-        if engine == "gecko":
-            return self.gecko_aliases
-        elif engine == "servo":
-            return self.servo_aliases
-        else:
-            raise Exception("Bad engine: " + engine)
-
-    def gecko_constant(self, value):
-        moz_stripped = value.replace("-moz-", "")
-        if self.gecko_enum_prefix:
-            parts = moz_stripped.replace("-", "_").split("_")
-            parts = [p.title() for p in parts]
-            return self.gecko_enum_prefix + "::" + "".join(parts)
-        else:
-            suffix = moz_stripped.replace("-", "_")
-            return self.gecko_constant_prefix + "_" + suffix.upper()
-
-    def needs_cast(self):
-        return self.gecko_enum_prefix is None
-
-    def maybe_cast(self, type_str):
-        return "as " + type_str if self.needs_cast() else ""
 
 
 def parse_property_aliases(alias_list):
@@ -403,7 +327,6 @@ class Longhand(Property):
         parse_method="parse",
         spec=None,
         animation_type="normal",
-        keyword=None,
         predefined_type=None,
         servo_pref=None,
         gecko_pref=None,
@@ -442,7 +365,6 @@ class Longhand(Property):
         self.parse_method = parse_method
         self.initial_value = initial_value
         self.initial_specified_value = initial_specified_value
-        self.keyword = keyword
         self.predefined_type = predefined_type
         self.style_struct = style_struct
         self.has_effect_on_gecko_scrollbars = has_effect_on_gecko_scrollbars
@@ -526,9 +448,6 @@ class Longhand(Property):
         if self.logical:
             return False
         if self.vector and not self.vector.simple_bindings:
-            return False
-        # The remaining keyword longhands are converted on access in Gecko.
-        if self.keyword:
             return False
         return self.name not in self.NO_BORROWED_GETTER
 
@@ -798,9 +717,7 @@ class Longhand(Property):
                 "XSpan",
                 "XTextScale",
             }
-        if self.name == "overflow-y":
-            return True
-        return bool(self.keyword)
+        return self.name == "overflow-y"
 
     def animated_type(self):
         assert self.animatable
@@ -1008,25 +925,15 @@ class PropertiesData(object):
             style_struct = self.style_struct_by_name_lower(args["struct"])
             del args["struct"]
 
-            # Handle keyword properties
-            if "keyword" in args:
-                keyword_dict = args.pop("keyword")
-                if "values" not in keyword_dict:
-                    raise TypeError(f"{name}: keyword should have 'values'")
-                values = keyword_dict.pop("values")
-                keyword = Keyword(name, values, **keyword_dict)
-                self.declare_longhand(style_struct, name, keyword=keyword, **args)
-            else:
-                # Handle predefined_type properties
-                if "type" not in args:
-                    raise TypeError(f"{name} should have a type")
-                args["predefined_type"] = args.pop("type")
-                if "initial" not in args and not args.get("vector"):
-                    raise TypeError(
-                        f"{name} should have an initial value (only vector properties should lack one)"
-                    )
-                args["initial_value"] = args.pop("initial", None)
-                self.declare_longhand(style_struct, name, **args)
+            if "type" not in args:
+                raise TypeError(f"{name} should have a type")
+            args["predefined_type"] = args.pop("type")
+            if "initial" not in args and not args.get("vector"):
+                raise TypeError(
+                    f"{name} should have an initial value (only vector properties should lack one)"
+                )
+            args["initial_value"] = args.pop("initial", None)
+            self.declare_longhand(style_struct, name, **args)
 
         for group, props in self.logical_groups.items():
             logical_count = sum(1 for p in props if p.logical)
@@ -1036,7 +943,7 @@ class PropertiesData(object):
                 )
 
         # After this code, `data.longhands` is sorted in the following order:
-        # - first all keyword variants and all variants known to be Copy,
+        # - first all variants known to be Copy,
         # - second all the other variants, such as all variants with the same field
         #   have consecutive discriminants.
         # The variable `variants` contain the same entries as `data.longhands` in

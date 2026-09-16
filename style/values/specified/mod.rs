@@ -92,6 +92,7 @@ pub use self::font::MathStyle;
 pub use self::font::MathVariant;
 pub use self::font::FontVariantEmoji;
 pub use self::font::FontOpticalSizing;
+pub use self::font::FontKerning;
 pub use self::image::{
     EndingShape as GradientEndingShape, Gradient, Image, ImageDecoding, ImageRendering,
 };

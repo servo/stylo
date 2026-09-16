@@ -111,6 +111,7 @@ pub use self::font::MathStyle;
 pub use self::font::MathVariant;
 pub use self::font::FontVariantEmoji;
 pub use self::font::FontOpticalSizing;
+pub use self::font::FontKerning;
 pub use self::image::{Gradient, Image, ImageDecoding, ImageRendering, LineDirection};
 pub use self::length::{CSSPixelLength, NonNegativeLength};
 pub use self::length::{Length, LengthOrNumber, LengthPercentage, NonNegativeLengthOrNumber};

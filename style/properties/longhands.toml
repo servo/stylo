@@ -3800,7 +3800,8 @@ spec = "https://drafts.csswg.org/css-fonts/#propdef-font-kerning"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.kerning"
-keyword = { values = ["auto", "none", "normal"], gecko_constant_prefix = "NS_FONT_KERNING" }
+type = "FontKerning"
+initial = "computed::FontKerning::Auto"
 
 [font-variant-emoji]
 struct = "font"

@@ -2502,3 +2502,30 @@ pub enum BoxAlign {
     Baseline,
     End,
 }
+
+/// Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/box-direction)
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum BoxDirection {
+    Normal,
+    Reverse,
+}

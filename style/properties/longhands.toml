@@ -4264,7 +4264,8 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mBoxDirection"
 aliases = ["-webkit-box-direction"]
-keyword = { values = ["normal", "reverse"] }
+type = "BoxDirection"
+initial = "computed::BoxDirection::Normal"
 
 [-moz-box-orient]
 struct = "xul"

@@ -82,6 +82,7 @@ pub use self::box_::BoxCollapse;
 pub use self::box_::TextOrientation;
 pub use self::box_::ImageOrientation;
 pub use self::box_::BoxAlign;
+pub use self::box_::BoxDirection;
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,
 };

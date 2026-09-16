@@ -3702,7 +3702,8 @@ spec = "Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-float
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFloatEdge"
-keyword = { values = ["content-box", "margin-box"] }
+type = "FloatEdge"
+initial = "computed::FloatEdge::ContentBox"
 
 [-moz-top-layer]
 struct = "box"

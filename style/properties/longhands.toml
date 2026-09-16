@@ -3873,7 +3873,8 @@ spec = "https://drafts.csswg.org/css-writing-modes/#propdef-direction"
 animation_type = "none"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["ltr", "rtl"] }
+type = "DirectionProperty"
+initial = "computed::DirectionProperty::Ltr"
 
 [-moz-box-collapse]
 struct = "inherited_box"

@@ -64,6 +64,7 @@ pub use self::box_::BoxAlign;
 pub use self::box_::BoxDirection;
 pub use self::box_::BoxOrient;
 pub use self::box_::BoxPack;
+pub use self::box_::DirectionProperty;
 pub use self::calc::{CalcLengthPercentage, CalcNumeric};
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,

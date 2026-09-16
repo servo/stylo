@@ -518,6 +518,36 @@ class Longhand(Property):
     def type():
         return "longhand"
 
+    # Longhands whose Gecko storage differs from the computed value type, so
+    # the Gecko style struct can only produce them by value.
+    NO_BORROWED_GETTER = {
+        "font-size",
+        "-x-lang",
+        "font-feature-settings",
+        "font-variation-settings",
+        # Stored as a plain float rather than NonNegative<f32>.
+        "flex-grow",
+        "flex-shrink",
+        "stroke-miterlimit",
+        "-moz-box-flex",
+        # Stored as the underlying slice rather than the List wrapper.
+        "backdrop-filter",
+        "box-shadow",
+        "filter",
+        "text-shadow",
+    }
+
+    def has_borrowed_getter(self):
+        if self.logical:
+            return False
+        if self.vector and not self.vector.simple_bindings:
+            return False
+        # Keyword enums are still defined by hand in nsStyleConsts.h and
+        # converted on access.
+        if self.keyword:
+            return False
+        return self.name not in self.NO_BORROWED_GETTER
+
     # For a given logical property, return the kind of mapping we need to
     # perform, and which logical value we represent, in a tuple.
     def logical_mapping_data(self, data):

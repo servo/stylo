@@ -566,10 +566,10 @@ impl ToComputedValue for TextAlign {
                 if _context.builder.is_root_element {
                     return TextAlignKeyword::Start;
                 }
-                let parent = _context
+                let parent = *_context
                     .builder
                     .get_parent_inherited_text()
-                    .clone_text_align();
+                    .get_text_align();
                 let ltr = _context.builder.inherited_writing_mode().is_bidi_ltr();
                 match (parent, ltr) {
                     (TextAlignKeyword::Start, true) => TextAlignKeyword::Left,
@@ -580,10 +580,10 @@ impl ToComputedValue for TextAlign {
                 }
             },
             TextAlign::MozCenterOrInherit => {
-                let parent = _context
+                let parent = *_context
                     .builder
                     .get_parent_inherited_text()
-                    .clone_text_align();
+                    .get_text_align();
                 if parent == TextAlignKeyword::Start {
                     TextAlignKeyword::Center
                 } else {
@@ -697,7 +697,7 @@ impl ToComputedValue for TextEmphasisStyle {
                     //
                     // Also should probably use WritingMode::is_vertical rather
                     // than the computed value of the `writing-mode` property.
-                    if context.style().get_inherited_box().clone_writing_mode()
+                    if *context.style().get_inherited_box().get_writing_mode()
                         == SpecifiedWritingMode::HorizontalTb
                     {
                         TextEmphasisShapeKeyword::Circle

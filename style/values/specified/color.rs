@@ -971,10 +971,10 @@ impl ToComputedValue for ColorPropertyValue {
 
     #[inline]
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
-        let current_color = context.builder.get_parent_inherited_text().clone_color();
+        let current_color = context.builder.get_parent_inherited_text().get_color();
         self.0
             .to_computed_value(context)
-            .resolve_to_absolute(&current_color)
+            .resolve_to_absolute(current_color)
     }
 
     #[inline]

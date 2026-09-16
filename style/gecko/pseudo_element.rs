@@ -530,7 +530,7 @@ impl PseudoElement {
     pub fn should_exist(&self, style: &ComputedValues) -> bool {
         debug_assert!(self.is_eager());
 
-        if style.get_box().clone_display() == Display::None {
+        if *style.get_box().get_display() == Display::None {
             return false;
         }
 

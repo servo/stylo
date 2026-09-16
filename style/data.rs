@@ -189,7 +189,7 @@ impl ElementStyles {
 
     /// Whether this element `display` value is `none`.
     pub fn is_display_none(&self) -> bool {
-        self.primary().get_box().clone_display().is_none()
+        self.primary().get_box().get_display().is_none()
     }
 
     /// Whether this element uses viewport units.
@@ -695,7 +695,7 @@ impl ElementData {
             .styles
             .primary()
             .get_box()
-            .clone_container_type()
+            .get_container_type()
             .is_normal()
         {
             return false;

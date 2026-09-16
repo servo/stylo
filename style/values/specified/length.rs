@@ -403,12 +403,12 @@ impl FontBaseSize {
     pub fn resolve(&self, context: &Context) -> computed::FontSize {
         let style = context.style();
         match *self {
-            Self::CurrentStyle => style.get_font().clone_font_size(),
+            Self::CurrentStyle => style.get_font().slow_clone_font_size(),
             Self::InheritedStyle => {
                 // If we're using the size from our inherited style, we still need to apply our
                 // own zoom.
                 let zoom = style.effective_zoom_for_inheritance;
-                style.get_parent_font().clone_font_size().zoom(zoom)
+                style.get_parent_font().slow_clone_font_size().zoom(zoom)
             },
         }
     }
@@ -1022,7 +1022,11 @@ impl NoCalcLength {
         }
         debug_assert_eq!(unit, LengthUnit::ServoCharacterWidth);
         self.servo_character_width_to_computed_value(
-            context.style().get_font().clone_font_size().computed_size(),
+            context
+                .style()
+                .get_font()
+                .slow_clone_font_size()
+                .computed_size(),
         )
     }
 }

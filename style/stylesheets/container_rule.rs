@@ -255,21 +255,21 @@ impl ContainerCondition {
         let box_style = style.get_box();
 
         // Filter by container-type.
-        let container_type = box_style.clone_container_type();
+        let container_type = *box_style.get_container_type();
         let available_axes = container_type_axes(container_type, wm);
         if !available_axes.contains(self.flags.container_axes()) {
             return TraversalResult::InProgress;
         }
 
         // Filter by container-name.
-        let container_name = box_style.clone_container_name();
+        let container_name = box_style.get_container_name();
         for filter_name in self.name.0.iter() {
             if !container_name.0.contains(filter_name) {
                 return TraversalResult::InProgress;
             }
         }
 
-        let size = potential_container.query_container_size(&box_style.clone_display());
+        let size = potential_container.query_container_size(box_style.get_display());
         let style = style.to_arc();
         TraversalResult::Done(ContainerLookupResult {
             element: potential_container,
@@ -643,8 +643,8 @@ impl<'a> ContainerSizeQuery<'a> {
         let wm = style.writing_mode;
         let box_style = style.get_box();
 
-        let container_type = box_style.clone_container_type();
-        let size = e.query_container_size(&box_style.clone_display());
+        let container_type = *box_style.get_container_type();
+        let size = e.query_container_size(box_style.get_display());
         if container_type.intersects(ContainerType::SIZE) {
             TraversalResult::Done(ContainerSizeQueryResult {
                 width: size.width,

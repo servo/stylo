@@ -905,7 +905,12 @@ impl ToComputedValue for specified::FontSizeAdjust {
                 FontMetricsOrientation::Horizontal
             };
             let metrics = context.query_font_metrics(FontBaseSize::CurrentStyle, orient, flags);
-            let font_size = context.style().get_font().clone_font_size().used_size.0;
+            let font_size = context
+                .style()
+                .get_font()
+                .slow_clone_font_size()
+                .used_size
+                .0;
             (metrics, font_size)
         };
 
@@ -1152,8 +1157,8 @@ impl ToComputedValue for specified::MathDepth {
 
         let int = match self {
             specified::MathDepth::AutoAdd => {
-                let parent = cx.builder.get_parent_font().clone_math_depth() as i32;
-                let style = cx.builder.get_parent_font().clone_math_style();
+                let parent = *cx.builder.get_parent_font().get_math_depth() as i32;
+                let style = cx.builder.get_parent_font().slow_clone_math_style();
                 if style == MathStyleValue::Compact {
                     parent.saturating_add(1)
                 } else {
@@ -1161,7 +1166,7 @@ impl ToComputedValue for specified::MathDepth {
                 }
             },
             specified::MathDepth::Add(rel) => {
-                let parent = cx.builder.get_parent_font().clone_math_depth();
+                let parent = *cx.builder.get_parent_font().get_math_depth();
                 (parent as i32).saturating_add(rel.to_computed_value(cx))
             },
             specified::MathDepth::Absolute(abs) => abs.to_computed_value(cx),
@@ -1520,7 +1525,11 @@ impl ToResolvedValue for LineHeight {
         #[cfg(feature = "servo")]
         {
             if let LineHeight::Number(num) = &self {
-                let size = context.style.get_font().clone_font_size().computed_size();
+                let size = context
+                    .style
+                    .get_font()
+                    .slow_clone_font_size()
+                    .computed_size();
                 LineHeight::Length(NonNegativeLength::new(size.px() * num.0))
             } else {
                 self

@@ -350,9 +350,9 @@ impl AnimationValue {
                         };
                         let computed = style_struct
                         % if prop.logical:
-                            .clone_${prop.ident}(context.builder.writing_mode);
+                            .slow_clone_${prop.ident}(context.builder.writing_mode);
                         % else:
-                            .clone_${prop.ident}();
+                            .slow_clone_${prop.ident}();
                         % endif
 
                         % if prop.animation_type != "discrete":
@@ -462,7 +462,7 @@ impl AnimationValue {
             % for prop in data.longhands:
             % if prop.animatable and not prop.logical:
             LonghandId::${prop.camel_case} => {
-                let computed = style.clone_${prop.ident}();
+                let computed = style.slow_clone_${prop.ident}();
                 AnimationValue::${prop.camel_case}(
                 % if prop.animation_type == "discrete":
                     computed

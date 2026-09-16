@@ -90,7 +90,7 @@ impl CachedConditions {
         }
 
         if let Some(fs) = self.font_size
-            && style.get_font().clone_font_size().computed_size != fs
+            && style.get_font().slow_clone_font_size().computed_size != fs
         {
             return false;
         }

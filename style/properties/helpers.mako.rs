@@ -70,7 +70,7 @@ pub mod ${property.ident} {
                             if !context.builder.effective_zoom_for_inheritance.is_one() {
                                 let old_zoom = context.builder.effective_zoom;
                                 context.builder.effective_zoom = context.builder.effective_zoom_for_inheritance;
-                                let computed = context.builder.inherited_style.clone_${property.ident}();
+                                let computed = context.builder.inherited_style.slow_clone_${property.ident}();
                                 let specified = computed::ToComputedValue::from_computed_value(&computed);
                                 % if property.boxed:
                                 let specified = Box::new(specified);

@@ -157,7 +157,7 @@ fn eager_pseudo_is_definitely_not_generated(
         return false;
     }
 
-    style.get_box().clone_display() == Display::None || style.ineffective_content_property()
+    *style.get_box().get_display() == Display::None || style.ineffective_content_property()
 }
 
 impl<'a, 'ctx, 'le, E> StyleResolverForElement<'a, 'ctx, 'le, E>

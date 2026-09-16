@@ -715,8 +715,8 @@ where
 
     let mut self_invalid = false;
     let style = data.styles.primary();
-    if style.clone_position().is_absolutely_positioned() {
-        let fallbacks = style.clone_position_try_fallbacks();
+    if style.get_box().get_position().is_absolutely_positioned() {
+        let fallbacks = style.get_position_try_fallbacks();
         let referenced = fallbacks.value.0.iter().any(|f| match f {
             PositionTryFallbacksItem::IdentAndOrTactic(ident_or_tactic) => {
                 changed_names.contains(&ident_or_tactic.ident.0)

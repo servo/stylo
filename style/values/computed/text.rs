@@ -49,7 +49,7 @@ impl ToAnimatedValue for TextDecorationInset {
                 let font_size_px = context
                     .style
                     .get_font()
-                    .clone_font_size()
+                    .slow_clone_font_size()
                     .computed_size()
                     .px();
                 #[cfg(feature = "gecko")]

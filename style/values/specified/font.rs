@@ -179,15 +179,11 @@ impl ToComputedValue for FontWeight {
     fn to_computed_value(&self, context: &Context) -> Self::ComputedValue {
         match *self {
             FontWeight::Absolute(ref abs) => abs.to_computed_value(context),
-            FontWeight::Bolder => context
-                .builder
-                .get_parent_font()
-                .clone_font_weight()
-                .bolder(),
+            FontWeight::Bolder => context.builder.get_parent_font().get_font_weight().bolder(),
             FontWeight::Lighter => context
                 .builder
                 .get_parent_font()
-                .clone_font_weight()
+                .get_font_weight()
                 .lighter(),
             FontWeight::System(_) => self.compute_system(context),
         }
@@ -912,7 +908,7 @@ impl FontSize {
             context
                 .style()
                 .get_parent_font()
-                .clone_font_size()
+                .slow_clone_font_size()
                 .keyword_info
                 .compose(factor)
         };

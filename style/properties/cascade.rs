@@ -473,14 +473,14 @@ type DeclarationsToApplyUnlessOverriden = SmallVec<[PropertyDeclaration; 2]>;
 fn is_base_appearance(context: &computed::Context) -> bool {
     use computed::Appearance;
     let box_style = context.builder.get_box();
-    match box_style.clone_appearance() {
+    match *box_style.get_appearance() {
         Appearance::BaseSelect => {
             matches!(
-                box_style.clone__moz_default_appearance(),
+                box_style.get__moz_default_appearance(),
                 Appearance::Listbox | Appearance::Menulist
             )
         },
-        Appearance::Base => box_style.clone__moz_default_appearance() != Appearance::None,
+        Appearance::Base => *box_style.get__moz_default_appearance() != Appearance::None,
         _ => false,
     }
 }
@@ -505,10 +505,10 @@ fn tweak_when_ignoring_colors(
     }
 
     // Always honor colors if forced-color-adjust is set to none.
-    let forced = context
+    let forced = *context
         .builder
         .get_inherited_text()
-        .clone_forced_color_adjust();
+        .get_forced_color_adjust();
     if forced == computed::ForcedColorAdjust::None {
         return;
     }
@@ -564,7 +564,7 @@ fn tweak_when_ignoring_colors(
             if context
                 .builder
                 .get_parent_inherited_text()
-                .clone_color()
+                .get_color()
                 .alpha
                 == 0.0
             {
@@ -1428,7 +1428,7 @@ impl<'a> Cascade<'a> {
 
         let new_size = {
             let font = context.builder.get_font();
-            let info = font.clone_font_size().keyword_info;
+            let info = font.slow_clone_font_size().keyword_info;
             let new_size = match info.kw {
                 specified::FontSizeKeyword::None => return,
                 _ => {
@@ -1478,8 +1478,8 @@ impl<'a> Cascade<'a> {
     fn unzoom_fonts_if_needed(&self, builder: &mut StyleBuilder) {
         debug_assert!(self.seen.longhands.contains(LonghandId::XTextScale));
 
-        let parent_text_scale = builder.get_parent_font().clone__x_text_scale();
-        let text_scale = builder.get_font().clone__x_text_scale();
+        let parent_text_scale = *builder.get_parent_font().get__x_text_scale();
+        let text_scale = *builder.get_font().get__x_text_scale();
         if parent_text_scale == text_scale {
             return;
         }
@@ -1500,7 +1500,7 @@ impl<'a> Cascade<'a> {
         debug_assert!(self.seen.longhands.contains(LonghandId::Zoom));
         // NOTE(emilio): Intentionally not using the effective zoom here, since all the inherited
         // zooms are already applied.
-        let old_size = builder.get_font().clone_font_size();
+        let old_size = builder.get_font().slow_clone_font_size();
         let new_size = old_size.zoom(builder.effective_zoom_for_inheritance);
         if old_size == new_size {
             return;
@@ -1517,7 +1517,12 @@ impl<'a> Cascade<'a> {
         use crate::values::generics::NonNegative;
 
         // Do not do anything if font-size: math or math-depth is not set.
-        if context.builder.get_font().clone_font_size().keyword_info.kw
+        if context
+            .builder
+            .get_font()
+            .slow_clone_font_size()
+            .keyword_info
+            .kw
             != specified::FontSizeKeyword::Math
         {
             return;

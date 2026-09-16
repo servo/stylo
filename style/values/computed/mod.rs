@@ -570,7 +570,7 @@ impl<'a> Context<'a> {
         if self
             .style()
             .get_font()
-            .clone__x_text_scale()
+            .get__x_text_scale()
             .text_zoom_enabled()
         {
             self.device().zoom_text(size)

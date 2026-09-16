@@ -1320,7 +1320,7 @@ impl ElementAnimationSet {
         };
 
         // If the style of this element is display:none, then cancel all active transitions.
-        if after_change_style.get_box().clone_display().is_none() {
+        if after_change_style.get_box().get_display().is_none() {
             self.cancel_active_transitions();
             return;
         }

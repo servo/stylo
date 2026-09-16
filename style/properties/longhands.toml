@@ -3919,7 +3919,8 @@ engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#ColorInterpolationProperty"
 animation_type = "discrete"
 affects = "paint"
-keyword = { values = ["srgb", "auto", "linearrgb"] }
+type = "ColorInterpolation"
+initial = "computed::ColorInterpolation::Srgb"
 
 [color-interpolation-filters]
 struct = "inherited_svg"
@@ -3927,7 +3928,8 @@ engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#ColorInterpolationFiltersProperty"
 animation_type = "discrete"
 affects = "paint"
-keyword = { values = ["linearrgb", "auto", "srgb"], gecko_enum_prefix = "StyleColorInterpolation" }
+type = "ColorInterpolation"
+initial = "computed::ColorInterpolation::Linearrgb"
 
 [shape-rendering]
 struct = "inherited_svg"

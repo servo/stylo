@@ -622,3 +622,31 @@ pub enum MaskComposite {
     Intersect,
     Exclude,
 }
+
+/// https://svgwg.org/svg2-draft/painting.html#ColorInterpolationProperty
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum ColorInterpolation {
+    Auto,
+    Srgb,
+    Linearrgb,
+}

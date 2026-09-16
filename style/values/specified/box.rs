@@ -2360,3 +2360,32 @@ pub enum Orient {
     Horizontal,
     Vertical,
 }
+
+/// https://drafts.csswg.org/css-box/#propdef-visibility
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum Visibility {
+    Visible,
+    Hidden,
+    Collapse,
+}

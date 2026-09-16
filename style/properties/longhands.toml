@@ -3862,7 +3862,8 @@ struct = "inherited_box"
 spec = "https://drafts.csswg.org/css-box/#propdef-visibility"
 affects = "paint"
 gecko_ffi_name = "mVisible"
-keyword = { values = ["visible", "hidden", "collapse"] }
+type = "Visibility"
+initial = "computed::Visibility::Visible"
 
 [direction]
 struct = "inherited_box"

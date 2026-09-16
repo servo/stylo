@@ -22,6 +22,7 @@ pub use crate::values::specified::box_::Isolation;
 pub use crate::values::specified::box_::Orient;
 pub use crate::values::specified::box_::ScrollBehavior;
 pub use crate::values::specified::box_::TopLayer;
+pub use crate::values::specified::box_::Visibility;
 pub use crate::values::specified::box_::{
     AlignmentBaseline, Appearance, BaselineSource, BreakBetween, BreakWithin, Clear, Contain,
     ContainerName, ContainerType, ContentVisibility, Display, DominantBaseline, Float, MarginTrim,

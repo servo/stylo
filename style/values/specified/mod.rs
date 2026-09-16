@@ -125,6 +125,7 @@ pub use self::svg::ShapeRendering;
 pub use self::svg::StrokeLinecap;
 pub use self::svg::StrokeLinejoin;
 pub use self::svg::MaskType;
+pub use self::svg::MaskMode;
 pub use self::svg_path::SVGPathData;
 pub use self::text::RubyPosition;
 pub use self::text::{HyphenateCharacter, HyphenateLimitChars};

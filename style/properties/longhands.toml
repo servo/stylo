@@ -4107,7 +4107,8 @@ spec = "https://drafts.fxtf.org/css-masking-1/#propdef-mask-mode"
 animation_type = "discrete"
 affects = "paint"
 vector = {}
-keyword = { values = ["match-source", "alpha", "luminance"] }
+type = "MaskMode"
+initial = "computed::MaskMode::MatchSource"
 
 [mask-clip]
 type = "BackgroundClip"

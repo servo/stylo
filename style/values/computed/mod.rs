@@ -142,6 +142,7 @@ pub use self::svg::ShapeRendering;
 pub use self::svg::StrokeLinecap;
 pub use self::svg::StrokeLinejoin;
 pub use self::svg::MaskType;
+pub use self::svg::MaskMode;
 pub use self::text::{HyphenateCharacter, HyphenateLimitChars};
 pub use self::text::{InitialLetter, LetterSpacing, LineBreak, TextIndent};
 pub use self::text::{OverflowWrap, RubyPosition, TextOverflow, WordBreak, WordSpacing};

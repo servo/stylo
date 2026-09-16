@@ -11,6 +11,7 @@ use crate::values::generics::ui as generics;
 
 pub use crate::values::specified::ui::ImeMode;
 pub use crate::values::specified::ui::ScrollbarWidth;
+pub use crate::values::specified::ui::WindowDragging;
 pub use crate::values::specified::ui::{
     BoolInteger, CursorKind, Inert, MozTheme, PointerEvents, UserFocus, UserSelect,
 };

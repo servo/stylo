@@ -398,3 +398,31 @@ pub enum ScrollbarWidth {
     Thin,
     None,
 }
+
+/// Privileged property to control titlebar dragging area.
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum WindowDragging {
+    Default,
+    Drag,
+    NoDrag,
+}

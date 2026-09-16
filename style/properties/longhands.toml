@@ -4221,7 +4221,8 @@ animation_type = "discrete"
 enabled_in = "chrome"
 affects = "paint"
 gecko_ffi_name = "mWindowDragging"
-keyword = { values = ["default", "drag", "no-drag"] }
+type = "WindowDragging"
+initial = "computed::WindowDragging::Default"
 
 [-moz-window-shadow]
 struct = "ui"

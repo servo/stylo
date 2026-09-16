@@ -55,50 +55,39 @@ pub use self::animation::{
     AnimationRangeStart, AnimationTimeline, ScrollAxis, TimelineName, TransitionBehavior,
     TransitionProperty, ViewTimelineInset, ViewTransitionClass, ViewTransitionName,
 };
-pub use self::background::{BackgroundClip, BackgroundOrigin, BackgroundRepeat, BackgroundSize};
-pub use self::background::ImageLayerAttachment;
+pub use self::background::{
+    BackgroundClip, BackgroundOrigin, BackgroundRepeat, BackgroundSize, ImageLayerAttachment,
+};
 pub use self::basic_shape::FillRule;
-pub use self::border::BoxDecorationBreak;
 pub use self::border::{
     BorderCornerRadius, BorderImageRepeat, BorderImageSideWidth, BorderImageSlice,
-    BorderImageWidth, BorderRadius, BorderSideOffset, BorderSideWidth, BorderSpacing, LineWidth,
+    BorderImageWidth, BorderRadius, BorderSideOffset, BorderSideWidth, BorderSpacing,
+    BoxDecorationBreak, FloatEdge, LineWidth,
 };
-pub use self::border::FloatEdge;
 pub use self::box_::{
-    AlignmentBaseline, Appearance, BaselineShift, BaselineSource, BreakBetween, BreakWithin, Clear,
-    Contain, ContainIntrinsicSize, ContainerName, ContainerType, ContentVisibility, Display,
-    DominantBaseline, Float, LineClamp, MarginTrim, Overflow, OverflowAnchor, OverflowClipMargin,
-    OverscrollBehavior, Perspective, PositionProperty, Resize, ScrollSnapAlign, ScrollSnapAxis,
-    ScrollSnapStop, ScrollSnapStrictness, ScrollSnapType, ScrollbarGutter, ScrollbarInset,
-    TouchAction, WillChange, WritingModeProperty, Zoom,
+    AlignmentBaseline, Appearance, BackfaceVisibility, BaselineShift, BaselineSource, BoxAlign,
+    BoxCollapse, BoxDirection, BoxOrient, BoxPack, BreakBetween, BreakWithin, Clear, Contain,
+    ContainIntrinsicSize, ContainerName, ContainerType, ContentVisibility, DirectionProperty,
+    Display, DominantBaseline, Float, ImageOrientation, Isolation, LineClamp, MarginTrim, Orient,
+    Overflow, OverflowAnchor, OverflowClipMargin, OverscrollBehavior, Perspective,
+    PositionProperty, Resize, ScrollBehavior, ScrollSnapAlign, ScrollSnapAxis, ScrollSnapStop,
+    ScrollSnapStrictness, ScrollSnapType, ScrollbarGutter, ScrollbarInset, TextOrientation,
+    TopLayer, TouchAction, Visibility, WillChange, WritingModeProperty, Zoom,
 };
-pub use self::box_::TopLayer;
-pub use self::box_::ScrollBehavior;
-pub use self::box_::Isolation;
-pub use self::box_::BackfaceVisibility;
-pub use self::box_::Orient;
-pub use self::box_::Visibility;
-pub use self::box_::BoxCollapse;
-pub use self::box_::TextOrientation;
-pub use self::box_::ImageOrientation;
-pub use self::box_::BoxAlign;
-pub use self::box_::BoxDirection;
-pub use self::box_::BoxOrient;
-pub use self::box_::BoxPack;
-pub use self::box_::DirectionProperty;
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,
 };
-pub use self::column::ColumnCount;
-pub use self::column::ColumnFill;
-pub use self::column::ColumnSpan;
+pub use self::column::{ColumnCount, ColumnFill, ColumnSpan};
 pub use self::corner_shape::{CornerShape, CornerShapeRect};
 pub use self::counters::{Content, ContentItem, CounterIncrement, CounterReset, CounterSet};
 pub use self::easing::TimingFunction;
-pub use self::effects::{BoxShadow, Filter, SimpleShadow};
-pub use self::effects::Blend;
+pub use self::effects::{Blend, BoxShadow, Filter, SimpleShadow};
 pub use self::flex::FlexBasis;
-pub use self::font::{FontFamily, FontLanguageOverride, FontPalette, FontStyle};
+pub use self::font::{
+    FontFamily, FontKerning, FontLanguageOverride, FontOpticalSizing, FontPalette, FontSmoothing,
+    FontStyle, FontVariantCaps, FontVariantEmoji, FontVariantPosition, MathShift, MathStyle,
+    MathVariant,
+};
 pub use self::font::{FontFeatureSettings, FontVariantLigatures, FontVariantNumeric};
 pub use self::font::{
     FontSize, FontSizeAdjust, FontSynthesis, FontSynthesisStyle, FontWidth, LineHeight,
@@ -106,60 +95,39 @@ pub use self::font::{
 pub use self::font::{FontVariantAlternates, FontWeight};
 pub use self::font::{FontVariantEastAsian, FontVariationSettings};
 pub use self::font::{MathDepth, MozScriptMinSize, MozScriptSizeMultiplier, XLang, XTextScale};
-pub use self::font::MathShift;
-pub use self::font::MathStyle;
-pub use self::font::MathVariant;
-pub use self::font::FontVariantEmoji;
-pub use self::font::FontOpticalSizing;
-pub use self::font::FontKerning;
-pub use self::font::FontSmoothing;
-pub use self::font::FontVariantPosition;
-pub use self::font::FontVariantCaps;
 pub use self::image::{Gradient, Image, ImageDecoding, ImageRendering, LineDirection};
 pub use self::length::{CSSPixelLength, NonNegativeLength};
 pub use self::length::{Length, LengthOrNumber, LengthPercentage, NonNegativeLengthOrNumber};
 pub use self::length::{LengthOrAuto, LengthPercentageOrAuto, Margin, MaxSize, Size};
 pub use self::length::{NonNegativeLengthPercentage, NonNegativeLengthPercentageOrAuto};
-pub use self::list::ListStyleType;
-pub use self::list::Quotes;
-pub use self::list::ListStylePosition;
+pub use self::list::{ListStylePosition, ListStyleType, Quotes};
 pub use self::motion::{OffsetPath, OffsetPosition, OffsetRotate};
 pub use self::outline::OutlineStyle;
 pub use self::page::{PageName, PageOrientation, PageSize, PageSizeOrientation, PaperSize};
 pub use self::param::LinkParameters;
 pub use self::percentage::{NonNegativePercentage, Percentage};
-pub use self::position::AnchorFunction;
-pub use self::position::AnchorName;
-pub use self::position::AspectRatio;
-pub use self::position::DashedIdentAndOrTryTactic;
-pub use self::position::Inset;
-pub use self::position::PositionAnchor;
-pub use self::position::PositionTryFallbacks;
-pub use self::position::PositionTryOrder;
-pub use self::position::PositionVisibility;
-pub use self::position::ScopedName;
 pub use self::position::{
-    FlexWrap, GridAutoFlow, GridTemplateAreas, MasonryAutoFlow, Position, PositionOrAuto, ZIndex,
+    AnchorFunction, AnchorName, AspectRatio, BoxSizing, DashedIdentAndOrTryTactic, FlexDirection,
+    FlexWrap, GridAutoFlow, GridTemplateAreas, Inset, MasonryAutoFlow, ObjectFit, Position,
+    PositionAnchor, PositionOrAuto, PositionTryFallbacks, PositionTryOrder, PositionVisibility,
+    ScopedName, ZIndex,
 };
 pub use self::position::{PositionArea, PositionAreaKeyword};
-pub use self::position::FlexDirection;
-pub use self::position::BoxSizing;
-pub use self::position::ObjectFit;
 pub use self::ratio::Ratio;
 pub use self::rect::NonNegativeLengthOrNumberRect;
 pub use self::resolution::Resolution;
-pub use self::svg::{DProperty, MozContextProperties};
+pub use self::svg::{
+    ColorInterpolation, DProperty, MaskComposite, MaskMode, MaskType, MozContextProperties,
+    ShapeRendering, StrokeLinecap, StrokeLinejoin, TextAnchor,
+};
 pub use self::svg::{SVGLength, SVGOpacity, SVGPaint, SVGPaintKind};
 pub use self::svg::{SVGPaintOrder, SVGStrokeDashArray, SVGWidth, VectorEffect};
-pub use self::svg::TextAnchor;
-pub use self::svg::ShapeRendering;
-pub use self::svg::StrokeLinecap;
-pub use self::svg::StrokeLinejoin;
-pub use self::svg::MaskType;
-pub use self::svg::MaskMode;
-pub use self::svg::MaskComposite;
-pub use self::svg::ColorInterpolation;
-pub use self::text::{HyphenateCharacter, HyphenateLimitChars};
+pub use self::table::{BorderCollapse, EmptyCells, TableLayout};
+pub use self::text::{
+    HyphenateCharacter, HyphenateLimitChars, Hyphens, RubyAlign, TextCombineUpright,
+    TextDecorationStyle, TextRendering, TextSecurity, TextSizeAdjust, TextWrapMode, TextWrapStyle,
+    UnicodeBidi, WhiteSpaceCollapse,
+};
 pub use self::text::{InitialLetter, LetterSpacing, LineBreak, TextIndent};
 pub use self::text::{OverflowWrap, RubyPosition, TextOverflow, WordBreak, WordSpacing};
 pub use self::text::{TextAlign, TextAlignLast, TextEmphasisPosition, TextEmphasisStyle};
@@ -168,17 +136,6 @@ pub use self::text::{TextBoxEdge, TextBoxTrim};
 pub use self::text::{
     TextDecorationInset, TextDecorationLength, TextDecorationSkipInk, TextJustify,
 };
-pub use self::text::Hyphens;
-pub use self::text::TextSizeAdjust;
-pub use self::text::RubyAlign;
-pub use self::text::TextCombineUpright;
-pub use self::text::TextRendering;
-pub use self::text::TextSecurity;
-pub use self::text::TextWrapMode;
-pub use self::text::TextWrapStyle;
-pub use self::text::UnicodeBidi;
-pub use self::text::TextDecorationStyle;
-pub use self::text::WhiteSpaceCollapse;
 pub use self::time::Time;
 pub use self::transform::{Rotate, Scale, Transform, TransformBox, TransformOperation};
 pub use self::transform::{TransformOrigin, TransformStyle, Translate};
@@ -186,16 +143,9 @@ pub use self::tree_counting::TreeCountingResult;
 #[cfg(feature = "gecko")]
 pub use self::ui::CursorImage;
 pub use self::ui::{
-    BoolInteger, Cursor, Inert, MozTheme, PointerEvents, ScrollbarColor, UserFocus, UserSelect,
+    BoolInteger, Cursor, FieldSizing, ImeMode, Inert, MozTheme, PointerEvents, ScrollbarColor,
+    ScrollbarWidth, UserFocus, UserSelect, WindowDragging, WindowShadow,
 };
-pub use self::ui::ImeMode;
-pub use self::ui::ScrollbarWidth;
-pub use self::ui::WindowDragging;
-pub use self::ui::WindowShadow;
-pub use self::ui::FieldSizing;
-pub use self::table::BorderCollapse;
-pub use self::table::EmptyCells;
-pub use self::table::TableLayout;
 pub use super::specified::TextTransform;
 pub use super::specified::ViewportVariant;
 pub use super::specified::{BorderStyle, TextDecorationLine};

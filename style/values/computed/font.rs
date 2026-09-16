@@ -35,17 +35,11 @@ use thin_vec::ThinVec;
 pub use crate::values::computed::Length as MozScriptMinSize;
 pub use crate::values::specified::Integer as SpecifiedInteger;
 pub use crate::values::specified::Number as SpecifiedNumber;
-pub use crate::values::specified::font::FontKerning;
-pub use crate::values::specified::font::FontOpticalSizing;
-pub use crate::values::specified::font::FontSmoothing;
-pub use crate::values::specified::font::FontVariantCaps;
-pub use crate::values::specified::font::FontVariantEmoji;
-pub use crate::values::specified::font::FontVariantPosition;
-pub use crate::values::specified::font::MathShift;
-pub use crate::values::specified::font::MathStyle;
-pub use crate::values::specified::font::MathVariant;
-pub use crate::values::specified::font::MozScriptSizeMultiplier;
-pub use crate::values::specified::font::{FontPalette, FontSynthesis, FontSynthesisStyle};
+pub use crate::values::specified::font::{
+    FontKerning, FontOpticalSizing, FontPalette, FontSmoothing, FontSynthesis, FontSynthesisStyle,
+    FontVariantCaps, FontVariantEmoji, FontVariantPosition, MathShift, MathStyle, MathVariant,
+    MozScriptSizeMultiplier,
+};
 pub use crate::values::specified::font::{
     FontVariantAlternates, FontVariantEastAsian, FontVariantLigatures, FontVariantNumeric,
     QueryFontMetricsFlags, XLang, XTextScale,

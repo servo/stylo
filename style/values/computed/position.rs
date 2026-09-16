@@ -20,13 +20,10 @@ use crate::values::generics::position::{
     GenericInset, Position as GenericPosition, PositionComponent as GenericPositionComponent,
     PositionOrAuto as GenericPositionOrAuto, ZIndex as GenericZIndex,
 };
-pub use crate::values::specified::position::BoxSizing;
-pub use crate::values::specified::position::FlexDirection;
-pub use crate::values::specified::position::ObjectFit;
 pub use crate::values::specified::position::{
-    AnchorName, DashedIdentAndOrTryTactic, FlexWrap, GridAutoFlow, GridTemplateAreas,
-    MasonryAutoFlow, PositionAnchor, PositionArea, PositionAreaAxis, PositionAreaKeyword,
-    PositionAreaType, PositionTryFallbacks, PositionTryFallbacksTryTactic,
+    AnchorName, BoxSizing, DashedIdentAndOrTryTactic, FlexDirection, FlexWrap, GridAutoFlow,
+    GridTemplateAreas, MasonryAutoFlow, ObjectFit, PositionAnchor, PositionArea, PositionAreaAxis,
+    PositionAreaKeyword, PositionAreaType, PositionTryFallbacks, PositionTryFallbacksTryTactic,
     PositionTryFallbacksTryTacticKeyword, PositionTryOrder, PositionVisibility, ScopedName,
 };
 use std::fmt::{self, Write};

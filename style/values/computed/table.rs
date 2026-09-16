@@ -4,7 +4,4 @@
 
 //! Computed types for CSS values related to tables.
 
-pub use super::specified::table::CaptionSide;
-pub use crate::values::specified::table::BorderCollapse;
-pub use crate::values::specified::table::EmptyCells;
-pub use crate::values::specified::table::TableLayout;
+pub use crate::values::specified::table::{BorderCollapse, CaptionSide, EmptyCells, TableLayout};

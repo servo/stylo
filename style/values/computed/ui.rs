@@ -9,13 +9,9 @@ use crate::values::computed::color::Color;
 use crate::values::computed::image::Image;
 use crate::values::generics::ui as generics;
 
-pub use crate::values::specified::ui::FieldSizing;
-pub use crate::values::specified::ui::ImeMode;
-pub use crate::values::specified::ui::ScrollbarWidth;
-pub use crate::values::specified::ui::WindowDragging;
-pub use crate::values::specified::ui::WindowShadow;
 pub use crate::values::specified::ui::{
-    BoolInteger, CursorKind, Inert, MozTheme, PointerEvents, UserFocus, UserSelect,
+    BoolInteger, CursorKind, FieldSizing, ImeMode, Inert, MozTheme, PointerEvents, ScrollbarWidth,
+    UserFocus, UserSelect, WindowDragging, WindowShadow,
 };
 
 /// A computed value for the `cursor` property.

@@ -9,14 +9,10 @@ use crate::values::computed::color::Color;
 use crate::values::computed::url::ComputedUrl;
 use crate::values::computed::{LengthPercentage, NonNegativeLengthPercentage, Opacity};
 use crate::values::generics::svg as generic;
-pub use crate::values::specified::svg::ColorInterpolation;
-pub use crate::values::specified::svg::MaskComposite;
-pub use crate::values::specified::svg::MaskMode;
-pub use crate::values::specified::svg::MaskType;
-pub use crate::values::specified::svg::ShapeRendering;
-pub use crate::values::specified::svg::StrokeLinecap;
-pub use crate::values::specified::svg::StrokeLinejoin;
-pub use crate::values::specified::svg::TextAnchor;
+pub use crate::values::specified::svg::{
+    ColorInterpolation, MaskComposite, MaskMode, MaskType, ShapeRendering, StrokeLinecap,
+    StrokeLinejoin, TextAnchor,
+};
 
 pub use crate::values::specified::{DProperty, MozContextProperties, SVGPaintOrder, VectorEffect};
 

@@ -24,22 +24,12 @@ use std::fmt::{self, Write};
 use style_traits::{CssString, CssWriter, ToCss};
 use thin_vec::ThinVec;
 
-pub use crate::values::specified::text::Hyphens;
-pub use crate::values::specified::text::RubyAlign;
-pub use crate::values::specified::text::TextCombineUpright;
-pub use crate::values::specified::text::TextDecorationStyle;
-pub use crate::values::specified::text::TextRendering;
-pub use crate::values::specified::text::TextSecurity;
-pub use crate::values::specified::text::TextSizeAdjust;
-pub use crate::values::specified::text::TextWrapMode;
-pub use crate::values::specified::text::TextWrapStyle;
-pub use crate::values::specified::text::UnicodeBidi;
-pub use crate::values::specified::text::WhiteSpaceCollapse;
 pub use crate::values::specified::text::{
-    HyphenateCharacter, LineBreak, MozControlCharacterVisibility, OverflowWrap, RubyPosition,
-    TextAlignLast, TextAutospace, TextBoxEdge, TextBoxTrim, TextDecorationLine,
-    TextDecorationSkipInk, TextEmphasisPosition, TextJustify, TextOverflow, TextTransform,
-    TextUnderlinePosition, WordBreak,
+    HyphenateCharacter, Hyphens, LineBreak, MozControlCharacterVisibility, OverflowWrap, RubyAlign,
+    RubyPosition, TextAlignLast, TextAutospace, TextBoxEdge, TextBoxTrim, TextCombineUpright,
+    TextDecorationLine, TextDecorationSkipInk, TextDecorationStyle, TextEmphasisPosition,
+    TextJustify, TextOverflow, TextRendering, TextSecurity, TextSizeAdjust, TextTransform,
+    TextUnderlinePosition, TextWrapMode, TextWrapStyle, UnicodeBidi, WhiteSpaceCollapse, WordBreak,
 };
 
 /// A computed value for the `initial-letter` property.

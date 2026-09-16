@@ -3718,7 +3718,8 @@ spec = "Internal (not web-exposed)"
 animation_type = "none"
 enabled_in = "ua"
 affects = "layout"
-keyword = { values = ["none", "top"] }
+type = "TopLayer"
+initial = "computed::TopLayer::None"
 
 [scroll-behavior]
 struct = "box"

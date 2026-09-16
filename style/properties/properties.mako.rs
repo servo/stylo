@@ -2606,7 +2606,7 @@ impl<'a> StyleBuilder<'a> {
     #[cfg(feature = "servo")]
     pub fn in_top_layer(&self) -> bool {
         matches!(self.get_box().slow_clone__servo_top_layer(),
-                 longhands::_servo_top_layer::computed_value::T::Top)
+                 longhands::_servo_top_layer::computed_value::T::Auto)
     }
 
     /// Whether this style has a top-layer style.

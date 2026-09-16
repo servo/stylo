@@ -3948,7 +3948,8 @@ struct = "inherited_svg"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeLinejoinProperty"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["miter", "round", "bevel"] }
+type = "StrokeLinejoin"
+initial = "computed::StrokeLinejoin::Miter"
 
 [border-collapse]
 struct = "inherited_table"

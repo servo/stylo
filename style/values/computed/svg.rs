@@ -11,6 +11,7 @@ use crate::values::computed::{LengthPercentage, NonNegativeLengthPercentage, Opa
 use crate::values::generics::svg as generic;
 pub use crate::values::specified::svg::ShapeRendering;
 pub use crate::values::specified::svg::StrokeLinecap;
+pub use crate::values::specified::svg::StrokeLinejoin;
 pub use crate::values::specified::svg::TextAnchor;
 
 pub use crate::values::specified::{DProperty, MozContextProperties, SVGPaintOrder, VectorEffect};

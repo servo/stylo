@@ -119,6 +119,7 @@ pub use self::svg::{SVGPaintOrder, SVGStrokeDashArray, SVGWidth, VectorEffect};
 pub use self::svg::TextAnchor;
 pub use self::svg::ShapeRendering;
 pub use self::svg::StrokeLinecap;
+pub use self::svg::StrokeLinejoin;
 pub use self::svg_path::SVGPathData;
 pub use self::text::RubyPosition;
 pub use self::text::{HyphenateCharacter, HyphenateLimitChars};

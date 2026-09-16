@@ -2193,3 +2193,32 @@ pub enum MathVariant {
     Looped,
     Stretched,
 }
+
+/// https://drafts.csswg.org/css-fonts/#propdef-font-variant-emoji
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum FontVariantEmoji {
+    Normal,
+    Text,
+    Emoji,
+    Unicode,
+}

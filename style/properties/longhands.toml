@@ -3809,7 +3809,8 @@ spec = "https://drafts.csswg.org/css-fonts/#propdef-font-variant-emoji"
 animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.variantEmoji"
-keyword = { values = ["normal", "text", "emoji", "unicode"] }
+type = "FontVariantEmoji"
+initial = "computed::FontVariantEmoji::Normal"
 
 [font-variant-position]
 struct = "font"

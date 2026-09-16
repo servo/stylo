@@ -108,6 +108,7 @@ pub use self::font::{MathDepth, MozScriptMinSize, MozScriptSizeMultiplier, XLang
 pub use self::font::MathShift;
 pub use self::font::MathStyle;
 pub use self::font::MathVariant;
+pub use self::font::FontVariantEmoji;
 pub use self::image::{Gradient, Image, ImageDecoding, ImageRendering, LineDirection};
 pub use self::length::{CSSPixelLength, NonNegativeLength};
 pub use self::length::{Length, LengthOrNumber, LengthPercentage, NonNegativeLengthOrNumber};

@@ -89,6 +89,7 @@ pub use self::font::{MathDepth, MozScriptMinSize, MozScriptSizeMultiplier, XLang
 pub use self::font::MathShift;
 pub use self::font::MathStyle;
 pub use self::font::MathVariant;
+pub use self::font::FontVariantEmoji;
 pub use self::image::{
     EndingShape as GradientEndingShape, Gradient, Image, ImageDecoding, ImageRendering,
 };

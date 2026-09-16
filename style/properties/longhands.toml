@@ -4253,7 +4253,8 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mBoxAlign"
 aliases = ["-webkit-box-align"]
-keyword = { values = ["stretch", "start", "center", "baseline", "end"] }
+type = "BoxAlign"
+initial = "computed::BoxAlign::Stretch"
 
 [-moz-box-direction]
 struct = "xul"

@@ -37,6 +37,7 @@ pub use crate::values::specified::Integer as SpecifiedInteger;
 pub use crate::values::specified::Number as SpecifiedNumber;
 pub use crate::values::specified::font::FontKerning;
 pub use crate::values::specified::font::FontOpticalSizing;
+pub use crate::values::specified::font::FontSmoothing;
 pub use crate::values::specified::font::FontVariantEmoji;
 pub use crate::values::specified::font::MathShift;
 pub use crate::values::specified::font::MathStyle;

@@ -3859,7 +3859,8 @@ gecko_ffi_name = "mFont.smoothing"
 aliases = ["-webkit-font-smoothing:layout.css.osx-font-smoothing.enabled"]
 gecko_pref = "layout.css.osx-font-smoothing.enabled"
 has_effect_on_gecko_scrollbars = false
-keyword = { values = ["auto", "grayscale", "subpixel-antialiased"], gecko_aliases = ["antialiased=grayscale"], gecko_constant_prefix = "NS_FONT_SMOOTHING" }
+type = "FontSmoothing"
+initial = "computed::FontSmoothing::Auto"
 
 [visibility]
 struct = "inherited_box"

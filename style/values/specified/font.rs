@@ -2277,3 +2277,32 @@ pub enum FontKerning {
     None,
     Normal,
 }
+
+/// Nonstandard (https://developer.mozilla.org/en-US/docs/Web/CSS/font-smooth)
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum FontSmoothing {
+    Auto,
+    #[cfg_attr(feature = "gecko", parse(aliases = "antialiased"))]
+    Grayscale,
+    SubpixelAntialiased,
+}

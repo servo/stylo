@@ -3769,7 +3769,8 @@ engine = "gecko"
 spec = "https://drafts.csswg.org/css-multicol/#propdef-column-fill"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["balance", "auto"] }
+type = "ColumnFill"
+initial = "computed::ColumnFill::Balance"
 
 [column-span]
 struct = "column"

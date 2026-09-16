@@ -3788,11 +3788,8 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.variantCaps"
 servo_restyle_damage = "rebuild_box"
-
-[font-variant-caps.keyword]
-values = ["normal", "small-caps"]
-extra_gecko_values = ["all-small-caps", "petite-caps", "all-petite-caps", "unicase", "titling-caps"]
-gecko_constant_prefix = "NS_FONT_VARIANT_CAPS"
+type = "FontVariantCaps"
+initial = "computed::FontVariantCaps::Normal"
 
 [font-kerning]
 struct = "font"

@@ -2334,3 +2334,40 @@ pub enum FontVariantPosition {
     Sub,
     Super,
 }
+
+/// https://drafts.csswg.org/css-fonts/#propdef-font-variant-caps
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum FontVariantCaps {
+    Normal,
+    SmallCaps,
+    #[cfg(feature = "gecko")]
+    AllSmallCaps,
+    #[cfg(feature = "gecko")]
+    PetiteCaps,
+    #[cfg(feature = "gecko")]
+    AllPetiteCaps,
+    #[cfg(feature = "gecko")]
+    Unicase,
+    #[cfg(feature = "gecko")]
+    TitlingCaps,
+}

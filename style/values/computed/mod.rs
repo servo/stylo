@@ -146,6 +146,7 @@ pub use self::text::{TextBoxEdge, TextBoxTrim};
 pub use self::text::{
     TextDecorationInset, TextDecorationLength, TextDecorationSkipInk, TextJustify,
 };
+pub use self::text::Hyphens;
 pub use self::time::Time;
 pub use self::transform::{Rotate, Scale, Transform, TransformBox, TransformOperation};
 pub use self::transform::{TransformOrigin, TransformStyle, Translate};

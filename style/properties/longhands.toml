@@ -3976,7 +3976,8 @@ spec = "https://drafts.csswg.org/css-text/#propdef-hyphens"
 animation_type = "discrete"
 affects = "layout"
 extra_prefixes = ["moz"]
-keyword = { values = ["manual", "none", "auto"] }
+type = "Hyphens"
+initial = "computed::Hyphens::Manual"
 
 [-moz-text-size-adjust]
 struct = "inherited_text"

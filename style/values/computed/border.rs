@@ -25,6 +25,7 @@ use app_units::Au;
 use thin_vec::ThinVec;
 
 pub use crate::values::specified::border::BorderImageRepeat;
+pub use crate::values::specified::border::BoxDecorationBreak;
 
 /// A computed value for -webkit-text-stroke-width.
 pub type LineWidth = Au;

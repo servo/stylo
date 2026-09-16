@@ -3691,7 +3691,8 @@ struct = "border"
 spec = "https://drafts.csswg.org/css-break/#propdef-box-decoration-break"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["slice", "clone"] }
+type = "BoxDecorationBreak"
+initial = "computed::BoxDecorationBreak::Slice"
 
 [-moz-float-edge]
 struct = "border"

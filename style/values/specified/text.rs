@@ -1754,3 +1754,31 @@ pub enum TextWrapMode {
     Wrap,
     Nowrap,
 }
+
+/// https://drafts.csswg.org/css-text-4/#text-wrap-style
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum TextWrapStyle {
+    Auto,
+    Stable,
+    Balance,
+}

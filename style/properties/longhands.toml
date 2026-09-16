@@ -4041,7 +4041,8 @@ engine = "gecko"
 spec = "https://drafts.csswg.org/css-text-4/#text-wrap-style"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["auto", "stable", "balance"] }
+type = "TextWrapStyle"
+initial = "computed::TextWrapStyle::Auto"
 
 [list-style-position]
 struct = "list"

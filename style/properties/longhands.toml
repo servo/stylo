@@ -1276,6 +1276,7 @@ spec = "https://drafts.csswg.org/css-link-params-1/#propdef-link-parameters"
 affects = "paint"
 engine = "gecko"
 gecko_pref = "layout.css.link-parameters.enabled"
+enabled_in = "chrome"
 
 [list-style-image]
 type = "Image"

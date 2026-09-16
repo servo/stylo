@@ -1698,3 +1698,32 @@ pub enum TextRendering {
     Optimizelegibility,
     Geometricprecision,
 }
+
+/// https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/-webkit-text-security
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum TextSecurity {
+    None,
+    Circle,
+    Disc,
+    Square,
+}

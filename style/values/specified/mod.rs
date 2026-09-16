@@ -62,6 +62,7 @@ pub use self::color::{
 };
 pub use self::column::ColumnCount;
 pub use self::column::ColumnFill;
+pub use self::column::ColumnSpan;
 pub use self::corner_shape::{CornerShape, CornerShapeRect, SuperellipseArg};
 pub use self::counters::{Content, ContentItem, CounterIncrement, CounterReset, CounterSet};
 pub use self::easing::TimingFunction;

@@ -3778,7 +3778,8 @@ spec = "https://drafts.csswg.org/css-multicol/#propdef-column-span"
 animation_type = "discrete"
 affects = "layout"
 servo_pref = "layout.columns.enabled"
-keyword = { values = ["none", "all"] }
+type = "ColumnSpan"
+initial = "computed::ColumnSpan::None"
 
 [font-variant-caps]
 struct = "font"

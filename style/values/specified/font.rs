@@ -2122,3 +2122,30 @@ pub enum MathShift {
     Normal,
     Compact,
 }
+
+/// https://mathml-refresh.github.io/mathml-core/#the-math-style-property
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum MathStyle {
+    Normal,
+    Compact,
+}

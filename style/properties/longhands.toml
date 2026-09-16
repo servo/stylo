@@ -3834,7 +3834,8 @@ servo_pref = "layout.unimplemented"
 spec = "https://mathml-refresh.github.io/mathml-core/#the-math-style-property"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["normal", "compact"] }
+type = "MathStyle"
+initial = "computed::MathStyle::Normal"
 
 [math-shift]
 struct = "font"

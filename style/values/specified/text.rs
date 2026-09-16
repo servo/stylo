@@ -1586,3 +1586,30 @@ pub enum Hyphens {
     None,
     Auto,
 }
+
+/// https://drafts.csswg.org/css-size-adjust/#adjustment-control
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum TextSizeAdjust {
+    Auto,
+    None,
+}

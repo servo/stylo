@@ -3987,7 +3987,8 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mTextSizeAdjust"
 aliases = ["-webkit-text-size-adjust"]
-keyword = { values = ["auto", "none"] }
+type = "TextSizeAdjust"
+initial = "computed::TextSizeAdjust::Auto"
 
 [ruby-align]
 struct = "inherited_text"

@@ -25,6 +25,7 @@ use style_traits::{CssString, CssWriter, ToCss};
 use thin_vec::ThinVec;
 
 pub use crate::values::specified::text::Hyphens;
+pub use crate::values::specified::text::TextSizeAdjust;
 pub use crate::values::specified::text::{
     HyphenateCharacter, LineBreak, MozControlCharacterVisibility, OverflowWrap, RubyPosition,
     TextAlignLast, TextAutospace, TextBoxEdge, TextBoxTrim, TextDecorationLine,

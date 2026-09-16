@@ -482,3 +482,31 @@ pub enum ShapeRendering {
     Crispedges,
     Geometricprecision,
 }
+
+/// https://svgwg.org/svg2-draft/painting.html#StrokeLinecapProperty
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum StrokeLinecap {
+    Butt,
+    Round,
+    Square,
+}

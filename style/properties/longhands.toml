@@ -3940,7 +3940,8 @@ struct = "inherited_svg"
 spec = "https://svgwg.org/svg2-draft/painting.html#StrokeLinecapProperty"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["butt", "round", "square"] }
+type = "StrokeLinecap"
+initial = "computed::StrokeLinecap::Butt"
 
 [stroke-linejoin]
 struct = "inherited_svg"

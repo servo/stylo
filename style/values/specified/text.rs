@@ -1727,3 +1727,30 @@ pub enum TextSecurity {
     Disc,
     Square,
 }
+
+/// https://drafts.csswg.org/css-text-4/#propdef-text-wrap-mode
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum TextWrapMode {
+    Wrap,
+    Nowrap,
+}

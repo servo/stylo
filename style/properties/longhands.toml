@@ -4032,7 +4032,8 @@ spec = "https://drafts.csswg.org/css-text-4/#propdef-text-wrap-mode"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["wrap", "nowrap"] }
+type = "TextWrapMode"
+initial = "computed::TextWrapMode::Wrap"
 
 [text-wrap-style]
 struct = "inherited_text"

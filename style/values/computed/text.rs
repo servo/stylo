@@ -30,6 +30,7 @@ pub use crate::values::specified::text::TextCombineUpright;
 pub use crate::values::specified::text::TextRendering;
 pub use crate::values::specified::text::TextSecurity;
 pub use crate::values::specified::text::TextSizeAdjust;
+pub use crate::values::specified::text::TextWrapMode;
 pub use crate::values::specified::text::{
     HyphenateCharacter, LineBreak, MozControlCharacterVisibility, OverflowWrap, RubyPosition,
     TextAlignLast, TextAutospace, TextBoxEdge, TextBoxTrim, TextDecorationLine,

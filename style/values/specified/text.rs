@@ -1642,3 +1642,30 @@ pub enum RubyAlign {
     Center,
     SpaceBetween,
 }
+
+/// https://drafts.csswg.org/css-writing-modes-3/#text-combine-upright
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum TextCombineUpright {
+    None,
+    All,
+}

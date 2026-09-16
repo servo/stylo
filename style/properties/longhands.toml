@@ -4005,7 +4005,8 @@ engine = "gecko"
 spec = "https://drafts.csswg.org/css-writing-modes-3/#text-combine-upright"
 animation_type = "none"
 affects = "layout"
-keyword = { values = ["none", "all"] }
+type = "TextCombineUpright"
+initial = "computed::TextCombineUpright::None"
 
 [text-rendering]
 struct = "inherited_text"

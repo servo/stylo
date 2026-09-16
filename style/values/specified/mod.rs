@@ -134,6 +134,7 @@ pub use self::text::{
 pub use self::text::Hyphens;
 pub use self::text::TextSizeAdjust;
 pub use self::text::RubyAlign;
+pub use self::text::TextCombineUpright;
 pub use self::time::{NoCalcTime, Time};
 pub use self::transform::{Rotate, Scale, Transform};
 pub use self::transform::{TransformBox, TransformOrigin, TransformStyle, Translate};

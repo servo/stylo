@@ -3842,7 +3842,8 @@ engine = "gecko"
 spec = "https://w3c.github.io/mathml-core/#the-math-shift"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["normal", "compact"] }
+type = "MathShift"
+initial = "computed::MathShift::Normal"
 
 [-moz-osx-font-smoothing]
 struct = "font"

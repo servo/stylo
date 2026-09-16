@@ -2095,3 +2095,30 @@ bitflags! {
         const NEEDS_MATH_SCALES = 1 << 3;
     }
 }
+
+/// https://w3c.github.io/mathml-core/#the-math-shift
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum MathShift {
+    Normal,
+    Compact,
+}

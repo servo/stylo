@@ -37,6 +37,7 @@ pub use crate::values::specified::Integer as SpecifiedInteger;
 pub use crate::values::specified::Number as SpecifiedNumber;
 pub use crate::values::specified::font::MathShift;
 pub use crate::values::specified::font::MathStyle;
+pub use crate::values::specified::font::MathVariant;
 pub use crate::values::specified::font::MozScriptSizeMultiplier;
 pub use crate::values::specified::font::{FontPalette, FontSynthesis, FontSynthesisStyle};
 pub use crate::values::specified::font::{

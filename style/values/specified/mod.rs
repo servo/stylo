@@ -88,6 +88,7 @@ pub use self::font::{FontVariantEastAsian, FontVariationSettings, LineHeight};
 pub use self::font::{MathDepth, MozScriptMinSize, MozScriptSizeMultiplier, XLang, XTextScale};
 pub use self::font::MathShift;
 pub use self::font::MathStyle;
+pub use self::font::MathVariant;
 pub use self::image::{
     EndingShape as GradientEndingShape, Gradient, Image, ImageDecoding, ImageRendering,
 };

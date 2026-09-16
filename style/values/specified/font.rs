@@ -2149,3 +2149,47 @@ pub enum MathStyle {
     Normal,
     Compact,
 }
+
+/// Internal (not web-exposed). Presentation attribute for legacy mathml mathvariant.
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum MathVariant {
+    None,
+    Normal,
+    Bold,
+    Italic,
+    BoldItalic,
+    Script,
+    BoldScript,
+    Fraktur,
+    DoubleStruck,
+    BoldFraktur,
+    SansSerif,
+    BoldSansSerif,
+    SansSerifItalic,
+    SansSerifBoldItalic,
+    Monospace,
+    Initial,
+    Tailed,
+    Looped,
+    Stretched,
+}

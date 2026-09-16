@@ -4317,7 +4317,8 @@ enabled_in = ""
 has_effect_on_gecko_scrollbars = false
 affects = "layout"
 gecko_ffi_name = "mMathVariant"
-keyword = { values = ["none", "normal", "bold", "italic", "bold-italic", "script", "bold-script", "fraktur", "double-struck", "bold-fraktur", "sans-serif", "bold-sans-serif", "sans-serif-italic", "sans-serif-bold-italic", "monospace", "initial", "tailed", "looped", "stretched"] }
+type = "MathVariant"
+initial = "computed::MathVariant::None"
 
 [white-space-collapse]
 struct = "inherited_text"

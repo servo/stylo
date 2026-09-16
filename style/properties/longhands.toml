@@ -4232,7 +4232,8 @@ animation_type = "discrete"
 enabled_in = "chrome"
 affects = "overflow"
 gecko_ffi_name = "mWindowShadow"
-keyword = { values = ["auto", "none"] }
+type = "WindowShadow"
+initial = "computed::WindowShadow::Auto"
 
 [field-sizing]
 struct = "ui"

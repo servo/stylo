@@ -4140,7 +4140,8 @@ animation_type = "discrete"
 affects = "paint"
 vector = {}
 extra_prefixes = ["webkit"]
-keyword = { values = ["add", "subtract", "intersect", "exclude"] }
+type = "MaskComposite"
+initial = "computed::MaskComposite::Add"
 
 [table-layout]
 struct = "table"

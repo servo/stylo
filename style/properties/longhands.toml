@@ -4080,7 +4080,8 @@ animation_type = "discrete"
 affects = "layout"
 extra_prefixes = ["moz:layout.css.prefixes.box-sizing", "webkit"]
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["content-box", "border-box"] }
+type = "BoxSizing"
+initial = "computed::BoxSizing::ContentBox"
 
 [object-fit]
 struct = "position"

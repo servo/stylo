@@ -111,6 +111,7 @@ pub use self::position::{
     PositionOrAuto, PositionTryFallbacks, PositionTryOrder, PositionVisibility, ScopedName, ZIndex,
 };
 pub use self::position::FlexDirection;
+pub use self::position::BoxSizing;
 pub use self::random::{RandomCacheKey, RandomUaIdent};
 pub use self::ratio::Ratio;
 pub use self::rect::NonNegativeLengthOrNumberRect;

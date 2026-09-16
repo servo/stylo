@@ -161,6 +161,7 @@ pub use self::text::TextRendering;
 pub use self::text::TextSecurity;
 pub use self::text::TextWrapMode;
 pub use self::text::TextWrapStyle;
+pub use self::text::UnicodeBidi;
 pub use self::time::Time;
 pub use self::transform::{Rotate, Scale, Transform, TransformBox, TransformOperation};
 pub use self::transform::{TransformOrigin, TransformStyle, Translate};

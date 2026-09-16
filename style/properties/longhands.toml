@@ -4159,7 +4159,8 @@ spec = "https://drafts.csswg.org/css-writing-modes/#propdef-unicode-bidi"
 animation_type = "none"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["normal", "embed", "isolate", "bidi-override", "isolate-override", "plaintext"] }
+type = "UnicodeBidi"
+initial = "computed::UnicodeBidi::Normal"
 
 [text-decoration-style]
 struct = "text"

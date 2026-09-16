@@ -3898,7 +3898,8 @@ engine = "gecko"
 spec = "https://drafts.csswg.org/css-images/#propdef-image-orientation"
 animation_type = "discrete"
 affects = "layout"
-keyword = { values = ["from-image", "none"] }
+type = "ImageOrientation"
+initial = "computed::ImageOrientation::FromImage"
 
 [text-anchor]
 struct = "inherited_svg"

@@ -22,6 +22,7 @@ pub use crate::values::specified::box_::BoxCollapse;
 pub use crate::values::specified::box_::Isolation;
 pub use crate::values::specified::box_::Orient;
 pub use crate::values::specified::box_::ScrollBehavior;
+pub use crate::values::specified::box_::TextOrientation;
 pub use crate::values::specified::box_::TopLayer;
 pub use crate::values::specified::box_::Visibility;
 pub use crate::values::specified::box_::{

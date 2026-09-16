@@ -3889,7 +3889,8 @@ servo_pref = "layout.unimplemented"
 spec = "https://drafts.csswg.org/css-writing-modes/#propdef-text-orientation"
 animation_type = "none"
 affects = "layout"
-keyword = { values = ["mixed", "upright", "sideways"], gecko_aliases = ["sideways-right=sideways"] }
+type = "TextOrientation"
+initial = "computed::TextOrientation::Mixed"
 
 [image-orientation]
 struct = "inherited_box"

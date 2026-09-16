@@ -2416,3 +2416,32 @@ pub enum BoxCollapse {
     Flex,
     Legacy,
 }
+
+/// https://drafts.csswg.org/css-writing-modes/#propdef-text-orientation
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum TextOrientation {
+    Mixed,
+    Upright,
+    #[cfg_attr(feature = "gecko", parse(aliases = "sideways-right"))]
+    Sideways,
+}

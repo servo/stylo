@@ -453,3 +453,32 @@ pub enum TextAnchor {
     Middle,
     End,
 }
+
+/// https://svgwg.org/svg2-draft/painting.html#ShapeRenderingProperty
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum ShapeRendering {
+    Auto,
+    Optimizespeed,
+    Crispedges,
+    Geometricprecision,
+}

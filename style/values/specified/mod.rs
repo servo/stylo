@@ -117,6 +117,7 @@ pub use self::svg::{DProperty, MozContextProperties};
 pub use self::svg::{SVGLength, SVGOpacity, SVGPaint};
 pub use self::svg::{SVGPaintOrder, SVGStrokeDashArray, SVGWidth, VectorEffect};
 pub use self::svg::TextAnchor;
+pub use self::svg::ShapeRendering;
 pub use self::svg_path::SVGPathData;
 pub use self::text::RubyPosition;
 pub use self::text::{HyphenateCharacter, HyphenateLimitChars};

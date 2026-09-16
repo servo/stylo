@@ -3932,7 +3932,8 @@ engine = "gecko"
 spec = "https://svgwg.org/svg2-draft/painting.html#ShapeRenderingProperty"
 animation_type = "discrete"
 affects = "paint"
-keyword = { values = ["auto", "optimizespeed", "crispedges", "geometricprecision"] }
+type = "ShapeRendering"
+initial = "computed::ShapeRendering::Auto"
 
 [stroke-linecap]
 struct = "inherited_svg"

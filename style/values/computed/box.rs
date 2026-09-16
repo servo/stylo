@@ -17,6 +17,7 @@ use crate::values::specified::box_ as specified;
 use std::fmt;
 use style_traits::{CssWriter, ToCss};
 
+pub use crate::values::specified::box_::Isolation;
 pub use crate::values::specified::box_::ScrollBehavior;
 pub use crate::values::specified::box_::TopLayer;
 pub use crate::values::specified::box_::{

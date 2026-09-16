@@ -3740,7 +3740,8 @@ spec = "https://drafts.fxtf.org/compositing/#isolation"
 animation_type = "discrete"
 affects = "paint"
 servo_restyle_damage = "repaint"
-keyword = { values = ["auto", "isolate"] }
+type = "Isolation"
+initial = "computed::Isolation::Auto"
 
 [backface-visibility]
 struct = "box"

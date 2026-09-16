@@ -1847,3 +1847,39 @@ pub enum TextDecorationStyle {
     Double = 4,
     Wavy = 5,
 }
+
+/// Max valid value for TextDecorationStyle, see above.
+pub const MAX_LINE_STYLE: i32 = 5;
+
+/// https://drafts.csswg.org/css-text-4/#propdef-white-space-collapse
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum WhiteSpaceCollapse {
+    Collapse,
+    // TODO: Discard is not yet supported.
+    Preserve,
+    PreserveBreaks,
+    BreakSpaces,
+    #[cfg(feature = "gecko")]
+    #[cfg_attr(feature = "gecko", parse(aliases = "-moz-pre-space"))]
+    PreserveSpaces,
+}

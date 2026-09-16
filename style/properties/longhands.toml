@@ -3672,20 +3672,13 @@ keyword = { values = ["padding-box", "border-box", "content-box"], gecko_enum_pr
 
 [background-blend-mode]
 struct = "background"
+type = "Blend"
+initial = "computed::Blend::Normal"
 vector = {}
 animation_type = "discrete"
 spec = "https://drafts.fxtf.org/compositing/#background-blend-mode"
 affects = "paint"
 servo_restyle_damage = "repaint"
-
-[background-blend-mode.keyword]
-values = [
-  "normal", "multiply", "screen", "overlay", "darken", "lighten",
-  "color-dodge", "color-burn", "hard-light", "soft-light", "difference",
-  "exclusion", "hue", "saturation", "color", "luminosity"
-]
-gecko_enum_prefix = "StyleBlend"
-gecko_inexhaustive = true
 
 [box-decoration-break]
 struct = "border"

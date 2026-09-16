@@ -311,19 +311,6 @@ class Keyword(object):
     def maybe_cast(self, type_str):
         return "as " + type_str if self.needs_cast() else ""
 
-    def casted_constant_name(self, value, cast_type):
-        if cast_type is None:
-            raise TypeError("We should specify the cast_type.")
-
-        if self.gecko_enum_prefix is None:
-            return cast_type.upper() + "_" + self.gecko_constant(value)
-        else:
-            return (
-                cast_type.upper()
-                + "_"
-                + self.gecko_constant(value).upper().replace("::", "_")
-            )
-
 
 def parse_property_aliases(alias_list):
     result = []
@@ -424,7 +411,6 @@ class Longhand(Property):
         gecko_ffi_name=None,
         has_effect_on_gecko_scrollbars=None,
         rule_types_allowed=None,
-        cast_type="u8",
         logical=False,
         logical_group=None,
         aliases=None,
@@ -473,7 +459,6 @@ class Longhand(Property):
             + "property is inherited and is behind a Gecko pref or internal"
         )
         self.gecko_ffi_name = gecko_ffi_name or "m" + self.camel_case
-        self.cast_type = cast_type
         self.logical = logical
         self.logical_group = logical_group
         if self.logical:
@@ -542,8 +527,7 @@ class Longhand(Property):
             return False
         if self.vector and not self.vector.simple_bindings:
             return False
-        # Keyword enums are still defined by hand in nsStyleConsts.h and
-        # converted on access.
+        # The remaining keyword longhands are converted on access in Gecko.
         if self.keyword:
             return False
         return self.name not in self.NO_BORROWED_GETTER

@@ -1167,7 +1167,7 @@ impl ToComputedValue for specified::MathDepth {
         let int = match self {
             specified::MathDepth::AutoAdd => {
                 let parent = *cx.builder.get_parent_font().get_math_depth() as i32;
-                let style = cx.builder.get_parent_font().slow_clone_math_style();
+                let style = *cx.builder.get_parent_font().get_math_style();
                 if style == MathStyleValue::Compact {
                     parent.saturating_add(1)
                 } else {

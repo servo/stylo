@@ -2612,7 +2612,7 @@ impl<'a> StyleBuilder<'a> {
     /// Whether this style has a top-layer style.
     #[cfg(feature = "gecko")]
     pub fn in_top_layer(&self) -> bool {
-        matches!(self.get_box().slow_clone__moz_top_layer(),
+        matches!(self.get_box().get__moz_top_layer(),
                  longhands::_moz_top_layer::computed_value::T::Auto)
     }
 

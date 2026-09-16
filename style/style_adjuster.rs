@@ -173,7 +173,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
 
         let disp = *box_style.get_display();
         if disp.inside() != DisplayInside::WebkitBox
-            || self.style.get_xul().slow_clone__moz_box_orient() != BoxOrient::Vertical
+            || *self.style.get_xul().get__moz_box_orient() != BoxOrient::Vertical
         {
             return;
         }
@@ -340,10 +340,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         use crate::logical_geometry;
 
         let writing_mode = *self.style.get_inherited_box().get_writing_mode();
-        let text_combine_upright = self
-            .style
-            .get_inherited_text()
-            .slow_clone_text_combine_upright();
+        let text_combine_upright = *self.style.get_inherited_text().get_text_combine_upright();
 
         if matches!(
             writing_mode,
@@ -548,10 +545,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
             return;
         }
 
-        let old_collapse = self
-            .style
-            .get_inherited_text()
-            .slow_clone_white_space_collapse();
+        let old_collapse = *self.style.get_inherited_text().get_white_space_collapse();
         let new_collapse = match old_collapse {
             WhiteSpaceCollapse::Preserve | WhiteSpaceCollapse::BreakSpaces => old_collapse,
             WhiteSpaceCollapse::Collapse
@@ -693,7 +687,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         // Force bidi isolation on all internal ruby boxes and ruby container
         // per spec https://drafts.csswg.org/css-ruby-1/#bidi
         if self_display.is_ruby_type() {
-            let new_value = match self.style.get_text().slow_clone_unicode_bidi() {
+            let new_value = match *self.style.get_text().get_unicode_bidi() {
                 UnicodeBidi::Normal | UnicodeBidi::Embed => Some(UnicodeBidi::Isolate),
                 UnicodeBidi::BidiOverride => Some(UnicodeBidi::IsolateOverride),
                 _ => None,

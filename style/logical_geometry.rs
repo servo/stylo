@@ -135,7 +135,7 @@ impl WritingMode {
 
         let mut flags = WritingMode::empty();
 
-        let direction = inheritedbox_style.slow_clone_direction();
+        let direction = *inheritedbox_style.get_direction();
         let writing_mode = *inheritedbox_style.get_writing_mode();
 
         match direction {
@@ -187,7 +187,7 @@ impl WritingMode {
             // vertical-lr values of writing-mode.
             match writing_mode {
                 WritingModeProperty::VerticalRl | WritingModeProperty::VerticalLr => {
-                    match inheritedbox_style.slow_clone_text_orientation() {
+                    match *inheritedbox_style.get_text_orientation() {
                         TextOrientation::Mixed => {},
                         TextOrientation::Upright => {
                             flags.insert(WritingMode::UPRIGHT);

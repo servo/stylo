@@ -374,121 +374,15 @@ impl ComputedValuesInner {
 </%def>
 
 <%!
-def get_gecko_property(ffi_name, self_param = "self"):
-    return "%s.%s" % (self_param, ffi_name)
-
 def set_gecko_property(ffi_name, expr):
     return "self.%s = %s;" % (ffi_name, expr)
 %>
-
-<%def name="impl_keyword_setter(ident, gecko_ffi_name, keyword, cast_type='u8')">
-    // The `as` cast below normalizes the keyword's underlying gecko
-    // constants (which can be a mix of differently-typed `#define`
-    // macros) to a common type, so it's a no-op for some values in the
-    // set even though it's needed for others.
-    #[allow(non_snake_case, clippy::unnecessary_cast)]
-    pub fn set_${ident}(&mut self, v: longhands::${ident}::computed_value::T) {
-        use crate::properties::longhands::${ident}::computed_value::T as Keyword;
-        // FIXME(bholley): Align binary representations and ditch |match| for cast + static_asserts
-        let result = match v {
-            % for value in keyword.values_for('gecko'):
-                Keyword::${to_camel_case(value)} =>
-                    structs::${keyword.gecko_constant(value)} ${keyword.maybe_cast(cast_type)},
-            % endfor
-        };
-        ${set_gecko_property(gecko_ffi_name, "result")}
-    }
-</%def>
-
-<%def name="impl_keyword_clone(ident, gecko_ffi_name, keyword, cast_type='u8')">
-    // The `as` casts below normalize this keyword's underlying gecko
-    // constants to one common type (see the comment below on mixed
-    // signedness), so some individual casts are no-ops even though the
-    // group as a whole needs them.
-    #[allow(non_snake_case, clippy::unnecessary_cast)]
-    pub fn slow_clone_${ident}(&self) -> longhands::${ident}::computed_value::T {
-        use crate::properties::longhands::${ident}::computed_value::T as Keyword;
-        // FIXME(bholley): Align binary representations and ditch |match| for cast + static_asserts
-
-        // Some constant macros in the gecko are defined as negative integer(e.g. font-width).
-        // And they are convert to signed integer in Rust bindings. We need to cast then
-        // as signed type when we have both signed/unsigned integer in order to use them
-        // as match's arms.
-        // Also, to use same implementation here we use casted constant if we have only singed values.
-        % if keyword.gecko_enum_prefix is None:
-        % for value in keyword.values_for('gecko'):
-        const ${keyword.casted_constant_name(value, cast_type)} : ${cast_type} =
-            structs::${keyword.gecko_constant(value)} as ${cast_type};
-        % endfor
-
-        match ${get_gecko_property(gecko_ffi_name)} as ${cast_type} {
-            % for value in keyword.values_for('gecko'):
-            ${keyword.casted_constant_name(value, cast_type)} => Keyword::${to_camel_case(value)},
-            % endfor
-            % if keyword.gecko_inexhaustive:
-            _ => panic!("Found unexpected value in style struct for ${ident} property"),
-            % endif
-        }
-        % else:
-        match ${get_gecko_property(gecko_ffi_name)} {
-            % for value in keyword.values_for('gecko'):
-            structs::${keyword.gecko_constant(value)} => Keyword::${to_camel_case(value)},
-            % endfor
-            % if keyword.gecko_inexhaustive:
-            _ => panic!("Found unexpected value in style struct for ${ident} property"),
-            % endif
-        }
-        % endif
-    }
-</%def>
-
-<%def name="impl_keyword(ident, gecko_ffi_name, keyword, cast_type='u8', **kwargs)">
-<%call expr="impl_keyword_setter(ident, gecko_ffi_name, keyword, cast_type, **kwargs)"></%call>
-<%call expr="impl_simple_copy(ident, gecko_ffi_name, **kwargs)"></%call>
-<%call expr="impl_keyword_clone(ident, gecko_ffi_name, keyword, cast_type)"></%call>
-<%call expr="impl_simple_eq(ident, gecko_ffi_name)"></%call>
-</%def>
 
 <%def name="impl_simple(ident, gecko_ffi_name, borrowed=True)">
 <%call expr="impl_simple_setter(ident, gecko_ffi_name)"></%call>
 <%call expr="impl_simple_copy(ident, gecko_ffi_name)"></%call>
 <%call expr="impl_simple_clone(ident, gecko_ffi_name, borrowed)"></%call>
 <%call expr="impl_simple_eq(ident, gecko_ffi_name)"></%call>
-</%def>
-
-<%def name="impl_border_width(ident, gecko_ffi_name, inherit_from)">
-    #[allow(non_snake_case)]
-    pub fn set_${ident}(&mut self, v: Au) {
-        let value = v.0;
-        self.${inherit_from} = value;
-        self.${gecko_ffi_name} = value;
-    }
-
-    #[allow(non_snake_case)]
-    pub fn copy_${ident}_from(&mut self, other: &Self) {
-        self.${inherit_from} = other.${inherit_from};
-        // NOTE: This is needed to easily handle the `unset` and `initial`
-        // keywords, which are implemented calling this function.
-        //
-        // In practice, this means that we may have an incorrect value here, but
-        // we'll adjust that properly in the style fixup phase.
-        //
-        // FIXME(emilio): We could clean this up a bit special-casing the reset_
-        // function below.
-        self.${gecko_ffi_name} = other.${inherit_from};
-    }
-
-    #[allow(non_snake_case)]
-    pub fn reset_${ident}(&mut self, other: &Self) {
-        self.copy_${ident}_from(other)
-    }
-
-    #[allow(non_snake_case)]
-    pub fn slow_clone_${ident}(&self) -> Au {
-        Au(self.${gecko_ffi_name})
-    }
-
-    ${impl_simple_eq(ident, gecko_ffi_name)}
 </%def>
 
 <%def name="impl_style_struct(style_struct)">
@@ -603,21 +497,14 @@ impl Clone for ${style_struct.gecko_struct_name} {
                 if not (skip_longhands == "*" or x.name in skip_longhands.split())]
 
     def longhand_method(longhand):
-        args = dict(ident=longhand.ident, gecko_ffi_name=longhand.gecko_ffi_name)
-
         if longhand.logical:
             return
-        # get the method and pass additional keyword or type-specific arguments
-        if longhand.keyword:
-            method = impl_keyword
-            args.update(keyword=longhand.keyword)
-            if "font" in longhand.ident:
-                args.update(cast_type=longhand.cast_type)
-        else:
-            method = impl_simple
-            args.update(borrowed=longhand.has_borrowed_getter())
-
-        method(**args)
+        assert not longhand.keyword, "Keyword longhands should use a predefined type"
+        impl_simple(
+            ident=longhand.ident,
+            gecko_ffi_name=longhand.gecko_ffi_name,
+            borrowed=longhand.has_borrowed_getter(),
+        )
 %>
 impl ${style_struct.gecko_struct_name} {
     /*
@@ -1008,8 +895,8 @@ fn static_assert() {
 
     <% copy_simple_image_array_property(name, shorthand, layer_field_name, field_name) %>
 
-    // See impl_keyword_setter above: this normalizes mixed-type gecko
-    // constants to `u8`, so it's a no-op for some keywords' values.
+    // The `as` cast below normalizes mixed-type gecko constants to `u8`, so
+    // it's a no-op for some keywords' values.
     #[allow(clippy::unnecessary_cast)]
     pub fn set_${ident}<I>(&mut self, v: I)
     where

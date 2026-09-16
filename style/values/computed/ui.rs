@@ -9,6 +9,7 @@ use crate::values::computed::color::Color;
 use crate::values::computed::image::Image;
 use crate::values::generics::ui as generics;
 
+pub use crate::values::specified::ui::FieldSizing;
 pub use crate::values::specified::ui::ImeMode;
 pub use crate::values::specified::ui::ScrollbarWidth;
 pub use crate::values::specified::ui::WindowDragging;

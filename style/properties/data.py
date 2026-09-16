@@ -664,6 +664,7 @@ class Longhand(Property):
             return False
         if self.predefined_type:
             return self.predefined_type in {
+                "FieldSizing",
                 "WindowShadow",
                 "WindowDragging",
                 "ScrollbarWidth",

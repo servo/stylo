@@ -175,6 +175,7 @@ pub use self::ui::ImeMode;
 pub use self::ui::ScrollbarWidth;
 pub use self::ui::WindowDragging;
 pub use self::ui::WindowShadow;
+pub use self::ui::FieldSizing;
 pub use self::table::BorderCollapse;
 pub use self::table::EmptyCells;
 pub use self::table::TableLayout;

@@ -4242,7 +4242,8 @@ spec = "https://drafts.csswg.org/css-ui/#field-sizing"
 animation_type = "discrete"
 affects = "layout"
 gecko_pref = "layout.css.field-sizing.enabled"
-keyword = { values = ["fixed", "content"] }
+type = "FieldSizing"
+initial = "computed::FieldSizing::Fixed"
 
 [-moz-box-align]
 struct = "xul"

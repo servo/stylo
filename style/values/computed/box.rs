@@ -18,6 +18,7 @@ use std::fmt;
 use style_traits::{CssWriter, ToCss};
 
 pub use crate::values::specified::box_::BackfaceVisibility;
+pub use crate::values::specified::box_::BoxCollapse;
 pub use crate::values::specified::box_::Isolation;
 pub use crate::values::specified::box_::Orient;
 pub use crate::values::specified::box_::ScrollBehavior;

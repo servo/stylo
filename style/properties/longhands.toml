@@ -3880,7 +3880,8 @@ spec = "None (internal)"
 animation_type = "none"
 enabled_in = "chrome"
 affects = "layout"
-keyword = { values = ["flex", "legacy"] }
+type = "BoxCollapse"
+initial = "computed::BoxCollapse::Flex"
 
 [text-orientation]
 struct = "inherited_box"

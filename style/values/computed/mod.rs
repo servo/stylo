@@ -78,6 +78,7 @@ pub use self::box_::Isolation;
 pub use self::box_::BackfaceVisibility;
 pub use self::box_::Orient;
 pub use self::box_::Visibility;
+pub use self::box_::BoxCollapse;
 pub use self::color::{
     Color, ColorOrAuto, ColorPropertyValue, ColorScheme, ForcedColorAdjust, PrintColorAdjust,
 };

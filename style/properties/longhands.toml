@@ -3827,7 +3827,8 @@ animation_type = "discrete"
 affects = "layout"
 gecko_ffi_name = "mFont.opticalSizing"
 servo_pref = "layout.variable_fonts.enabled"
-keyword = { values = ["auto", "none"], gecko_constant_prefix = "NS_FONT_OPTICAL_SIZING" }
+type = "FontOpticalSizing"
+initial = "computed::FontOpticalSizing::Auto"
 
 [math-style]
 struct = "font"

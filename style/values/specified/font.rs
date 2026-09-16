@@ -2222,3 +2222,30 @@ pub enum FontVariantEmoji {
     Emoji,
     Unicode,
 }
+
+/// https://www.w3.org/TR/css-fonts-4/#font-optical-sizing-def
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    FromPrimitive,
+    Hash,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    Serialize,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum FontOpticalSizing {
+    Auto,
+    None,
+}

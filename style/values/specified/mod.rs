@@ -94,6 +94,7 @@ pub use self::length::{
 };
 pub use self::list::ListStyleType;
 pub use self::list::Quotes;
+pub use self::list::ListStylePosition;
 pub use self::motion::{OffsetPath, OffsetPosition, OffsetRotate};
 pub use self::number::{
     GreaterThanOrEqualToOneNumber, Integer, NoCalcNumber, NonNegativeInteger, NonNegativeNumber,

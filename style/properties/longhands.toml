@@ -4050,7 +4050,8 @@ spec = "https://drafts.csswg.org/css-lists/#propdef-list-style-position"
 animation_type = "discrete"
 affects = "layout"
 servo_restyle_damage = "rebuild_box"
-keyword = { values = ["outside", "inside"] }
+type = "ListStylePosition"
+initial = "computed::ListStylePosition::Outside"
 
 [flex-direction]
 struct = "position"

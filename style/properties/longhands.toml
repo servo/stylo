@@ -4177,7 +4177,8 @@ spec = "https://drafts.csswg.org/css-ui/#input-method-editor"
 animation_type = "discrete"
 affects = ""
 gecko_ffi_name = "mIMEMode"
-keyword = { values = ["auto", "normal", "active", "disabled", "inactive"] }
+type = "ImeMode"
+initial = "computed::ImeMode::Auto"
 
 [scrollbar-width]
 struct = "ui"

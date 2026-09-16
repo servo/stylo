@@ -171,6 +171,7 @@ pub use self::ui::CursorImage;
 pub use self::ui::{
     BoolInteger, Cursor, Inert, MozTheme, PointerEvents, ScrollbarColor, UserFocus, UserSelect,
 };
+pub use self::ui::ImeMode;
 pub use self::table::BorderCollapse;
 pub use self::table::EmptyCells;
 pub use self::table::TableLayout;

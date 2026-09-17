@@ -15,9 +15,8 @@ use crate::values::DashedIdent;
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::generics::Optional;
 use crate::values::generics::calc::{
-    self as generic, CalcNodeLeaf, CalcType, GenericAnchorFunctionFallback,
-    GenericCalcPercentageLeaf, GenericRandomFunction, MinMaxOp, ModRemOp, ProgressClampingMode,
-    RoundingStrategy, SimplificationResult, SortKey,
+    self as generic, CalcNodeLeaf, CalcType, GenericAnchorFunctionFallback, GenericRandomFunction,
+    MinMaxOp, ModRemOp, ProgressClampingMode, RoundingStrategy, SimplificationResult, SortKey,
 };
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{
@@ -104,8 +103,7 @@ impl MathFunction {
     }
 }
 
-/// The value of a percentage leaf node that contains an associated percent hint.
-pub type CalcPercentageLeaf = GenericCalcPercentageLeaf<NoCalcPercentage>;
+pub use crate::values::generics::calc::CalcPercentageLeaf;
 
 /// A leaf node inside a `Calc` expression's AST.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToShmem)]
@@ -250,7 +248,7 @@ impl CalcNumeric {
     /// Gets this calc expression as a percentage
     pub fn as_percentage(&self) -> Option<NoCalcPercentage> {
         match self.node.resolve() {
-            Ok(Leaf::Percentage(p)) => Some(p.value),
+            Ok(Leaf::Percentage(p)) => Some(NoCalcPercentage::new(p.get())),
             _ => None,
         }
     }
@@ -891,7 +889,9 @@ pub enum CalcNodeParseInPlaceOperations {
 }
 
 /// A calc node representation for specified values.
-pub type CalcNode = generic::GenericCalcNode<Leaf>;
+pub type SpecifiedCalcNode = generic::GenericCalcNode<Leaf>;
+pub use self::SpecifiedCalcNode as CalcNode;
+
 impl CalcNode {
     /// Tries to parse a single element in the expression, that is, a
     /// `<length>`, `<angle>`, `<time>`, `<percentage>`, `<resolution>`, etc.

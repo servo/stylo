@@ -67,6 +67,7 @@ pub enum PseudoElement {
     SliderFill,
     SliderThumb,
     SliderTrack,
+    MozProgressBar,
 
     // Private, Servo-specific implemented pseudos. Only matchable in UA sheet.
     ServoTextControlInnerContainer,
@@ -104,6 +105,7 @@ impl ToCss for PseudoElement {
             SliderFill => "::slider-fill",
             SliderTrack => "::slider-track",
             SliderThumb => "::slider-thumb",
+            MozProgressBar => "::-moz-progress-bar",
             ServoTextControlInnerContainer => "::-servo-text-control-inner-container",
             ServoTextControlInnerEditor => "::-servo-text-control-inner-editor",
             ServoAnonymousBox => "::-servo-anonymous-box",
@@ -262,6 +264,7 @@ impl PseudoElement {
             | PseudoElement::SliderFill
             | PseudoElement::SliderThumb
             | PseudoElement::SliderTrack
+            | PseudoElement::MozProgressBar
             | PseudoElement::ServoTextControlInnerContainer
             | PseudoElement::ServoTextControlInnerEditor => PseudoElementCascadeType::Lazy,
             PseudoElement::ServoAnonymousBox
@@ -350,6 +353,7 @@ impl PseudoElement {
                     | Self::SliderFill
                     | Self::SliderThumb
                     | Self::SliderTrack
+                    | Self::MozProgressBar
                     | Self::ServoTextControlInnerContainer
                     | Self::ServoTextControlInnerEditor,
             )
@@ -710,6 +714,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "slider-fill" => SliderFill,
             "slider-thumb" => SliderThumb,
             "slider-track" => SliderTrack,
+            "-moz-progress-bar" => MozProgressBar,
             "-servo-anonymous-box" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(ParseError::custom(SelectorParseErrorKind::UnexpectedIdent))

@@ -432,11 +432,6 @@ class Longhand(Property):
         "-x-lang",
         "font-feature-settings",
         "font-variation-settings",
-        # Stored as the underlying slice rather than the List wrapper.
-        "backdrop-filter",
-        "box-shadow",
-        "filter",
-        "text-shadow",
     }
 
     def has_borrowed_getter(self):

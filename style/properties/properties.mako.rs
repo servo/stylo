@@ -1699,8 +1699,12 @@ impl ComputedValues {
     #[inline(always)]
     #[allow(non_snake_case)]
     pub fn get_${prop.ident}(
-        &self,
+        &self
+    % if prop.vector:
+    ) -> &[longhands::${prop.ident}::computed_value::single_value::T] {
+    % else:
     ) -> &longhands::${prop.ident}::computed_value::T {
+    % endif
         self.get_${prop.style_struct.name_lower}().get_${prop.ident}()
     }
 % endif

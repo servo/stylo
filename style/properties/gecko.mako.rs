@@ -306,42 +306,6 @@ impl ComputedValuesInner {
     % endfor
 }
 
-<%def name="impl_simple_setter(ident, gecko_ffi_name)">
-    #[allow(non_snake_case, clippy::useless_conversion)]
-    pub fn set_${ident}(&mut self, v: longhands::${ident}::computed_value::T) {
-        ${set_gecko_property(gecko_ffi_name, "From::from(v)")}
-    }
-</%def>
-
-<%def name="impl_simple_eq(ident, gecko_ffi_name)">
-    #[allow(non_snake_case)]
-    pub fn ${ident}_equals(&self, other: &Self) -> bool {
-        self.${gecko_ffi_name} == other.${gecko_ffi_name}
-    }
-</%def>
-
-<%def name="impl_simple_clone(ident, gecko_ffi_name, borrowed)">
-    % if borrowed:
-    #[allow(non_snake_case)]
-    #[inline]
-    pub fn get_${ident}(&self) -> &longhands::${ident}::computed_value::T {
-        &self.${gecko_ffi_name}
-    }
-
-    #[allow(non_snake_case, clippy::clone_on_copy)]
-    #[inline]
-    pub fn slow_clone_${ident}(&self) -> longhands::${ident}::computed_value::T {
-        self.get_${ident}().clone()
-    }
-    % else:
-    #[allow(non_snake_case, clippy::useless_conversion, clippy::clone_on_copy)]
-    #[inline]
-    pub fn slow_clone_${ident}(&self) -> longhands::${ident}::computed_value::T {
-        From::from(self.${gecko_ffi_name}.clone())
-    }
-    % endif
-</%def>
-
 <%def name="impl_physical_sides(ident, props)">
     pub fn get_${ident}(&self, s: PhysicalSide) -> &longhands::${data.longhands_by_name[props[0]].ident}::computed_value::T {
         match s {
@@ -361,7 +325,7 @@ impl ComputedValuesInner {
     }
 </%def>
 
-<%def name="impl_simple_copy(ident, gecko_ffi_name, *kwargs)">
+<%def name="impl_simple_copy(ident, gecko_ffi_name)">
     #[allow(non_snake_case, clippy::clone_on_copy)]
     pub fn copy_${ident}_from(&mut self, other: &Self) {
         self.${gecko_ffi_name} = other.${gecko_ffi_name}.clone();
@@ -373,16 +337,40 @@ impl ComputedValuesInner {
     }
 </%def>
 
-<%!
-def set_gecko_property(ffi_name, expr):
-    return "self.%s = %s;" % (ffi_name, expr)
-%>
+<%def name="impl_simple(lh)">
+    ${impl_simple_copy(lh.ident, lh.gecko_ffi_name)}
 
-<%def name="impl_simple(ident, gecko_ffi_name, borrowed=True)">
-<%call expr="impl_simple_setter(ident, gecko_ffi_name)"></%call>
-<%call expr="impl_simple_copy(ident, gecko_ffi_name)"></%call>
-<%call expr="impl_simple_clone(ident, gecko_ffi_name, borrowed)"></%call>
-<%call expr="impl_simple_eq(ident, gecko_ffi_name)"></%call>
+    #[allow(non_snake_case, clippy::useless_conversion)]
+    pub fn set_${lh.ident}(&mut self, v: longhands::${lh.ident}::computed_value::T) {
+        self.${lh.gecko_ffi_name} = From::from(v);
+    }
+
+    % if lh.has_borrowed_getter():
+    % if lh.vector and lh.vector.simple_bindings:
+    #[allow(non_snake_case)]
+    #[inline]
+    pub fn get_${lh.ident}(&self) -> &[longhands::${lh.ident}::computed_value::single_value::T] {
+        &self.${lh.gecko_ffi_name}
+    }
+    % else:
+    #[allow(non_snake_case)]
+    #[inline]
+    pub fn get_${lh.ident}(&self) -> &longhands::${lh.ident}::computed_value::T {
+        &self.${lh.gecko_ffi_name}
+    }
+    % endif
+    % endif
+
+    #[allow(non_snake_case, clippy::useless_conversion, clippy::clone_on_copy)]
+    #[inline]
+    pub fn slow_clone_${lh.ident}(&self) -> longhands::${lh.ident}::computed_value::T {
+        From::from(self.${lh.gecko_ffi_name}.clone())
+    }
+
+    #[allow(non_snake_case)]
+    pub fn ${lh.ident}_equals(&self, other: &Self) -> bool {
+        self.${lh.gecko_ffi_name} == other.${lh.gecko_ffi_name}
+    }
 </%def>
 
 <%def name="impl_style_struct(style_struct)">
@@ -499,11 +487,7 @@ impl Clone for ${style_struct.gecko_struct_name} {
     def longhand_method(longhand):
         if longhand.logical:
             return
-        impl_simple(
-            ident=longhand.ident,
-            gecko_ffi_name=longhand.gecko_ffi_name,
-            borrowed=longhand.has_borrowed_getter(),
-        )
+        impl_simple(longhand)
 %>
 impl ${style_struct.gecko_struct_name} {
     /*

@@ -1027,7 +1027,7 @@ pub type FontVariationSettings = FontSettings<VariationValue<Number>>;
 
 // The computed value of font-{feature,variation}-settings discards values
 // with duplicate tags, keeping only the last occurrence of each tag.
-fn dedup_font_settings<T>(settings_list: &mut Vec<T>)
+fn dedup_font_settings<T>(settings_list: &mut ThinVec<T>)
 where
     T: TaggedFontValue,
 {
@@ -1058,9 +1058,9 @@ where
             .0
             .iter()
             .map(|item| item.to_computed_value(context))
-            .collect::<Vec<_>>();
+            .collect::<ThinVec<_>>();
         dedup_font_settings(&mut v);
-        FontSettings(v.into_boxed_slice())
+        FontSettings(v)
     }
 
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {

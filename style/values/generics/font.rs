@@ -39,6 +39,7 @@ pub trait TaggedFontValue {
     ToResolvedValue,
     ToShmem,
 )]
+#[repr(C)]
 pub struct FeatureTagValue<Integer> {
     /// A four-character tag, packed into a u32 (one byte per character).
     pub tag: FontTag,
@@ -91,6 +92,7 @@ where
     ToResolvedValue,
     ToShmem,
 )]
+#[repr(C)]
 pub struct VariationValue<Number> {
     /// A four-character tag, packed into a u32 (one byte per character).
     #[animation(constant)]
@@ -123,14 +125,15 @@ impl<T> TaggedFontValue for VariationValue<T> {
     ToTyped,
 )]
 #[css(comma)]
+#[repr(transparent)]
 #[typed(todo_derive_fields)]
-pub struct FontSettings<T>(#[css(if_empty = "normal", iterable)] pub Box<[T]>);
+pub struct FontSettings<T>(#[css(if_empty = "normal", iterable)] pub ThinVec<T>);
 
 impl<T> FontSettings<T> {
     /// Default value of font settings as `normal`.
     #[inline]
     pub fn normal() -> Self {
-        FontSettings(vec![].into_boxed_slice())
+        FontSettings(Default::default())
     }
 }
 
@@ -148,7 +151,7 @@ impl<T: Parse> Parse for FontSettings<T> {
         Ok(FontSettings(
             input
                 .parse_comma_separated(|i| T::parse(context, i))?
-                .into_boxed_slice(),
+                .into(),
         ))
     }
 }
@@ -158,7 +161,6 @@ impl<T: Parse> Parse for FontSettings<T> {
 /// See:
 ///   https://drafts.csswg.org/css-fonts-4/#font-variation-settings-def
 ///   https://drafts.csswg.org/css-fonts-4/#descdef-font-face-font-feature-settings
-///
 #[derive(
     Clone,
     Copy,
@@ -174,6 +176,7 @@ impl<T: Parse> Parse for FontSettings<T> {
     ToResolvedValue,
     ToShmem,
 )]
+#[repr(transparent)]
 pub struct FontTag(pub u32);
 
 impl fmt::Debug for FontTag {

@@ -429,8 +429,6 @@ class Longhand(Property):
     # the Gecko style struct can only produce them by value.
     NO_BORROWED_GETTER = {
         "font-size",
-        "font-feature-settings",
-        "font-variation-settings",
     }
 
     def has_borrowed_getter(self):

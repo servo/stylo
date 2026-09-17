@@ -432,11 +432,6 @@ class Longhand(Property):
         "-x-lang",
         "font-feature-settings",
         "font-variation-settings",
-        # Stored as a plain float rather than NonNegative<f32>.
-        "flex-grow",
-        "flex-shrink",
-        "stroke-miterlimit",
-        "-moz-box-flex",
         # Stored as the underlying slice rather than the List wrapper.
         "backdrop-filter",
         "box-shadow",

@@ -104,6 +104,18 @@ impl std::ops::Rem for Percentage {
     }
 }
 
+impl From<f32> for Percentage {
+    fn from(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Percentage> for f32 {
+    fn from(percentage: Percentage) -> f32 {
+        percentage.0
+    }
+}
+
 impl ToCss for Percentage {
     fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where

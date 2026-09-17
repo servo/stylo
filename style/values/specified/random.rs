@@ -10,8 +10,9 @@ use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties::PropertyIdRef;
 use crate::values::computed::{Context, ToComputedValue};
+use crate::values::specified::Number;
 use crate::values::specified::calc::PercentageContext;
-use crate::values::specified::number::{Number, parse_number_with_clamping_mode};
+use crate::values::specified::number::parse_number_with_clamping_mode;
 use crate::values::{CSSFloat, CustomIdent, DashedIdent};
 use cssparser::{Parser, match_ignore_ascii_case};
 use selectors::parser::SelectorParseErrorKind;
@@ -118,9 +119,7 @@ impl Parse for RandomCacheKey {
         };
 
         loop {
-            if key.name.is_empty()
-                && let Ok(name) = input.try_parse(|input| DashedIdent::parse(context, input))
-            {
+            if key.name.is_empty() && let Ok(name) = input.try_parse(|input| DashedIdent::parse(context, input)) {
                 key.name = name;
                 continue;
             }
@@ -138,9 +137,7 @@ impl Parse for RandomCacheKey {
                 continue;
             }
 
-            if key.ua_ident.is_empty()
-                && let Ok(ua_ident) = input.try_parse(|input| RandomUaIdent::parse(context, input))
-            {
+            if key.ua_ident.is_empty() && let Ok(ua_ident) = input.try_parse(|input| RandomUaIdent::parse(context, input)) {
                 key.ua_ident = ua_ident;
                 continue;
             }
@@ -182,11 +179,8 @@ impl ToCss for RandomCacheKey {
 ///
 /// https://drafts.csswg.org/css-values-5/#typedef-random-key
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
-#[repr(u8)]
 pub enum RandomKey {
     /// A <number> used directly as the random base value.
-    /// TODO(bug 2071971): This is broken if it manages to get into a computed node. Refactor this
-    /// away altogether.
     Fixed(Number),
     /// A <random-cache-key> used to generate the random base value.
     CacheKey(RandomCacheKey),

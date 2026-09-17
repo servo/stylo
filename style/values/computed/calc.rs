@@ -4,16 +4,19 @@
 
 //! Computed-value calc() leaf types.
 
-use super::{Angle, Length, Number, Resolution, Time};
+use super::{Angle, Length, Number, Percentage, Resolution, Time};
 use crate::Zero;
 use crate::derives::*;
 use crate::typed_om::{NumericBaseType, NumericType};
 use crate::values::generics::Optional;
-use crate::values::generics::calc::{self, CalcType, SimplificationResult};
+use crate::values::generics::calc::{
+    self, CalcType, GenericCalcPercentageLeaf, SimplificationResult,
+};
 use debug_unreachable::debug_unreachable;
 use serde::{Deserialize, Serialize};
 
-pub use crate::values::generics::calc::CalcPercentageLeaf;
+/// The value of a percentage leaf node that contains an associated percent hint.
+pub type CalcPercentageLeaf = GenericCalcPercentageLeaf<Percentage>;
 
 /// The computed leaf of a calc() expression.
 #[derive(

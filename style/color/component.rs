@@ -14,7 +14,7 @@ use crate::{
     values::{
         animated::ToAnimatedValue,
         computed,
-        specified::calc::{CalcParseFlags, Leaf, PercentageContext, SpecifiedCalcNode},
+        specified::calc::{CalcNode, CalcParseFlags, Leaf, PercentageContext},
     },
 };
 use cssparser::{Parser, Token, color::OPAQUE};
@@ -31,7 +31,7 @@ pub enum ColorComponent<ValueType> {
     /// A channel keyword, e.g. `r`, `l`, `alpha`, etc.
     ChannelKeyword(ChannelKeyword),
     /// A calc() value.
-    Calc(Box<SpecifiedCalcNode>),
+    Calc(Box<CalcNode>),
     /// Used when alpha components are not specified.
     AlphaOmitted,
 }
@@ -60,7 +60,7 @@ pub trait ColorComponentType: Sized + Clone {
     fn try_from_token(token: &Token) -> Result<Self, ()>;
 
     /// Try to create a new component from the given [CalcNodeLeaf] that was
-    /// resolved from a [SpecifiedCalcNode].
+    /// resolved from a [CalcNode].
     fn try_from_leaf(leaf: &Leaf) -> Result<Self, ()>;
 }
 
@@ -84,10 +84,10 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
                 _ => return Err(ParseError::unexpected_token()),
             }),
             Token::Function(ref name) => {
-                let function = SpecifiedCalcNode::math_function(context, name)?;
+                let function = CalcNode::math_function(context, name)?;
                 let mut flags = CalcParseFlags::new(percentage_context);
                 flags.color_components = allowed_channel_keywords;
-                let mut node = SpecifiedCalcNode::parse(context, input, function, flags)?;
+                let mut node = CalcNode::parse(context, input, function, flags)?;
                 node.simplify_and_sort();
                 if !node
                     .numeric_type()

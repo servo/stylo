@@ -943,7 +943,9 @@ impl specified::CalcLengthPercentage {
     #[inline]
     fn from_computed_value(computed: &CalcLengthPercentage) -> Self {
         use crate::values::specified::angle::NoCalcAngle;
-        use crate::values::specified::calc::Leaf;
+        use crate::values::specified::calc::{
+            CalcPercentageLeaf as SpecifiedCalcPercentageLeaf, Leaf,
+        };
         use crate::values::specified::length::NoCalcLength;
         use crate::values::specified::resolution::NoCalcResolution;
         use crate::values::specified::time::NoCalcTime;
@@ -953,7 +955,7 @@ impl specified::CalcLengthPercentage {
             node: computed.node.map_leaves(|l| match l {
                 ComputedLeaf::Length(l) => Leaf::Length(NoCalcLength::from_px(l.px())),
                 ComputedLeaf::Percentage(p) => {
-                    Leaf::Percentage(CalcPercentageLeaf::new(p.get(), p.hint))
+                    Leaf::Percentage(SpecifiedCalcPercentageLeaf::new(p.get(), p.hint))
                 },
                 ComputedLeaf::Number(n) => Leaf::Number(NoCalcNumber::new(*n)),
                 ComputedLeaf::Angle(a) => Leaf::Angle(NoCalcAngle::from_degrees(a.degrees())),

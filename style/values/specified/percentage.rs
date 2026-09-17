@@ -98,6 +98,18 @@ impl ToComputedValue for NoCalcPercentage {
     }
 }
 
+impl From<f32> for NoCalcPercentage {
+    fn from(value: f32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<NoCalcPercentage> for f32 {
+    fn from(percentage: NoCalcPercentage) -> f32 {
+        percentage.0
+    }
+}
+
 /// A specified percentage value, either a plain value or a `calc()` expression.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 pub struct Percentage(NumericUnion<(), f32, CalcNumeric>);

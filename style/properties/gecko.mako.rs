@@ -322,6 +322,18 @@ impl ComputedValuesInner {
     }
 </%def>
 
+<%def name="impl_simple_copy(ident, gecko_ffi_name)">
+    #[allow(non_snake_case, clippy::clone_on_copy)]
+    pub fn copy_${ident}_from(&mut self, other: &Self) {
+        self.${gecko_ffi_name} = other.${gecko_ffi_name}.clone();
+    }
+
+    #[allow(non_snake_case)]
+    pub fn reset_${ident}(&mut self, other: &Self) {
+        self.copy_${ident}_from(other)
+    }
+</%def>
+
 <%def name="impl_simple(lh, set=True)">
     % if set:
     #[allow(non_snake_case, clippy::useless_conversion)]
@@ -438,6 +450,41 @@ impl Clone for ${style_struct.gecko_struct_name} {
 }
 </%def>
 
+<%def name="impl_font_settings(ident, gecko_type, tag_type, value_type, gecko_value_type)">
+    <% gecko_ffi_name = to_camel_case_lower(ident) %>
+
+    pub fn set_${ident}(&mut self, v: longhands::${ident}::computed_value::T) {
+        let iter = v.0.iter().map(|other| structs::${gecko_type} {
+            mTag: other.tag.0,
+            mValue: other.value as ${gecko_value_type},
+        });
+        self.mFont.${gecko_ffi_name}.clear();
+        self.mFont.${gecko_ffi_name}.extend(iter);
+    }
+
+    ${impl_simple_copy(ident, "mFont." + gecko_ffi_name)}
+
+    pub fn ${ident}_equals(&self, other: &Self) -> bool {
+        let ours = &self.mFont.${gecko_ffi_name};
+        let theirs = &other.mFont.${gecko_ffi_name};
+        ours.len() == theirs.len() &&
+            ours.iter().zip(theirs.iter()).all(|(a, b)| a.mTag == b.mTag && a.mValue == b.mValue)
+    }
+
+    pub fn slow_clone_${ident}(&self) -> longhands::${ident}::computed_value::T {
+        use crate::values::generics::font::{FontSettings, FontTag, ${tag_type}};
+
+        FontSettings(
+            self.mFont.${gecko_ffi_name}.iter().map(|gecko_font_setting| {
+                ${tag_type} {
+                    tag: FontTag(gecko_font_setting.mTag),
+                    value: gecko_font_setting.mValue as ${value_type},
+                }
+            }).collect()
+        )
+    }
+</%def>
+
 <%def name="impl_trait(style_struct_name, skip_longhands='')">
 <%
     style_struct = next(x for x in data.style_structs if x.name == style_struct_name)
@@ -504,9 +551,14 @@ fn static_assert() {
 <%self:impl_trait style_struct_name="Outline">
 </%self:impl_trait>
 
-<% skip_font_longhands = """font-size -x-lang""" %>
+<% skip_font_longhands = """font-size -x-lang font-feature-settings font-variation-settings""" %>
 <%self:impl_trait style_struct_name="Font"
     skip_longhands="${skip_font_longhands}">
+
+    // Negative numbers are invalid at parse time, but <integer> is still an
+    // i32.
+    <% impl_font_settings("font_feature_settings", "gfxFontFeature", "FeatureTagValue", "i32", "u32") %>
+    <% impl_font_settings("font_variation_settings", "gfxFontVariation", "VariationValue", "f32", "f32") %>
 
     pub fn unzoom_fonts(&mut self, device: &Device) {
         use crate::values::generics::NonNegative;

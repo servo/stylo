@@ -32,7 +32,7 @@ use thin_vec::ThinVec;
 pub use super::image::Image;
 pub use super::length_percentage::{LengthPercentage, NonNegativeLengthPercentage};
 pub use crate::values::specified::url::UrlOrNone;
-pub use crate::values::specified::{Angle, BorderStyle, Time};
+pub use crate::values::specified::{Angle, BorderStyle, NoCalcPercentage, Time};
 
 /// Some boilerplate to share between negative and non-negative
 /// length-percentage or auto.
@@ -548,6 +548,14 @@ impl TryTacticAdjustment for Size {
             #[cfg(feature = "gecko")]
             Self::MozAvailable => {},
         }
+    }
+}
+
+impl TryTacticAdjustment for NoCalcPercentage {
+    fn try_tactic_adjustment(&mut self, old_side: PhysicalSide, new_side: PhysicalSide) {
+        let mut percentage = Percentage(self.get());
+        percentage.try_tactic_adjustment(old_side, new_side);
+        *self = NoCalcPercentage::new(percentage.0);
     }
 }
 

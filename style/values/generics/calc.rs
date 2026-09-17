@@ -12,6 +12,7 @@ use crate::typed_om::{
     NumericBaseType, NumericType, NumericValue, ToTyped, TypedValue,
 };
 use crate::values::calc_random;
+use crate::values::specified::NoCalcPercentage;
 use crate::values::generics::Optional;
 use crate::values::generics::length::GenericAnchorSizeFunction;
 use crate::values::generics::position::{GenericAnchorFunction, GenericAnchorSide};
@@ -473,9 +474,9 @@ pub enum CalcType {
     ToTyped,
 )]
 #[repr(C)]
-pub struct GenericCalcPercentageLeaf<P> {
+pub struct CalcPercentageLeaf {
     /// The percentage value.
-    pub value: P,
+    pub value: NoCalcPercentage,
     /// The base type the percentage resolves against, or None if there is
     /// no specific percent hint (this is used by CSS Typed OM when parsing
     /// an expression without the context of a property).
@@ -483,22 +484,18 @@ pub struct GenericCalcPercentageLeaf<P> {
     pub hint: Optional<NumericBaseType>,
 }
 
-impl<P> GenericCalcPercentageLeaf<P>
-where
-    P: From<f32> + Copy,
-    f32: From<P>,
-{
+impl CalcPercentageLeaf {
     /// Builds a percentage leaf with the given percent hint.
     pub fn new(value: f32, hint: Optional<NumericBaseType>) -> Self {
         Self {
-            value: P::from(value),
+            value: NoCalcPercentage::new(value),
             hint,
         }
     }
 
     /// Returns the percentage value as a float.
     pub fn get(&self) -> f32 {
-        f32::from(self.value)
+        self.value.get()
     }
 
     /// Returns the numeric type of this percentage.

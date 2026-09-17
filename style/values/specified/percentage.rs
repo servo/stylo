@@ -21,7 +21,20 @@ use style_traits::{CssWriter, ParseError, SpecifiedValueInfo, ToCss};
 use thin_vec::ThinVec;
 
 /// A percentage value, where [0 .. 100%] maps to [0.0 .. 1.0]
-#[derive(Clone, Copy, Debug, Default, MallocSizeOf, PartialEq, ToShmem)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    MallocSizeOf,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    ToAnimatedZero,
+    ToResolvedValue,
+    ToShmem,
+)]
 #[repr(C)]
 pub struct NoCalcPercentage(CSSFloat);
 
@@ -95,18 +108,6 @@ impl ToComputedValue for NoCalcPercentage {
 
     fn from_computed_value(computed: &Self::ComputedValue) -> Self {
         Self::new(computed.0)
-    }
-}
-
-impl From<f32> for NoCalcPercentage {
-    fn from(value: f32) -> Self {
-        Self(value)
-    }
-}
-
-impl From<NoCalcPercentage> for f32 {
-    fn from(percentage: NoCalcPercentage) -> f32 {
-        percentage.0
     }
 }
 

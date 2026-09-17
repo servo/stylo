@@ -803,11 +803,7 @@ impl FontSizeKeyword {
             .unwrap_or(computed::GenericFontFamily::None);
 
         #[cfg(feature = "gecko")]
-        let base_size = unsafe {
-            Atom::with(font.mLanguage.mRawPtr, |language| {
-                cx.device().base_size_for_generic(language, generic)
-            })
-        };
+        let base_size = cx.device().base_size_for_generic(&font.mLanguage.0, generic);
         #[cfg(feature = "servo")]
         let base_size = cx.device().base_size_for_generic(generic);
 
@@ -1822,6 +1818,7 @@ impl XTextScale {
     ToShmem,
     ToTyped,
 )]
+#[repr(transparent)]
 /// Internal property that reflects the lang attribute
 pub struct XLang(#[css(skip)] pub Atom);
 

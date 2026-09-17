@@ -429,7 +429,6 @@ class Longhand(Property):
     # the Gecko style struct can only produce them by value.
     NO_BORROWED_GETTER = {
         "font-size",
-        "-x-lang",
         "font-feature-settings",
         "font-variation-settings",
     }

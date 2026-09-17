@@ -1355,7 +1355,7 @@ impl<'a> Cascade<'a> {
             let default_font_type = unsafe {
                 bindings::Gecko_nsStyleFont_ComputeFallbackFontTypeForLanguage(
                     builder.device.document(),
-                    font.mLanguage.mRawPtr,
+                    font.mLanguage.0.as_ptr(),
                 )
             };
 
@@ -1404,7 +1404,7 @@ impl<'a> Cascade<'a> {
             unsafe {
                 bindings::Gecko_nsStyleFont_ComputeFallbackFontTypeForLanguage(
                     builder.device.document(),
-                    font.mLanguage.mRawPtr,
+                    font.mLanguage.0.as_ptr(),
                 )
             }
         };

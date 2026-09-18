@@ -995,6 +995,11 @@ impl FontSize {
     /// of different styles and font instances when "random" floating-point sizes are used.
     #[inline]
     pub fn quantize_font_size(size: CSSPixelLength) -> CSSPixelLength {
+        // If the size is < 1024px, just snap to an integer number of appUnits.
+        if size.px() < 1024.0 {
+            return CSSPixelLength::from(app_units::Au::from_f32_px(size.px()));
+        }
+
         // Based on the Veltkamp-Dekker float-splitting algorithm, see e.g.
         // https://indico.cern.ch/event/313684/contributions/1687773/attachments/600513/826490/FPArith-Part2.pdf
         // A 32-bit float has 24 bits of precision (23 stored, plus an implicit 1 bit
@@ -1011,7 +1016,8 @@ impl FontSize {
         }
         let d = size.px() * SCALE_PLUS_ONE;
         let t = d - size.px();
-        CSSPixelLength::new(d - t)
+        // Snap the result to integer appUnits.
+        CSSPixelLength::from(app_units::Au::from_f32_px(d - t))
     }
 }
 

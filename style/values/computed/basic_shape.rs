@@ -25,7 +25,8 @@ pub type ClipPath = generic::GenericClipPath<BasicShape, ComputedUrl>;
 pub type ShapeOutside = generic::GenericShapeOutside<BasicShape, Image>;
 
 /// A computed basic shape.
-pub type BasicShape = generic::GenericBasicShape<Angle, Position, LengthPercentage, InsetRect>;
+pub type BasicShape =
+    generic::GenericBasicShape<Angle, LengthPercentage, Position, LengthPercentage, InsetRect>;
 
 /// The computed value of `inset()`.
 pub type InsetRect = generic::GenericInsetRect<LengthPercentage>;
@@ -40,14 +41,15 @@ pub type Ellipse = generic::Ellipse<Position, LengthPercentage>;
 pub type ShapeRadius = generic::GenericShapeRadius<LengthPercentage>;
 
 /// The computed value of `shape()`.
-pub type Shape = generic::Shape<Angle, Position, LengthPercentage>;
+pub type Shape = generic::Shape<Angle, LengthPercentage, Position, LengthPercentage>;
 
 /// The computed value of `ShapeCommand`.
-pub type ShapeCommand = generic::GenericShapeCommand<Angle, Position, LengthPercentage>;
+pub type ShapeCommand =
+    generic::GenericShapeCommand<Angle, LengthPercentage, Position, LengthPercentage>;
 
 /// The computed value of `PathOrShapeFunction`.
 pub type PathOrShapeFunction =
-    generic::GenericPathOrShapeFunction<Angle, Position, LengthPercentage>;
+    generic::GenericPathOrShapeFunction<Angle, LengthPercentage, Position, LengthPercentage>;
 
 /// The computed value of `CoordinatePair`.
 pub type CoordinatePair = generic::CoordinatePair<LengthPercentage>;
@@ -62,7 +64,7 @@ pub type RelativeControlPoint = generic::RelativeControlPoint<LengthPercentage>;
 pub type CommandEndPoint = generic::CommandEndPoint<Position, LengthPercentage>;
 
 /// The computed value of hline and vline's endpoint.
-pub type AxisEndPoint = generic::AxisEndPoint<LengthPercentage>;
+pub type AxisEndPoint = generic::AxisEndPoint<LengthPercentage, LengthPercentage>;
 
 /// Animate from `Shape` to `Path`, and vice versa.
 macro_rules! animate_shape {
@@ -221,17 +223,13 @@ impl From<&generic::CommandEndPoint<SVGPathPosition, CSSFloat>> for CommandEndPo
     }
 }
 
-impl From<&generic::AxisEndPoint<CSSFloat>> for AxisEndPoint {
+impl From<&generic::AxisEndPoint<CSSFloat, CSSFloat>> for AxisEndPoint {
     #[inline]
-    fn from(p: &generic::AxisEndPoint<CSSFloat>) -> Self {
+    fn from(p: &generic::AxisEndPoint<CSSFloat, CSSFloat>) -> Self {
         use crate::values::computed::CSSPixelLength;
-        use generic::AxisPosition;
         match p {
-            generic::AxisEndPoint::ToPosition(AxisPosition::LengthPercent(lp)) => Self::ToPosition(
-                AxisPosition::LengthPercent(LengthPercentage::new_length(CSSPixelLength::new(*lp))),
-            ),
-            generic::AxisEndPoint::ToPosition(AxisPosition::Keyword(_)) => {
-                unreachable!("Invalid state: SVG path commands cannot contain a keyword.")
+            generic::AxisEndPoint::ToPosition(pos) => {
+                Self::ToPosition(LengthPercentage::new_length(CSSPixelLength::new(*pos)))
             },
             generic::AxisEndPoint::ByCoordinate(pos) => {
                 Self::ByCoordinate(LengthPercentage::new_length(CSSPixelLength::new(*pos)))

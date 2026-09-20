@@ -11,8 +11,8 @@ use crate::values::animated::{Animate, Procedure, lists};
 use crate::values::distance::{ComputeSquaredDistance, SquaredDistance};
 use crate::values::generics::basic_shape::GenericShapeCommand;
 use crate::values::generics::basic_shape::{
-    ArcRadii, ArcSize, ArcSweep, AxisEndPoint, AxisPosition, CommandEndPoint, ControlPoint,
-    ControlReference, CoordinatePair, RelativeControlPoint,
+    ArcRadii, ArcSize, ArcSweep, AxisEndPoint, CommandEndPoint, ControlPoint, ControlReference,
+    CoordinatePair, RelativeControlPoint,
 };
 use crate::values::generics::position::GenericPosition;
 use cssparser::Parser;
@@ -191,7 +191,7 @@ pub type SVGPathPosition = GenericPosition<CSSFloat, CSSFloat>;
 /// points of the Bézier curve in the spec.
 ///
 /// https://www.w3.org/TR/SVG11/paths.html#PathData
-pub type PathCommand = GenericShapeCommand<CSSFloat, SVGPathPosition, CSSFloat>;
+pub type PathCommand = GenericShapeCommand<CSSFloat, CSSFloat, SVGPathPosition, CSSFloat>;
 
 /// For internal SVGPath normalization.
 #[allow(missing_docs)]
@@ -557,15 +557,13 @@ impl CommandEndPoint<SVGPathPosition, CSSFloat> {
     }
 }
 
-impl AxisEndPoint<CSSFloat> {
+impl AxisEndPoint<CSSFloat, CSSFloat> {
     /// Converts possibly relative end point into absolutely positioned type.
-    pub fn to_abs(self, base: CSSFloat) -> AxisEndPoint<CSSFloat> {
+    pub fn to_abs(self, base: CSSFloat) -> AxisEndPoint<CSSFloat, CSSFloat> {
         // Consume self value.
         match self {
             AxisEndPoint::ToPosition(_) => self,
-            AxisEndPoint::ByCoordinate(coord) => {
-                AxisEndPoint::ToPosition(AxisPosition::LengthPercent(coord + base))
-            },
+            AxisEndPoint::ByCoordinate(coord) => AxisEndPoint::ToPosition(coord + base),
         }
     }
 }
@@ -652,15 +650,11 @@ impl From<CoordPair> for SVGPathPosition {
     }
 }
 
-impl From<AxisEndPoint<CSSFloat>> for CSSFloat {
+impl From<AxisEndPoint<CSSFloat, CSSFloat>> for CSSFloat {
     #[inline]
-    fn from(p: AxisEndPoint<CSSFloat>) -> Self {
+    fn from(p: AxisEndPoint<CSSFloat, CSSFloat>) -> Self {
         match p {
-            AxisEndPoint::ToPosition(AxisPosition::LengthPercent(a)) => a,
-            AxisEndPoint::ToPosition(AxisPosition::Keyword(_)) => {
-                unreachable!("Invalid state: SVG path commands cannot contain a keyword.")
-            },
-            AxisEndPoint::ByCoordinate(a) => a,
+            AxisEndPoint::ToPosition(a) | AxisEndPoint::ByCoordinate(a) => a,
         }
     }
 }
@@ -973,15 +967,15 @@ fn parse_control_point_rel(
 /// Parse a number that describes the absolutely positioned axis end point.
 fn parse_axis_end_abs(
     iter: &mut Peekable<Cloned<slice::Iter<u8>>>,
-) -> Result<AxisEndPoint<f32>, ()> {
+) -> Result<AxisEndPoint<f32, f32>, ()> {
     let value = parse_number(iter)?;
-    Ok(AxisEndPoint::ToPosition(AxisPosition::LengthPercent(value)))
+    Ok(AxisEndPoint::ToPosition(value))
 }
 
 /// Parse a number that describes the relatively positioned axis end point.
 fn parse_axis_end_rel(
     iter: &mut Peekable<Cloned<slice::Iter<u8>>>,
-) -> Result<AxisEndPoint<f32>, ()> {
+) -> Result<AxisEndPoint<f32, f32>, ()> {
     let value = parse_number(iter)?;
     Ok(AxisEndPoint::ByCoordinate(value))
 }

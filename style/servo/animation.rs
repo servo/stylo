@@ -1294,9 +1294,22 @@ impl ElementAnimationSet {
     ) where
         E: TElement,
     {
+        // Cancel before the caller replaces animation rules and recascades.
+        // Canceling only after layout leaves the old rule in computed style.
+        if new_style.clone_display().is_none() {
+            self.cancel_all_animations();
+            return;
+        }
+
         for animation in self.animations.iter_mut() {
-            if animation.is_cancelled_in_new_style(new_style) {
+            if animation.is_cancelled_in_new_style(new_style)
+                || context
+                    .stylist
+                    .lookup_keyframes(&animation.name, element)
+                    .is_none()
+            {
                 animation.state = AnimationState::Canceled;
+                self.dirty = true;
             }
         }
 

@@ -476,6 +476,9 @@ impl NamedFeature {
         }
     }
 
+    /// Determine if a named feature is supported.
+    ///
+    /// <https://drafts.csswg.org/css-conditional-5/#typedef-supports-named-feature-fn>
     #[cfg(feature = "servo")]
     pub fn eval(self) -> bool {
         false

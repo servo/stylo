@@ -779,7 +779,7 @@ impl Animation {
                         KeyframesIterationState::Finite(ref mut current, _) => *current = 0.0,
                         _ => {},
                     }
-                    if let AnimationState::Paused(ref mut starting_progress) = &mut self.state {
+                    if let AnimationState::Paused(starting_progress) = &mut self.state {
                         *starting_progress = new_starting_progress;
                     }
                     self.iterate_by(new_starting_progress);

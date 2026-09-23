@@ -20,8 +20,7 @@ use crate::selector_parser::{PseudoElementCascadeType, SelectorParser};
 use crate::values::{AtomIdent, AtomString};
 use crate::{Atom, CaseSensitivityExt, LocalName, Namespace, Prefix};
 use cssparser::{
-    CowRcStr, Parser as CssParser, SourcePosition, ToCss, match_ignore_ascii_case,
-    serialize_identifier,
+    CowRcStr, Parser as CssParser, ToCss, match_ignore_ascii_case, serialize_identifier,
 };
 use dom::{DocumentState, ElementState};
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
@@ -666,7 +665,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     fn parse_non_ts_functional_pseudo_class(
         &self,
         name: CowRcStr<'i>,
-        parser: &mut CssParser<'i, '_>,
+        parser: &mut CssParser<'i>,
         after_part: bool,
     ) -> Result<NonTSPseudoClass, ParseError> {
         let pseudo_class = match_ignore_ascii_case! { &name,

@@ -486,7 +486,7 @@ impl AnimationValue {
         match self {
             % for prop in data.longhands:
             % if prop.animatable and not prop.logical:
-            AnimationValue::${prop.camel_case}(ref value) => {
+            AnimationValue::${prop.camel_case}(value) => {
                 let value: longhands::${prop.ident}::computed_value::T =
                 % if prop.animation_type != "discrete":
                     ToAnimatedValue::from_animated_value(value.clone());

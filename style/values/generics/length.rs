@@ -188,7 +188,7 @@ where
             "max-content",
             "min-content",
         ]);
-        if crate::pref!("layout.css.webkit-fill-available.enabled", gecko = true) {
+        if crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) {
             f(&["anchor-size"]);
         }
         if cfg!(feature = "gecko") {

@@ -33,12 +33,12 @@ use std::collections::VecDeque;
 pub const STYLE_THREAD_STACK_SIZE_KB: usize = 256;
 
 /// The minimum stack size for a thread in the styling pool, in kilobytes.
-/// Servo requires a bigger stack in debug builds.
+/// Servo uses an 8 MiB stack to match the recursion depth of other browsers.
 /// We allow configuring the size, since running with ASAN requires an even larger
 /// stack size.
 #[cfg(feature = "servo")]
 pub const STYLE_THREAD_STACK_SIZE_KB: usize = const {
-    let default_stack_size = 512;
+    let default_stack_size = 8 * 1024;
     if let Some(user_def_size) = option_env!("SERVO_STYLE_THREAD_STACK_SIZE_KB") {
         if let Ok(user_def_size) = usize::from_str_radix(user_def_size, 10) {
             user_def_size

@@ -563,12 +563,20 @@ impl StrongRuleNode {
         self.p.parent.as_ref()
     }
 
+    fn root_matches(&self, root: &StrongRuleNode) -> bool {
+        match self.p.root {
+            Some(ref r) => *r == unsafe { root.downgrade() },
+            None => root == self,
+        }
+    }
+
     pub(super) fn ensure_child(
         &self,
         root: &StrongRuleNode,
         source: StyleSourceBorrow,
         cascade_priority: CascadePriority,
     ) -> StrongRuleNode {
+        debug_assert!(self.root_matches(root), "Mismatched tree!");
         debug_assert!(
             self.p.cascade_priority <= cascade_priority,
             "Should be ordered (instead {:?} > {:?}), from {:?} and {:?}",
@@ -736,7 +744,6 @@ impl Drop for StrongRuleNode {
         }
     }
 }
-
 impl WeakRuleNode {
     /// Upgrades this weak node reference, returning a strong one.
     ///
@@ -767,6 +774,13 @@ impl fmt::Debug for StrongRuleNode {
 
 impl Eq for StrongRuleNode {}
 impl PartialEq for StrongRuleNode {
+    fn eq(&self, other: &Self) -> bool {
+        &*self.p as *const RuleNode == &*other.p
+    }
+}
+
+impl Eq for WeakRuleNode {}
+impl PartialEq for WeakRuleNode {
     fn eq(&self, other: &Self) -> bool {
         &*self.p as *const RuleNode == &*other.p
     }

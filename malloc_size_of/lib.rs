@@ -861,3 +861,9 @@ impl<T: MallocSizeOf> DerefMut for Measurable<T> {
         &mut self.0
     }
 }
+
+impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
+    fn size_of(&self, ops: &mut MallocSizeOfOps) -> usize {
+        self.read().size_of(ops)
+    }
+}

@@ -19,6 +19,7 @@ app_units = "0.7"
 cssparser = "0.38"
 euclid = "0.22"
 hashbrown = "0.17"
+parking_lot = "0.12"
 selectors = { path = "../selectors" }
 servo_arc = { path = "../servo_arc" }
 smallbitvec = "2.3.0"

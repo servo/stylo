@@ -3,7 +3,7 @@
 "gfx.font_rendering.opentype_svg.enabled" = false
 "layout.columns.enabled" = false
 "layout.container-queries.enabled" = false
-"layout.css.alpha-color-function.enabled" = false
+"layout.css.alpha-color-function.enabled" = true
 "layout.css.anchor-positioning.enabled" = false
 "layout.css.appearance-base.enabled" = false
 "layout.css.at-scope.enabled" = false

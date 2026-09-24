@@ -1289,14 +1289,16 @@ impl ElementAnimationSet {
         &mut self,
         element: E,
         context: &SharedStyleContext,
+        old_style: Option<&ComputedValues>,
         new_style: &Arc<ComputedValues>,
         resolver: &mut StyleResolverForElement<E>,
     ) where
         E: TElement,
     {
-        // Cancel before the caller replaces animation rules and recascades.
-        // Canceling only after layout leaves the old rule in computed style.
-        if new_style.clone_display().is_none() {
+        // Leave initial animation creation on its existing path. On subsequent
+        // style updates, cancel before the caller replaces animation rules and
+        // recascades, even if a previous update already emptied the animation set.
+        if old_style.is_some() && new_style.clone_display().is_none() {
             self.cancel_all_animations();
             return;
         }

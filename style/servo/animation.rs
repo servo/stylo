@@ -1289,14 +1289,29 @@ impl ElementAnimationSet {
         &mut self,
         element: E,
         context: &SharedStyleContext,
+        old_style: Option<&ComputedValues>,
         new_style: &Arc<ComputedValues>,
         resolver: &mut StyleResolverForElement<E>,
     ) where
         E: TElement,
     {
+        // Leave initial animation creation on its existing path. On subsequent
+        // style updates, cancel before the caller replaces animation rules and
+        // recascades, even if a previous update already emptied the animation set.
+        if old_style.is_some() && new_style.clone_display().is_none() {
+            self.cancel_all_animations();
+            return;
+        }
+
         for animation in self.animations.iter_mut() {
-            if animation.is_cancelled_in_new_style(new_style) {
+            if animation.is_cancelled_in_new_style(new_style)
+                || context
+                    .stylist
+                    .lookup_keyframes(&animation.name, element)
+                    .is_none()
+            {
                 animation.state = AnimationState::Canceled;
+                self.dirty = true;
             }
         }
 

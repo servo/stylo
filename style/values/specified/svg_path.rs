@@ -712,7 +712,14 @@ impl<'a> PathParser<'a> {
     fn new(bytes: &'a [u8]) -> Self {
         PathParser {
             chars: bytes.iter().cloned().peekable(),
-            path: Vec::new(),
+            // Preallocate space for an estimated number of commands, based on
+            // the length of our byte stream.  For this preallocation, we
+            // heuristically assume that our path's commands will be around
+            // 32 bytes long each, on average. (This estimate doesn't have to
+            // be exact; and to the extent that it's wrong, we'd rather have it
+            // be an over-estimate, so that our reserved capacity will tend to
+            // be an under-estimate, so that we're not greedily wasting space.)
+            path: Vec::with_capacity(bytes.len() / 32),
         }
     }
 

@@ -205,6 +205,7 @@ bitflags! {
         const HAS_PARENT = 1 << 3;
         const HAS_HOST = 1 << 4;
         const HAS_SCOPE = 1 << 5;
+        const HAS_CUE = 1 << 6;
     }
 }
 
@@ -226,7 +227,7 @@ impl SelectorFlags {
     /// It is not supposed to work, because :is(::before) is invalid. We can't propagate the
     /// pseudo-flags from inner to outer selectors, to avoid breaking our invariants.
     pub(crate) fn forbidden_for_nesting() -> Self {
-        Self::HAS_PSEUDO | Self::HAS_SLOTTED | Self::HAS_PART
+        Self::HAS_PSEUDO | Self::HAS_SLOTTED | Self::HAS_PART | Self::HAS_CUE
     }
 }
 
@@ -378,6 +379,7 @@ where
             //     selector in its selector list argument.
             Component::Where(ref list)
             | Component::Negation(ref list)
+            | Component::Cue(Some(ref list))
             | Component::Is(ref list) => {
                 let sf = selector_list_specificity_and_flags(
                     list.slice().iter(),
@@ -402,6 +404,7 @@ where
             | Component::DefaultNamespace(..)
             | Component::Namespace(..)
             | Component::RelativeSelectorAnchor
+            | Component::Cue(None)
             | Component::Invalid(..) => {
                 // Does not affect specificity
             },

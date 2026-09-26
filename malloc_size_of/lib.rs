@@ -719,7 +719,7 @@ where
             Component::Slotted(selector) | Component::Host(Some(selector)) => {
                 selector.unconditional_size_of(ops)
             },
-            Component::Is(list) | Component::Where(list) => list.unconditional_size_of(ops),
+            Component::Is(list) | Component::Where(list) | Component::Cue(Some(list)) => list.unconditional_size_of(ops),
             Component::Has(relative_selectors) => relative_selectors.size_of(ops),
             Component::NthOf(nth_of_data) => nth_of_data.size_of(ops),
             Component::PseudoElement(pseudo) => (*pseudo).size_of(ops),
@@ -742,6 +742,7 @@ where
             | Component::ParentSelector
             | Component::Nth(..)
             | Component::Host(None)
+            | Component::Cue(None)
             | Component::RelativeSelectorAnchor
             | Component::Invalid(..) => 0,
         }

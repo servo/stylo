@@ -405,6 +405,7 @@ impl<'a> Invalidation<'a> {
             Combinator::Descendant | Combinator::LaterSibling | Combinator::PseudoElement => true,
             Combinator::Part
             | Combinator::SlotAssignment
+            | Combinator::Cue
             | Combinator::NextSibling
             | Combinator::Child => false,
         }
@@ -420,7 +421,7 @@ impl<'a> Invalidation<'a> {
             .selector
             .combinator_at_parse_order(self.offset - 1)
         {
-            Combinator::Child | Combinator::Descendant | Combinator::PseudoElement => {
+            Combinator::Child | Combinator::Descendant | Combinator::PseudoElement | Combinator::Cue => {
                 InvalidationKind::Descendant(DescendantInvalidationKind::Dom)
             },
             Combinator::Part => InvalidationKind::Descendant(DescendantInvalidationKind::Part),

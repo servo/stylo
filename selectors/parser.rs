@@ -44,6 +44,11 @@ pub trait PseudoElement: Sized + ToCss {
         false
     }
 
+    /// Whether this pseudo-element is valid after a ::cue(..) pseudo.
+    fn valid_after_cue(&self) -> bool {
+        false
+    }
+
     /// Whether this pseudo-element is valid when directly after a ::before/::after pseudo.
     fn valid_after_before_or_after(&self) -> bool {
         false
@@ -142,7 +147,7 @@ bitflags! {
         const AFTER_BEFORE_OR_AFTER_PSEUDO = 1 << 5;
 
         /// Whether we are after any of the pseudo-like things.
-        const AFTER_PSEUDO = Self::AFTER_PART_LIKE.bits() | Self::AFTER_SLOTTED.bits() | Self::AFTER_NON_ELEMENT_BACKED_PSEUDO.bits() | Self::AFTER_BEFORE_OR_AFTER_PSEUDO.bits();
+        const AFTER_PSEUDO = Self::AFTER_PART_LIKE.bits() | Self::AFTER_SLOTTED.bits() | Self::AFTER_NON_ELEMENT_BACKED_PSEUDO.bits() | Self::AFTER_BEFORE_OR_AFTER_PSEUDO.bits() | Self::AFTER_CUE.bits();
 
         /// Whether we explicitly disallow combinators.
         const DISALLOW_COMBINATORS = 1 << 6;
@@ -156,6 +161,12 @@ bitflags! {
         /// Whether we've parsed a pseudo-element which is in a pseudo-element tree (i.e. it is a
         /// descendant pseudo of a pseudo-element root).
         const IN_PSEUDO_ELEMENT_TREE = 1 << 9;
+
+        /// Whether we've parsed a ::cue() pseudo-element already.
+        ///
+        /// If so, then we can only parse a subset of pseudo-elements, and
+        /// whatever comes after them if so.
+        const AFTER_CUE = 1 << 10;
     }
 }
 
@@ -171,8 +182,13 @@ impl SelectorParsingState {
     }
 
     #[inline]
+    fn allows_cue(self) -> bool {
+        !self.intersects(Self::AFTER_PSEUDO | Self::DISALLOW_PSEUDOS)
+    }
+
+    #[inline]
     fn allows_non_functional_pseudo_classes(self) -> bool {
-        !self.intersects(Self::AFTER_SLOTTED | Self::AFTER_NON_STATEFUL_PSEUDO_ELEMENT)
+        !self.intersects(Self::AFTER_SLOTTED | Self::AFTER_NON_STATEFUL_PSEUDO_ELEMENT | Self::AFTER_CUE)
     }
 
     #[inline]
@@ -281,6 +297,11 @@ pub trait Parser<'i> {
 
     /// Whether to parse the `::part()` pseudo-element.
     fn parse_part(&self) -> bool {
+        false
+    }
+
+    /// Whether to parse the `::cue()` pseudo-element.
+    fn parse_cue(&self) -> bool {
         false
     }
 
@@ -762,7 +783,7 @@ fn collect_ancestor_hashes<Impl: SelectorImpl>(
             // and :is(). Note that if this is ever changed to stop at the "pseudo-element"
             // combinator and treat it as a regular ancestor combinator, we will need to fix the way
             // we compute hashes for revalidation selectors.
-            Combinator::Part | Combinator::SlotAssignment | Combinator::PseudoElement => {},
+            Combinator::Part | Combinator::SlotAssignment | Combinator::PseudoElement | Combinator::Cue => {},
         }
     }
 
@@ -1352,6 +1373,14 @@ impl<Impl: SelectorImpl> Selector<Impl> {
                     &mut flags,
                     forbidden_flags,
                 )),
+                Cue(ref selectors) => Cue(selectors.as_ref().map(|selectors| replace_parent_on_selector_list(
+                    selectors.slice(),
+                    parent,
+                    &mut specificity,
+                    &mut flags,
+                    /* propagate_specificity = */ true,
+                    forbidden_flags,
+                ).unwrap_or_else(|| selectors.clone()))),
             }
         });
         let mut items = UniqueArc::from_header_and_iter(Default::default(), iter);
@@ -1635,6 +1664,9 @@ pub enum Combinator {
     /// Another combinator used for `::part()`, which represents the jump from
     /// the part to the containing shadow host.
     Part,
+    /// Another combinator used for ::cue(), which represent the jump from
+    /// a video to its rendered cue text.
+    Cue,
 }
 
 impl Combinator {
@@ -1905,7 +1937,7 @@ impl RelativeSelectorMatchHint {
                     RelativeSelectorMatchHint::InSiblingSubtree
                 }
             },
-            Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment => {
+            Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment | Combinator::Cue => {
                 debug_assert!(false, "Unexpected relative combinator");
                 RelativeSelectorMatchHint::InSubtree
             },
@@ -1960,7 +1992,7 @@ impl RelativeSelectorCombinatorCount {
                 Combinator::NextSibling | Combinator::LaterSibling => {
                     result.adjacent_or_next_siblings += 1;
                 },
-                Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment => {
+                Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment | Combinator::Cue => {
                     continue;
                 },
             };
@@ -2010,7 +2042,7 @@ impl CombinatorComposition {
                 Combinator::NextSibling | Combinator::LaterSibling => {
                     result.insert(Self::SIBLINGS);
                 },
-                Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment => {
+                Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment | Combinator::Cue => {
                     continue;
                 },
             };
@@ -2154,6 +2186,16 @@ pub enum Component<Impl: SelectorImpl> {
     ///
     /// Same comment as above re. the argument.
     Is(SelectorList<Impl>),
+    /// The ::cue() pseudo-element:
+    ///
+    /// https://w3c.github.io/webvtt/#the-cue-pseudo-element
+    ///
+    /// The selector here is a compound selector, that is, no combinators.
+    /// If no selector was provided (e.g. `::cue`) then the
+    /// selector is `None`.
+    ///
+    /// Same comment as above re. the argument.
+    Cue(Option<SelectorList<Impl>>),
     /// The `:has` pseudo-class.
     ///
     /// https://drafts.csswg.org/selectors/#has-pseudo
@@ -2544,7 +2586,7 @@ impl Combinator {
     {
         if matches!(
             *self,
-            Combinator::PseudoElement | Combinator::Part | Combinator::SlotAssignment
+            Combinator::PseudoElement | Combinator::Part | Combinator::SlotAssignment | Combinator::Cue
         ) {
             return Ok(());
         }
@@ -2556,7 +2598,7 @@ impl Combinator {
             Combinator::Descendant => Ok(()),
             Combinator::NextSibling => dest.write_str("+ "),
             Combinator::LaterSibling => dest.write_str("~ "),
-            Combinator::PseudoElement | Combinator::Part | Combinator::SlotAssignment => unsafe {
+            Combinator::PseudoElement | Combinator::Part | Combinator::SlotAssignment | Combinator::Cue => unsafe {
                 debug_unreachable!("Already handled")
             },
         }
@@ -2592,6 +2634,15 @@ impl<Impl: SelectorImpl> ToCss for Component<Impl> {
                 dest.write_str("::slotted(")?;
                 selector.to_css(dest)?;
                 dest.write_char(')')
+            },
+            Cue(ref selector) => {
+                dest.write_str("::cue")?;
+                if let Some(selector) = selector {
+                    dest.write_char('(')?;
+                    selector.to_css(dest)?;
+                    dest.write_char(')')?;
+                }
+                Ok(())
             },
             Part(ref part_names) => {
                 dest.write_str("::part(")?;
@@ -2822,6 +2873,7 @@ where
                     | SelectorParsingState::AFTER_BEFORE_OR_AFTER_PSEUDO
                     | SelectorParsingState::AFTER_SLOTTED
                     | SelectorParsingState::AFTER_PART_LIKE
+                    | SelectorParsingState::AFTER_CUE
             ));
             break;
         }
@@ -2946,6 +2998,7 @@ enum SimpleSelectorParseResult<Impl: SelectorImpl> {
     SimpleSelector(Component<Impl>),
     PseudoElement(Impl::PseudoElement),
     SlottedPseudo(Selector<Impl>),
+    CuePseudo(Component<Impl>),
     PartPseudo(Box<[Impl::Identifier]>),
 }
 
@@ -3399,6 +3452,11 @@ where
                 builder.push_combinator(Combinator::SlotAssignment);
                 builder.push_simple_selector(Component::Slotted(selector));
             },
+            SimpleSelectorParseResult::CuePseudo(component) => {
+                state.insert(SelectorParsingState::AFTER_CUE);
+                builder.push_combinator(Combinator::Cue);
+                builder.push_simple_selector(component);
+            },
             SimpleSelectorParseResult::PseudoElement(p) => {
                 if p.parses_as_element_backed() {
                     state.insert(SelectorParsingState::AFTER_PART_LIKE);
@@ -3448,6 +3506,27 @@ where
         ParseRelative::No,
     )?;
     Ok(component(inner))
+}
+
+fn parse_cue<'i, P, Impl>(
+    parser: &P,
+    input: &mut CssParser<'i>,
+    state: SelectorParsingState,
+) -> Result<Component<Impl>, ParseError<P::Error>>
+where
+    P: Parser<'i, Impl = Impl>,
+    Impl: SelectorImpl,
+{
+    let inner = SelectorList::parse_with_state(
+        parser,
+        input,
+        state
+            | SelectorParsingState::DISALLOW_PSEUDOS
+            | SelectorParsingState::DISALLOW_COMBINATORS,
+        ForgivingParsing::No,
+        ParseRelative::No,
+    )?;
+    Ok(Component::Cue(Some(inner)))
 }
 
 fn parse_has<'i, P, Impl>(
@@ -3517,7 +3596,7 @@ where
     }
 
     if state.intersects(
-        SelectorParsingState::AFTER_NON_ELEMENT_BACKED_PSEUDO | SelectorParsingState::AFTER_SLOTTED,
+        SelectorParsingState::AFTER_NON_ELEMENT_BACKED_PSEUDO | SelectorParsingState::AFTER_SLOTTED | SelectorParsingState::AFTER_CUE,
     ) {
         return Err(ParseError::custom(SelectorParseErrorKind::InvalidState));
     }
@@ -3687,10 +3766,25 @@ where
                         })?;
                         return Ok(Some(SimpleSelectorParseResult::SlottedPseudo(selector)));
                     }
+                    if P::parse_cue(parser) && name.eq_ignore_ascii_case("cue") {
+                        if !state.allows_cue() {
+                            return Err(ParseError::custom(SelectorParseErrorKind::InvalidState));
+                        }
+                        let selector = input.parse_nested_block(|input| {
+                            parse_cue(parser, input, state)
+                        })?;
+                        return Ok(Some(SimpleSelectorParseResult::CuePseudo(selector)));
+                    }
                     input.parse_nested_block(|input| {
                         P::parse_functional_pseudo_element(parser, name, input)
                     })?
                 } else {
+                    if P::parse_cue(parser) && name.eq_ignore_ascii_case("cue") {
+                        if !state.allows_cue() {
+                            return Err(ParseError::custom(SelectorParseErrorKind::InvalidState));
+                        }
+                        return Ok(Some(SimpleSelectorParseResult::CuePseudo(Component::Cue(None))));
+                    }
                     P::parse_pseudo_element(parser, name)?
                 };
 
@@ -3702,6 +3796,11 @@ where
 
                 if state.intersects(SelectorParsingState::AFTER_SLOTTED)
                     && !pseudo_element.valid_after_slotted()
+                {
+                    return Err(ParseError::custom(SelectorParseErrorKind::InvalidState));
+                }
+                if state.intersects(SelectorParsingState::AFTER_CUE)
+                    && !pseudo_element.valid_after_cue()
                 {
                     return Err(ParseError::custom(SelectorParseErrorKind::InvalidState));
                 }
@@ -3811,6 +3910,10 @@ pub mod tests {
 
         fn valid_after_slotted(&self) -> bool {
             true
+        }
+
+        fn valid_after_cue(&self) -> bool {
+            matches!(self, Self::Marker)
         }
 
         fn valid_after_before_or_after(&self) -> bool {
@@ -3962,6 +4065,10 @@ pub mod tests {
         type Error = SelectorParseErrorKind;
 
         fn parse_slotted(&self) -> bool {
+            true
+        }
+
+        fn parse_cue(&self) -> bool {
             true
         }
 
@@ -4671,6 +4778,24 @@ pub mod tests {
         assert!(parse("::part(foo bar)").is_ok());
         assert!(parse("::part(foo):hover").is_ok());
         assert!(parse("::part(foo) + bar").is_err());
+
+        assert!(parse("::cue()").is_err());
+        assert!(parse("::cue(42)").is_err());
+        assert!(parse("::cue(foo bar)").is_err());
+        assert!(parse("::cue(foo):hover").is_err());
+        assert!(parse("::cue(foo) + bar").is_err());
+        assert!(parse("::cue(.loud)::before").is_err());
+        assert!(parse("::cue(v)::cue(.bar)").is_err());
+
+        assert!(parse("::cue").is_ok());
+        assert!(parse("::cue(v)").is_ok());
+        assert!(parse("::cue(*)").is_ok());
+        assert!(parse("::cue(.loud)").is_ok());
+        assert!(parse("::cue(.loud.big)").is_ok());
+        assert!(parse("::cue(div, bar)").is_ok());
+        assert!(parse("video::cue").is_ok());
+        assert!(parse("div ::cue(*)").is_ok());
+        assert!(parse("div + video::cue(*)").is_ok());
 
         assert!(parse("div ::slotted(div)").is_ok());
         assert!(parse("div + slot::slotted(div)").is_ok());

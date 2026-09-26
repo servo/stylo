@@ -175,7 +175,7 @@ fn get_non_relative_invalidation_kind(
         Combinator::LaterSibling | Combinator::NextSibling => {
             NormalDependencyInvalidationKind::Siblings
         },
-        Combinator::PseudoElement => NormalDependencyInvalidationKind::ElementAndDescendants,
+        Combinator::PseudoElement | Combinator::Cue => NormalDependencyInvalidationKind::ElementAndDescendants,
         Combinator::SlotAssignment => NormalDependencyInvalidationKind::SlottedElements,
         Combinator::Part => NormalDependencyInvalidationKind::Parts,
     })
@@ -1363,7 +1363,7 @@ impl<'a, 'b> RelativeSelectorDependencyCollector<'a, 'b> {
                     Combinator::NextSibling | Combinator::LaterSibling => {
                         self.combinator_count.adjacent_or_next_siblings -= 1
                     },
-                    Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment => (),
+                    Combinator::Part | Combinator::PseudoElement | Combinator::SlotAssignment | Combinator::Cue => (),
                 }
             } else {
                 return true;

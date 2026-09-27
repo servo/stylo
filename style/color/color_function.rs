@@ -374,8 +374,20 @@ impl ColorFunction<ComputedColor> {
                 let mut result = AbsoluteColor::new(
                     ColorSpace::Hwb,
                     h.resolve()?.map(|angle| normalize_hue(angle.degrees())),
-                    w.resolve()?.map(|w| w.to_number(WHITENESS_RANGE)),
-                    b.resolve()?.map(|b| b.to_number(BLACKNESS_RANGE)),
+                    w.resolve()?.map(|w| {
+                        if use_rgb_sytax {
+                            w.to_number(WHITENESS_RANGE).clamp(0.0, WHITENESS_RANGE)
+                        } else {
+                            w.to_number(WHITENESS_RANGE)
+                        }
+                    }),
+                    b.resolve()?.map(|b| {
+                        if use_rgb_sytax {
+                            b.to_number(BLACKNESS_RANGE).clamp(0.0, BLACKNESS_RANGE)
+                        } else {
+                            b.to_number(BLACKNESS_RANGE)
+                        }
+                    }),
                     alpha!(alpha),
                 );
 

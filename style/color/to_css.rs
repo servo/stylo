@@ -94,25 +94,7 @@ impl ToCss for AbsoluteColor {
                 dest.write_char(')')
             },
             ColorSpace::Hsl | ColorSpace::Hwb => {
-                if self.flags.intersects(ColorFlags::NONE_FLAGS) {
-                    dest.write_str(if self.color_space == ColorSpace::Hsl {
-                        "hsl("
-                    } else {
-                        "hwb("
-                    })?;
-                    ModernComponent(&self.c0()).to_css(dest)?;
-                    for component in [self.c1(), self.c2()] {
-                        dest.write_char(' ')?;
-                        if let Some(value) = component {
-                            value.to_css(dest)?;
-                            dest.write_char('%')?;
-                        } else {
-                            dest.write_str("none")?;
-                        }
-                    }
-                    serialize_color_alpha(dest, self.alpha(), false)?;
-                    dest.write_char(')')
-                } else if self.flags.contains(ColorFlags::IS_LEGACY_SRGB) {
+                if self.flags.contains(ColorFlags::IS_LEGACY_SRGB) {
                     self.into_srgb_legacy().to_css(dest)
                 } else {
                     self.to_color_space(ColorSpace::Srgb).to_css(dest)

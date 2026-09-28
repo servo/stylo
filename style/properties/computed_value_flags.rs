@@ -80,7 +80,7 @@ bitflags! {
         /// TODO(emilio): Maybe do include border-image, see:
         ///
         /// https://github.com/w3c/csswg-drafts/issues/4777#issuecomment-604424845
-        const HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND = 1 << 12;
+        const HAS_AUTHOR_OR_USER_SPECIFIED_BORDER_BACKGROUND = 1 << 12;
 
         /// Whether the style depends on viewport units.
         const USES_VIEWPORT_UNITS = 1 << 13;
@@ -102,7 +102,7 @@ bitflags! {
         const USES_CONTAINER_UNITS = 1 << 16;
 
         /// Whether there are author-specific rules for text `color`.
-        const HAS_AUTHOR_SPECIFIED_TEXT_COLOR = 1 << 17;
+        const HAS_AUTHOR_OR_USER_SPECIFIED_TEXT_COLOR = 1 << 17;
 
         /// Whether this style considered a scope style rule.
         const CONSIDERED_NONTRIVIAL_SCOPED_STYLE = 1 << 18;
@@ -113,8 +113,8 @@ bitflags! {
         /// the item container that do generate a box.
         const DISPLAY_CONTENTS_IN_ITEM_CONTAINER = 1 << 19;
 
-        /// Whether there are author-specific rules for `text-shadow`.
-        const HAS_AUTHOR_SPECIFIED_TEXT_SHADOW = 1 << 20;
+        /// Whether there are author/user rules for `text-shadow`.
+        const HAS_AUTHOR_OR_USER_SPECIFIED_TEXT_SHADOW = 1 << 20;
 
         /// Whether this style depends on container style query.
         const DEPENDS_ON_CONTAINER_STYLE_QUERY = 1 << 21;
@@ -122,8 +122,8 @@ bitflags! {
         /// Whether this style is in an appearance: base subtree
         const IS_IN_APPEARANCE_BASE_SUBTREE = 1 << 22;
 
-        /// Whether grid-auto-flow is author-specified.
-        const HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW = 1 << 23;
+        /// Whether grid-auto-flow is author/user-specified.
+        const HAS_AUTHOR_OR_USER_SPECIFIED_GRID_AUTO_FLOW = 1 << 23;
 
         /// Whether this style has used font relative units. Note that this is different than the
         /// FONT_METRICS bits, which don't include rem / em etc.

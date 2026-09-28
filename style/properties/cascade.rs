@@ -432,7 +432,7 @@ where
             layout_parent_style.unwrap_or(inherited_style),
             element,
             try_tactic,
-            &cascade.author_specified,
+            &cascade.author_or_user_specified,
         );
     }
 
@@ -804,7 +804,7 @@ pub(crate) struct Cascade<'a> {
     ignore_colors: bool,
     seen: SeenSet<'a>,
     reverted: RevertedSet,
-    author_specified: LonghandIdSet,
+    author_or_user_specified: LonghandIdSet,
     declarations_to_apply_unless_overridden: DeclarationsToApplyUnlessOverriden,
     may_have_custom_property_cycles: bool,
     references_from_non_custom_properties: NonCustomReferenceMap<Vec<Arc<UnparsedValue>>>,
@@ -823,7 +823,7 @@ impl<'a> Cascade<'a> {
             stylist,
             ignore_colors,
             seen: Default::default(),
-            author_specified: Default::default(),
+            author_or_user_specified: Default::default(),
             reverted: Default::default(),
             declarations_to_apply_unless_overridden: Default::default(),
             may_have_custom_property_cycles: false,
@@ -840,7 +840,7 @@ impl<'a> Cascade<'a> {
             stylist,
             ignore_colors: false,
             seen: Default::default(),
-            author_specified: Default::default(),
+            author_or_user_specified: Default::default(),
             reverted: Default::default(),
             declarations_to_apply_unless_overridden: Default::default(),
             may_have_custom_property_cycles: false,
@@ -1148,8 +1148,8 @@ impl<'a> Cascade<'a> {
         };
 
         self.seen.longhands.insert(longhand_id);
-        if origin.is_author_origin() {
-            self.author_specified.insert(longhand_id);
+        if origin != CascadeOrigin::UA {
+            self.author_or_user_specified.insert(longhand_id);
         }
 
         if !can_skip_apply {
@@ -1263,22 +1263,28 @@ impl<'a> Cascade<'a> {
         }
 
         if self
-            .author_specified
+            .author_or_user_specified
             .contains_any(LonghandIdSet::border_background_properties())
         {
-            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND);
+            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_OR_USER_SPECIFIED_BORDER_BACKGROUND);
         }
 
-        if self.author_specified.contains(LonghandId::Color) {
-            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_TEXT_COLOR);
+        if self.author_or_user_specified.contains(LonghandId::Color) {
+            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_OR_USER_SPECIFIED_TEXT_COLOR);
         }
 
-        if self.author_specified.contains(LonghandId::TextShadow) {
-            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_TEXT_SHADOW);
+        if self
+            .author_or_user_specified
+            .contains(LonghandId::TextShadow)
+        {
+            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_OR_USER_SPECIFIED_TEXT_SHADOW);
         }
 
-        if self.author_specified.contains(LonghandId::GridAutoFlow) {
-            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW);
+        if self
+            .author_or_user_specified
+            .contains(LonghandId::GridAutoFlow)
+        {
+            builder.add_flags(ComputedValueFlags::HAS_AUTHOR_OR_USER_SPECIFIED_GRID_AUTO_FLOW);
         }
 
         #[cfg(feature = "servo")]
@@ -1319,8 +1325,8 @@ impl<'a> Cascade<'a> {
         // style specified viewport units / used font-relative lengths, this one
         // would as well.  It matches the same rules, so it is the right thing
         // to do anyways, even if it's only used on inherited properties.
-        let bits_to_copy = ComputedValueFlags::HAS_AUTHOR_SPECIFIED_BORDER_BACKGROUND
-            | ComputedValueFlags::HAS_AUTHOR_SPECIFIED_GRID_AUTO_FLOW
+        let bits_to_copy = ComputedValueFlags::HAS_AUTHOR_OR_USER_SPECIFIED_BORDER_BACKGROUND
+            | ComputedValueFlags::HAS_AUTHOR_OR_USER_SPECIFIED_GRID_AUTO_FLOW
             | ComputedValueFlags::DEPENDS_ON_SELF_FONT_METRICS
             | ComputedValueFlags::DEPENDS_ON_INHERITED_FONT_METRICS
             | ComputedValueFlags::IS_IN_APPEARANCE_BASE_SUBTREE

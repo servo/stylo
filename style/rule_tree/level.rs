@@ -124,12 +124,6 @@ impl CascadeOrigin {
         }
     }
 
-    /// Returns whether this is an "author" origin (in the "simplified" sense of the word).
-    #[inline]
-    pub fn is_author_origin(self) -> bool {
-        self > Self::User
-    }
-
     /// Select a lock guard for this origin.
     #[inline]
     pub fn guard<'a>(&self, guards: &'a StylesheetGuards<'a>) -> &'a SharedRwLockReadGuard<'a> {

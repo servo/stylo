@@ -119,7 +119,7 @@ impl ColorFunction<SpecifiedColor> {
         // it is already absolute.
         let resolvable = origin.as_ref().is_none_or(|o| o.is_absolute());
 
-        let computed = self.to_computed_value(context, origin);
+        let computed = self.to_computed_value(context, origin)?;
         if resolvable && let Ok(absolute) = computed.to_absolute_color() {
             return Ok(ComputedColor::Absolute(absolute));
         }
@@ -193,7 +193,7 @@ impl<Color> ColorFunction<Color> {
         &self,
         context: Option<&computed::Context>,
         origin: Option<ComputedColor>,
-    ) -> ColorFunction<ComputedColor> {
+    ) -> Result<ColorFunction<ComputedColor>, ()> {
         // The absolute origin color, if available, used to substitute channels.
         let abs_origin = origin.as_ref().and_then(|o| o.as_absolute());
         // Builds a variant where the origin is converted to `$space` (the
@@ -203,15 +203,15 @@ impl<Color> ColorFunction<Color> {
                 let converted = abs_origin.map(|o| o.to_color_space($space));
                 ColorFunction::$variant(
                     Optional::from(origin),
-                    $c0.to_computed_value(context, converted.as_ref()),
-                    $c1.to_computed_value(context, converted.as_ref()),
-                    $c2.to_computed_value(context, converted.as_ref()),
-                    $alpha.to_computed_value(context, converted.as_ref()),
+                    $c0.to_computed_value(context, converted.as_ref())?,
+                    $c1.to_computed_value(context, converted.as_ref())?,
+                    $c2.to_computed_value(context, converted.as_ref())?,
+                    $alpha.to_computed_value(context, converted.as_ref())?,
                 )
             }};
         }
 
-        match self {
+        Ok(match self {
             ColorFunction::Rgb(_, r, g, b, alpha) => {
                 // rgb(..) channels are in the [0..255] range, so map the origin's
                 // components accordingly.
@@ -227,10 +227,10 @@ impl<Color> ColorFunction<Color> {
                 });
                 ColorFunction::Rgb(
                     Optional::from(origin),
-                    r.to_computed_value(context, converted.as_ref()),
-                    g.to_computed_value(context, converted.as_ref()),
-                    b.to_computed_value(context, converted.as_ref()),
-                    alpha.to_computed_value(context, converted.as_ref()),
+                    r.to_computed_value(context, converted.as_ref())?,
+                    g.to_computed_value(context, converted.as_ref())?,
+                    b.to_computed_value(context, converted.as_ref())?,
+                    alpha.to_computed_value(context, converted.as_ref())?,
                 )
             },
             ColorFunction::Hsl(_, c0, c1, c2, alpha) => {
@@ -260,19 +260,19 @@ impl<Color> ColorFunction<Color> {
                 });
                 ColorFunction::Color(
                     Optional::from(origin),
-                    c0.to_computed_value(context, converted.as_ref()),
-                    c1.to_computed_value(context, converted.as_ref()),
-                    c2.to_computed_value(context, converted.as_ref()),
-                    alpha.to_computed_value(context, converted.as_ref()),
+                    c0.to_computed_value(context, converted.as_ref())?,
+                    c1.to_computed_value(context, converted.as_ref())?,
+                    c2.to_computed_value(context, converted.as_ref())?,
+                    alpha.to_computed_value(context, converted.as_ref())?,
                     *color_space,
                 )
             },
             ColorFunction::Alpha(_, alpha) => {
-                let alpha = alpha.to_computed_value(context, abs_origin);
+                let alpha = alpha.to_computed_value(context, abs_origin)?;
                 let stored = origin.expect("alpha() is always relative");
                 ColorFunction::Alpha(stored, alpha)
             },
-        }
+        })
     }
 }
 
@@ -474,14 +474,15 @@ impl ColorFunction<ComputedColor> {
         let origin = self
             .origin_color()
             .map(|o| ComputedColor::Absolute(o.resolve_to_absolute(current_color)));
-        let resolved = self.to_computed_value(None, origin);
-        resolved.to_absolute_color().unwrap_or_else(|_| {
-            debug_assert!(
-                false,
-                "the color could not be resolved even with a currentcolor specified?"
-            );
-            AbsoluteColor::TRANSPARENT_BLACK
-        })
+        self.to_computed_value(None, origin)
+            .and_then(|r| r.to_absolute_color())
+            .unwrap_or_else(|_| {
+                debug_assert!(
+                    false,
+                    "the color could not be resolved even with a currentcolor specified?"
+                );
+                AbsoluteColor::TRANSPARENT_BLACK
+            })
     }
 }
 

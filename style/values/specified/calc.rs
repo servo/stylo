@@ -152,38 +152,34 @@ impl Leaf {
         &self,
         context: Option<&computed::Context>,
         origin_color: Option<&AbsoluteColor>,
-    ) -> Self {
-        match self {
+    ) -> Result<Self, ()> {
+        Ok(match self {
             Self::Length(l) => {
                 let px = match context {
-                    Some(context) => Ok(l.to_computed_value(context).px()),
-                    None => l.to_computed_pixel_length_without_context(),
+                    Some(context) => l.to_computed_value(context).px(),
+                    None => l.to_computed_pixel_length_without_context()?,
                 };
-                match px {
-                    Ok(px) => Self::Length(NoCalcLength::from_px(px)),
-                    Err(()) => self.clone(),
-                }
+                Self::Length(NoCalcLength::from_px(px))
             },
             Self::TreeCountingFunction(f) => match context {
                 Some(context) => {
                     Self::Number(NoCalcNumber::new(f.to_computed_value(context) as f32))
                 },
-                None => self.clone(),
+                None => return Err(()),
             },
             Self::RandomKey(key) => match context {
                 Some(context) => Self::Number(NoCalcNumber::new(*key.to_computed_value(context))),
-                None => self.clone(),
+                None => return Err(()),
             },
-            Self::ColorComponent(channel_keyword) => match origin_color {
-                Some(origin_color) => {
-                    match origin_color.get_component_by_channel_keyword(*channel_keyword) {
-                        Ok(value) => Self::Number(NoCalcNumber::new(value.unwrap_or(0.0))),
-                        // The channel is not valid for this color; keep it
-                        // symbolic, which makes resolution fail later.
-                        Err(()) => self.clone(),
-                    }
-                },
-                None => self.clone(),
+            Self::ColorComponent(channel_keyword) => {
+                let channel_value = origin_color
+                    .and_then(|c| c.get_component_by_channel_keyword(*channel_keyword).ok());
+                match channel_value {
+                    Some(value) => Self::Number(NoCalcNumber::new(value.unwrap_or(0.0))),
+                    // If the color needs to get resolved later (there's no absolute origin color),
+                    // or the channel is invalid, we still keep the channel keyword around.
+                    None => Self::ColorComponent(*channel_keyword),
+                }
             },
             // The remaining leaves are already absolute (and thus
             // context-independent).
@@ -192,7 +188,7 @@ impl Leaf {
             | Self::Resolution(..)
             | Self::Percentage(..)
             | Self::Number(..) => self.clone(),
-        }
+        })
     }
 }
 
@@ -233,8 +229,11 @@ impl CalcNumeric {
         context: &computed::Context,
         leaf_to_f32: impl FnOnce(Result<Leaf, ()>) -> f32,
     ) -> f32 {
-        let result = self.node.to_computed_value(Some(context), None);
-        self.clamping_mode.clamp(leaf_to_f32(result.resolve()))
+        let result = self
+            .node
+            .to_computed_value(Some(context), None)
+            .and_then(|r| r.resolve());
+        self.clamping_mode.clamp(leaf_to_f32(result))
     }
 
     /// Gets this calc expression as a number
@@ -1464,8 +1463,22 @@ impl CalcNode {
         &self,
         context: Option<&computed::Context>,
         origin_color: Option<&AbsoluteColor>,
-    ) -> Self {
-        self.map_leaves(|leaf| leaf.to_computed_value(context, origin_color))
+    ) -> Result<Self, ()> {
+        let mut failed = false;
+        let result = self.map_leaves(|leaf| {
+            match leaf.to_computed_value(context, origin_color) {
+                Ok(c) => c,
+                Err(()) => {
+                    // XXX a bit hacky way of propagating the error...
+                    failed = true;
+                    leaf.clone()
+                },
+            }
+        });
+        if failed {
+            return Err(());
+        }
+        return Ok(result);
     }
 
     /// Tries to simplify this expression into a `<length>` value. Used for properties that

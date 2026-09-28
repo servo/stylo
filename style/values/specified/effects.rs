@@ -247,39 +247,35 @@ impl Filter {
                 factor.0.to_computed_value_without_context()?.value(),
             ))),
             Filter::DropShadow(ref shadow) => {
-                if cfg!(feature = "gecko") {
-                    let color = shadow
-                        .color
+                let color = shadow
+                    .color
+                    .as_ref()
+                    .unwrap_or(&Color::currentcolor())
+                    .to_computed_color(None)?;
+
+                let horizontal = ComputedCSSPixelLength::new(
+                    shadow
+                        .horizontal
+                        .to_computed_pixel_length_without_context()?,
+                );
+                let vertical = ComputedCSSPixelLength::new(
+                    shadow.vertical.to_computed_pixel_length_without_context()?,
+                );
+                let blur = ComputedNonNegativeLength::new(
+                    shadow
+                        .blur
                         .as_ref()
-                        .unwrap_or(&Color::currentcolor())
-                        .to_computed_color(None)?;
+                        .unwrap_or(&NonNegativeLength::zero())
+                        .0
+                        .to_computed_pixel_length_without_context()?,
+                );
 
-                    let horizontal = ComputedCSSPixelLength::new(
-                        shadow
-                            .horizontal
-                            .to_computed_pixel_length_without_context()?,
-                    );
-                    let vertical = ComputedCSSPixelLength::new(
-                        shadow.vertical.to_computed_pixel_length_without_context()?,
-                    );
-                    let blur = ComputedNonNegativeLength::new(
-                        shadow
-                            .blur
-                            .as_ref()
-                            .unwrap_or(&NonNegativeLength::zero())
-                            .0
-                            .to_computed_pixel_length_without_context()?,
-                    );
-
-                    Ok(ComputedFilter::DropShadow(ComputedSimpleShadow {
-                        color,
-                        horizontal,
-                        vertical,
-                        blur,
-                    }))
-                } else {
-                    Err(())
-                }
+                Ok(ComputedFilter::DropShadow(ComputedSimpleShadow {
+                    color,
+                    horizontal,
+                    vertical,
+                    blur,
+                }))
             },
             #[cfg(feature = "gecko")]
             Filter::Url(ref url) => Ok(ComputedFilter::Url(ComputedUrl(url.clone()))),

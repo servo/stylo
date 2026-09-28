@@ -472,6 +472,7 @@ pub fn scope_selector_list_is_trivial(list: &SelectorList<SelectorImpl>) -> bool
         // A selector is trivial if:
         // * There is no selector conditional on its siblings and/or descendant to match, and
         // * There is no dependency on sibling relations, and
+        // * There is no attribute selector in the selector, which is specific to that element, and
         // * There's no ID selector in the selector. A more correct approach may be to ensure that
         //   scoping roots of the style sharing candidates and targets have matching IDs, but that
         //   requires re-plumbing what we pass around for scope roots.
@@ -482,6 +483,9 @@ pub fn scope_selector_list_is_trivial(list: &SelectorList<SelectorImpl>) -> bool
                     Component::ID(_)
                     | Component::Nth(_)
                     | Component::NthOf(_)
+                    | Component::AttributeInNoNamespaceExists { .. }
+                    | Component::AttributeInNoNamespace { .. }
+                    | Component::AttributeOther(_)
                     | Component::Has(_) => return false,
                     Component::Is(list) | Component::Where(list) | Component::Negation(list)
                         if !scope_selector_list_is_trivial(list) =>

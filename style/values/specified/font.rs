@@ -113,13 +113,16 @@ pub enum SystemFont {
 )]
 #[allow(missing_docs)]
 #[cfg(feature = "servo")]
-/// void enum for system font, can never exist
-pub enum SystemFont {}
+/// Dummy struct for system font, can never be constructed.
+pub struct SystemFont {
+    #[css(skip)]
+    _forbid_construction: (),
+}
 
 #[allow(missing_docs)]
 #[cfg(feature = "servo")]
 impl SystemFont {
-    pub fn parse(_: &mut Parser) -> Result<Self, ()> {
+    pub fn parse(_context: &ParserContext, _input: &mut Parser) -> Result<Self, ()> {
         Err(())
     }
 }

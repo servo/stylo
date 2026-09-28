@@ -2436,17 +2436,14 @@ pub mod font {
     pub use crate::properties::generated::shorthands::font::*;
 
     use super::*;
-    #[cfg(feature = "gecko")]
     use crate::properties::longhands::{
-        font_family, font_size, font_size_adjust, font_variant_emoji,
-    };
-    use crate::properties::longhands::{
-        font_feature_settings, font_kerning, font_language_override, font_optical_sizing,
-        font_style, font_variant_alternates, font_variant_caps, font_variant_east_asian,
-        font_variant_ligatures, font_variant_numeric, font_variant_position,
-        font_variation_settings, font_weight, font_width,
+        font_family, font_feature_settings, font_kerning, font_language_override,
+        font_optical_sizing, font_size, font_style, font_variant_alternates, font_variant_caps,
+        font_variant_east_asian, font_variant_ligatures, font_variant_numeric,
+        font_variant_position, font_variation_settings, font_weight, font_width,
     };
     #[cfg(feature = "gecko")]
+    use crate::properties::longhands::{font_size_adjust, font_variant_emoji};
     use crate::values::specified::font::SystemFont;
     use crate::values::specified::font::{
         FontFamily, FontSize, FontStyle, FontWeight, FontWidth, FontWidthKeyword, LineHeight,
@@ -2461,7 +2458,6 @@ pub mod font {
         let mut variant_caps = None;
         let mut weight = None;
         let mut width = None;
-        #[cfg(feature = "gecko")]
         if let Ok(sys) = input.try_parse(|i| SystemFont::parse(context, i)) {
             return Ok(Longhands {
                 font_family: font_family::SpecifiedValue::system_font(sys),
@@ -2472,9 +2468,11 @@ pub mod font {
                 line_height: LineHeight::normal(),
                 font_kerning: font_kerning::get_initial_specified_value(),
                 font_language_override: font_language_override::get_initial_specified_value(),
+                #[cfg(feature = "gecko")]
                 font_size_adjust: font_size_adjust::get_initial_specified_value(),
                 font_variant_alternates: font_variant_alternates::get_initial_specified_value(),
                 font_variant_east_asian: font_variant_east_asian::get_initial_specified_value(),
+                #[cfg(feature = "gecko")]
                 font_variant_emoji: font_variant_emoji::get_initial_specified_value(),
                 font_variant_ligatures: font_variant_ligatures::get_initial_specified_value(),
                 font_variant_numeric: font_variant_numeric::get_initial_specified_value(),
@@ -2553,7 +2551,6 @@ pub mod font {
         })
     }
 
-    #[cfg(feature = "gecko")]
     enum CheckSystemResult {
         AllSystem(SystemFont),
         SomeSystem,
@@ -2565,7 +2562,6 @@ pub mod font {
         where
             W: fmt::Write,
         {
-            #[cfg(feature = "gecko")]
             match self.check_system() {
                 CheckSystemResult::AllSystem(sys) => return sys.to_css(dest),
                 CheckSystemResult::SomeSystem => return Ok(()),
@@ -2691,7 +2687,6 @@ pub mod font {
     }
 
     impl<'a> LonghandsToSerialize<'a> {
-        #[cfg(feature = "gecko")]
         fn check_system(&self) -> CheckSystemResult {
             let mut sys = None;
             let mut all = true;
@@ -2747,8 +2742,6 @@ pub mod font {
             font_variant_caps::SpecifiedValue::collect_completion_keywords(f);
             FontSize::collect_completion_keywords(f);
             FontFamily::collect_completion_keywords(f);
-
-            #[cfg(feature = "gecko")]
             SystemFont::collect_completion_keywords(f);
         }
     }

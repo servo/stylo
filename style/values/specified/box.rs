@@ -1509,7 +1509,7 @@ impl LineClamp {
     }
 
     /// Serializes the legacy `-webkit-line-clamp` syntax.
-    #[cfg(feature = "gecko")]
+    #[cfg_attr(feature = "servo", allow(unused))]
     pub(crate) fn to_css_legacy<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
     where
         W: fmt::Write,

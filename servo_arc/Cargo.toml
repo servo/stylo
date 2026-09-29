@@ -1,6 +1,6 @@
 [package]
 name = "servo_arc"
-version = "0.4.3"
+version = "0.5.0"
 authors = ["The Servo Project Developers"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/servo/stylo"

@@ -99,7 +99,7 @@ style_derive = { workspace = true }
 style_traits = { workspace = true }
 to_shmem = { workspace = true}
 to_shmem_derive = { workspace = true }
-thin-vec = "0.2.1"
+thin-vec = { version = "0.2.1", features = ["serde"] }
 uluru = "3.0"
 void = "1.0.2"
 url = { version = "2.5", optional = true, features = ["serde"] }

@@ -19,7 +19,7 @@ use std::sync::atomic::{self, AtomicPtr, AtomicUsize, Ordering};
 
 use super::map::{Entry, Map};
 use super::unsafe_box::UnsafeBox;
-use super::{CascadeLevel, CascadeOrigin, RuleCascadeFlags, StyleSource};
+use super::{CascadeLevel, CascadeOrigin, RuleCascadeFlags, StyleSource, StyleSourceBorrow};
 
 /// The rule tree, the structure servo uses to preserve the results of selector
 /// matching.
@@ -566,7 +566,7 @@ impl StrongRuleNode {
     pub(super) fn ensure_child(
         &self,
         root: &StrongRuleNode,
-        source: StyleSource,
+        source: StyleSourceBorrow,
         cascade_priority: CascadePriority,
     ) -> StrongRuleNode {
         debug_assert!(
@@ -596,7 +596,7 @@ impl StrongRuleNode {
                 let node = StrongRuleNode::new(Box::new(RuleNode::new(
                     root.downgrade(),
                     self.clone(),
-                    source,
+                    source.to_owned(),
                     cascade_priority,
                 )));
                 // Sound to call because we still own a strong reference to

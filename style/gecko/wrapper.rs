@@ -14,6 +14,8 @@
 //! style system it's kind of pointless in the Stylo case, and only Servo forces
 //! the separation between the style system implementation and everything else.
 
+use crate::CaseSensitivityExt;
+use crate::LocalName;
 use crate::applicable_declarations::ApplicableDeclarationBlock;
 use crate::bloom::each_relevant_element_hash;
 use crate::context::{QuirksMode, SharedStyleContext, UpdateAnimationsTasks};
@@ -38,25 +40,26 @@ use crate::gecko_bindings::bindings::Gecko_IsSignificantChild;
 use crate::gecko_bindings::bindings::Gecko_MatchLang;
 use crate::gecko_bindings::bindings::Gecko_UpdateAnimations;
 use crate::gecko_bindings::structs;
-use crate::gecko_bindings::structs::nsChangeHint;
-use crate::gecko_bindings::structs::EffectCompositor_CascadeLevel as CascadeLevel;
 use crate::gecko_bindings::structs::ELEMENT_HANDLED_SNAPSHOT;
 use crate::gecko_bindings::structs::ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO;
 use crate::gecko_bindings::structs::ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO;
 use crate::gecko_bindings::structs::ELEMENT_HAS_SNAPSHOT;
+use crate::gecko_bindings::structs::EffectCompositor_CascadeLevel as CascadeLevel;
 use crate::gecko_bindings::structs::NODE_DESCENDANTS_NEED_FRAMES;
 use crate::gecko_bindings::structs::NODE_NEEDS_FRAME;
+use crate::gecko_bindings::structs::nsChangeHint;
+use crate::gecko_bindings::structs::{Element as RawGeckoElement, nsINode as RawGeckoNode};
 use crate::gecko_bindings::structs::{nsAtom, nsIContent, nsINode_BooleanFlag};
-use crate::gecko_bindings::structs::{nsINode as RawGeckoNode, Element as RawGeckoElement};
 use crate::global_style_data::GLOBAL_STYLE_DATA;
 use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::properties::{
-    animated_properties::{AnimationValue, AnimationValueMap},
     ComputedValues, Importance, OwnedPropertyDeclarationId, PropertyDeclaration,
     PropertyDeclarationBlock, PropertyDeclarationId, PropertyDeclarationIdSet,
+    animated_properties::{AnimationValue, AnimationValueMap},
 };
 use crate::rule_tree::CascadeLevel as ServoCascadeLevel;
 use crate::rule_tree::CascadeOrigin as ServoCascadeOrigin;
+use crate::rule_tree::{StyleSource, StyleSourceBorrow};
 use crate::selector_parser::{AttrValue, Lang};
 use crate::shared_lock::{Locked, SharedRwLock};
 use crate::string_cache::{Atom, Namespace, WeakAtom, WeakNamespace};
@@ -64,15 +67,13 @@ use crate::stylesheets::scope_rule::ImplicitScopeRoot;
 use crate::stylist::CascadeData;
 use crate::values::computed::Display;
 use crate::values::{AtomIdent, AtomString};
-use crate::CaseSensitivityExt;
-use crate::LocalName;
 use app_units::Au;
 use dom::{DocumentState, ElementState};
 use euclid::default::Size2D;
 use nsstring::nsString;
 use rustc_hash::FxHashMap;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
-use selectors::bloom::{BloomFilter, BLOOM_HASH_MASK};
+use selectors::bloom::{BLOOM_HASH_MASK, BloomFilter};
 use selectors::matching::VisitedHandlingMode;
 use selectors::matching::{ElementSelectorFlags, MatchingContext};
 use selectors::sink::Push;
@@ -1629,27 +1630,35 @@ impl<'le> TElement for GeckoElement<'le> {
         unsafe { bindings::Gecko_IsDocumentBody(self.0) }
     }
 
-    fn synthesize_view_transition_dynamic_rules<V>(&self, rules: &mut V)
+    fn synthesize_view_transition_dynamic_rules<'a, V>(&self, rules: &mut V)
     where
-        V: Push<ApplicableDeclarationBlock>,
+        V: Push<ApplicableDeclarationBlock<'a>>,
+        Self: 'a,
     {
         use crate::stylesheets::layer_rule::LayerOrder;
-        let declarations = unsafe { bindings::Gecko_GetViewTransitionDynamicRule(self.0).as_ref() };
-        if let Some(decl) = declarations {
+        // SAFETY: The dynamic rule is owned by the active view transition, which is alive as long
+        // as the element is (and can't change during selector matching).
+        let declarations = unsafe {
+            bindings::Gecko_GetViewTransitionDynamicRule(self.0)
+                .as_ref()
+                .map(|d| StyleSourceBorrow::from_declarations(ArcBorrow::from_ref(d)))
+        };
+        if let Some(source) = declarations {
             rules.push(ApplicableDeclarationBlock::from_declarations(
-                unsafe { Arc::from_raw_addrefed(decl) },
+                source,
                 ServoCascadeLevel::new(ServoCascadeOrigin::UA),
                 LayerOrder::root(),
             ));
         }
     }
 
-    fn synthesize_presentational_hints_for_legacy_attributes<V>(
+    fn synthesize_presentational_hints_for_legacy_attributes<'a, V>(
         &self,
         visited_handling: VisitedHandlingMode,
         hints: &mut V,
     ) where
-        V: Push<ApplicableDeclarationBlock>,
+        V: Push<ApplicableDeclarationBlock<'a>>,
+        Self: 'a,
     {
         use crate::properties::longhands::_x_lang::SpecifiedValue as SpecifiedLang;
         use crate::properties::longhands::color::SpecifiedValue as SpecifiedColor;
@@ -1657,46 +1666,43 @@ impl<'le> TElement for GeckoElement<'le> {
         use crate::values::specified::{color::Color, font::XTextScale};
         use std::sync::LazyLock;
 
-        static TABLE_COLOR_RULE: LazyLock<ApplicableDeclarationBlock> = LazyLock::new(|| {
+        fn static_pres_hint(decl: PropertyDeclaration) -> StyleSource {
             let global_style_data = &*GLOBAL_STYLE_DATA;
-            let pdb = PropertyDeclarationBlock::with_one(
-                PropertyDeclaration::Color(SpecifiedColor(Color::InheritFromBodyQuirk)),
-                Importance::Normal,
-            );
-            let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
+            let pdb = PropertyDeclarationBlock::with_one(decl, Importance::Normal);
+            StyleSource::from_declarations(Arc::new_leaked(global_style_data.shared_lock.wrap(pdb)))
+        }
+
+        fn to_pres_hint<'a>(source: StyleSourceBorrow<'a>) -> ApplicableDeclarationBlock<'a> {
             ApplicableDeclarationBlock::from_declarations(
-                arc,
+                source,
                 ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
                 LayerOrder::root(),
             )
+        }
+
+        /// # Safety
+        ///
+        /// The declarations must outlive `'a`. That's the case for the presentational hints below,
+        /// which are owned by the element / document, and which can't change while we're matching.
+        unsafe fn pres_hint_from_raw<'a>(
+            declarations: *const Locked<PropertyDeclarationBlock>,
+        ) -> Option<ApplicableDeclarationBlock<'a>> {
+            let declarations = unsafe { declarations.as_ref()? };
+            Some(to_pres_hint(StyleSourceBorrow::from_declarations(unsafe {
+                ArcBorrow::from_ref(declarations)
+            })))
+        }
+
+        static TABLE_COLOR_RULE: LazyLock<StyleSource> = LazyLock::new(|| {
+            static_pres_hint(PropertyDeclaration::Color(SpecifiedColor(
+                Color::InheritFromBodyQuirk,
+            )))
         });
-        static MATHML_LANG_RULE: LazyLock<ApplicableDeclarationBlock> = LazyLock::new(|| {
-            let global_style_data = &*GLOBAL_STYLE_DATA;
-            let pdb = PropertyDeclarationBlock::with_one(
-                PropertyDeclaration::XLang(SpecifiedLang(atom!("x-math"))),
-                Importance::Normal,
-            );
-            let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
-            ApplicableDeclarationBlock::from_declarations(
-                arc,
-                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
-                LayerOrder::root(),
-            )
+        static MATHML_LANG_RULE: LazyLock<StyleSource> = LazyLock::new(|| {
+            static_pres_hint(PropertyDeclaration::XLang(SpecifiedLang(atom!("x-math"))))
         });
-        static SVG_TEXT_DISABLE_SCALE_RULE: LazyLock<ApplicableDeclarationBlock> =
-            LazyLock::new(|| {
-                let global_style_data = &*GLOBAL_STYLE_DATA;
-                let pdb = PropertyDeclarationBlock::with_one(
-                    PropertyDeclaration::XTextScale(XTextScale::None),
-                    Importance::Normal,
-                );
-                let arc = Arc::new_leaked(global_style_data.shared_lock.wrap(pdb));
-                ApplicableDeclarationBlock::from_declarations(
-                    arc,
-                    ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
-                    LayerOrder::root(),
-                )
-            });
+        static SVG_TEXT_DISABLE_SCALE_RULE: LazyLock<StyleSource> =
+            LazyLock::new(|| static_pres_hint(PropertyDeclaration::XTextScale(XTextScale::None)));
 
         let ns = self.namespace_id();
         // <th> elements get a default MozCenterOrInherit which may get overridden
@@ -1704,29 +1710,23 @@ impl<'le> TElement for GeckoElement<'le> {
             && self.local_name().as_ptr() == atom!("table").as_ptr()
             && self.as_node().owner_doc().quirks_mode() == QuirksMode::Quirks
         {
-            hints.push(TABLE_COLOR_RULE.clone());
+            hints.push(to_pres_hint(TABLE_COLOR_RULE.borrow()));
         }
         if ns == structs::kNameSpaceID_SVG as i32
             && self.local_name().as_ptr() == atom!("text").as_ptr()
         {
-            hints.push(SVG_TEXT_DISABLE_SCALE_RULE.clone());
+            hints.push(to_pres_hint(SVG_TEXT_DISABLE_SCALE_RULE.borrow()));
         }
-        let declarations =
-            unsafe { bindings::Gecko_GetMappedAttributeDeclarations(self.0).as_ref() };
-        if let Some(decl) = declarations {
-            hints.push(ApplicableDeclarationBlock::from_declarations(
-                unsafe { Arc::from_raw_addrefed(decl) },
-                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
-                LayerOrder::root(),
-            ));
+        if let Some(hint) =
+            unsafe { pres_hint_from_raw(bindings::Gecko_GetMappedAttributeDeclarations(self.0)) }
+        {
+            hints.push(hint);
         }
-        let declarations = unsafe { Gecko_GetExtraContentStyleDeclarations(self.0).as_ref() };
-        if let Some(decl) = declarations {
-            hints.push(ApplicableDeclarationBlock::from_declarations(
-                unsafe { Arc::from_raw_addrefed(decl) },
-                ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
-                LayerOrder::root(),
-            ));
+
+        if let Some(hint) =
+            unsafe { pres_hint_from_raw(Gecko_GetExtraContentStyleDeclarations(self.0)) }
+        {
+            hints.push(hint);
         }
 
         // Support for link, vlink, and alink presentation hints on <body>
@@ -1741,32 +1741,25 @@ impl<'le> TElement for GeckoElement<'le> {
                     );
                 },
                 VisitedHandlingMode::AllLinksUnvisited => unsafe {
-                    Gecko_GetUnvisitedLinkAttrDeclarationBlock(self.0).as_ref()
+                    Gecko_GetUnvisitedLinkAttrDeclarationBlock(self.0)
                 },
                 VisitedHandlingMode::RelevantLinkVisited => unsafe {
-                    Gecko_GetVisitedLinkAttrDeclarationBlock(self.0).as_ref()
+                    Gecko_GetVisitedLinkAttrDeclarationBlock(self.0)
                 },
             };
-            if let Some(decl) = declarations {
-                hints.push(ApplicableDeclarationBlock::from_declarations(
-                    unsafe { Arc::from_raw_addrefed(decl) },
-                    ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
-                    LayerOrder::root(),
-                ));
+
+            if let Some(hint) = unsafe { pres_hint_from_raw(declarations) } {
+                hints.push(hint);
             }
 
             let active = self
                 .state()
                 .intersects(NonTSPseudoClass::Active.state_flag());
             if active {
-                let declarations =
-                    unsafe { Gecko_GetActiveLinkAttrDeclarationBlock(self.0).as_ref() };
-                if let Some(decl) = declarations {
-                    hints.push(ApplicableDeclarationBlock::from_declarations(
-                        unsafe { Arc::from_raw_addrefed(decl) },
-                        ServoCascadeLevel::new(ServoCascadeOrigin::PresHints),
-                        LayerOrder::root(),
-                    ));
+                if let Some(hint) =
+                    unsafe { pres_hint_from_raw(Gecko_GetActiveLinkAttrDeclarationBlock(self.0)) }
+                {
+                    hints.push(hint);
                 }
             }
         }
@@ -1776,7 +1769,7 @@ impl<'le> TElement for GeckoElement<'le> {
             && ns == structs::kNameSpaceID_MathML as i32
             && self.local_name().as_ptr() == atom!("math").as_ptr()
         {
-            hints.push(MATHML_LANG_RULE.clone());
+            hints.push(to_pres_hint(MATHML_LANG_RULE.borrow()));
         }
     }
 
@@ -1975,10 +1968,11 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             return false;
         }
 
-        debug_assert!(self
-            .as_node()
-            .parent_node()
-            .is_some_and(|p| p.is_document()));
+        debug_assert!(
+            self.as_node()
+                .parent_node()
+                .is_some_and(|p| p.is_document())
+        );
         // XXX this should always return true at this point, shouldn't it?
         unsafe { bindings::Gecko_IsRootElement(self.0) }
     }

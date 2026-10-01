@@ -37,7 +37,14 @@ impl RandomUaIdent {
             },
             PropertyIdRef::Custom(custom) => {
                 ua_ident += "--";
-                custom.with_str(|name| ua_ident += name);
+                #[cfg(feature = "gecko")]
+                {
+                    custom.with_str(|name| ua_ident += name);
+                }
+                #[cfg(feature = "servo")]
+                {
+                    ua_ident += custom;
+                }
             },
         };
         ua_ident

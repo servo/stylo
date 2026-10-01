@@ -259,7 +259,7 @@ pub mod ${property.ident} {
         /// Making this type generic allows the compiler to figure out the
         /// animated value for us, instead of having to implement it
         /// manually for every type we care about.
-        #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToAnimatedValue, ToResolvedValue, ToCss, ToTyped)]
+        #[derive(Clone, Debug, Deref, MallocSizeOf, PartialEq, ToAnimatedValue, ToResolvedValue, ToCss, ToTyped)]
         % if property.vector.separator == "Comma":
         #[css(comma)]
         % endif
@@ -279,7 +279,7 @@ pub mod ${property.ident} {
         % else:
         pub use self::ComputedList as List;
 
-        #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToCss, ToTyped)]
+        #[derive(Clone, Debug, Deref, MallocSizeOf, PartialEq, ToCss, ToTyped)]
         % if property.vector.separator == "Comma":
         #[css(comma)]
         % endif

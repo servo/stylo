@@ -1326,16 +1326,6 @@ animation_type = "discrete"
 spec = "https://svgwg.org/svg2-draft/painting.html#VertexMarkerProperties"
 affects = "layout"
 
-[masonry-auto-flow]
-type = "MasonryAutoFlow"
-initial = "computed::MasonryAutoFlow::initial()"
-struct = "position"
-engine = "gecko"
-gecko_pref = "layout.css.grid-template-masonry-value.enabled"
-animation_type = "discrete"
-spec = "https://github.com/w3c/csswg-drafts/issues/4650"
-affects = "layout"
-
 [math-depth]
 type = "MathDepth"
 initial = "0"

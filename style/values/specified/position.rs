@@ -27,10 +27,9 @@ use crate::values::specified::align::AlignFlags;
 use crate::values::specified::percentage::NoCalcPercentage;
 use crate::values::specified::{AllowQuirks, Integer, LengthPercentage, NonNegativeNumber};
 use crate::values::{AtomIdent, DashedIdent};
-use cssparser::{Parser, match_ignore_ascii_case};
+use cssparser::Parser;
 use hashbrown::hash_map::Entry;
 use num_traits::FromPrimitive;
-use selectors::parser::SelectorParseErrorKind;
 use servo_arc::Arc;
 use smallvec::{SmallVec, smallvec};
 use std::fmt::{self, Write};
@@ -1604,140 +1603,6 @@ impl ToCss for GridAutoFlow {
             dest.write_str("column dense")
         } else {
             dest.write_str("column")
-        }
-    }
-}
-
-#[repr(u8)]
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    SpecifiedValueInfo,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-)]
-/// Masonry auto-placement algorithm packing.
-pub enum MasonryPlacement {
-    /// Place the item in the track(s) with the smallest extent so far.
-    Pack,
-    /// Place the item after the last item, from start to end.
-    Next,
-}
-
-#[repr(u8)]
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    SpecifiedValueInfo,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-)]
-/// Masonry auto-placement algorithm item sorting option.
-pub enum MasonryItemOrder {
-    /// Place all items with a definite placement before auto-placed items.
-    DefiniteFirst,
-    /// Place items in `order-modified document order`.
-    Ordered,
-}
-
-#[derive(
-    Clone,
-    Copy,
-    Debug,
-    Eq,
-    MallocSizeOf,
-    PartialEq,
-    SpecifiedValueInfo,
-    ToComputedValue,
-    ToCss,
-    ToResolvedValue,
-    ToShmem,
-    ToTyped,
-)]
-#[repr(C)]
-#[typed(todo_derive_fields)]
-/// Controls how the Masonry layout algorithm works
-/// specifying exactly how auto-placed items get flowed in the masonry axis.
-pub struct MasonryAutoFlow {
-    /// Specify how to pick a auto-placement track.
-    #[css(contextual_skip_if = "is_pack_with_non_default_order")]
-    pub placement: MasonryPlacement,
-    /// Specify how to pick an item to place.
-    #[css(skip_if = "is_item_order_definite_first")]
-    pub order: MasonryItemOrder,
-}
-
-#[inline]
-fn is_pack_with_non_default_order(placement: &MasonryPlacement, order: &MasonryItemOrder) -> bool {
-    *placement == MasonryPlacement::Pack && *order != MasonryItemOrder::DefiniteFirst
-}
-
-#[inline]
-fn is_item_order_definite_first(order: &MasonryItemOrder) -> bool {
-    *order == MasonryItemOrder::DefiniteFirst
-}
-
-impl MasonryAutoFlow {
-    #[inline]
-    /// Get initial `masonry-auto-flow` value.
-    pub fn initial() -> MasonryAutoFlow {
-        MasonryAutoFlow {
-            placement: MasonryPlacement::Pack,
-            order: MasonryItemOrder::DefiniteFirst,
-        }
-    }
-}
-
-impl Parse for MasonryAutoFlow {
-    /// [ definite-first | ordered ] || [ pack | next ]
-    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<MasonryAutoFlow, ParseError> {
-        let mut value = MasonryAutoFlow::initial();
-        let mut got_placement = false;
-        let mut got_order = false;
-        while !input.is_exhausted() {
-            let ident = input.expect_ident()?;
-            let success = match_ignore_ascii_case! { &ident,
-                "pack" if !got_placement => {
-                    got_placement = true;
-                    true
-                },
-                "next" if !got_placement => {
-                    value.placement = MasonryPlacement::Next;
-                    got_placement = true;
-                    true
-                },
-                "definite-first" if !got_order => {
-                    got_order = true;
-                    true
-                },
-                "ordered" if !got_order => {
-                    value.order = MasonryItemOrder::Ordered;
-                    got_order = true;
-                    true
-                },
-                _ => false
-            };
-            if !success {
-                return Err(ParseError::custom(SelectorParseErrorKind::UnexpectedIdent));
-            }
-        }
-
-        if got_placement || got_order {
-            Ok(value)
-        } else {
-            Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
         }
     }
 }

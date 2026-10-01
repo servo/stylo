@@ -22,7 +22,7 @@ use crate::values::generics::position::{
 };
 pub use crate::values::specified::position::{
     AnchorName, BoxSizing, DashedIdentAndOrTryTactic, FlexDirection, FlexWrap, GridAutoFlow,
-    GridTemplateAreas, MasonryAutoFlow, ObjectFit, PositionAnchor, PositionArea, PositionAreaAxis,
+    GridTemplateAreas, ObjectFit, PositionAnchor, PositionArea, PositionAreaAxis,
     PositionAreaKeyword, PositionAreaType, PositionTryFallbacks, PositionTryFallbacksTryTactic,
     PositionTryFallbacksTryTacticKeyword, PositionTryOrder, PositionVisibility, ScopedName,
 };

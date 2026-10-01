@@ -108,9 +108,8 @@ pub use self::param::LinkParameters;
 pub use self::percentage::{NonNegativePercentage, Percentage};
 pub use self::position::{
     AnchorFunction, AnchorName, AspectRatio, BoxSizing, DashedIdentAndOrTryTactic, FlexDirection,
-    FlexWrap, GridAutoFlow, GridTemplateAreas, Inset, MasonryAutoFlow, ObjectFit, Position,
-    PositionAnchor, PositionOrAuto, PositionTryFallbacks, PositionTryOrder, PositionVisibility,
-    ScopedName, ZIndex,
+    FlexWrap, GridAutoFlow, GridTemplateAreas, Inset, ObjectFit, Position, PositionAnchor,
+    PositionOrAuto, PositionTryFallbacks, PositionTryOrder, PositionVisibility, ScopedName, ZIndex,
 };
 pub use self::position::{PositionArea, PositionAreaKeyword};
 pub use self::ratio::Ratio;

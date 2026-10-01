@@ -5,6 +5,7 @@
 //! Generic implementations of some DOM APIs so they can be shared between Servo
 //! and Gecko.
 
+use crate::bloom::AtomExt as _;
 use crate::context::QuirksMode;
 use crate::dom::{TDocument, TElement, TNode, TShadowRoot};
 use crate::invalidation::element::invalidation_map::Dependency;
@@ -462,7 +463,7 @@ where
         Component::Class(ref class) => {
             // Bloom filter can only be used when case sensitive.
             let bloom_hash = if class_and_id_case_sensitivity == CaseSensitivity::CaseSensitive {
-                Some(hash_for_subtree_filter(class.0.get_hash()))
+                Some(hash_for_subtree_filter(class.0.get_hash32()))
             } else {
                 None
             };
@@ -475,11 +476,11 @@ where
             });
         },
         Component::LocalName(ref local_name) => {
-            let hash = hash_for_subtree_filter(local_name.name.0.get_hash());
+            let hash = hash_for_subtree_filter(local_name.name.0.get_hash32());
             let hash_lower = if local_name.name == local_name.lower_name {
                 hash
             } else {
-                hash_for_subtree_filter(local_name.lower_name.0.get_hash())
+                hash_for_subtree_filter(local_name.lower_name.0.get_hash32())
             };
             collect_all_elements::<E, Q, _>(root, results, |element| {
                 if !element.subtree_may_have_hashes(hash)
@@ -503,11 +504,11 @@ where
         } => {
             // For HTML elements: C++ hashes lowercase
             // For XUL/SVG/MathML elements: C++ hashes original case
-            let hash_original = hash_for_subtree_filter(local_name.0.get_hash());
+            let hash_original = hash_for_subtree_filter(local_name.0.get_hash32());
             let hash_lower = if local_name.0 == local_name_lower.0 {
                 hash_original
             } else {
-                hash_for_subtree_filter(local_name_lower.0.get_hash())
+                hash_for_subtree_filter(local_name_lower.0.get_hash32())
             };
 
             collect_all_elements::<E, Q, _>(root, results, |element| {
@@ -547,7 +548,7 @@ where
             let namespace_constraint = NamespaceConstraint::Specific(&empty_namespace);
 
             // Only use bloom filter to check for attribute name existence.
-            let bloom_hash = hash_for_subtree_filter(local_name.0.get_hash());
+            let bloom_hash = hash_for_subtree_filter(local_name.0.get_hash32());
 
             collect_all_elements::<E, Q, _>(root, results, |element| {
                 if !element.subtree_may_have_hashes(bloom_hash) {
@@ -769,7 +770,7 @@ where
         SimpleFilter::Class(class) => {
             // Bloom filter can only be used when case sensitive.
             let bloom_hash = if class_and_id_case_sensitivity == CaseSensitivity::CaseSensitive {
-                Some(hash_for_subtree_filter(class.0.get_hash()))
+                Some(hash_for_subtree_filter(class.0.get_hash32()))
             } else {
                 None
             };
@@ -788,11 +789,11 @@ where
             });
         },
         SimpleFilter::LocalName(local_name) => {
-            let hash = hash_for_subtree_filter(local_name.name.0.get_hash());
+            let hash = hash_for_subtree_filter(local_name.name.0.get_hash32());
             let hash_lower = if local_name.name == local_name.lower_name {
                 hash
             } else {
-                hash_for_subtree_filter(local_name.lower_name.0.get_hash())
+                hash_for_subtree_filter(local_name.lower_name.0.get_hash32())
             };
             collect_all_elements::<E, Q, _>(root, results, |element| {
                 if !element.subtree_may_have_hashes(hash)
@@ -813,7 +814,7 @@ where
             });
         },
         SimpleFilter::Attr(local_name) => {
-            let hash = hash_for_subtree_filter(local_name.0.get_hash());
+            let hash = hash_for_subtree_filter(local_name.0.get_hash32());
             collect_all_elements::<E, Q, _>(root, results, |element| {
                 if !element.subtree_may_have_hashes(hash) {
                     return Operation::RejectSkippingChildren;

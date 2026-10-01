@@ -773,6 +773,10 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
     fn parse_slotted(&self) -> bool {
         true
     }
+
+    fn parse_cue(&self) -> bool {
+        true
+    }
 }
 
 impl SelectorImpl {

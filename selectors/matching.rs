@@ -848,6 +848,10 @@ where
         Combinator::PseudoElement => {
             NextElement::new(element.pseudo_element_originating_element(), false)
         },
+        Combinator::Cue => {
+            // TODO(https://github.com/servo/servo/issues/22314): Is this actually correct?
+            NextElement::new(None, true)
+        }
     }
 }
 
@@ -988,7 +992,8 @@ where
             Combinator::NextSibling
             | Combinator::PseudoElement
             | Combinator::Part
-            | Combinator::SlotAssignment => {
+            | Combinator::SlotAssignment
+            | Combinator::Cue => {
                 // NOTE(emilio): Conceptually, PseudoElement / Part / SlotAssignment should return
                 // `candidate_not_found`, but it doesn't matter in practice since they don't have
                 // sibling / descendant combinators to the right of them. This hopefully saves one
@@ -1340,6 +1345,16 @@ where
             })
         },
         Component::Is(ref list) | Component::Where(ref list) => {
+            return context.shared.nest(|context| {
+                matches_complex_selector_list(list.slice(), element, context, rightmost)
+            })
+        },
+        Component::Cue(None) => {
+            // TODO(https://github.com/servo/servo/issues/22314): Match on pseudo element
+            false
+        },
+        Component::Cue(Some(ref list)) => {
+            // TODO(https://github.com/servo/servo/issues/22314): Match on pseudo element
             return context.shared.nest(|context| {
                 matches_complex_selector_list(list.slice(), element, context, rightmost)
             })

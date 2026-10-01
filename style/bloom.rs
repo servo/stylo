@@ -117,18 +117,18 @@ where
     E: TElement,
     F: FnMut(u32),
 {
-    f(element.local_name().get_hash32());
-    f(element.namespace().get_hash32());
+    f(element.local_name().get_hash());
+    f(element.namespace().get_hash());
 
     if let Some(id) = element.id() {
-        f(id.get_hash32());
+        f(id.get_hash());
     }
 
-    element.each_class(|class| f(class.get_hash32()));
+    element.each_class(|class| f(class.get_hash()));
 
     element.each_attr_name(|name| {
         if !is_attr_name_excluded_from_filter(name) {
-            f(name.get_hash32())
+            f(name.get_hash())
         }
     });
 }
@@ -399,31 +399,5 @@ impl<E: TElement> StyleBloom<E> {
         debug_assert_eq!(self.elements.len(), element_depth);
 
         // We're done! Easy.
-    }
-}
-
-pub(crate) trait AtomExt {
-    fn get_hash32(&self) -> u32;
-}
-
-#[cfg(feature = "servo")]
-impl<Static: string_cache::StaticAtomSet> AtomExt for string_cache::Atom<Static> {
-    fn get_hash32(&self) -> u32 {
-        let hash64 = self.get_hash();
-        (hash64 >> 32) as u32 ^ (hash64 as u32)
-    }
-}
-
-#[cfg(feature = "gecko")]
-impl AtomExt for crate::Atom {
-    fn get_hash32(&self) -> u32 {
-        self.get_hash()
-    }
-}
-
-#[cfg(feature = "gecko")]
-impl AtomExt for crate::WeakAtom {
-    fn get_hash32(&self) -> u32 {
-        self.get_hash()
     }
 }

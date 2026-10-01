@@ -156,8 +156,6 @@ pub enum UserSelect {
     Text,
     #[parse(aliases = "-moz-none")]
     None,
-    #[cfg(feature = "servo")]
-    Contain,
     /// Force selection of all children.
     All,
 }

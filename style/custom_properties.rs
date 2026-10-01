@@ -244,7 +244,7 @@ impl LocalName {
 
     #[cfg(feature = "servo")]
     fn with_name<'a, R>(name: &'a Name, callback: impl FnOnce(&Self) -> R) -> R {
-        callback(&name.as_str().into())
+        callback(&name.as_ref().into())
     }
 }
 
@@ -256,7 +256,7 @@ impl From<Name> for LocalName {
 
     #[cfg(feature = "servo")]
     fn from(name: Name) -> Self {
-        name.as_str().into()
+        name.as_ref().into()
     }
 }
 

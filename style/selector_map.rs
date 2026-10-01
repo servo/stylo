@@ -25,10 +25,10 @@ use std::borrow::Borrow;
 use std::hash::{BuildHasherDefault, Hash, Hasher};
 
 /// A hasher implementation that doesn't hash anything, because it expects its
-/// input to be a suitable u64 or u32 hash.
+/// input to be a suitable u32 hash.
 #[derive(Default)]
 pub struct PrecomputedHasher {
-    hash: u64,
+    hash: u32,
     #[cfg(debug_assertions)]
     initialized: bool,
 }
@@ -67,25 +67,12 @@ impl Hasher for PrecomputedHasher {
     fn write(&mut self, _: &[u8]) {
         unreachable!(
             "Called into PrecomputedHasher with something that isn't \
-             a u64 or u32"
+             a u32"
         )
     }
 
     #[inline]
     fn write_u32(&mut self, i: u32) {
-        #[cfg(debug_assertions)]
-        debug_assert!(!self.initialized);
-        debug_assert_eq!(self.hash, 0);
-        let extended = i as u64;
-        self.hash = (extended << 32) | extended;
-        #[cfg(debug_assertions)]
-        {
-            self.initialized = true;
-        }
-    }
-
-    #[inline]
-    fn write_u64(&mut self, i: u64) {
         #[cfg(debug_assertions)]
         debug_assert!(!self.initialized);
         debug_assert_eq!(self.hash, 0);
@@ -100,7 +87,8 @@ impl Hasher for PrecomputedHasher {
     fn finish(&self) -> u64 {
         #[cfg(debug_assertions)]
         debug_assert!(self.initialized);
-        self.hash
+        let extended = self.hash as u64;
+        (extended << 32) | extended
     }
 }
 
@@ -1049,13 +1037,4 @@ impl<V> MaybeCaseInsensitiveHashMap<Atom, V> {
         };
         self.0.get(key)
     }
-}
-
-#[test]
-fn test_precomputed_hash_set() {
-    let mut set = PrecomputedHashSet::default();
-    let atom = crate::Atom::from("");
-    assert!(!set.contains(&atom));
-    set.insert(atom.clone());
-    assert!(set.contains(&atom));
 }

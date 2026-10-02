@@ -750,6 +750,7 @@ trait PrivateMatchMethods: TElement {
             animation_set.update_animations_for_new_style::<Self>(
                 *self,
                 &shared_context,
+                old_values.as_deref(),
                 &new_values,
                 &mut resolver,
             );

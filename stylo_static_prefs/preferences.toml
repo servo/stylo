@@ -30,7 +30,7 @@
 "layout.css.nth-child-of.enabled" = false
 "layout.css.outline-offset.snapping" = 1
 "layout.css.overflow-moz-hidden-unscrollable.enabled" = false
-"layout.css.progress-function.enabled" = false
+"layout.css.progress-function.enabled" = true
 "layout.css.properties-and-values.enabled" = true
 "layout.css.revert-rule.enabled" = true
 "layout.css.scroll-driven-animations.enabled" = false

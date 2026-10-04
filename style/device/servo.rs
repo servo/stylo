@@ -339,14 +339,17 @@ impl Device {
         let supports_dark_mode = color_scheme_flags.contains(ColorSchemeFlags::DARK);
         let supports_light_mode = color_scheme_flags.contains(ColorSchemeFlags::LIGHT);
 
-        // If only one is supported, then use dark mode if it was the supported one.
-        if supports_dark_mode != supports_light_mode {
-            return supports_dark_mode;
+        // When the element explicitly supports both color schemes
+        // (`color-scheme: light dark`), use the preferred color scheme to determine
+        // whether the user wants dark mode.
+        if supports_dark_mode && supports_light_mode {
+            return self.color_scheme() == PrefersColorScheme::Dark;
         }
 
-        // If either both or none are supported, then use the preferred color scheme
-        // to determine whether the user wants dark mode.
-        return self.color_scheme() == PrefersColorScheme::Dark;
+        // If only one color scheme is supported, use it. If neither is specified
+        // (`color-scheme: normal`), the page did not opt into color schemes, so use
+        // the UA default color scheme, which is light.
+        supports_dark_mode
     }
 
     pub(crate) fn system_color(

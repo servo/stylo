@@ -224,11 +224,7 @@ impl Parse for Content {
                         }
                     });
                 },
-                Token::Delim('/')
-                    if alt_start.is_none()
-                        && !items.is_empty()
-                        && crate::pref!("layout.css.content.alt-text.enabled", gecko = true) =>
-                {
+                Token::Delim('/') if alt_start.is_none() && !items.is_empty() => {
                     alt_start = Some(items.len());
                 },
                 _ => return Err(ParseError::unexpected_token()),

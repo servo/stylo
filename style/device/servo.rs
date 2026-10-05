@@ -69,6 +69,11 @@ pub(super) struct ExtraDeviceData {
     /// Whether the user prefers light mode or dark mode
     #[ignore_malloc_size_of = "Pure stack type"]
     prefers_color_scheme: PrefersColorScheme,
+    /// The page color scheme, i.e. the color scheme that `color-scheme: normal`
+    /// resolves to. This is the UA default (light) unless the page opted into a
+    /// color scheme, e.g. via `<meta name="color-scheme">`.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    page_color_scheme: PrefersColorScheme,
     /// The capabilities of the primary pointer input
     #[ignore_malloc_size_of = "Pure stack type"]
     primary_pointer_capabilities: PointerCapabilities,
@@ -119,6 +124,7 @@ impl Device {
                 device_pixel_ratio,
                 quirks_mode,
                 prefers_color_scheme,
+                page_color_scheme: PrefersColorScheme::Light,
                 primary_pointer_capabilities,
                 all_pointer_capabilities,
                 font_metrics_provider,
@@ -305,6 +311,22 @@ impl Device {
         self.extra.prefers_color_scheme
     }
 
+    /// Set the page color scheme on this [`Device`]. This is the color scheme that
+    /// `color-scheme: normal` resolves to, and is the UA default (light) unless the
+    /// page opted into a color scheme, e.g. via `<meta name="color-scheme">`.
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_page_color_scheme(&mut self, new_page_color_scheme: PrefersColorScheme) {
+        self.extra.page_color_scheme = new_page_color_scheme;
+    }
+
+    /// Returns the page color scheme of this [`Device`].
+    pub fn page_color_scheme(&self) -> PrefersColorScheme {
+        self.extra.page_color_scheme
+    }
+
     /// Set the [`PointerCapbabilities`] value for the primary pointer on this [`Device`]
     ///
     /// Note that this does not update any associated `Stylist`. For this you must call
@@ -346,10 +368,20 @@ impl Device {
             return self.color_scheme() == PrefersColorScheme::Dark;
         }
 
-        // If only one color scheme is supported, use it. If neither is specified
-        // (`color-scheme: normal`), the page did not opt into color schemes, so use
-        // the UA default color scheme, which is light.
-        supports_dark_mode
+        // If only one color scheme is supported, use it.
+        if supports_dark_mode {
+            return true;
+        }
+        if supports_light_mode {
+            return false;
+        }
+
+        // `color-scheme: normal` resolves to the page color scheme. This is the UA
+        // default (light) unless the page opted into a color scheme (e.g. via
+        // `<meta name="color-scheme">`). It must not simply follow the user's
+        // preference, as that would change the default colors of pages that were
+        // authored assuming a light color scheme and make them unreadable.
+        self.page_color_scheme() == PrefersColorScheme::Dark
     }
 
     pub(crate) fn system_color(

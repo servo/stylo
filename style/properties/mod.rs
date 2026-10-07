@@ -802,16 +802,16 @@ fn parse_non_custom_property_declaration_value_into(
     parsed_custom: impl FnOnce(&mut SourcePropertyDeclaration, custom_properties::VariableValue),
 ) -> Result<(), ParseError> {
     let mut starts_with_curly_block = false;
+    input.look_for_arbitrary_substitution_functions(ARBITRARY_SUBSTITUTION_FUNCTIONS);
     if let Ok(token) = input.next() {
         match token {
             cssparser::Token::Ident(ident) => {
                 if let Ok(wk) = CSSWideKeyword::from_ident(ident)
                     && input.expect_exhausted().is_ok()
                 {
-                    return {
-                        parsed_wide_keyword(declarations, wk);
-                        Ok(())
-                    };
+                    parsed_wide_keyword(declarations, wk);
+                    let _ = input.seen_arbitrary_substitution_functions();
+                    return Ok(());
                 }
             },
             cssparser::Token::CurlyBracketBlock => {
@@ -822,7 +822,6 @@ fn parse_non_custom_property_declaration_value_into(
     };
 
     input.reset(start);
-    input.look_for_arbitrary_substitution_functions(ARBITRARY_SUBSTITUTION_FUNCTIONS);
 
     let mut saw_arbitrary_substitution_functions = false;
     let err = match parse_entirely_into(declarations, input) {

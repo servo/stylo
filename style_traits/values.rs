@@ -51,7 +51,7 @@ use std::fmt::{self, Write};
 ///       flag that shares a bit with itself. For example, if you have three
 ///       bitflags like:
 ///
-///       ```
+///       ```ignore
 ///       FOO = 1 << 0;
 ///       BAR = 1 << 1;
 ///       BAZ = 1 << 2;

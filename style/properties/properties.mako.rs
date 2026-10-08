@@ -11,9 +11,7 @@
 use servo_arc::{Arc, UniqueArc};
 use std::{ops, ptr, fmt, mem};
 
-#[cfg(feature = "servo")] use euclid::SideOffsets2D;
 #[cfg(feature = "gecko")] use crate::gecko_bindings::structs::{self, NonCustomCSSPropertyId};
-#[cfg(feature = "servo")] use crate::logical_geometry::LogicalMargin;
 #[cfg(feature = "servo")] use crate::dom::AttributeReferences;
 use crate::logical_geometry::WritingMode;
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
@@ -2056,11 +2054,6 @@ impl ComputedValuesInner {
         }
     % endfor
 
-    /// Gets a reference to the rule node. Panic if no rule node exists.
-    pub fn rules(&self) -> &StrongRuleNode {
-        self.rules.as_ref().unwrap()
-    }
-
     #[inline]
     /// Returns whether the "content" property for the given style is completely
     /// ineffective, and would yield an empty `::before` or `::after`
@@ -2073,94 +2066,6 @@ impl ComputedValuesInner {
         }
     }
 
-    /// Whether the current style is multicolumn.
-    #[inline]
-    pub fn is_multicol(&self) -> bool {
-        self.get_column().is_multicol()
-    }
-
-    /// Get the logical computed inline size.
-    #[inline]
-    pub fn content_inline_size(&self) -> &computed::Size {
-        let position_style = self.get_position();
-        if self.writing_mode.is_vertical() {
-            &position_style.height
-        } else {
-            &position_style.width
-        }
-    }
-
-    /// Get the logical computed block size.
-    #[inline]
-    pub fn content_block_size(&self) -> &computed::Size {
-        let position_style = self.get_position();
-        if self.writing_mode.is_vertical() { &position_style.width } else { &position_style.height }
-    }
-
-    /// Get the logical computed min inline size.
-    #[inline]
-    pub fn min_inline_size(&self) -> &computed::Size {
-        let position_style = self.get_position();
-        if self.writing_mode.is_vertical() { &position_style.min_height } else { &position_style.min_width }
-    }
-
-    /// Get the logical computed min block size.
-    #[inline]
-    pub fn min_block_size(&self) -> &computed::Size {
-        let position_style = self.get_position();
-        if self.writing_mode.is_vertical() { &position_style.min_width } else { &position_style.min_height }
-    }
-
-    /// Get the logical computed max inline size.
-    #[inline]
-    pub fn max_inline_size(&self) -> &computed::MaxSize {
-        let position_style = self.get_position();
-        if self.writing_mode.is_vertical() { &position_style.max_height } else { &position_style.max_width }
-    }
-
-    /// Get the logical computed max block size.
-    #[inline]
-    pub fn max_block_size(&self) -> &computed::MaxSize {
-        let position_style = self.get_position();
-        if self.writing_mode.is_vertical() { &position_style.max_width } else { &position_style.max_height }
-    }
-
-    /// Get the logical computed padding for this writing mode.
-    #[inline]
-    pub fn logical_padding(&self) -> LogicalMargin<&computed::LengthPercentage> {
-        let padding_style = self.get_padding();
-        LogicalMargin::from_physical(self.writing_mode, SideOffsets2D::new(
-            &padding_style.padding_top.0,
-            &padding_style.padding_right.0,
-            &padding_style.padding_bottom.0,
-            &padding_style.padding_left.0,
-        ))
-    }
-
-    /// Gets the logical computed margin from this style.
-    #[inline]
-    pub fn logical_margin(&self) -> LogicalMargin<&computed::Margin> {
-        let margin_style = self.get_margin();
-        LogicalMargin::from_physical(self.writing_mode, SideOffsets2D::new(
-            &margin_style.margin_top,
-            &margin_style.margin_right,
-            &margin_style.margin_bottom,
-            &margin_style.margin_left,
-        ))
-    }
-
-    /// Gets the logical position from this style.
-    #[inline]
-    pub fn logical_position(&self) -> LogicalMargin<&computed::Inset> {
-        // FIXME(SimonSapin): should be the writing mode of the containing block, maybe?
-        let position_style = self.get_position();
-        LogicalMargin::from_physical(self.writing_mode, SideOffsets2D::new(
-            &position_style.top,
-            &position_style.right,
-            &position_style.bottom,
-            &position_style.left,
-        ))
-    }
 }
 
 /// A reference to a style struct of the parent, or our own style struct.

@@ -698,27 +698,44 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         }
     }
 
-    /// Computes the RELEVANT_LINK_VISITED flag based on the parent style and on
-    /// whether we're a relevant link.
-    ///
-    /// NOTE(emilio): We don't do this for text styles, which is... dubious, but
-    /// Gecko doesn't seem to do it either. It's extremely easy to do if needed
-    /// though.
-    ///
-    /// FIXME(emilio): This isn't technically a style adjustment thingie, could
-    /// it move somewhere else?
-    fn adjust_for_visited<E>(&mut self, element: Option<E>)
+    fn enforce_link_underline(&mut self) {
+        use crate::values::computed::{Color, TextDecorationLine, TextDecorationStyle};
+
+        let text_style = self.style.get_text();
+        let old_line = *text_style.get_text_decoration_line();
+        let needs_adjustment = !old_line.intersects(TextDecorationLine::UNDERLINE)
+            || text_style.get_text_decoration_style() != &TextDecorationStyle::Solid
+            || text_style.get_text_decoration_color() != &Color::CurrentColor;
+        if !needs_adjustment {
+            return;
+        }
+
+        let text_style = self.style.mutate_text();
+        // Preserve any existing flags that could be mixed with underline.
+        let new_line = (old_line & TextDecorationLine::MIXED_FLAGS) | TextDecorationLine::UNDERLINE;
+        text_style.set_text_decoration_line(new_line);
+        text_style.set_text_decoration_color(Color::CurrentColor);
+        text_style.set_text_decoration_style(TextDecorationStyle::Solid);
+    }
+
+    /// Sets or unset the RELEVANT_LINK_VISITED flag if we're a link (note that it's otherwise
+    /// propagated via flag inheritance), and enforces underlines if configured to do so.
+    fn adjust_for_links<E>(&mut self, element: Option<E>)
     where
         E: TElement,
     {
         if !self.style.has_visited_style() {
+            // Not inside a link.
             return;
         }
 
         let is_link_element = self.style.pseudo.is_none() && element.is_some_and(|e| e.is_link());
-
         if !is_link_element {
             return;
+        }
+
+        if crate::pref!("layout.css.always_underline_links") {
+            self.enforce_link_underline();
         }
 
         if element.unwrap().is_visited_link() {
@@ -1046,7 +1063,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         //     "Should always have an element around for non-pseudo styles"
         // );
 
-        self.adjust_for_visited(element);
+        self.adjust_for_links(element);
         #[cfg(feature = "gecko")]
         {
             self.adjust_for_prohibited_display_contents(element);

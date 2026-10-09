@@ -45,6 +45,7 @@
 "layout.css.supports.at-rule.enabled" = true
 "layout.css.system-ui.enabled" = true
 "layout.css.text-decoration-inset-percentage.enabled" = false
+"layout.css.text-indent-keywords.enabled" = false
 "layout.css.tree-counting-functions.enabled" = false
 "layout.css.webkit-fill-available.all-size-properties.enabled" = true
 "layout.css.webkit-fill-available.enabled" = true

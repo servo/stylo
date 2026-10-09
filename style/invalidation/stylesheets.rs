@@ -635,13 +635,15 @@ impl StylesheetInvalidationSet {
                 // It's not clear what handling changes for this correctly would
                 // look like.
             },
-            LayerStatement(..) => {
-                // Layer statement insertions might alter styling order, so we need to always
-                // invalidate fully.
+            LayerBlock(..) | LayerStatement(..) => {
+                // Layer insertions might alter styling order, so we need to always invalidate
+                // fully.
+                // TODO(emilio): Could use the cascade_data_difference stuff to invalidate only if
+                // needed after the fact perhaps.
                 self.invalidate_fully()
             },
             Document(..) | Import(..) | Media(..) | Supports(..) | Container(..)
-            | LayerBlock(..) | StartingStyle(..) | AppearanceBase(..) => {
+            | StartingStyle(..) | AppearanceBase(..) => {
                 // Do nothing, relevant nested rules are visited as part of rule iteration.
             },
             FontFace(..) => {

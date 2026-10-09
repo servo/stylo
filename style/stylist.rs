@@ -132,6 +132,9 @@ type StyleSheetContentList = Vec<StylesheetContentsPtr>;
 /// The @position-try rules that have changed.
 #[derive(Default, Debug, MallocSizeOf)]
 pub struct CascadeDataDifference {
+    /// Whether layer order has changed. Note that this only concerns itself with reordering, not
+    /// addition or removal.
+    pub layer_order_changed: bool,
     /// The set of changed @position-try rule names.
     pub changed_position_try_names: PrecomputedHashSet<Atom>,
 }
@@ -139,16 +142,46 @@ pub struct CascadeDataDifference {
 impl CascadeDataDifference {
     /// Merges another difference into `self`.
     pub fn merge_with(&mut self, other: Self) {
+        self.layer_order_changed |= other.layer_order_changed;
         self.changed_position_try_names
             .extend(other.changed_position_try_names)
     }
 
     /// Returns whether we're empty.
     pub fn is_empty(&self) -> bool {
-        self.changed_position_try_names.is_empty()
+        !self.layer_order_changed && self.changed_position_try_names.is_empty()
     }
 
-    fn update(&mut self, old_data: &PositionTryMap, new_data: &PositionTryMap) {
+    fn update(&mut self, old_data: &CascadeData, new_data: &CascadeData) {
+        self.update_layers(&old_data.layers, &new_data.layers);
+        self.update_position_try(
+            &old_data.extra_data.position_try_rules,
+            &new_data.extra_data.position_try_rules,
+        );
+    }
+
+    fn update_layers(&mut self, old: &CascadeLayers, new: &CascadeLayers) {
+        if self.layer_order_changed {
+            return;
+        }
+        for (name, new_id) in &new.layer_id_by_name {
+            let Some(old_id) = old.layer_id_by_name.get(name) else {
+                // This is a new layer, as long as the old orders match it just means we've been
+                // added to the end, no layer order has actually changed.
+                // Similarly, if there's an old layer that doesn't exist in the new data, it means
+                // it's been removed, which also doesn't change the order of the remaining layers.
+                continue;
+            };
+            let new_order = new.layer_by_id[new_id.0 as usize].order;
+            let old_order = old.layer_by_id[old_id.0 as usize].order;
+            if new_order != old_order {
+                self.layer_order_changed = true;
+                return;
+            }
+        }
+    }
+
+    fn update_position_try(&mut self, old_data: &PositionTryMap, new_data: &PositionTryMap) {
         let mut any_different_key = false;
         let different_len = old_data.len() != new_data.len();
         for (name, rules) in old_data.iter() {
@@ -389,10 +422,7 @@ impl CascadeDataCacheEntry for UserAgentCascadeData {
         }
 
         new_data.cascade_data.did_finish_rebuild();
-        difference.update(
-            &old.cascade_data.extra_data.position_try_rules,
-            &new_data.cascade_data.extra_data.position_try_rules,
-        );
+        difference.update(&old.cascade_data, &new_data.cascade_data);
 
         Ok(new_data.shareable())
     }
@@ -3232,6 +3262,77 @@ impl Default for StylistImplicitScopeRoot {
     }
 }
 
+/// Cascade layer data.
+#[derive(Debug, Clone, MallocSizeOf)]
+struct CascadeLayers {
+    /// A map from cascade layer name to layer order.
+    layer_id_by_name: FxHashMap<LayerName, LayerId>,
+
+    /// The list of cascade layers, indexed by their layer id.
+    layer_by_id: SmallVec<[CascadeLayer; 1]>,
+}
+
+impl Default for CascadeLayers {
+    fn default() -> Self {
+        Self {
+            layer_id_by_name: FxHashMap::default(),
+            layer_by_id: smallvec::smallvec![CascadeLayer::root()],
+        }
+    }
+}
+
+impl CascadeLayers {
+    fn clear(&mut self) {
+        self.layer_id_by_name.clear();
+        self.layer_by_id.clear();
+        self.layer_by_id.push(CascadeLayer::root());
+    }
+
+    fn shrink_if_needed(&mut self) {
+        self.layer_id_by_name.shrink_if_needed();
+    }
+
+    fn has_layers(&self) -> bool {
+        debug_assert_ne!(
+            self.layer_by_id.len(),
+            0,
+            "Should have at least the root layer"
+        );
+        self.layer_by_id.len() > 1
+    }
+
+    // NOTE(emilio): This is a bit trickier than it should to avoid having to clone() around layer
+    // indices.
+    fn compute_layer_order_for_subtree(
+        parent: &mut CascadeLayer,
+        remaining_layers: &mut [CascadeLayer],
+        order: &mut LayerOrder,
+    ) {
+        for child in &parent.children {
+            debug_assert!(
+                parent.id < *child,
+                "Children are always registered after parents"
+            );
+            let child_index = (child.0 - parent.id.0 - 1) as usize;
+            let (first, remaining) = remaining_layers.split_at_mut(child_index + 1);
+            let child = &mut first[child_index];
+            Self::compute_layer_order_for_subtree(child, remaining, order);
+        }
+
+        if parent.id != LayerId::root() {
+            parent.order = *order;
+            order.inc();
+        }
+    }
+
+    fn compute_layer_order(&mut self) {
+        let (first, remaining) = self.layer_by_id.split_at_mut(1);
+        let root = &mut first[0];
+        let mut order = LayerOrder::first();
+        Self::compute_layer_order_for_subtree(root, remaining, &mut order);
+    }
+}
+
 /// Data resulting from performing the CSS cascade that is specific to a given
 /// origin.
 ///
@@ -3339,11 +3440,7 @@ pub struct CascadeData {
     /// Custom media query registrations.
     custom_media: CustomMediaMap,
 
-    /// A map from cascade layer name to layer order.
-    layer_id: FxHashMap<LayerName, LayerId>,
-
-    /// The list of cascade layers, indexed by their layer id.
-    layers: SmallVec<[CascadeLayer; 1]>,
+    layers: CascadeLayers,
 
     /// The list of container conditions, indexed by their id.
     container_conditions: SmallVec<[ContainerConditionReference; 1]>,
@@ -3427,8 +3524,7 @@ impl CascadeData {
             animations: Default::default(),
             custom_property_registrations: Default::default(),
             custom_media: Default::default(),
-            layer_id: Default::default(),
-            layers: smallvec::smallvec![CascadeLayer::root()],
+            layers: CascadeLayers::default(),
             container_conditions: smallvec::smallvec![ContainerConditionReference::none()],
             attr_function_dependencies: PrecomputedHashMap::default(),
             scope_conditions: smallvec::smallvec![ScopeConditionReference::none()],
@@ -3460,8 +3556,10 @@ impl CascadeData {
         let validity = collection.data_validity();
 
         let mut old_position_try_data = LayerOrderedMap::default();
+        let mut old_layers = CascadeLayers::default();
         if validity != DataValidity::Valid {
             old_position_try_data = std::mem::take(&mut self.extra_data.position_try_rules);
+            old_layers = std::mem::take(&mut self.layers);
             self.clear_cascade_data();
             if validity == DataValidity::FullyInvalid {
                 self.clear_invalidation_data();
@@ -3493,7 +3591,9 @@ impl CascadeData {
         // For DataValidity::Valid, we pass the difference down to `add_stylesheet` so that we
         // populate it with new data. Otherwise we need to diff with the old data.
         if validity != DataValidity::Valid {
-            difference.update(&old_position_try_data, &self.extra_data.position_try_rules);
+            difference.update_layers(&old_layers, &self.layers);
+            difference
+                .update_position_try(&old_position_try_data, &self.extra_data.position_try_rules);
         }
 
         result
@@ -3643,7 +3743,7 @@ impl CascadeData {
 
     #[inline]
     fn layer_order_for(&self, id: LayerId) -> LayerOrder {
-        self.layers[id.0 as usize].order
+        self.layers.layer_by_id[id.0 as usize].order
     }
 
     pub(crate) fn container_condition_matches<E>(
@@ -3735,52 +3835,21 @@ impl CascadeData {
         self.nth_of_class_dependencies.shrink_if_needed();
         self.nth_of_mapped_ids.shrink_if_needed();
         self.mapped_ids.shrink_if_needed();
-        self.layer_id.shrink_if_needed();
+        self.layers.shrink_if_needed();
         self.selectors_for_cache_revalidation.shrink_if_needed();
         self.scope_subject_map.shrink_if_needed();
     }
 
     fn compute_layer_order(&mut self) {
-        debug_assert_ne!(
-            self.layers.len(),
-            0,
-            "There should be at least the root layer!"
-        );
-        if self.layers.len() == 1 {
-            return; // Nothing to do
+        if !self.layers.has_layers() {
+            return;
         }
-        let (first, remaining) = self.layers.split_at_mut(1);
-        let root = &mut first[0];
-        let mut order = LayerOrder::first();
-        compute_layer_order_for_subtree(root, remaining, &mut order);
-
-        // NOTE(emilio): This is a bit trickier than it should to avoid having
-        // to clone() around layer indices.
-        fn compute_layer_order_for_subtree(
-            parent: &mut CascadeLayer,
-            remaining_layers: &mut [CascadeLayer],
-            order: &mut LayerOrder,
-        ) {
-            for child in parent.children.iter() {
-                debug_assert!(
-                    parent.id < *child,
-                    "Children are always registered after parents"
-                );
-                let child_index = (child.0 - parent.id.0 - 1) as usize;
-                let (first, remaining) = remaining_layers.split_at_mut(child_index + 1);
-                let child = &mut first[child_index];
-                compute_layer_order_for_subtree(child, remaining, order);
-            }
-
-            if parent.id != LayerId::root() {
-                parent.order = *order;
-                order.inc();
-            }
-        }
-        self.extra_data.sort_by_layer(&self.layers);
+        self.layers.compute_layer_order();
+        self.extra_data.sort_by_layer(&self.layers.layer_by_id);
         self.animations
-            .sort_with(&self.layers, compare_keyframes_in_same_layer);
-        self.custom_property_registrations.sort(&self.layers)
+            .sort_with(&self.layers.layer_by_id, compare_keyframes_in_same_layer);
+        self.custom_property_registrations
+            .sort(&self.layers.layer_by_id);
     }
 
     /// Collects all the applicable media query results into `results`.
@@ -4223,33 +4292,34 @@ impl CascadeData {
                 // TODO: Measure what's more common / expensive, if
                 // layer.clone() or the double hash lookup in the insert
                 // case.
-                if let Some(id) = data.layer_id.get(layer) {
+                if let Some(id) = data.layers.layer_id_by_name.get(layer) {
                     return *id;
                 }
-                let id = LayerId(data.layers.len() as u16);
+                let id = LayerId(data.layers.layer_by_id.len() as u16);
 
                 let parent_layer_id = if layer.layer_names().len() > 1 {
                     let mut parent = layer.clone();
                     parent.0.pop();
 
                     *data
-                        .layer_id
-                        .get_mut(&parent)
+                        .layers
+                        .layer_id_by_name
+                        .get(&parent)
                         .expect("Parent layers should be registered before child layers")
                 } else {
                     LayerId::root()
                 };
 
-                data.layers[parent_layer_id.0 as usize].children.push(id);
-                data.layers.push(CascadeLayer {
+                data.layers.layer_by_id[parent_layer_id.0 as usize]
+                    .children
+                    .push(id);
+                data.layers.layer_by_id.push(CascadeLayer {
                     id,
-                    // NOTE(emilio): Order is evaluated after rebuild in
-                    // compute_layer_order.
+                    // NOTE(emilio): Order is evaluated after rebuild in compute_layer_order.
                     order: LayerOrder::first(),
                     children: vec![],
                 });
-
-                data.layer_id.insert(layer.clone(), id);
+                data.layers.layer_id_by_name.insert(layer.clone(), id);
 
                 id
             }
@@ -4709,9 +4779,7 @@ impl CascadeData {
         }
         self.animations.clear();
         self.custom_property_registrations.clear();
-        self.layer_id.clear();
         self.layers.clear();
-        self.layers.push(CascadeLayer::root());
         self.custom_media.clear();
         self.container_conditions.clear();
         self.container_conditions

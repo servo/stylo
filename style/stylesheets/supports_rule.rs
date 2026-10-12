@@ -11,8 +11,8 @@ use crate::properties::{PropertyDeclaration, PropertyId, SourcePropertyDeclarati
 use crate::selector_parser::{SelectorImpl, SelectorParser};
 use crate::shared_lock::{DeepCloneWithLock, Locked};
 use crate::shared_lock::{SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard};
+use crate::stylesheets::CssRules;
 use crate::stylesheets::rule_parser::AtRuleType;
-use crate::stylesheets::{CssRuleType, CssRules};
 use cssparser::{Delimiter, Parser, SourceLocation, Token};
 use cssparser::{ParseError as CssParseError, match_ignore_ascii_case};
 use cssparser::{parse_important, serialize_identifier};
@@ -396,7 +396,7 @@ impl Declaration {
     ///
     /// <https://drafts.csswg.org/css-conditional-3/#support-definition>
     pub fn eval(&self, context: &mut ParserContext) -> bool {
-        debug_assert!(context.rule_types().contains(CssRuleType::Style));
+        debug_assert!(context.rule_types().allows_declarations());
 
         let mut input = Parser::new(&self.0);
         input
@@ -412,7 +412,9 @@ impl Declaration {
                     PropertyDeclaration::parse_into(&mut declarations, id, context, input)
                         .map_err(|_| CssParseError::custom(()))
                 })?;
-                let _ = input.try_parse(parse_important);
+                if context.allows_important_declarations() {
+                    let _ = input.try_parse(parse_important);
+                }
                 Ok(())
             })
             .is_ok()

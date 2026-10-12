@@ -401,14 +401,7 @@ impl NonCustomPropertyId {
     /// Returns whether a given rule allows a given property.
     #[inline]
     pub fn allowed_in_rule(self, rule_types: CssRuleTypes) -> bool {
-        debug_assert!(
-            rule_types.contains(CssRuleType::Keyframe) ||
-            rule_types.contains(CssRuleType::Page) ||
-            rule_types.contains(CssRuleType::Style) ||
-            rule_types.contains(CssRuleType::Scope) ||
-            rule_types.contains(CssRuleType::PositionTry),
-            "Given rule type does not allow declarations."
-        );
+        debug_assert!(rule_types.allows_declarations());
 
         #[allow(clippy::identity_op)]
         static MAP: [u32; property_counts::NON_CUSTOM] = [

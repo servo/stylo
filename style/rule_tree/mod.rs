@@ -175,8 +175,18 @@ impl RuleTree {
         applicable_declarations: &mut ApplicableDeclarationList,
         guards: &StylesheetGuards,
     ) -> StrongRuleNode {
+        let mut prev = None;
         self.insert_ordered_rules_with_important(
-            applicable_declarations.drain(..).map(|d| d.for_rule_tree()),
+            applicable_declarations.drain(..).filter_map(|d| {
+                // for_rule_tree keeps only these two, so adjacent entries that
+                // agree on them contribute the same thing to the rule path.
+                let key = (d.source.key(), d.cascade_priority);
+                if prev == Some(key) {
+                    return None;
+                }
+                prev = Some(key);
+                Some(d.for_rule_tree())
+            }),
             guards,
         )
     }

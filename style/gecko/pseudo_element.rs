@@ -217,6 +217,49 @@ impl ToCss for PtNameAndClassSelector {
     }
 }
 
+/// The argument of `::highlight()`.
+///
+/// `<highlight-name-selector> = '*' | <custom-ident>`
+///
+/// https://drafts.csswg.org/css-pseudo-4/#typedef-highlight-name-selector
+#[derive(Clone, Debug, Eq, Hash, MallocSizeOf, PartialEq, ToShmem)]
+pub enum HighlightNameSelector {
+    /// `*`, which selects every custom highlight. Only valid in selectors.
+    Universal,
+    /// A custom highlight name.
+    Name(AtomIdent),
+}
+
+impl HighlightNameSelector {
+    /// Parses a highlight name selector.
+    pub fn parse(input: &mut Parser, target: Target) -> Result<Self, ParseError> {
+        if matches!(target, Target::Selector) && input.try_parse(|i| i.expect_delim('*')).is_ok() {
+            return Ok(Self::Universal);
+        }
+        Ok(Self::Name(AtomIdent::from(input.expect_ident()?.as_ref())))
+    }
+
+    /// Returns the custom highlight name, if this isn't the universal selector.
+    pub fn name(&self) -> Option<&Atom> {
+        match *self {
+            Self::Universal => None,
+            Self::Name(ref name) => Some(&name.0),
+        }
+    }
+}
+
+impl ToCss for HighlightNameSelector {
+    fn to_css<W>(&self, dest: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        match *self {
+            Self::Universal => dest.write_char('*'),
+            Self::Name(ref name) => name.to_css(dest),
+        }
+    }
+}
+
 impl PseudoElementTrait for PseudoElement {
     // ::slotted() should support all tree-abiding pseudo-elements, see
     // https://drafts.csswg.org/css-scoping/#slotted-pseudo
@@ -399,9 +442,9 @@ impl PseudoElement {
     }
 
     /// The identifier of the highlight this pseudo-element represents.
-    pub fn highlight_name(&self) -> Option<&AtomIdent> {
+    pub fn highlight_name(&self) -> Option<&Atom> {
         match *self {
-            Self::Highlight(ref name) => Some(name),
+            Self::Highlight(ref selector) => selector.name(),
             _ => None,
         }
     }
@@ -439,6 +482,8 @@ impl PseudoElement {
     /// The count we contribute to the specificity from this pseudo-element.
     pub fn specificity_count(&self) -> u32 {
         match *self {
+            // https://drafts.csswg.org/css-pseudo-4/#selectordef-highlight-highlight-name-selector
+            Self::Highlight(HighlightNameSelector::Universal) => 0,
             Self::ViewTransitionGroup(ref name_and_class)
             | Self::ViewTransitionImagePair(ref name_and_class)
             | Self::ViewTransitionOld(ref name_and_class)

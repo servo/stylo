@@ -390,7 +390,7 @@ pub fn parse_functional_pseudo_element_with_name<'i>(
     parser: &mut Parser<'i>,
     target: Target,
 ) -> Result<PseudoElement, ParseError> {
-    use crate::gecko::pseudo_element::PtNameAndClassSelector;
+    use crate::gecko::pseudo_element::{HighlightNameSelector, PtNameAndClassSelector};
 
     if matches!(target, Target::Selector) && starts_with_ignore_ascii_case(name, "-moz-tree-") {
         // Tree pseudo-elements can have zero or more arguments, separated
@@ -414,7 +414,7 @@ pub fn parse_functional_pseudo_element_with_name<'i>(
     }
 
     Ok(match_ignore_ascii_case! { name,
-        "highlight" => PseudoElement::Highlight(AtomIdent::from(parser.expect_ident()?.as_ref())),
+        "highlight" => PseudoElement::Highlight(HighlightNameSelector::parse(parser, target)?),
         "picker" => {
             let picker_element = parser.expect_ident()?.as_ref();
             if !picker_element.eq_ignore_ascii_case("select") {

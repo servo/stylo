@@ -159,6 +159,10 @@ impl PseudoElement {
             PseudoStyleType::${pseudo.capitalized} => functional_pseudo_parameter.map(|p| {
                 PseudoElement::${pseudo.capitalized}(PtNameAndClassSelector::from_name(p.0))
             }),
+            % elif pseudo.argument == "HighlightNameSelector":
+            PseudoStyleType::${pseudo.capitalized} => functional_pseudo_parameter.map(|p| {
+                PseudoElement::${pseudo.capitalized}(HighlightNameSelector::Name(p))
+            }),
             % else:
             <% assert pseudo.argument == "AtomIdent", f"Unhandled argument type {pseudo.argument}" %>
             PseudoStyleType::${pseudo.capitalized} => {
@@ -187,6 +191,8 @@ impl PseudoElement {
             % for pseudo in PSEUDOS:
             % if pseudo.argument == "PtNameAndClassSelector":
             PseudoElement::${pseudo.capitalized}(ref val) => Some(val.name()),
+            % elif pseudo.argument == "HighlightNameSelector":
+            PseudoElement::${pseudo.capitalized}(ref val) => val.name(),
             % elif pseudo.argument == "AtomIdent":
             PseudoElement::${pseudo.capitalized}(ref val) => Some(&val.0),
             % endif

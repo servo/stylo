@@ -289,6 +289,10 @@ impl PseudoElement {
             return false;
         }
 
+        if matches!(pseudo_selector, PseudoElement::Highlight(HighlightNameSelector::Universal)) {
+            return true;
+        }
+
         // Check named view transition pseudo-elements.
         self.matches_named_view_transition_pseudo_element(pseudo_selector, element)
     }

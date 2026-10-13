@@ -4,8 +4,8 @@
 
 //! Typed OM Numeric Declaration.
 
-use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::typed_om::ToTyped;
 use crate::typed_om::numeric::NoCalcNumeric;
 use crate::values::specified::calc::{CalcNode, CalcParseFlags, PercentageContext};
 use crate::values::specified::{
@@ -13,6 +13,7 @@ use crate::values::specified::{
 };
 use cssparser::{Parser, Token};
 use style_traits::{ParseError, StyleParseErrorKind};
+use thin_vec::ThinVec;
 
 /// A numeric declaration, with or without a `calc()` expression.
 #[derive(Clone, ToTyped)]
@@ -78,6 +79,11 @@ impl Parse for NumericDeclaration {
                 node.simplify_and_sort();
                 node.numeric_type_as_calc_type()
                     .map_err(|_| ParseError::custom(StyleParseErrorKind::UnspecifiedError))?;
+
+                // TODO(dshin): This is a bit wasteful...
+                if node.to_typed(&mut ThinVec::with_capacity(1)).is_err() {
+                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
+                }
 
                 Ok(Self::Calc(node))
             },

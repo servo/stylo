@@ -56,3 +56,4 @@
 "layout.unimplemented" = false
 "layout.variable_fonts.enabled" = false
 "layout.writing-mode.enabled" = false
+"layout.writing-mode.sideways.enabled" = false

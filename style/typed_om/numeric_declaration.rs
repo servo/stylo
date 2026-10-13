@@ -12,7 +12,6 @@ use crate::values::specified::{
     NoCalcAngle, NoCalcLength, NoCalcNumber, NoCalcPercentage, NoCalcTime,
 };
 use cssparser::{Parser, Token};
-use style_traits::values::specified::AllowedNumericType;
 use style_traits::{ParseError, StyleParseErrorKind};
 
 /// A numeric declaration, with or without a `calc()` expression.
@@ -69,20 +68,16 @@ impl Parse for NumericDeclaration {
 
             Token::Function(ref name) => {
                 let function = CalcNode::math_function(context, name)?;
-                let node = CalcNode::parse(
+                let mut node = CalcNode::parse(
                     context,
                     input,
                     function,
                     CalcParseFlags::new(PercentageContext::allowed()),
                 )?;
 
-                let allow_all_types = AllowedNumericType::All;
-                let _ = node
-                    .clone()
-                    .into_length_or_percentage(allow_all_types)
-                    .map_err(|()| ParseError::custom(StyleParseErrorKind::UnspecifiedError))?;
-
-                // TODO: Add support for other values represented by a `calc()` expression.
+                node.simplify_and_sort();
+                node.numeric_type_as_calc_type()
+                    .map_err(|_| ParseError::custom(StyleParseErrorKind::UnspecifiedError))?;
 
                 Ok(Self::Calc(node))
             },

@@ -407,6 +407,7 @@ impl CascadeDataCacheEntry for UserAgentCascadeData {
             precomputed_pseudo_element_decls: PrecomputedPseudoElementDeclarations::default(),
         });
 
+        let mut prev_sheet = None;
         for (index, sheet) in collection.sheets().enumerate() {
             let new_data = &mut *new_data;
             new_data.cascade_data.add_stylesheet(
@@ -418,6 +419,7 @@ impl CascadeDataCacheEntry for UserAgentCascadeData {
                 SheetRebuildKind::Full,
                 Some(&mut new_data.precomputed_pseudo_element_decls),
                 None,
+                &mut prev_sheet,
             )?;
         }
 
@@ -815,6 +817,10 @@ struct ContainingRuleState {
     containing_scope_rule_state: ContainingScopeRuleState,
     ancestor_selector_lists: SmallVec<[SelectorList<SelectorImpl>; 2]>,
     nested_declarations_context: NestedDeclarationsContext,
+    /// Set by an `@scope` rule with no start selector, whose root belongs to the
+    /// sheet rather than to its shared contents. Latches for the whole sheet, so
+    /// it is deliberately not part of the saved/restored state.
+    saw_implicit_scope_root: bool,
 }
 
 impl Default for ContainingRuleState {
@@ -827,6 +833,7 @@ impl Default for ContainingRuleState {
             ancestor_selector_lists: Default::default(),
             containing_scope_rule_state: Default::default(),
             nested_declarations_context: NestedDeclarationsContext::Style,
+            saw_implicit_scope_root: false,
         }
     }
 }
@@ -3568,6 +3575,7 @@ impl CascadeData {
 
         let mut result = Ok(());
 
+        let mut prev_sheet = None;
         collection.each(|index, stylesheet, rebuild_kind| {
             result = self.add_stylesheet(
                 device,
@@ -3582,6 +3590,7 @@ impl CascadeData {
                 } else {
                     None
                 },
+                &mut prev_sheet,
             );
             result.is_ok()
         });
@@ -4428,6 +4437,7 @@ impl CascadeData {
                         // Would be unused, but use the default as fallback.
                         StylistImplicitScopeRoot::default()
                     } else {
+                        containing_rule_state.saw_implicit_scope_root = true;
                         // (Re)Moving stylesheets trigger a complete flush, so saving the implicit
                         // root here should be safe.
                         if let Some(root) = stylesheet.implicit_scope_root() {
@@ -4571,6 +4581,7 @@ impl CascadeData {
         rebuild_kind: SheetRebuildKind,
         precomputed_pseudo_element_decls: Option<&mut PrecomputedPseudoElementDeclarations>,
         difference: Option<&mut CascadeDataDifference>,
+        prev_sheet: &mut Option<*const StylesheetContents>,
     ) -> Result<(), AllocErr>
     where
         S: StylesheetInDocument + 'static,
@@ -4588,6 +4599,12 @@ impl CascadeData {
             self.effective_media_query_results.saw_effective(contents);
         }
 
+        // Identical sheets share their parsed contents, so one that repeats its
+        // predecessor adds the same rules to the selector maps a second time.
+        if prev_sheet.is_some_and(|p| std::ptr::eq(p, contents)) {
+            return Ok(());
+        }
+
         let mut state = ContainingRuleState::default();
         self.add_rule_list(
             contents.rules(guard).iter(),
@@ -4601,6 +4618,10 @@ impl CascadeData {
             precomputed_pseudo_element_decls,
             difference,
         )?;
+
+        // Only a sheet whose rules don't depend on which sheet they came from can
+        // stand in for a later copy; an implicitly scoped rule's root does.
+        *prev_sheet = (!state.saw_implicit_scope_root).then_some(std::ptr::from_ref(contents));
 
         Ok(())
     }

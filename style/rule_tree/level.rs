@@ -134,26 +134,18 @@ impl CascadeOrigin {
     }
 }
 
-/// Whether the transitions level overrides the given important level
-fn transitions_override(level: CascadeLevel) -> bool {
-    debug_assert!(level.is_important());
-    if level.origin() == CascadeOrigin::UA {
-        return crate::pref!("layout.css.transitions-override-ua");
-    }
-    true
-}
-
 impl Ord for CascadeLevel {
     fn cmp(&self, other: &Self) -> Ordering {
         let self_important = self.is_important();
         if self_important != other.is_important() {
             return if self_important {
-                if other.origin() == CascadeOrigin::Transitions && transitions_override(*self) {
+                if other.origin() == CascadeOrigin::Transitions {
+                    // Transitions override all important rules.
                     return Ordering::Less;
                 }
                 Ordering::Greater
             } else {
-                if self.origin() == CascadeOrigin::Transitions && transitions_override(*other) {
+                if self.origin() == CascadeOrigin::Transitions {
                     return Ordering::Greater;
                 }
                 Ordering::Less

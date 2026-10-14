@@ -368,6 +368,43 @@ pub enum GenericLengthPercentageOrNormal<LengthPercent> {
 
 pub use self::GenericLengthPercentageOrNormal as LengthPercentageOrNormal;
 
+/// A generic `normal | <length-percentage> | infinite` value, as used by `fit-tolerance`.
+#[derive(
+    Animate,
+    Clone,
+    ComputeSquaredDistance,
+    Copy,
+    Debug,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToAnimatedZero,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(C, u8)]
+#[allow(missing_docs)]
+pub enum GenericFitTolerance<LengthPercent> {
+    Normal,
+    LengthPercentage(LengthPercent),
+    Infinite,
+}
+
+pub use self::GenericFitTolerance as FitTolerance;
+
+impl<LengthPercent> FitTolerance<LengthPercent> {
+    /// Returns the normal value.
+    #[inline]
+    pub fn normal() -> Self {
+        FitTolerance::Normal
+    }
+}
+
 impl<LengthPercent> LengthPercentageOrNormal<LengthPercent> {
     /// Returns the normal value.
     #[inline]

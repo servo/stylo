@@ -1050,6 +1050,17 @@ animation_type = "discrete"
 spec = "https://drafts.csswg.org/css-grid/#propdef-grid-auto-flow"
 affects = "layout"
 
+[fit-tolerance]
+aliases = ["flow-tolerance:layout.css.display-grid-lanes.enabled"]
+type = "length::FitTolerance"
+initial = "computed::length::FitTolerance::normal()"
+struct = "box"
+gecko_pref = "layout.css.display-grid-lanes.enabled"
+servo_pref = "layout.css.display-grid-lanes.enabled"
+spec = "https://drafts.csswg.org/css-grid-3/#fit-tolerance"
+servo_restyle_damage = "rebuild_box"
+affects = "layout"
+
 [grid-auto-rows]
 type = "ImplicitGridTracks"
 initial = "Default::default()"

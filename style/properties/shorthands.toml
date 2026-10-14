@@ -473,7 +473,7 @@ spec = "https://drafts.csswg.org/css-ui/#propdef-outline"
 [columns]
 sub_properties = ["column-width", "column-count"]
 spec = "https://drafts.csswg.org/css-multicol/#propdef-columns"
-servo_pref = "layout.columns.enabled"
+servo_pref = "layout.css.columns.enabled"
 
 [column-rule]
 engine = "gecko"

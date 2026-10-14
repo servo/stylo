@@ -1,8 +1,6 @@
 "dom.select.customizable_select.enabled" = false
 "dom.viewTransitions.cross-document.enabled" = false
 "gfx.font_rendering.opentype_svg.enabled" = false
-"layout.columns.enabled" = false
-"layout.container-queries.enabled" = false
 "layout.css.alpha-color-function.enabled" = true
 "layout.css.anchor-positioning.enabled" = false
 "layout.css.appearance-base.enabled" = false
@@ -13,7 +11,9 @@
 "layout.css.basic-shape-shape.enabled" = false
 "layout.css.calc-typed-arithmetic.enabled" = true
 "layout.css.color-mix-multi-color.enabled" = true
+"layout.css.columns.enabled" = false
 "layout.css.contain.enabled" = false
+"layout.css.container-queries.enabled" = false
 "layout.css.content.alt-text.enabled" = false
 "layout.css.corner-shape.enabled" = false
 "layout.css.counters.enabled" = false
@@ -23,9 +23,11 @@
 "layout.css.display-grid-lanes.enabled" = false
 "layout.css.ellipse-corners.enabled" = false
 "layout.css.fit-content-function.enabled" = true
+"layout.css.flexbox-balance.enabled" = false
 "layout.css.font-palette.enabled" = false
 "layout.css.font-size-adjust.enabled" = false
 "layout.css.font-tech.enabled" = false
+"layout.css.font-variations.enabled" = false
 "layout.css.forced-color-adjust.enabled" = false
 "layout.css.grid-template-subgrid-value.enabled" = false
 "layout.css.has-selector.enabled" = false
@@ -66,12 +68,10 @@
 "layout.css.view-transitions.enabled" = false
 "layout.css.webkit-fill-available.all-size-properties.enabled" = true
 "layout.css.webkit-fill-available.enabled" = true
+"layout.css.writing-mode.enabled" = false
+"layout.css.writing-mode.sideways.enabled" = false
 "layout.css.writing-mode.text-orientation.enabled" = false
 "layout.css.zoom.enabled" = false
-"layout.flexbox.balance" = false
 # Negative means auto, 0 disables the thread-pool (main-thread styling),
 # other numbers override as specified.
 "layout.threads" = -1
-"layout.variable_fonts.enabled" = false
-"layout.writing-mode.enabled" = false
-"layout.writing-mode.sideways.enabled" = false

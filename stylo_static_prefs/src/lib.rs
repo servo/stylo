@@ -8,9 +8,9 @@ include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
 #[test]
 fn test_basic_preferences() {
-    assert!(!pref!("layout.unimplemented"));
-    set_pref!("layout.unimplemented", true);
-    assert!(pref!("layout.unimplemented"));
+    assert!(!pref!("layout.css.writing-mode.enabled"));
+    set_pref!("layout.css.writing-mode.enabled", true);
+    assert!(pref!("layout.css.writing-mode.enabled"));
 
     assert_eq!(pref!("layout.threads"), -1);
     set_pref!("layout.threads", 42);

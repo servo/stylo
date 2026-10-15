@@ -688,10 +688,11 @@ impl CssRuleTypes {
     /// Returns whether some rule type of the set allow declarations
     pub fn allows_declarations(self) -> bool {
         self.contains(CssRuleType::Keyframe)
+            || self.contains(CssRuleType::NestedDeclarations)
             || self.contains(CssRuleType::Page)
-            || self.contains(CssRuleType::Style)
-            || self.contains(CssRuleType::Scope)
             || self.contains(CssRuleType::PositionTry)
+            || self.contains(CssRuleType::Scope)
+            || self.contains(CssRuleType::Style)
     }
 }
 

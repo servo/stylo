@@ -149,20 +149,18 @@ impl RuleTree {
             current = current.ensure_child(self.root(), source, priority);
         }
 
+        if !crate::pref!("layout.css.transitions-override-ua")
+            && let Some(source) = transition.take()
+        {
+            current = current.ensure_child(self.root(), source, CascadePriority::TRANSITIONS);
+        }
+
         for (source, priority) in important_ua.drain(..) {
             current = current.ensure_child(self.root(), source, priority);
         }
 
         if let Some(source) = transition {
-            current = current.ensure_child(
-                self.root(),
-                source,
-                CascadePriority::new(
-                    CascadeLevel::new(CascadeOrigin::Transitions),
-                    LayerOrder::root(),
-                    RuleCascadeFlags::empty(),
-                ),
-            );
+            current = current.ensure_child(self.root(), source, CascadePriority::TRANSITIONS);
         }
 
         current
@@ -310,41 +308,55 @@ impl RuleTree {
         })
     }
 
-    /// Returns new rule nodes without Transitions level rule.
-    pub fn remove_transition_rule_if_applicable(path: &StrongRuleNode) -> StrongRuleNode {
-        // Return a clone if there is no transition level.
-        if path.cascade_level().origin() != CascadeOrigin::Transitions {
-            return path.clone();
-        }
-
-        path.parent().unwrap().clone()
+    /// Returns new rule nodes without transitions level rule.
+    pub fn remove_transition_rule_if_applicable(&self, path: &StrongRuleNode) -> StrongRuleNode {
+        let transitions = CascadeLevel::new(CascadeOrigin::Transitions);
+        self.remove_rules_at_levels(path, transitions, |l| l == transitions)
     }
 
     /// Returns new rule node without rules from declarative animations.
-    pub fn remove_animation_rules(&self, path: &StrongRuleNode) -> StrongRuleNode {
-        // Return a clone if there are no animation rules.
-        if !path.has_animation_or_transition_rules() {
-            return path.clone();
-        }
-
-        let iter = path.self_and_ancestors().take_while(|node| {
-            node.cascade_level() >= CascadeLevel::new(CascadeOrigin::SMILOverride)
-        });
+    /// `lowest_level` is the lowest level we should look at, levels lower than that we're not
+    /// interested in.
+    fn remove_rules_at_levels(
+        &self,
+        path: &StrongRuleNode,
+        lowest_level: CascadeLevel,
+        mut should_remove: impl FnMut(CascadeLevel) -> bool,
+    ) -> StrongRuleNode {
         let mut last = path;
+        let iter = path
+            .self_and_ancestors()
+            .take_while(|node| node.cascade_level() >= lowest_level);
+        let mut any_to_remove = false;
         let mut children = SmallVec::<[_; 10]>::new();
         for node in iter {
-            if !node.cascade_level().is_animation() {
+            if !should_remove(node.cascade_level()) {
                 children.push((
                     node.style_source().unwrap().clone(),
                     node.cascade_priority(),
                 ));
+            } else {
+                any_to_remove = true;
             }
             last = node;
+        }
+
+        if !any_to_remove {
+            return path.clone();
         }
 
         self.insert_ordered_rules_from(
             last.parent().unwrap().clone(),
             children.iter().rev().map(|(s, p)| (s.borrow(), *p)),
+        )
+    }
+
+    /// Returns new rule node without rules from declarative animations.
+    pub fn remove_animation_rules(&self, path: &StrongRuleNode) -> StrongRuleNode {
+        self.remove_rules_at_levels(
+            path,
+            CascadeLevel::new(CascadeOrigin::SMILOverride),
+            CascadeLevel::is_animation,
         )
     }
 }
@@ -355,15 +367,6 @@ impl StrongRuleNode {
         SelfAndAncestors {
             current: Some(self),
         }
-    }
-
-    /// Returns true if there is either animation or transition level rule.
-    pub fn has_animation_or_transition_rules(&self) -> bool {
-        self.self_and_ancestors()
-            .take_while(|node| {
-                node.cascade_level() >= CascadeLevel::new(CascadeOrigin::SMILOverride)
-            })
-            .any(|node| node.cascade_level().is_animation())
     }
 
     /// Get a set of properties whose CascadeLevel are higher than Animations
@@ -387,10 +390,13 @@ impl StrongRuleNode {
         // override animations.
         let iter = self
             .self_and_ancestors()
-            .skip_while(|node| node.cascade_level().origin() == CascadeOrigin::Transitions)
             .take_while(|node| node.cascade_level() > CascadeLevel::new(CascadeOrigin::Animations));
         let mut result = (LonghandIdSet::new(), false);
         for node in iter {
+            if node.cascade_level().is_animation() {
+                // Note that this skips transitions too.
+                continue;
+            }
             let style = node.style_source().unwrap();
             for (decl, important) in style
                 .read(node.cascade_level().guard(guards))

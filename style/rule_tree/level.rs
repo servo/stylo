@@ -134,18 +134,26 @@ impl CascadeOrigin {
     }
 }
 
+/// Whether the transitions level overrides the given important level
+fn transitions_override(level: CascadeLevel) -> bool {
+    debug_assert!(level.is_important());
+    if level.origin() == CascadeOrigin::UA {
+        return crate::pref!("layout.css.transitions-override-ua");
+    }
+    true
+}
+
 impl Ord for CascadeLevel {
     fn cmp(&self, other: &Self) -> Ordering {
         let self_important = self.is_important();
         if self_important != other.is_important() {
             return if self_important {
-                if other.origin() == CascadeOrigin::Transitions {
-                    // Transitions override all important rules.
+                if other.origin() == CascadeOrigin::Transitions && transitions_override(*self) {
                     return Ordering::Less;
                 }
                 Ordering::Greater
             } else {
-                if self.origin() == CascadeOrigin::Transitions {
+                if self.origin() == CascadeOrigin::Transitions && transitions_override(*other) {
                     return Ordering::Greater;
                 }
                 Ordering::Less
@@ -176,9 +184,9 @@ impl CascadeLevel {
     pub const SAME_TREE_AUTHOR_NORMAL: Self = Self(CascadeOrigin::Author as u8);
 
     /// Returns a cascade level with a given origin.
-    pub fn new(origin: CascadeOrigin) -> Self {
+    pub const fn new(origin: CascadeOrigin) -> Self {
         let bits = origin as u8;
-        debug_assert_eq!(bits & Self::ORIGIN_BITS.bits(), bits);
+        debug_assert!((bits & Self::ORIGIN_BITS.bits()) == bits);
         Self(bits)
     }
 
@@ -234,14 +242,14 @@ impl CascadeLevel {
     /// Returns whether this cascade level represents important rules of some
     /// sort.
     #[inline]
-    pub fn is_important(&self) -> bool {
+    pub fn is_important(self) -> bool {
         self.intersects(Self::IMPORTANT)
     }
 
     /// Returns the importance relevant for this rule. Pretty similar to
     /// `is_important`.
     #[inline]
-    pub fn importance(&self) -> Importance {
+    pub fn importance(self) -> Importance {
         if self.is_important() {
             Importance::Important
         } else {
@@ -251,7 +259,7 @@ impl CascadeLevel {
 
     /// Returns whether this cascade level represents an animation rules.
     #[inline]
-    pub fn is_animation(&self) -> bool {
+    pub fn is_animation(self) -> bool {
         match self.origin() {
             CascadeOrigin::SMILOverride
             | CascadeOrigin::Animations

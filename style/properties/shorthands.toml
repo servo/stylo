@@ -504,8 +504,6 @@ sub_properties = [
   "font-kerning",
   "font-feature-settings",
   "font-language-override",
-]
-extra_gecko_sub_properties = [
   "font-size-adjust",
   "font-variant-emoji",
 ]
@@ -519,9 +517,9 @@ sub_properties = [
     "font-variant-east-asian",
     "font-variant-ligatures",
     "font-variant-numeric",
-    "font-variant-position"
+    "font-variant-position",
+    "font-variant-emoji"
 ]
-extra_gecko_sub_properties = ["font-variant-emoji"]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font-variant"
 
 [font-synthesis]

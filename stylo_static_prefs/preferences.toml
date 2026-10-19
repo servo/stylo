@@ -23,6 +23,7 @@
 "layout.css.display-grid-lanes.enabled" = false
 "layout.css.dominant-baseline.enabled" = false
 "layout.css.ellipse-corners.enabled" = false
+"layout.css.first-line.enabled" = false
 "layout.css.fit-content-function.enabled" = true
 "layout.css.flexbox-balance.enabled" = false
 "layout.css.font-palette.enabled" = false

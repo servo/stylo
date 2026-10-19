@@ -2494,6 +2494,7 @@ impl ExtraStyleData {
         self.counter_styles.clear();
         self.position_try_rules.clear();
         self.pages.clear();
+        self.view_transitions.clear();
     }
 }
 

@@ -240,6 +240,10 @@ impl PseudoElement {
         if let Some(p) = pseudo::get(name) {
             return Some(p.clone());
         }
+        if name.eq_ignore_ascii_case("-webkit-input-placeholder") && crate::pref!("layout.css.webkit-input-placeholder.enabled") {
+            // TODO(emilio): When making unconditional, move to the map above.
+            return Some(PseudoElement::Placeholder);
+        }
         if starts_with_ignore_ascii_case(name, "-moz-tree-") {
             return PseudoElement::tree_pseudo_element(name, Default::default())
         }

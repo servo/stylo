@@ -173,20 +173,20 @@ impl NonTSPseudoClass {
         macro_rules! pseudo_class_parse {
             ([$(($css:expr, $name:ident, $state:tt, $flags:tt),)*]) => {
                 match_ignore_ascii_case! { &name,
-                    $($css => Some(NonTSPseudoClass::$name),)*
-                    "heading" => Some(NonTSPseudoClass::Heading(HeadingSelectorData([].into()))),
-                    "-moz-full-screen" => Some(NonTSPseudoClass::Fullscreen),
-                    "-moz-read-only" => Some(NonTSPseudoClass::ReadOnly),
-                    "-moz-read-write" => Some(NonTSPseudoClass::ReadWrite),
-                    "-moz-focusring" => Some(NonTSPseudoClass::FocusVisible),
-                    "-moz-ui-valid" => Some(NonTSPseudoClass::UserValid),
-                    "-moz-ui-invalid" => Some(NonTSPseudoClass::UserInvalid),
-                    "-webkit-autofill" => Some(NonTSPseudoClass::Autofill),
-                    _ => None,
+                    $($css => NonTSPseudoClass::$name,)*
+                    "heading" => NonTSPseudoClass::Heading(HeadingSelectorData([].into())),
+                    "-moz-full-screen" => NonTSPseudoClass::Fullscreen,
+                    "-moz-read-only" => NonTSPseudoClass::ReadOnly,
+                    "-moz-read-write" => NonTSPseudoClass::ReadWrite,
+                    "-moz-focusring" => NonTSPseudoClass::FocusVisible,
+                    "-moz-ui-valid" => NonTSPseudoClass::UserValid,
+                    "-moz-ui-invalid" => NonTSPseudoClass::UserInvalid,
+                    "-webkit-autofill" => NonTSPseudoClass::Autofill,
+                    _ => return None,
                 }
             }
         }
-        apply_non_ts_list!(pseudo_class_parse)
+        Some(apply_non_ts_list!(pseudo_class_parse))
     }
 
     /// Returns true if this pseudo-class has any of the given flags set.

@@ -609,8 +609,12 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     where
         E: TElement,
     {
+        let self_box = self.style.get_box();
         // Line break suppression should only be propagated to in-flow children.
-        if self.style.is_floating() || self.style.is_absolutely_positioned() {
+        if !self_box.get_display().is_contents()
+            && (self_box.get_float().is_floating()
+                || self_box.get_position().is_absolutely_positioned())
+        {
             return false;
         }
         let parent_display = *self.style.get_parent_box().get_display();
@@ -625,7 +629,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
                 return true;
             }
         }
-        match *self.style.get_box().get_display() {
+        match *self_box.get_display() {
             // Ruby base and text are always non-breakable.
             Display::RubyBase | Display::RubyText => true,
             // Ruby base container and text container are breakable.

@@ -1066,17 +1066,31 @@ impl PropertyDeclarationBlock {
         }
     }
 
-    /// Returns true if the declaration block has a CSSWideKeyword for the given
-    /// property.
-    pub fn has_css_wide_keyword(&self, property: &PropertyId) -> bool {
+    fn has_declaration_matching(
+        &self,
+        property: &PropertyId,
+        matches: impl Fn(&PropertyDeclaration) -> bool,
+    ) -> bool {
         if let Err(longhand_or_custom) = property.as_shorthand()
             && !self.property_ids.contains(longhand_or_custom)
         {
             return false;
         }
-        self.declarations.iter().any(|decl| {
-            decl.id().is_or_is_longhand_of(property) && decl.get_css_wide_keyword().is_some()
-        })
+        self.declarations
+            .iter()
+            .any(|decl| decl.id().is_or_is_longhand_of(property) && matches(decl))
+    }
+
+    /// Returns true if the declaration block has a CSSWideKeyword for the given
+    /// property.
+    pub fn has_css_wide_keyword(&self, property: &PropertyId) -> bool {
+        self.has_declaration_matching(property, |decl| decl.get_css_wide_keyword().is_some())
+    }
+
+    /// Returns true if the declaration block has a value with `var()`
+    /// references for the given property.
+    pub fn has_unparsed_value(&self, property: &PropertyId) -> bool {
+        self.has_declaration_matching(property, PropertyDeclaration::is_unparsed)
     }
 
     /// Like the method on ToCss, but without the type parameter to avoid

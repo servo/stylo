@@ -893,6 +893,12 @@ impl PropertyDeclaration {
         }
     }
 
+    /// Returns whether this declaration's value contains `var()` references
+    /// and is thus not parsed yet.
+    pub fn is_unparsed(&self) -> bool {
+        matches!(*self, PropertyDeclaration::WithVariables(..))
+    }
+
     /// Returns whether the declaration may be serialized as part of a shorthand.
     ///
     /// This method returns false if this declaration contains variable or has a

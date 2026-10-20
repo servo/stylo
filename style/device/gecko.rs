@@ -189,7 +189,7 @@ impl Device {
     /// base values of `random()` functions between document instances.
     #[inline]
     pub fn document_random_seed(&self) -> u64 {
-        self.extra.document as u64
+        unsafe { bindings::Gecko_Document_GetRandomSeed(self.document()) }
     }
 
     /// Gets the pres context associated with this document.

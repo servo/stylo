@@ -540,13 +540,13 @@ impl<'a> Context<'a> {
         key.ua_ident.hash(&mut hasher);
         if key.is_element_scoped {
             debug_assert!(
-                self.element_context.opaque_element().is_some(),
+                self.element_context.random_seed().is_some(),
                 "Element-scoped random without element context"
             );
             self.builder
                 .add_flags(ComputedValueFlags::USES_ELEMENT_SCOPED_RANDOM);
             self.rule_cache_conditions.borrow_mut().set_uncacheable();
-            self.element_context.opaque_element().hash(&mut hasher);
+            self.element_context.random_seed().hash(&mut hasher);
         }
         self.device().document_random_seed().hash(&mut hasher);
 

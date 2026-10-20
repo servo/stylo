@@ -1068,6 +1068,11 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     #[inline]
+    fn random_seed(&self) -> u64 {
+        unsafe { bindings::Gecko_Element_GetRandomSeed(self.0) }
+    }
+
+    #[inline]
     fn is_html_element(&self) -> bool {
         self.namespace_id() == structs::kNameSpaceID_XHTML as i32
     }

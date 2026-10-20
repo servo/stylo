@@ -612,6 +612,13 @@ pub trait TElement:
     /// Flags this element as having handled already its snapshot.
     unsafe fn set_handled_snapshot(&self);
 
+    /// A unique value for the element to use in the generation of random base values
+    /// for element-scoped CSS `random()` functions.
+    fn random_seed(&self) -> u64 {
+        // By default, use the element's own address as the random-influencing value.
+        self.opaque().to_ptr().as_ptr() as u64
+    }
+
     /// Returns whether the element's styles are up-to-date after traversal
     /// (i.e. in post traversal).
     fn has_current_styles(&self, data: &ElementData) -> bool {
@@ -992,6 +999,10 @@ pub trait ElementContext {
     /// Opaque handle to the element's parent node.
     fn opaque_parent(&self) -> Option<OpaqueNode>;
 
+    /// A unique value for the element to use in the generation of random base values
+    /// for element-scoped `random()` functions.
+    fn random_seed(&self) -> Option<u64>;
+
     /// Return the value of the given custom attribute if it exists.
     fn get_attr(&self, attr: &LocalName, namespace: &Namespace) -> Option<String>;
 
@@ -1008,6 +1019,10 @@ impl<T: TElement> ElementContext for T {
 
     fn opaque_parent(&self) -> Option<OpaqueNode> {
         self.as_node().parent_node().map(|n| n.opaque())
+    }
+
+    fn random_seed(&self) -> Option<u64> {
+        Some(TElement::random_seed(self))
     }
 
     fn get_attr(&self, attr: &LocalName, namespace: &Namespace) -> Option<String> {
@@ -1082,6 +1097,10 @@ impl ElementContext for DummyElementContext {
     }
 
     fn opaque_parent(&self) -> Option<OpaqueNode> {
+        None
+    }
+
+    fn random_seed(&self) -> Option<u64> {
         None
     }
 

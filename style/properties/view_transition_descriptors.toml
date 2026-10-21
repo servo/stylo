@@ -9,3 +9,4 @@ type = "NavigationType"
 
 [types]
 type = "TransitionTypes"
+parser = "parse_for_at_view_transition"

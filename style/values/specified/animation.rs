@@ -779,10 +779,11 @@ impl ViewTransitionClassList {
     pub fn iter(&self) -> impl Iterator<Item = &CustomIdent> {
         self.0.iter()
     }
-}
 
-impl Parse for ViewTransitionClassList {
-    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+    fn parse_internal<F>(input: &mut Parser, parse_one: F) -> Result<Self, ParseError>
+    where
+        F: FnMut(&mut Parser) -> Result<CustomIdent, ParseError>,
+    {
         use style_traits::{Separator, Space};
 
         if input.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
@@ -790,8 +791,33 @@ impl Parse for ViewTransitionClassList {
         }
 
         Ok(Self(crate::ArcSlice::from_iter(
-            Space::parse(input, |i| CustomIdent::parse(i, &["none"]))?.into_iter(),
+            Space::parse(input, parse_one)?.into_iter(),
         )))
+    }
+
+    /// Parse `<view-transition-type>`.
+    /// https://drafts.csswg.org/css-view-transitions-2/#typedef-view-transition-type
+    pub fn parse_for_at_view_transition(
+        _: &ParserContext,
+        input: &mut Parser,
+    ) -> Result<Self, ParseError> {
+        fn parse_view_transition_type(input: &mut Parser) -> Result<CustomIdent, ParseError> {
+            let ident = input.expect_ident()?;
+            // Note case sensitivity, since it's a subset of `<custom-ident>`.
+            // https://drafts.csswg.org/css-values-4/#identifier-value
+            if ident.starts_with("-ua-") {
+                return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
+            }
+            CustomIdent::from_ident(ident, &["none"])
+        }
+
+        Self::parse_internal(input, parse_view_transition_type)
+    }
+}
+
+impl Parse for ViewTransitionClassList {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        Self::parse_internal(input, |i| CustomIdent::parse(i, &["none"]))
     }
 }
 

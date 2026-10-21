@@ -78,4 +78,4 @@ pub enum NavigationType {
 /// The `types` descriptor value: `none | <custom-ident>+`
 ///
 /// <https://drafts.csswg.org/css-view-transitions-2/#typedef-pt-name-selector-list>
-pub use crate::values::specified::animation::ViewTransitionClass as TransitionTypes;
+pub use crate::values::specified::animation::ViewTransitionClassList as TransitionTypes;

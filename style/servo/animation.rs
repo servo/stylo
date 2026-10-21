@@ -1623,6 +1623,7 @@ pub struct AnimationSetKey {
 
 impl AnimationSetKey {
     /// Create a new key given a node and optional pseudo element.
+    #[inline]
     pub fn new(node: OpaqueNode, pseudo_element: Option<PseudoElement>) -> Self {
         AnimationSetKey {
             node,
@@ -1631,6 +1632,7 @@ impl AnimationSetKey {
     }
 
     /// Create a new key for the main content of this node.
+    #[inline]
     pub fn new_for_non_pseudo(node: OpaqueNode) -> Self {
         AnimationSetKey {
             node,
@@ -1639,6 +1641,7 @@ impl AnimationSetKey {
     }
 
     /// Create a new key for given node and pseudo element.
+    #[inline]
     pub fn new_for_pseudo(node: OpaqueNode, pseudo_element: PseudoElement) -> Self {
         AnimationSetKey {
             node,

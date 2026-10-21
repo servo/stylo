@@ -1672,6 +1672,14 @@ impl DocumentAnimationSet {
             .map_or(false, |set| set.has_active_transition())
     }
 
+    /// Return whether or not the provided node has active CSS animations or transitions 
+    pub fn has_active_animations_or_transitions(&self, key: &AnimationSetKey) -> bool {
+        self.sets
+            .read()
+            .get(key)
+            .is_some_and(|set| set.has_active_animation() || set.has_active_transition())
+    }
+
     /// Return a locked PropertyDeclarationBlock with animation values for the given
     /// key and time.
     pub fn get_animation_declarations(

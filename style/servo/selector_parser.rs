@@ -50,6 +50,7 @@ pub enum PseudoElement {
     Backdrop,
     DetailsContent,
     Marker,
+    Cue,
 
     // Implemented pseudos. These pseudo elements are representing the
     // elements within an UA shadow DOM, and matching the elements with
@@ -93,6 +94,7 @@ impl ToCss for PseudoElement {
             Backdrop => "::backdrop",
             DetailsContent => "::details-content",
             Marker => "::marker",
+            Cue => "::cue",
             ColorSwatch => "::color-swatch",
             FileSelectorButton => "::file-selector-button",
             Placeholder => "::placeholder",
@@ -254,6 +256,7 @@ impl PseudoElement {
             | PseudoElement::ColorSwatch
             | PseudoElement::FileSelectorButton
             | PseudoElement::Marker
+            | PseudoElement::Cue
             | PseudoElement::Placeholder
             | PseudoElement::DetailsContent
             | PseudoElement::SliderFill
@@ -346,6 +349,7 @@ impl PseudoElement {
                 self,
                 Self::Placeholder
                     | Self::ColorSwatch
+                    | Self::Cue
                     | Self::FileSelectorButton
                     | Self::SliderFill
                     | Self::SliderThumb
@@ -686,6 +690,7 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "before" => Before,
             "after" => After,
             "backdrop" => Backdrop,
+            "cue" => Cue,
             "selection" => Selection,
             "file-selector-button" => FileSelectorButton,
             "first-letter" => FirstLetter,

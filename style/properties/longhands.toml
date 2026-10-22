@@ -1887,6 +1887,27 @@ enabled_in = "ua"
 spec = "Nonstandard (https://html.spec.whatwg.org/multipage/#inert-subtrees)"
 affects = "paint"
 
+[interactivity]
+type = "Interactivity"
+initial = "specified::Interactivity::Auto"
+struct = "inherited_ui"
+engine = "servo"
+animation_type = "discrete"
+spec = "https://drafts.csswg.org/css-ui-4/#propdef-interactivity"
+servo_restyle_damage = "repaint"
+affects = "paint"
+
+[-servo-inert]
+type = "Inert"
+initial = "specified::Inert::None"
+struct = "inherited_ui"
+engine = "servo"
+animation_type = "none"
+enabled_in = "ua"
+spec = "Internal (not web-exposed)"
+servo_restyle_damage = "repaint"
+affects = "paint"
+
 [-moz-user-focus]
 type = "UserFocus"
 initial = "specified::UserFocus::Normal"

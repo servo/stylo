@@ -401,6 +401,7 @@ pub enum NonTSPseudoClass {
     ReadOnly,
     ReadWrite,
     Required,
+    ServoInert,
     ServoNonZeroBorder,
     Target,
     UserInvalid,
@@ -475,6 +476,7 @@ impl ToCss for NonTSPseudoClass {
             Self::ReadOnly => ":read-only",
             Self::ReadWrite => ":read-write",
             Self::Required => ":required",
+            Self::ServoInert => ":-servo-inert",
             Self::ServoNonZeroBorder => ":-servo-nonzero-border",
             Self::Target => ":target",
             Self::UserInvalid => ":user-invalid",
@@ -520,6 +522,7 @@ impl NonTSPseudoClass {
             Self::ReadOnly => ElementState::READONLY,
             Self::ReadWrite => ElementState::READWRITE,
             Self::Required => ElementState::REQUIRED,
+            Self::ServoInert => ElementState::INERT,
             Self::Target => ElementState::URLTARGET,
             Self::UserInvalid => ElementState::USER_INVALID,
             Self::UserValid => ElementState::USER_VALID,
@@ -646,6 +649,14 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "-moz-meter-optimum" => NonTSPseudoClass::MozMeterOptimum,
             "-moz-meter-sub-optimum" => NonTSPseudoClass::MozMeterSubOptimum,
             "-moz-meter-sub-sub-optimum" => NonTSPseudoClass::MozMeterSubSubOptimum,
+            "-servo-inert" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(ParseError::custom(
+                        SelectorParseErrorKind::UnexpectedIdent
+                    ))
+                }
+                NonTSPseudoClass::ServoInert
+            },
             "-servo-nonzero-border" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(ParseError::custom(

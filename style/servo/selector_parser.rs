@@ -390,6 +390,7 @@ pub enum NonTSPseudoClass {
     Lang(Lang),
     Link,
     Modal,
+    MozInert,
     MozMeterOptimum,
     MozMeterSubOptimum,
     MozMeterSubSubOptimum,
@@ -401,7 +402,6 @@ pub enum NonTSPseudoClass {
     ReadOnly,
     ReadWrite,
     Required,
-    ServoInert,
     ServoNonZeroBorder,
     Target,
     UserInvalid,
@@ -465,6 +465,7 @@ impl ToCss for NonTSPseudoClass {
             Self::Invalid => ":invalid",
             Self::Link => ":link",
             Self::Modal => ":modal",
+            Self::MozInert => ":-moz-inert",
             Self::MozMeterOptimum => ":-moz-meter-optimum",
             Self::MozMeterSubOptimum => ":-moz-meter-sub-optimum",
             Self::MozMeterSubSubOptimum => ":-moz-meter-sub-sub-optimum",
@@ -476,7 +477,6 @@ impl ToCss for NonTSPseudoClass {
             Self::ReadOnly => ":read-only",
             Self::ReadWrite => ":read-write",
             Self::Required => ":required",
-            Self::ServoInert => ":-servo-inert",
             Self::ServoNonZeroBorder => ":-servo-nonzero-border",
             Self::Target => ":target",
             Self::UserInvalid => ":user-invalid",
@@ -511,6 +511,7 @@ impl NonTSPseudoClass {
             Self::Invalid => ElementState::INVALID,
             Self::Link => ElementState::UNVISITED,
             Self::Modal => ElementState::MODAL,
+            Self::MozInert => ElementState::INERT,
             Self::MozMeterOptimum => ElementState::OPTIMUM,
             Self::MozMeterSubOptimum => ElementState::SUB_OPTIMUM,
             Self::MozMeterSubSubOptimum => ElementState::SUB_SUB_OPTIMUM,
@@ -522,7 +523,6 @@ impl NonTSPseudoClass {
             Self::ReadOnly => ElementState::READONLY,
             Self::ReadWrite => ElementState::READWRITE,
             Self::Required => ElementState::REQUIRED,
-            Self::ServoInert => ElementState::INERT,
             Self::Target => ElementState::URLTARGET,
             Self::UserInvalid => ElementState::USER_INVALID,
             Self::UserValid => ElementState::USER_VALID,
@@ -646,17 +646,17 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "user-valid" => NonTSPseudoClass::UserValid,
             "valid" => NonTSPseudoClass::Valid,
             "visited" => NonTSPseudoClass::Visited,
-            "-moz-meter-optimum" => NonTSPseudoClass::MozMeterOptimum,
-            "-moz-meter-sub-optimum" => NonTSPseudoClass::MozMeterSubOptimum,
-            "-moz-meter-sub-sub-optimum" => NonTSPseudoClass::MozMeterSubSubOptimum,
-            "-servo-inert" => {
+            "-moz-inert" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(ParseError::custom(
                         SelectorParseErrorKind::UnexpectedIdent
                     ))
                 }
-                NonTSPseudoClass::ServoInert
+                NonTSPseudoClass::MozInert
             },
+            "-moz-meter-optimum" => NonTSPseudoClass::MozMeterOptimum,
+            "-moz-meter-sub-optimum" => NonTSPseudoClass::MozMeterSubOptimum,
+            "-moz-meter-sub-sub-optimum" => NonTSPseudoClass::MozMeterSubSubOptimum,
             "-servo-nonzero-border" => {
                 if !self.in_user_agent_stylesheet() {
                     return Err(ParseError::custom(

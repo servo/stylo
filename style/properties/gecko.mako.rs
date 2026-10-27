@@ -1177,6 +1177,7 @@ pub fn assert_initial_values_match(data: &PerDocumentStyleData) {
                 "font-size",
                 "outline-width",
                 "color",
+                "-x-text-scale",
             ]
             TO_TEST = [p for p in data.longhands if p.enabled_in != "" and not p.logical and not p.name in SKIPPED]
         %>

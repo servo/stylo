@@ -639,11 +639,6 @@ fn system_ui_enabled(_: &ParserContext) -> bool {
     crate::pref!("layout.css.system-ui.enabled")
 }
 
-#[cfg(feature = "gecko")]
-fn math_enabled(context: &ParserContext) -> bool {
-    context.chrome_rules_enabled() || crate::pref!("mathml.font_family_math.enabled")
-}
-
 /// A generic font-family name.
 ///
 /// The order here is important, if you change it make sure that
@@ -684,7 +679,6 @@ pub enum GenericFontFamily {
     Cursive,
     Fantasy,
     #[cfg(feature = "gecko")]
-    #[parse(condition = "math_enabled")]
     Math,
     #[parse(condition = "system_ui_enabled")]
     SystemUi,

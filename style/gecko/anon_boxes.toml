@@ -35,10 +35,10 @@ inherits = false
 inherits = false
 [-moz-page-break]
 inherits = false
-[-moz-page-content]
-inherits = false
 [-moz-printed-sheet]
 inherits = false
+# This style represents the @page {} rule.
+[-moz-page-content]
 
 # Applies to blocks that wrap contiguous runs of "column-span: all" elements in
 # multi-column subtrees, or the wrappers themselves, all the way up to the

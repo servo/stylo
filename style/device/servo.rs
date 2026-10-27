@@ -33,6 +33,7 @@ use mime::Mime;
 use parking_lot::RwLock;
 use servo_arc::Arc;
 use std::fmt::Debug;
+use std::hash::{DefaultHasher, Hasher};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use style_traits::{CSSPixel, DevicePixel};
 
@@ -149,12 +150,12 @@ impl Device {
         self.extra.quirks_mode
     }
 
-    /// Returns a value that identifies this document, used to vary the random
+    /// Returns a hasher specific to this document, used to vary the random
     /// base values of `random()` functions between document instances.
     #[inline]
-    pub fn document_random_seed(&self) -> u64 {
-        // TODO: Implement a document-specific value.
-        0
+    pub fn document_random_hasher(&self) -> impl Hasher {
+        // TODO: Implement a document-specific hasher (like Gecko in Bug 2081781).
+        DefaultHasher::new()
     }
 
     /// Gets the base size given a generic font family.

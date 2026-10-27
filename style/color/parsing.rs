@@ -169,12 +169,12 @@ impl ToCss for ChannelKeyword {
 /// Matching is case-insensitive in the ASCII range.
 /// CSS escaping (if relevant) should be resolved before calling this function.
 /// (For example, the value of an `Ident` token is fine.)
-#[inline]
-pub fn parse_color_keyword(ident: &str) -> Result<SpecifiedColor, ()> {
+fn parse_color_keyword(context: &ParserContext, ident: &str) -> Result<SpecifiedColor, ()> {
     Ok(match_ignore_ascii_case! { ident,
         "transparent" => {
             SpecifiedColor::from_absolute_color(AbsoluteColor::srgb_legacy(0u8, 0u8, 0u8, 0.0))
         },
+        "-moz-inherit-from-body" if context.in_ua_sheet() => SpecifiedColor::MozInheritFromBody,
         "currentcolor" => SpecifiedColor::CurrentColor,
         _ => {
             let (r, g, b) = cssparser::color::parse_named_color(ident)?;
@@ -195,7 +195,7 @@ pub fn parse_color_with(
             .map(|(r, g, b, a)| {
                 SpecifiedColor::from_absolute_color(AbsoluteColor::srgb_legacy(r, g, b, a))
             }),
-        Token::Ident(ref value) => parse_color_keyword(value),
+        Token::Ident(ref value) => parse_color_keyword(context, value),
         Token::Function(ref name) => {
             let name = name.clone();
             return input.parse_nested_block(|arguments| {

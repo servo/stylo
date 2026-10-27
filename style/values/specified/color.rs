@@ -196,7 +196,7 @@ pub enum Color {
     /// The contrast-color function.
     ContrastColor(Box<Color>),
     /// Quirksmode-only rule for inheriting color from the body
-    MozInheritFromBody,
+    InheritFromBodyQuirk,
 }
 
 impl From<AbsoluteColor> for Color {
@@ -657,7 +657,7 @@ impl ToCss for Color {
                 dest.write_char(')')
             },
             Color::System(system) => system.to_css(dest),
-            Color::MozInheritFromBody => dest.write_str("-moz-inherit-from-body"),
+            Color::InheritFromBodyQuirk => dest.write_str("-moz-inherit-from-body-quirk"),
         }
     }
 }
@@ -684,7 +684,7 @@ impl Color {
         allow_transparent: bool,
     ) -> bool {
         match *self {
-            Self::MozInheritFromBody => false,
+            Self::InheritFromBodyQuirk => false,
             Self::CurrentColor => true,
             Self::System(..) => true,
             Self::Absolute(ref absolute) => allow_transparent && absolute.color.is_transparent(),
@@ -892,7 +892,7 @@ impl Color {
                 }
             },
             Color::System(system) => system.compute(context.ok_or(())?),
-            Color::MozInheritFromBody => {
+            Color::InheritFromBodyQuirk => {
                 ComputedColor::Absolute(context.ok_or(())?.device().body_text_color())
             },
         })

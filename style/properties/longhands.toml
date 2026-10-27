@@ -124,7 +124,8 @@ initial = "computed::XTextScale::All"
 struct = "font"
 servo_pref = "layout.unimplemented"
 animation_type = "none"
-enabled_in = "ua"
+enabled_in = ""
+has_effect_on_gecko_scrollbars = false
 spec = "Internal (not web-exposed)"
 affects = "layout"
 

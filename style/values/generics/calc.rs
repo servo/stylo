@@ -956,11 +956,6 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 dividend.negate();
                 divisor.negate();
             },
-            CalcNode::Hypot(ref mut children) => {
-                for child in children.iter_mut() {
-                    child.negate();
-                }
-            },
             CalcNode::Sign(ref mut child) => {
                 child.negate();
             },
@@ -976,6 +971,7 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             | CalcNode::Log(..)
             | CalcNode::Exp(..)
             | CalcNode::Abs(..)
+            | CalcNode::Hypot(..)
             | CalcNode::Progress { .. }
             | CalcNode::Random(..)
             | CalcNode::Anchor(..)

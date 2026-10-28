@@ -11,12 +11,13 @@ use super::{
     },
 };
 use crate::FxHashMap;
-use crate::custom_properties::{AttrTaint, ComputedValue as ComputedPropertyValue};
+use crate::custom_properties::ComputedValue as ComputedPropertyValue;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::properties;
 use crate::properties::{CSSWideKeyword, CustomDeclarationValue, PropertyIdRef};
 use crate::stylesheets::{CssRuleType, Origin, UrlExtraData};
+use crate::substitution::AttrTaint;
 use crate::values::{
     CustomIdent,
     animated::{self, Animate, Procedure},

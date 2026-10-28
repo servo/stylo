@@ -5,10 +5,10 @@
 //! Media-query device and expression representation.
 
 use crate::color::AbsoluteColor;
-use crate::custom_properties::CssEnvironment;
 #[cfg(feature = "servo")]
 use crate::derives::*;
 use crate::properties::ComputedValues;
+use crate::substitution::env::CssEnvironment;
 use crate::values::computed::Length;
 use crate::values::computed::font::QueryFontMetricsFlags;
 use parking_lot::RwLock;

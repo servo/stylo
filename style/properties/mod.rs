@@ -23,7 +23,7 @@ pub mod generated {
 
 use crate::FxHashMap;
 use crate::applicable_declarations::RevertKind;
-use crate::custom_properties::{self, ComputedSubstitutionFunctions, SubstitutionResult};
+use crate::custom_properties::{self, ComputedSubstitutionFunctions};
 use crate::derives::*;
 use crate::dom::AttributeTracker;
 #[cfg(feature = "gecko")]
@@ -32,6 +32,7 @@ use crate::logical_geometry::WritingMode;
 use crate::parser::ParserContext;
 use crate::stylesheets::{CssRuleType, CssRuleTypes, Origin};
 use crate::stylist::Stylist;
+use crate::substitution::{self, SubstitutionFunctionKind, SubstitutionResult};
 use crate::typed_om::{ToTyped, TypedValue};
 use crate::values::{computed, serialize_atom_name};
 use arrayvec::{ArrayVec, Drain as ArrayVecDrain};
@@ -42,6 +43,7 @@ use std::{
     fmt::{self, Write},
     mem,
 };
+use strum::VariantNames;
 use style_traits::{
     CssString, CssWriter, KeywordsCollectFn, ParseError, ParsingMode, SpecifiedValueInfo, ToCss,
 };
@@ -785,7 +787,7 @@ impl ShorthandId {
 }
 
 /// The arbitrary substitution functions we support.
-pub const ARBITRARY_SUBSTITUTION_FUNCTIONS: &[&str] = &["var", "env", "attr"];
+pub const ARBITRARY_SUBSTITUTION_FUNCTIONS: &[&str] = SubstitutionFunctionKind::VARIANTS;
 
 fn parse_non_custom_property_declaration_value_into(
     declarations: &mut SourcePropertyDeclaration,
@@ -1668,7 +1670,7 @@ impl UnparsedValue {
             None => NonCustomPropertyId::from(longhand_id),
         });
 
-        let SubstitutionResult { css, attr_taint } = match custom_properties::substitute(
+        let SubstitutionResult { css, attr_taint } = match substitution::substitute(
             &self.variable_value,
             Some(property_id),
             substitution_functions,

@@ -11,8 +11,7 @@ use crate::computed_value_flags::ComputedValueFlags;
 use crate::context::TreeCountingCaches;
 use crate::custom_properties::{
     ComputedCustomProperties, ComputedSubstitutionFunctions, Name, NonCustomReferenceMap,
-    ReferenceFlags, References, SingleNonCustomReference, SubstitutionFunctionKind, VariableValue,
-    get_attr_value_for_cycle_resolution, handle_invalid_at_computed_value_time,
+    SingleNonCustomReference, VariableValue, handle_invalid_at_computed_value_time,
     remove_and_insert_initial_value, substitute_references_if_needed_and_apply,
 };
 use crate::dom::{AttributeTracker, DummyElementContext, ElementContext, TElement};
@@ -37,6 +36,9 @@ use crate::stylesheets::UrlExtraData;
 use crate::stylesheets::container_rule::ContainerSizeQuery;
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::Stylist;
+use crate::substitution::{
+    ReferenceFlags, References, SubstitutionFunction, SubstitutionFunctionKind,
+};
 use crate::values::computed::ToComputedValue;
 #[cfg(feature = "gecko")]
 use crate::values::specified::length::FontBaseSize;
@@ -2058,21 +2060,19 @@ impl<'a> Cascade<'a> {
         self.may_have_custom_property_cycles = true;
 
         for next in &refs.refs {
-            if !next.is_attr_with_type() || !self.seen.custom.attr.insert(&next.name) {
-                // Only type() can have nested references, so we don't need to eagerly look at
-                // others.
+            let SubstitutionFunction::Attr(attr) = &next.function else {
+                continue;
+            };
+            // Only type() can have nested references, so we don't need to eagerly look at
+            // others.
+            if !attr.has_type() || !self.seen.custom.attr.insert(&attr.name) {
                 continue;
             }
-            if let Ok(v) = get_attr_value_for_cycle_resolution(
-                &next.name,
-                &next.attribute_data,
-                &value.url_data,
-                attribute_tracker,
-            ) {
+            if let Ok(v) = attr.value_for_cycle_resolution(&value.url_data, attribute_tracker) {
                 context
                     .builder
                     .substitution_functions
-                    .insert_attr(&next.name, v);
+                    .insert_attr(&attr.name, v);
             }
         }
     }
@@ -2295,41 +2295,37 @@ fn substitute_all(
         while let Some(refs) = refs_stack.pop() {
             *non_custom_references |= refs.flags;
             for next in &refs.refs {
-                if next.substitution_kind == SubstitutionFunctionKind::Env {
-                    // env() doesn't reference custom properties, so it never participates in
-                    // cycles; its fallback is used only when the environment doesn't provide
-                    // the variable.
-                    let device = context.stylist.device();
-                    let present = device
-                        .environment()
-                        .get(&next.name, device, url_data)
-                        .is_some();
-                    if !present && let Some(ref fallback) = next.fallback {
-                        refs_stack.push(&fallback.references);
-                    }
-                    continue;
-                }
-
-                let next_var = if next.substitution_kind == SubstitutionFunctionKind::Attr {
-                    // An type()-less attr() within attr(... type()) can still have nested
-                    // references.
-                    let can_chain = next.is_attr_with_type() || matches!(var, VarType::Attr(..));
-                    if !can_chain {
+                let next_var = match next.function {
+                    SubstitutionFunction::Env(ref env_fn) => {
+                        // env() doesn't reference custom properties, so it never participates in
+                        // cycles; its fallback is used only when the environment doesn't provide
+                        // the variable.
+                        let device = context.stylist.device();
+                        let present = device
+                            .environment()
+                            .get(&env_fn.name, device, url_data)
+                            .is_some();
+                        if !present && let Some(ref fallback) = env_fn.fallback {
+                            refs_stack.push(&fallback.references);
+                        }
                         continue;
-                    }
-                    if context.map().get_attr(&next.name).is_none()
-                        && let Ok(val) = get_attr_value_for_cycle_resolution(
-                            &next.name,
-                            &next.attribute_data,
-                            url_data,
-                            attribute_tracker,
-                        )
-                    {
-                        context.map_mut().insert_attr(&next.name, val);
-                    }
-                    VarType::Attr(next.name.clone())
-                } else {
-                    VarType::Custom(next.name.clone())
+                    },
+                    SubstitutionFunction::Attr(ref attr_fn) => {
+                        // An type()-less attr() within attr(... type()) can still have nested
+                        // references.
+                        let can_chain = attr_fn.has_type() || matches!(var, VarType::Attr(..));
+                        if !can_chain {
+                            continue;
+                        }
+                        if context.map().get_attr(&attr_fn.name).is_none()
+                            && let Ok(val) =
+                                attr_fn.value_for_cycle_resolution(url_data, attribute_tracker)
+                        {
+                            context.map_mut().insert_attr(&attr_fn.name, val);
+                        }
+                        VarType::Attr(attr_fn.name.clone())
+                    },
+                    SubstitutionFunction::Var(ref var_fn) => VarType::Custom(var_fn.name.clone()),
                 };
 
                 visit_link(
@@ -2344,15 +2340,17 @@ fn substitute_all(
 
                 // Now that the primary reference has been resolved, classify it to
                 // decide whether its fallback is used.
-                let kind = next.substitution_kind;
-                let resolved = match kind {
-                    SubstitutionFunctionKind::Var => {
-                        let registration =
-                            context.stylist.get_custom_property_registration(&next.name);
-                        context.map().get_var(registration, &next.name)
+                let resolved = match next.function {
+                    SubstitutionFunction::Var(ref var_fn) => {
+                        let registration = context
+                            .stylist
+                            .get_custom_property_registration(&var_fn.name);
+                        context.map().get_var(registration, &var_fn.name)
                     },
-                    SubstitutionFunctionKind::Attr => context.map().get_attr(&next.name),
-                    SubstitutionFunctionKind::Env => unreachable!("Handled above"),
+                    SubstitutionFunction::Attr(ref attr_fn) => {
+                        context.map().get_attr(&attr_fn.name)
+                    },
+                    SubstitutionFunction::Env(..) => unreachable!("Handled above"),
                 };
                 // The primary is guaranteed-invalid if it's absent from the map, or still
                 // present but unresolved (i.e. part of a cycle currently being resolved).
@@ -2367,7 +2365,7 @@ fn substitute_all(
                     }
                 }
 
-                if !primary_valid && let Some(ref fallback) = next.fallback {
+                if !primary_valid && let Some(fallback) = next.function.fallback() {
                     refs_stack.push(&fallback.references);
                 }
             }

@@ -5,10 +5,10 @@
 //! The context within which CSS code is parsed.
 
 use crate::context::QuirksMode;
-use crate::custom_properties::{AttrTaint, AttrTaintedRange};
 use crate::error_reporting::{ContextualParseError, ParseErrorReporter};
 use crate::properties::PropertyIdRef;
 use crate::stylesheets::{CssRuleType, CssRuleTypes, Namespaces, Origin, UrlExtraData};
+use crate::substitution::{AttrTaint, AttrTaintedRange};
 use crate::use_counters::UseCounters;
 use cssparser::{Parser, SourceLocation, UnicodeRange};
 use selectors::parser::ParseRelative;

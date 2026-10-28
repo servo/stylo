@@ -41,7 +41,7 @@ impl CssUrl {
         context: &ParserContext,
         cors_mode: CorsMode,
     ) -> Result<Self, ParseError> {
-        use crate::custom_properties::AttrTaintedRange;
+        use crate::substitution::AttrTaintedRange;
         use style_traits::StyleParseErrorKind;
         let range = AttrTaintedRange::new(url_start, url_end);
         if context.disallow_urls_in_range(&range) {

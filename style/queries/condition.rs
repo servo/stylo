@@ -22,6 +22,7 @@ use crate::properties_and_values::value::{
 use crate::stylesheets::container_rule::AttrReferenceSet;
 use crate::stylesheets::{CssRuleType, CustomMediaEvaluator, Origin, UrlExtraData};
 use crate::stylist::Stylist;
+use crate::substitution;
 use crate::values::{AtomString, DashedIdent, computed};
 use crate::{error_reporting::ContextualParseError, parser::Parse, parser::ParserContext};
 use cssparser::{
@@ -434,18 +435,17 @@ impl StyleFeaturePlain {
             Some(ctx.inherited_custom_properties().clone()),
             None,
         );
-        let custom_properties::SubstitutionResult { css, attr_taint } =
-            match custom_properties::substitute(
-                value,
-                /* property_id */ None,
-                &substitution_functions,
-                stylist,
-                ctx,
-                attribute_tracker,
-            ) {
-                Ok(sub) => sub,
-                Err(_) => return current_value.is_none(),
-            };
+        let substitution::SubstitutionResult { css, attr_taint } = match substitution::substitute(
+            value,
+            /* property_id */ None,
+            &substitution_functions,
+            stylist,
+            ctx,
+            attribute_tracker,
+        ) {
+            Ok(sub) => sub,
+            Err(_) => return current_value.is_none(),
+        };
         if registration.is_universal() {
             return match current_value {
                 Some(v) => v.as_universal().is_some_and(|v| v.css == css),
@@ -892,18 +892,17 @@ impl QueryCondition {
             Some(context.inherited_custom_properties().clone()),
             None,
         );
-        let custom_properties::SubstitutionResult { css, attr_taint } =
-            match custom_properties::substitute(
-                &value,
-                /* property_id */ None,
-                &substitution_functions,
-                stylist,
-                context,
-                attribute_tracker,
-            ) {
-                Ok(sub) => sub,
-                Err(_) => return KleeneValue::Unknown,
-            };
+        let substitution::SubstitutionResult { css, attr_taint } = match substitution::substitute(
+            &value,
+            /* property_id */ None,
+            &substitution_functions,
+            stylist,
+            context,
+            attribute_tracker,
+        ) {
+            Ok(sub) => sub,
+            Err(_) => return KleeneValue::Unknown,
+        };
 
         // Re-parse the result as a query-condition, and evaluate it.
         let parser_context = ParserContext::new(

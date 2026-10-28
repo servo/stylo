@@ -210,10 +210,6 @@ impl Parse for Content {
                         "no-open-quote" => generics::ContentItem::NoOpenQuote,
                         "no-close-quote" => generics::ContentItem::NoCloseQuote,
                         #[cfg(feature = "gecko")]
-                        "-moz-alt-content" if context.in_ua_sheet() => {
-                            generics::ContentItem::MozAltContent
-                        },
-                        #[cfg(feature = "gecko")]
                         "-moz-label-content" if context.chrome_rules_enabled() => {
                             generics::ContentItem::MozLabelContent
                         },

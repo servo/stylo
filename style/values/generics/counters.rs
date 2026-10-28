@@ -305,9 +305,6 @@ pub enum GenericContentItem<I> {
     NoOpenQuote,
     /// `no-close-quote`.
     NoCloseQuote,
-    /// `-moz-alt-content`.
-    #[cfg(feature = "gecko")]
-    MozAltContent,
     /// `-moz-label-content`.
     /// This is needed to make `accesskey` work for XUL labels. It's basically
     /// attr(value) otherwise.

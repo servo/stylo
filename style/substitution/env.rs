@@ -182,7 +182,11 @@ fn eval_gtk_csd_titlebar_radius(device: &Device, url_data: &UrlExtraData) -> Var
     VariableValue::pixels(int_pixels as f32 * unzoomed_scale, url_data)
 }
 
-static CHROME_ENVIRONMENT_VARIABLES: [EnvironmentVariable; 9] = [
+fn get_submit_string(device: &Device, url_data: &UrlExtraData) -> VariableValue {
+    VariableValue::string(device.submit_string(), url_data)
+}
+
+static CHROME_ENVIRONMENT_VARIABLES: [EnvironmentVariable; 10] = [
     make_variable!(
         atom!("-moz-gtk-csd-titlebar-radius"),
         eval_gtk_csd_titlebar_radius
@@ -218,6 +222,7 @@ static CHROME_ENVIRONMENT_VARIABLES: [EnvironmentVariable; 9] = [
     ),
     make_variable!(atom!("scrollbar-inline-size"), get_scrollbar_inline_size),
     make_variable!(atom!("hairline"), get_hairline),
+    make_variable!(atom!("-moz-submit-string"), get_submit_string),
 ];
 
 impl CssEnvironment {

@@ -1464,11 +1464,10 @@ impl<'le> TElement for GeckoElement<'le> {
     #[inline]
     fn may_have_animations(&self) -> bool {
         if let Some(pseudo) = self.implemented_pseudo_element()
-            && pseudo.animations_stored_in_parent()
+            && pseudo.animations_stored_in_originating_element()
         {
-            // FIXME(emilio): When would the parent of a ::before / ::after
-            // pseudo-element be null?
-            return self.parent_element().is_some_and(|p| {
+            // FIXME(emilio): When would the originating element be null here?
+            return self.pseudo_element_originating_element().is_some_and(|p| {
                 p.as_node()
                     .get_bool_flag(nsINode_BooleanFlag::ElementHasAnimations)
             });

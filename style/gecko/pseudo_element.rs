@@ -389,14 +389,13 @@ impl PseudoElement {
         EAGER_PSEUDOS[i].clone()
     }
 
-    /// Whether animations for the current pseudo element are stored in the
-    /// parent element.
+    /// Whether animations for the current pseudo element are stored in the originating element.
     #[inline]
-    pub fn animations_stored_in_parent(&self) -> bool {
+    pub fn animations_stored_in_originating_element(&self) -> bool {
         matches!(
             *self,
-            Self::Before | Self::After | Self::Marker | Self::Backdrop
-        )
+            Self::Before | Self::After | Self::Marker | Self::Backdrop | Self::ViewTransition
+        ) || self.is_named_view_transition()
     }
 
     /// Whether this pseudo-element is the ::before pseudo.

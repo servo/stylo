@@ -640,16 +640,7 @@ pub trait CalcNodeLeaf: Clone + Sized + PartialEq + ToCss + ToTyped + fmt::Debug
 
     /// Create a new leaf containing the sign() result of the given leaf.
     fn sign_from(leaf: &impl CalcNodeLeaf) -> Result<Self, ()> {
-        // Percentages with a non-<percent> hint are relative to some basis value, and since the basis value is
-        // unknown at this stage, the actual sign of the percentage value is also unknown.
-        if leaf
-            .as_percentage()
-            .is_some_and(|(_, hint)| hint != Optional::Some(NumericBaseType::Percent))
-        {
-            return Err(());
-        }
-
-        let Some(value) = leaf.unitless_value() else {
+        let Some(value) = leaf.canonical_value() else {
             return Err(());
         };
 

@@ -1299,12 +1299,7 @@ impl PaintWorklet {
             .try_parse(|input| {
                 input.expect_comma()?;
                 input.parse_comma_separated(|input| {
-                    SpecifiedValue::parse(
-                        input,
-                        Some(&context.namespaces.prefixes),
-                        &context.url_data,
-                    )
-                    .map(Arc::new)
+                    SpecifiedValue::parse(context, input).map(Arc::new)
                 })
             })
             .unwrap_or_default();

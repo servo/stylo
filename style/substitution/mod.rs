@@ -9,20 +9,20 @@ pub mod attr;
 pub mod env;
 pub mod var;
 
-use crate::FxHashMap;
 use crate::custom_properties::{
     ComputedSubstitutionFunctions, ComputedValue, Name, VariableValue, compute_value,
 };
+use crate::derives::*;
 use crate::dom::AttributeTracker;
+use crate::parser::{Parse, ParserContext};
 use crate::properties::PropertyIdRef;
 use crate::properties_and_values::{
     rule::Descriptors as PropertyDescriptors, value::ComputedValue as ComputedRegisteredValue,
 };
-use crate::stylesheets::UrlExtraData;
+use crate::stylesheets::{Origin, UrlExtraData};
 use crate::stylist::Stylist;
 use crate::values::computed;
 use crate::values::specified::NoCalcLength;
-use crate::{Namespace, Prefix, derives::*};
 use cssparser::{
     CowRcStr, Delimiter, Delimiters, Parser, SourcePosition, Token, TokenSerializationType,
 };
@@ -31,7 +31,7 @@ use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::num;
 use strum::VariantNames;
-use style_traits::{ParseError, StyleParseErrorKind};
+use style_traits::{ParseError, ParsingMode, StyleParseErrorKind};
 
 pub use self::attr::AttrFunction;
 pub use self::env::EnvFunction;
@@ -51,23 +51,20 @@ pub enum SubstitutionFunctionKind {
 
 /// Context for parsing an arbitrary substitution function.
 pub struct SubstitutionParserContext<'a> {
+    /// Original parser context.
+    pub parser_context: &'a ParserContext<'a>,
     /// The start of the value being parsed. Positions are recorded relative to this.
     pub input_start: SourcePosition,
-    /// The namespace prefixes in scope, for `attr()`.
-    pub namespaces: Option<&'a FxHashMap<Prefix, Namespace>>,
     /// Closing characters implied by EOF, to be appended to the value's serialization.
     pub missing_closing_characters: String,
 }
 
 impl<'a> SubstitutionParserContext<'a> {
     /// Creates a parser context for a value starting at `input_start`.
-    pub fn new(
-        input_start: SourcePosition,
-        namespaces: Option<&'a FxHashMap<Prefix, Namespace>>,
-    ) -> Self {
+    pub fn new(parser_context: &'a ParserContext<'a>, input_start: SourcePosition) -> Self {
         Self {
+            parser_context,
             input_start,
-            namespaces,
             missing_closing_characters: String::new(),
         }
     }
@@ -163,7 +160,6 @@ impl ArbitraryDeclarationValue {
 fn parse_optional_fallback(
     input: &mut Parser,
     context: &mut SubstitutionParserContext,
-    input_end_position: &mut Option<SourcePosition>,
 ) -> Result<Option<ArbitraryDeclarationValue>, ParseError> {
     if input.try_parse(|input| input.expect_comma()).is_ok() {
         let (fallback, _) = ArbitraryDeclarationValue::parse_free_form(
@@ -172,8 +168,6 @@ fn parse_optional_fallback(
             Delimiter::None,
             /* is_non_strict */ true,
         )?;
-        input.expect_exhausted()?;
-        *input_end_position = Some(input.position());
         Ok(Some(fallback))
     } else {
         let state = input.state();
@@ -182,7 +176,6 @@ fn parse_optional_fallback(
         // invalid, by calling reset().
         let mut ignored_references = References::default();
         parse_declaration_value_block(input, context, &mut ignored_references)?;
-        *input_end_position = Some(input.position());
         input.reset(&state);
         Ok(None)
     }
@@ -281,12 +274,11 @@ fn parse_declaration_value_block(
                     let start = token_start.byte_index() - context.input_start.byte_index();
                     let mut input_end_position = None;
                     let function = input.parse_nested_block(|input| {
-                        SubstitutionFunction::parse(
-                            substitution_kind,
-                            input,
-                            context,
-                            &mut input_end_position,
-                        )
+                        let function =
+                            SubstitutionFunction::parse(substitution_kind, input, context)?;
+                        input.expect_exhausted()?;
+                        input_end_position = Some(input.position());
+                        Ok(function)
                     })?;
                     if input_end_position.unwrap() == input.position() {
                         context.missing_closing_characters.push(')');
@@ -368,19 +360,15 @@ pub enum SubstitutionArgument<T> {
     Invalid,
 }
 
-impl<T> SubstitutionArgument<T> {
+impl<T: Parse> SubstitutionArgument<T> {
     /// Parses the argument as a `<declaration-value>`. If it has no nested substitution
-    /// functions, it is also parsed with `f` right away, giving `Parsed` or `Invalid`;
-    /// otherwise it is kept as `Unparsed`, to be parsed at substitution time.
-    pub fn try_parse<F>(
+    /// functions, it is also parsed right away, giving `Parsed` or `Invalid`; otherwise
+    /// it is kept as `Unparsed`, to be parsed at substitution time.
+    pub fn try_parse(
         input: &mut Parser,
         context: &mut SubstitutionParserContext,
         delimiters: Delimiters,
-        f: F,
-    ) -> Result<Self, ParseError>
-    where
-        F: FnOnce(&mut Parser, &mut SubstitutionParserContext) -> Result<T, ParseError>,
-    {
+    ) -> Result<Self, ParseError> {
         let (value, css) = ArbitraryDeclarationValue::parse_free_form(
             input, context, delimiters, /* is_non_strict */ false,
         )?;
@@ -388,7 +376,10 @@ impl<T> SubstitutionArgument<T> {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         if !value.references.has_references() {
-            if let Ok(result) = Parser::new(css).parse_entirely(|input| f(input, context)) {
+            let parser_context = context.parser_context;
+            if let Ok(result) =
+                Parser::new(css).parse_entirely(|input| T::parse(parser_context, input))
+            {
                 return Ok(Self::Parsed(result));
             }
             return Ok(Self::Invalid);
@@ -397,18 +388,14 @@ impl<T> SubstitutionArgument<T> {
     }
 }
 
-impl<T: Clone> SubstitutionArgument<T> {
+impl<T: Clone + Parse> SubstitutionArgument<T> {
     /// Returns the argument, first substituting its nested references and
     /// parsing it into `T` via `parse` if it is `Unparsed`.
-    pub fn substitute_and_parse<'a, F>(
+    pub fn substitute_and_parse<'a>(
         &'a self,
         source: &'a VariableValue,
         context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
-        parse: F,
-    ) -> ParsedArgument<'a, T>
-    where
-        F: FnOnce(&mut Parser) -> Result<T, ParseError>,
-    {
+    ) -> ParsedArgument<'a, T> {
         let arg = match self {
             Self::Unparsed(arg) => arg,
             Self::Parsed(value) => {
@@ -430,9 +417,10 @@ impl<T: Clone> SubstitutionArgument<T> {
                 attr_tainted: false,
             };
         };
+        let parser_context = context.parser_context(&source.url_data);
         ParsedArgument {
             value: Parser::new(&substitution.css)
-                .parse_entirely(parse)
+                .parse_entirely(|input| T::parse(&parser_context, input))
                 .ok()
                 .map(Cow::Owned),
             attr_tainted: substitution.attr_tainted,
@@ -466,18 +454,11 @@ impl SubstitutionFunction {
         kind: SubstitutionFunctionKind,
         input: &mut Parser,
         context: &mut SubstitutionParserContext,
-        input_end_position: &mut Option<SourcePosition>,
     ) -> Result<Self, ParseError> {
         Ok(match kind {
-            SubstitutionFunctionKind::Var => {
-                Self::Var(VarFunction::parse(input, context, input_end_position)?)
-            },
-            SubstitutionFunctionKind::Env => {
-                Self::Env(EnvFunction::parse(input, context, input_end_position)?)
-            },
-            SubstitutionFunctionKind::Attr => {
-                Self::Attr(AttrFunction::parse(input, context, input_end_position)?)
-            },
+            SubstitutionFunctionKind::Var => Self::Var(VarFunction::parse(input, context)?),
+            SubstitutionFunctionKind::Env => Self::Env(EnvFunction::parse(input, context)?),
+            SubstitutionFunctionKind::Attr => Self::Attr(AttrFunction::parse(input, context)?),
         })
     }
 
@@ -899,6 +880,22 @@ impl<'a, 'b, 'c, 't> SubstitutionReplacementContext<'a, 'b, 'c, 't> {
             )?;
         }
         Ok(Substitution::from_value(substituted, attr_tainted))
+    }
+
+    /// Build the context to use when parsing values during substitution.
+    pub fn parser_context(&self, url_data: &'b UrlExtraData) -> ParserContext<'b> {
+        ParserContext::new_with_property_id(
+            Origin::Author,
+            url_data,
+            None,
+            ParsingMode::DEFAULT,
+            self.computed_context.quirks_mode,
+            /* namespaces = */ Default::default(),
+            None,
+            None,
+            AttrTaint::default(),
+            self.property_id,
+        )
     }
 }
 

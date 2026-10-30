@@ -2302,9 +2302,14 @@ fn substitute_all(
                         };
 
                         let device = context.stylist.device();
+                        let replacement_context = context.replacement_context(property_id);
                         let present = name
                             .and_then(|name| {
-                                device.environment().get(&name, device, &source.url_data)
+                                device.environment().get(
+                                    &name.0,
+                                    device,
+                                    &replacement_context.parser_context(&source.url_data),
+                                )
                             })
                             .is_some();
                         if !present && let Some(ref fallback) = env_fn.fallback {
@@ -2318,10 +2323,11 @@ fn substitute_all(
                                 if check_declaration_value_cycle!(arg) {
                                     continue;
                                 }
-                                let mut replacement_context =
-                                    context.replacement_context(property_id);
                                 attr_fn
-                                    .replace_arg(source, &mut replacement_context)
+                                    .replace_arg(
+                                        source,
+                                        &mut context.replacement_context(property_id),
+                                    )
                                     .value
                                     .map(|arg| Cow::Owned(arg.into_owned()))
                             },
@@ -2342,8 +2348,8 @@ fn substitute_all(
                         }
                         if context.map().get_attr(&arg.name.name).is_none()
                             && let Ok(val) = arg.name.value_for_cycle_resolution(
+                                &mut context.replacement_context(property_id),
                                 &source.url_data,
-                                context.attribute_tracker,
                             )
                         {
                             context.map_mut().insert_attr(&arg.name.name, val);
@@ -2375,7 +2381,7 @@ fn substitute_all(
                             }
                             continue;
                         };
-                        (VarType::Custom(name.into_owned()), var_fn.fallback.as_ref())
+                        (VarType::Custom(name.0.clone()), var_fn.fallback.as_ref())
                     },
                 };
 

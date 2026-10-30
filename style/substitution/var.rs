@@ -10,15 +10,29 @@ use super::{
     SubstitutionParserContext, SubstitutionReplacementContext, parse_optional_fallback,
 };
 use crate::custom_properties::{Name, VariableValue, parse_name};
+use crate::parser::Parse;
 use crate::{Atom, derives::*};
-use cssparser::{Delimiter, Parser, SourcePosition};
+use cssparser::{Delimiter, Parser};
 use style_traits::{ParseError, StyleParseErrorKind};
+
+/// A custom property name, without the leading `--`.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct CustomPropertyName(pub Name);
+
+impl Parse for CustomPropertyName {
+    fn parse(_: &crate::parser::ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        parse_name(input.expect_ident()?.as_ref())
+            .map(Atom::from)
+            .map(CustomPropertyName)
+            .map_err(|_| ParseError::custom(StyleParseErrorKind::UnexpectedIdent))
+    }
+}
 
 /// Data specific to a `var()` function.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 pub struct VarFunction {
     /// The referenced custom property name.
-    pub name: SubstitutionArgument<Name>,
+    pub name: SubstitutionArgument<CustomPropertyName>,
     /// The fallback for this function, if any.
     pub fallback: Option<ArbitraryDeclarationValue>,
 }
@@ -30,13 +44,9 @@ impl VarFunction {
     pub fn parse(
         input: &mut Parser,
         context: &mut SubstitutionParserContext,
-        input_end_position: &mut Option<SourcePosition>,
     ) -> Result<Self, ParseError> {
-        let name =
-            SubstitutionArgument::try_parse(input, context, Delimiter::Comma, |input, _| {
-                parse_custom_property_name(input)
-            })?;
-        let fallback = parse_optional_fallback(input, context, input_end_position)?;
+        let name = SubstitutionArgument::try_parse(input, context, Delimiter::Comma)?;
+        let fallback = parse_optional_fallback(input, context)?;
         Ok(Self { name, fallback })
     }
 
@@ -50,7 +60,7 @@ impl VarFunction {
         let name = self.replace_name(source, context);
         let mut substitution = name
             .value
-            .and_then(|name| Self::resolve_custom_property(&name, context))
+            .and_then(|name| Self::resolve_custom_property(&name.0, context))
             .ok_or(())
             .or_else(|_| {
                 context.substitute_declaration_value(self.fallback.as_ref().ok_or(())?, source)
@@ -105,9 +115,8 @@ impl VarFunction {
         &'a self,
         source: &'a VariableValue,
         context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
-    ) -> ParsedArgument<'a, Name> {
-        self.name
-            .substitute_and_parse(source, context, parse_custom_property_name)
+    ) -> ParsedArgument<'a, CustomPropertyName> {
+        self.name.substitute_and_parse(source, context)
     }
 
     /// Calls `f` for each arbitrary declaration value nested in the function.
@@ -122,10 +131,4 @@ impl VarFunction {
             f(fallback);
         }
     }
-}
-
-fn parse_custom_property_name(input: &mut Parser) -> Result<Name, ParseError> {
-    parse_name(input.expect_ident()?.as_ref())
-        .map(Atom::from)
-        .map_err(|_| ParseError::custom(StyleParseErrorKind::UnexpectedIdent))
 }

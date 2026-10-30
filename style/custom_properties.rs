@@ -6,9 +6,9 @@
 //!
 //! [custom]: https://drafts.csswg.org/css-variables/
 
-use crate::FxHashMap;
 use crate::custom_properties_map::{CustomPropertiesMap, OwnMap};
 use crate::dom::AttributeTracker;
+use crate::parser::ParserContext;
 use crate::properties::{CSSWideKeyword, PrioritaryPropertyId, PropertyIdRef};
 use crate::properties_and_values::{
     rule::Descriptors as PropertyDescriptors,
@@ -29,7 +29,7 @@ use crate::typed_om::{
     ToTyped, TypedValue, UnparsedSegment, UnparsedValue, VariableReferenceValue,
 };
 use crate::values::computed;
-use crate::{Atom, Namespace, Prefix, derives::*};
+use crate::{Atom, derives::*};
 use cssparser::{CowRcStr, Delimiter, Parser, Token, TokenSerializationType};
 use servo_arc::Arc;
 use std::fmt::{self, Write};
@@ -201,7 +201,7 @@ fn reify_variable_value_range(
             return Err(());
         };
         values.push(UnparsedSegment::VariableReference(VariableReferenceValue {
-            variable: CssString::from(format!("--{}", name)),
+            variable: CssString::from(format!("--{}", name.0)),
             fallback,
             has_fallback,
         }));
@@ -527,14 +527,10 @@ impl VariableValue {
     }
 
     /// Parse a custom property value.
-    pub fn parse(
-        input: &mut Parser,
-        namespaces: Option<&FxHashMap<Prefix, Namespace>>,
-        url_data: &UrlExtraData,
-    ) -> Result<Self, ParseError> {
+    pub fn parse(parser_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         let mut references = References::default();
         let start_position = input.position();
-        let mut context = SubstitutionParserContext::new(start_position, namespaces);
+        let mut context = SubstitutionParserContext::new(parser_context, start_position);
         let (first_token_type, last_token_type) =
             parse_declaration_value(input, &mut context, &mut references, Delimiter::None)?;
         let mut css = input
@@ -560,7 +556,7 @@ impl VariableValue {
 
         Ok(Self {
             css,
-            url_data: url_data.clone(),
+            url_data: parser_context.url_data.clone(),
             first_token_type,
             last_token_type,
             references,
@@ -885,7 +881,6 @@ pub fn compute_value(
     SpecifiedRegisteredValue::compute(
         &mut input,
         registration,
-        None,
         url_data,
         computed_context,
         AllowComputationallyDependent::Yes,

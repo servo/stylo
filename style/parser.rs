@@ -82,6 +82,20 @@ pub struct PropertyDeclarationContext<'a> {
 }
 
 impl<'a> PropertyDeclarationContext<'a> {
+    fn set(&mut self, property_id: PropertyIdRef<'a>) {
+        debug_assert!(
+            self.property_id.is_none(),
+            "Previous declaration should be empty"
+        );
+        self.property_id = Some(property_id);
+        self.random_count.set(0);
+    }
+
+    fn clear(&mut self) {
+        self.property_id = None;
+        self.random_count.set(0);
+    }
+
     /// The declaration being parsed, if any.
     pub fn property_id(&self) -> Option<PropertyIdRef<'a>> {
         self.property_id
@@ -122,7 +136,7 @@ pub struct ParserContext<'a> {
     /// Current nesting context.
     pub nesting_context: NestingContext,
     /// The relevant regions in the input that have been tainted by attr() if relevant.
-    pub attr_tainted_regions: Cow<'a, AttrTaint>,
+    pub attr_tainted_regions: AttrTaint,
     /// Current property declaration context.
     pub property_declaration_context: PropertyDeclarationContext<'a>,
 }
@@ -150,64 +164,22 @@ impl<'a> ParserContext<'a> {
             namespaces,
             use_counters,
             nesting_context: NestingContext::new_from_rule(rule_type),
-            attr_tainted_regions: Cow::Owned(attr_tainted_regions),
+            attr_tainted_regions,
             property_declaration_context: Default::default(),
         }
     }
 
-    /// Create a parser context with the given property ID.
-    #[inline]
-    pub fn new_with_property_id(
-        stylesheet_origin: Origin,
-        url_data: &'a UrlExtraData,
-        rule_type: Option<CssRuleType>,
-        parsing_mode: ParsingMode,
-        quirks_mode: QuirksMode,
-        namespaces: Cow<'a, Namespaces>,
-        error_reporter: Option<&'a dyn ParseErrorReporter>,
-        use_counters: Option<&'a UseCounters>,
-        attr_tainted_regions: AttrTaint,
-        property_id: Option<PropertyIdRef<'a>>,
-    ) -> Self {
-        Self {
-            stylesheet_origin,
-            url_data,
-            parsing_mode,
-            quirks_mode,
-            error_reporter,
-            namespaces,
-            use_counters,
-            nesting_context: NestingContext::new_from_rule(rule_type),
-            attr_tainted_regions: Cow::Owned(attr_tainted_regions),
-            property_declaration_context: PropertyDeclarationContext {
-                property_id,
-                ..Default::default()
-            },
-        }
-    }
-
-    /// Constructs a temporary ParserContext with the given property ID, passes it to the
-    /// callback and returns its result.
-    pub fn with_property_id<'b, R>(
-        &'b self,
-        property_id: Option<PropertyIdRef<'b>>,
-        cb: impl FnOnce(&ParserContext<'b>) -> R,
+    /// Temporarily sets the property declaration context and executes the callback function,
+    /// returning its result.
+    pub fn with_property_declaration<R>(
+        &mut self,
+        property_id: PropertyIdRef<'a>,
+        cb: impl FnOnce(&Self) -> R,
     ) -> R {
-        cb(&ParserContext {
-            stylesheet_origin: self.stylesheet_origin,
-            url_data: self.url_data,
-            parsing_mode: self.parsing_mode,
-            quirks_mode: self.quirks_mode,
-            error_reporter: self.error_reporter,
-            namespaces: Cow::Borrowed(&*self.namespaces),
-            use_counters: self.use_counters,
-            nesting_context: self.nesting_context,
-            attr_tainted_regions: Cow::Borrowed(&*self.attr_tainted_regions),
-            property_declaration_context: PropertyDeclarationContext {
-                property_id,
-                ..Default::default()
-            },
-        })
+        self.property_declaration_context.set(property_id);
+        let r = cb(self);
+        self.property_declaration_context.clear();
+        r
     }
 
     /// Temporarily sets the rule_type and executes the callback function, returning its result.

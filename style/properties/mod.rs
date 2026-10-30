@@ -857,7 +857,11 @@ fn parse_non_custom_property_declaration_value_into(
         return Err(err);
     }
     input.reset(start);
-    let value = custom_properties::VariableValue::parse(context, input)?;
+    let value = custom_properties::VariableValue::parse(
+        input,
+        Some(&context.namespaces.prefixes),
+        context.url_data,
+    )?;
     parsed_custom(declarations, value);
     Ok(())
 }
@@ -961,12 +965,13 @@ impl PropertyDeclaration {
             PropertyId::Custom(property_name) => {
                 let value = match input.try_parse(CSSWideKeyword::parse) {
                     Ok(keyword) => CustomDeclarationValue::CSSWideKeyword(keyword),
-                    Err(()) => {
-                        CustomDeclarationValue::Unparsed(Arc::new(context.with_property_id(
-                            Some(PropertyIdRef::from(&property_name)),
-                            |context| custom_properties::VariableValue::parse(context, input),
-                        )?))
-                    },
+                    Err(()) => CustomDeclarationValue::Unparsed(Arc::new(
+                        custom_properties::VariableValue::parse(
+                            input,
+                            Some(&context.namespaces.prefixes),
+                            context.url_data,
+                        )?,
+                    )),
                 };
                 declarations.push(PropertyDeclaration::Custom(CustomDeclaration {
                     name: property_name,
@@ -977,7 +982,7 @@ impl PropertyDeclaration {
             PropertyId::NonCustom(id) => id,
         };
 
-        context.with_property_id(Some(PropertyIdRef::from(non_custom_id)), |context| {
+        context.with_property_declaration(PropertyIdRef::from(non_custom_id), |context| {
             match non_custom_id.longhand_or_shorthand() {
                 Ok(longhand_id) => {
                     parse_non_custom_property_declaration_value_into(
@@ -1687,7 +1692,7 @@ impl UnparsedValue {
         // whether you want to do this!
         //
         // FIXME(emilio): ParsingMode is slightly fishy...
-        let context = ParserContext::new_with_property_id(
+        let mut context = ParserContext::new(
             Origin::Author,
             &self.variable_value.url_data,
             None,
@@ -1697,7 +1702,6 @@ impl UnparsedValue {
             None,
             None,
             attr_taint,
-            Some(property_id),
         );
 
         let mut input = Parser::new(&css);
@@ -1709,8 +1713,9 @@ impl UnparsedValue {
 
         let shorthand = match self.from_shorthand {
             None => {
-                return match input.parse_entirely(|input| longhand_id.parse_value(&context, input))
-                {
+                return match context.with_property_declaration(property_id, |context| {
+                    input.parse_entirely(|input| longhand_id.parse_value(context, input))
+                }) {
                     Ok(decl) => Cow::Owned(decl),
                     Err(..) => invalid_at_computed_value_time(),
                 };
@@ -1720,8 +1725,10 @@ impl UnparsedValue {
 
         let mut decls = SourcePropertyDeclaration::default();
         // parse_into takes care of doing `parse_entirely` for us.
-        if shorthand
-            .parse_into(&mut decls, &context, &mut input)
+        if context
+            .with_property_declaration(property_id, |context| {
+                shorthand.parse_into(&mut decls, context, &mut input)
+            })
             .is_err()
         {
             return invalid_at_computed_value_time();

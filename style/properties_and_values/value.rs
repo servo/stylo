@@ -10,6 +10,7 @@ use super::{
         Component as SyntaxComponent, ComponentName, Descriptor, Multiplier, data_type::DataType,
     },
 };
+use crate::FxHashMap;
 use crate::custom_properties::ComputedValue as ComputedPropertyValue;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
@@ -23,6 +24,7 @@ use crate::values::{
     computed::{self, ToComputedValue},
     specified,
 };
+use crate::{Namespace, Prefix};
 use cssparser::{BasicParseErrorKind, ParseErrorKind, Parser as CSSParser, TokenSerializationType};
 use selectors::matching::QuirksMode;
 use servo_arc::Arc;
@@ -316,6 +318,7 @@ impl SpecifiedValue {
     pub fn compute(
         input: &mut CSSParser,
         registration: &PropertyDescriptors,
+        namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         url_data: &UrlExtraData,
         context: &computed::Context,
         allow_computationally_dependent: AllowComputationallyDependent,
@@ -330,6 +333,7 @@ impl SpecifiedValue {
             input,
             syntax,
             url_data,
+            namespaces,
             allow_computationally_dependent,
             attr_taint,
             property_id,
@@ -346,29 +350,13 @@ impl SpecifiedValue {
         input: &mut CSSParser,
         syntax: &Descriptor,
         url_data: &UrlExtraData,
+        namespaces: Option<&FxHashMap<Prefix, Namespace>>,
         allow_computationally_dependent: AllowComputationallyDependent,
         attr_taint: AttrTaint,
         property_id: Option<PropertyIdRef>,
     ) -> Result<Self, StyleParseError> {
-        let parsing_mode = match allow_computationally_dependent {
-            AllowComputationallyDependent::No => ParsingMode::DISALLOW_COMPUTATIONALLY_DEPENDENT,
-            AllowComputationallyDependent::Yes => ParsingMode::DEFAULT,
-        };
-        let context = ParserContext::new_with_property_id(
-            Origin::Author,
-            url_data,
-            Some(CssRuleType::Style),
-            parsing_mode,
-            QuirksMode::NoQuirks,
-            /* namespaces = */ Default::default(),
-            None,
-            None,
-            attr_taint,
-            property_id,
-        );
-
         if syntax.is_universal() {
-            let parsed = ComputedPropertyValue::parse(&context, input)?;
+            let parsed = ComputedPropertyValue::parse(input, namespaces, url_data)?;
             return Ok(Self::new(
                 ValueInner::Universal(Arc::new(parsed)),
                 url_data.clone(),
@@ -379,7 +367,13 @@ impl SpecifiedValue {
         let mut multiplier = None;
         {
             let mut parser = Parser::new(syntax, &mut values, &mut multiplier);
-            parser.parse(&context, input)?;
+            parser.parse(
+                input,
+                url_data,
+                allow_computationally_dependent,
+                attr_taint,
+                property_id,
+            )?;
         }
         let v = if let Some(multiplier) = multiplier {
             ValueInner::List(ComponentList {
@@ -460,19 +454,45 @@ impl<'a> Parser<'a> {
 
     fn parse(
         &mut self,
-        context: &ParserContext,
         input: &mut CSSParser,
+        url_data: &UrlExtraData,
+        allow_computationally_dependent: AllowComputationallyDependent,
+        attr_taint: AttrTaint,
+        property_id: Option<PropertyIdRef>,
     ) -> Result<(), StyleParseError> {
-        for component in self.syntax.components.iter() {
-            let result = input.try_parse(|input| {
-                input.parse_entirely(|input| {
-                    Self::parse_value(context, input, &component.unpremultiplied())
-                })
-            });
-            let Ok(values) = result else { continue };
-            self.output.extend(values);
-            *self.output_multiplier = component.multiplier();
-            break;
+        use self::AllowComputationallyDependent::*;
+        let parsing_mode = match allow_computationally_dependent {
+            No => ParsingMode::DISALLOW_COMPUTATIONALLY_DEPENDENT,
+            Yes => ParsingMode::DEFAULT,
+        };
+        let mut context = ParserContext::new(
+            Origin::Author,
+            url_data,
+            Some(CssRuleType::Style),
+            parsing_mode,
+            QuirksMode::NoQuirks,
+            /* namespaces = */ Default::default(),
+            None,
+            None,
+            attr_taint,
+        );
+
+        let mut parse_components = |context: &ParserContext| {
+            for component in self.syntax.components.iter() {
+                let result = input.try_parse(|input| {
+                    input.parse_entirely(|input| {
+                        Self::parse_value(context, input, &component.unpremultiplied())
+                    })
+                });
+                let Ok(values) = result else { continue };
+                self.output.extend(values);
+                *self.output_multiplier = component.multiplier();
+                break;
+            }
+        };
+        match property_id {
+            Some(id) => context.with_property_declaration(id, parse_components),
+            None => parse_components(&context),
         }
         if self.output.is_empty() {
             return Err(StyleParseError::from_basic_kind(
@@ -688,6 +708,7 @@ impl CustomAnimatedValue {
                     SpecifiedValue::compute(
                         &mut input,
                         registration,
+                        None,
                         &value.url_data,
                         context,
                         AllowComputationallyDependent::Yes,

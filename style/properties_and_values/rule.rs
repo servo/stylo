@@ -171,6 +171,7 @@ impl PropertyRegistration {
         match SpecifiedRegisteredValue::compute(
             &mut input,
             &self.descriptors,
+            None,
             &self.url_data,
             computed_context,
             AllowComputationallyDependent::No,
@@ -223,6 +224,7 @@ impl PropertyRegistration {
             &mut input,
             syntax,
             &initial.url_data,
+            None,
             AllowComputationallyDependent::No,
             /* attr_taint */ Default::default(),
             Some(property_id),
@@ -305,7 +307,11 @@ pub type InitialValue = Arc<SpecifiedValue>;
 impl Parse for InitialValue {
     fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         input.skip_whitespace();
-        Ok(Arc::new(SpecifiedValue::parse(context, input)?))
+        Ok(Arc::new(SpecifiedValue::parse(
+            input,
+            Some(&context.namespaces.prefixes),
+            context.url_data,
+        )?))
     }
 }
 

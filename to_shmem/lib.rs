@@ -12,7 +12,7 @@
 #![crate_name = "to_shmem"]
 #![crate_type = "rlib"]
 
-use hashbrown::{HashMap, HashSet};
+use hashbrown::HashSet;
 use std::alloc::Layout;
 use std::ffi::CString;
 use std::marker::PhantomData;
@@ -385,18 +385,6 @@ where
             return Err("ToShmem failed for HashSet: We only support empty sets \
                  (we don't expect custom properties in UA sheets, they're observable by content)"
                 .to_string());
-        }
-        Ok(ManuallyDrop::new(Self::default()))
-    }
-}
-
-impl<K: ToShmem, V: ToShmem, S> ToShmem for HashMap<K, V, S>
-where
-    Self: Default,
-{
-    fn to_shmem(&self, _builder: &mut SharedMemoryBuilder) -> Result<Self> {
-        if !self.is_empty() {
-            return Err("ToShmem failed for HashMap: We only support empty maps".to_string());
         }
         Ok(ManuallyDrop::new(Self::default()))
     }

@@ -805,11 +805,7 @@ impl QueryExpressionValue {
             // name and parenthesized argument) into a CustomVariableValue.
             let parse_func = |input: &mut Parser| -> Result<CustomVariableValue, ParseError> {
                 input.parse_nested_block(|i| i.expect_no_error_token().map_err(Into::into))?;
-                CustomVariableValue::parse(
-                    &mut Parser::new(input.slice_from(start)),
-                    Some(&context.namespaces.prefixes),
-                    context.url_data,
-                )
+                CustomVariableValue::parse(context, &mut Parser::new(input.slice_from(start)))
             };
 
             if SubstitutionFunctionKind::from_ident(name).is_ok() {

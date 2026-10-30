@@ -11,16 +11,29 @@ use super::{
 };
 use crate::custom_properties::{Name, VariableValue};
 use crate::device::Device;
+use crate::parser::{Parse, ParserContext};
 use crate::stylesheets::UrlExtraData;
 use crate::{Atom, derives::*};
-use cssparser::{Delimiter, Parser, SourcePosition};
+use cssparser::{Delimiter, Parser};
 use style_traits::ParseError;
+
+/// Environment variable name.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct EnvName(pub Name);
+
+impl Parse for EnvName {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        // TODO(emilio): For env() this should be <custom-ident> per spec, but no other browser does
+        // that, see https://github.com/w3c/csswg-drafts/issues/3262.
+        Ok(EnvName(Atom::from(input.expect_ident()?.as_ref())))
+    }
+}
 
 /// Data specific to an `env()` function.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 pub struct EnvFunction {
     /// The referenced environment variable name.
-    pub name: SubstitutionArgument<Name>,
+    pub name: SubstitutionArgument<EnvName>,
     /// The fallback for this function, if any.
     pub fallback: Option<ArbitraryDeclarationValue>,
 }
@@ -34,13 +47,9 @@ impl EnvFunction {
     pub fn parse(
         input: &mut Parser,
         context: &mut SubstitutionParserContext,
-        input_end_position: &mut Option<SourcePosition>,
     ) -> Result<Self, ParseError> {
-        let name =
-            SubstitutionArgument::try_parse(input, context, Delimiter::Comma, |input, _| {
-                parse_env_name(input)
-            })?;
-        let fallback = parse_optional_fallback(input, context, input_end_position)?;
+        let name = SubstitutionArgument::try_parse(input, context, Delimiter::Comma)?;
+        let fallback = parse_optional_fallback(input, context)?;
         Ok(Self { name, fallback })
     }
 
@@ -58,7 +67,7 @@ impl EnvFunction {
             .and_then(|name| {
                 device
                     .environment()
-                    .get(&name, device, &source.url_data)
+                    .get(&name.0, device, &context.parser_context(&source.url_data))
                     .map(|v| Substitution::from_value(v, /* attr_tainted */ false))
             })
             .ok_or(())
@@ -74,9 +83,8 @@ impl EnvFunction {
         &'a self,
         source: &'a VariableValue,
         context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
-    ) -> ParsedArgument<'a, Name> {
-        self.name
-            .substitute_and_parse(source, context, parse_env_name)
+    ) -> ParsedArgument<'a, EnvName> {
+        self.name.substitute_and_parse(source, context)
     }
 
     /// Calls `f` for each arbitrary declaration value nested in the function.
@@ -259,7 +267,7 @@ impl CssEnvironment {
         &self,
         name: &Atom,
         device: &Device,
-        url_data: &UrlExtraData,
+        parser_context: &ParserContext,
     ) -> Option<VariableValue> {
         #[cfg(feature = "gecko")]
         let is_link_parameter = name.as_slice().starts_with(&[b'-' as u16, b'-' as u16]);
@@ -273,24 +281,18 @@ impl CssEnvironment {
                 .find(|p| p.name.0 == *name)?;
             let mut parser = cssparser::Parser::new(param.value.0.as_ref());
             // need to carry around full variable value https://bugzilla.mozilla.org/show_bug.cgi?id=2028998
-            return VariableValue::parse(&mut parser, None, url_data).ok();
+            return VariableValue::parse(parser_context, &mut parser).ok();
         }
 
         if let Some(var) = ENVIRONMENT_VARIABLES.iter().find(|var| var.name == *name) {
-            return Some((var.evaluator)(device, url_data));
+            return Some((var.evaluator)(device, parser_context.url_data));
         }
-        if !url_data.chrome_rules_enabled() {
+        if !parser_context.chrome_rules_enabled() {
             return None;
         }
         let var = CHROME_ENVIRONMENT_VARIABLES
             .iter()
             .find(|var| var.name == *name)?;
-        Some((var.evaluator)(device, url_data))
+        Some((var.evaluator)(device, parser_context.url_data))
     }
-}
-
-fn parse_env_name(input: &mut Parser) -> Result<Name, ParseError> {
-    // TODO(emilio): For env() this should be <custom-ident> per spec, but no other browser does
-    // that, see https://github.com/w3c/csswg-drafts/issues/3262.
-    Ok(Atom::from(input.expect_ident()?.as_ref()))
 }

@@ -29,6 +29,7 @@ use crate::invalidation::media_queries::{
     EffectiveMediaQueryResults, MediaListKey, ToMediaListKey,
 };
 use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet};
+use crate::parser::ParserContext;
 #[cfg(feature = "gecko")]
 use crate::properties::StyleBuilder;
 use crate::properties::{
@@ -72,6 +73,7 @@ use crate::stylesheets::{
     ViewTransitionRule,
 };
 use crate::stylesheets::{CustomMediaEvaluator, CustomMediaMap};
+use crate::substitution::AttrTaint;
 #[cfg(feature = "gecko")]
 use crate::values::specified::position::PositionTryFallbacksItem;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
@@ -99,6 +101,7 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::mem;
 use std::sync::{LazyLock, Mutex};
+use style_traits::ParsingMode;
 
 /// The type of the stylesheets that the stylist contains.
 #[cfg(feature = "servo")]
@@ -2155,10 +2158,21 @@ impl Stylist {
 
         let initial_value = match initial_value {
             Some(value) => {
+                let parser_context = ParserContext::new(
+                    Origin::Author,
+                    url_data,
+                    None,
+                    ParsingMode::DISALLOW_COMPUTATIONALLY_DEPENDENT,
+                    self.quirks_mode,
+                    /* namespaces = */ Default::default(),
+                    None,
+                    None,
+                    AttrTaint::default(),
+                );
                 let parsed = Parser::new(value)
                     .parse_entirely(|input| {
                         input.skip_whitespace();
-                        SpecifiedValue::parse(input, None, url_data).map(Arc::new)
+                        SpecifiedValue::parse(&parser_context, input).map(Arc::new)
                     })
                     .ok();
                 if parsed.is_none() {

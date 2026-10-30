@@ -1227,8 +1227,6 @@ class PropertyRestrictions:
                 "line-height",
                 # Kinda like css-backgrounds?
                 "background-blend-mode",
-                # Not yet in css-text spec, but coming
-                "text-autospace-size",
             ]
             + PropertyRestrictions.shorthand(data, "padding")
             + PropertyRestrictions.shorthand(data, "margin")
@@ -1262,8 +1260,6 @@ class PropertyRestrictions:
                 "line-height",
                 # Kinda like css-backgrounds?
                 "background-blend-mode",
-                # Not yet in css-text spec, but coming
-                "text-autospace-size",
             ]
             + PropertyRestrictions.spec(data, "css-fonts")
             + PropertyRestrictions.spec(data, "css-backgrounds")

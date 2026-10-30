@@ -2601,16 +2601,6 @@ has_effect_on_gecko_scrollbars = false
 spec = "https://drafts.csswg.org/css-text-4/#text-autospace-property"
 affects = "layout"
 
-[text-autospace-size]
-type = "Number"
-initial = "0.125"
-struct = "inherited_text"
-engine = "gecko"
-gecko_pref = "layout.css.text-autospace-size.enabled"
-has_effect_on_gecko_scrollbars = false
-spec = "https://github.com/w3c/csswg-drafts/issues/8510#issuecomment-6438888621"
-affects = "layout"
-
 [text-box-edge]
 type = "TextBoxEdge"
 initial = "computed::TextBoxEdge::Auto"

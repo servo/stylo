@@ -2501,7 +2501,6 @@ affects = "layout"
 type = "Color"
 initial = "computed_value::T::currentcolor()"
 struct = "inherited_text"
-servo_pref = "layout.css.webkit-text-fill-color.enabled"
 ignored_when_colors_disabled = true
 spec = "https://compat.spec.whatwg.org/#the-webkit-text-fill-color"
 servo_restyle_damage = "repaint"

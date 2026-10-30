@@ -83,7 +83,6 @@
 "layout.css.view-transitions.enabled" = false
 "layout.css.webkit-fill-available.all-size-properties.enabled" = true
 "layout.css.webkit-fill-available.enabled" = true
-"layout.css.webkit-text-fill-color.enabled" = false
 "layout.css.white-space-collapse.preserve-spaces.enabled" = false
 "layout.css.word-break.break-word.enabled" = false
 "layout.css.writing-mode.enabled" = false

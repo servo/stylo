@@ -6,37 +6,36 @@
 //! https://drafts.csswg.org/css-variables-2/#funcdef-var
 
 use super::{
-    ArbitraryDeclarationValue, Substitution, SubstitutionParserContext,
-    SubstitutionReplacementContext, parse_optional_fallback,
+    ArbitraryDeclarationValue, ParsedArgument, Substitution, SubstitutionArgument,
+    SubstitutionParserContext, SubstitutionReplacementContext, parse_optional_fallback,
 };
-use crate::custom_properties::{Name, parse_name};
-use crate::stylesheets::UrlExtraData;
+use crate::custom_properties::{Name, VariableValue, parse_name};
 use crate::{Atom, derives::*};
-use cssparser::{Parser, SourcePosition};
-use selectors::parser::SelectorParseErrorKind;
-use style_traits::ParseError;
+use cssparser::{Delimiter, Parser, SourcePosition};
+use style_traits::{ParseError, StyleParseErrorKind};
 
 /// Data specific to a `var()` function.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
 pub struct VarFunction {
-    /// The referenced custom property name, without the leading `--`.
-    pub name: Name,
+    /// The referenced custom property name.
+    pub name: SubstitutionArgument<Name>,
     /// The fallback for this function, if any.
     pub fallback: Option<ArbitraryDeclarationValue>,
 }
 
 impl VarFunction {
-    /// Parses the `var()` function arguments according to its syntax:
+    /// Parses the `var()` function arguments according to its argument grammar and syntax:
+    /// - <var-args> = var(<declaration-value>, <declaration-value>?)
     /// - var() = var(<custom-property-name>, <declaration-value>?)
     pub fn parse(
         input: &mut Parser,
         context: &mut SubstitutionParserContext,
         input_end_position: &mut Option<SourcePosition>,
     ) -> Result<Self, ParseError> {
-        let ident = input.expect_ident()?;
-        let name = parse_name(ident.as_ref())
-            .map(Atom::from)
-            .map_err(|_| ParseError::custom(SelectorParseErrorKind::UnexpectedIdent))?;
+        let name =
+            SubstitutionArgument::try_parse(input, context, Delimiter::Comma, |input, _| {
+                parse_custom_property_name(input)
+            })?;
         let fallback = parse_optional_fallback(input, context, input_end_position)?;
         Ok(Self { name, fallback })
     }
@@ -45,15 +44,27 @@ impl VarFunction {
     /// https://drafts.csswg.org/css-variables-2/#replace-a-var-function
     pub fn replace<'a>(
         &'a self,
-        css: &'a str,
-        url_data: &UrlExtraData,
+        source: &'a VariableValue,
         context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
     ) -> Result<Substitution<'a>, ()> {
-        let registration = context.stylist.get_custom_property_registration(&self.name);
-        let substitution = match context
-            .substitution_functions
-            .get_var(registration, &self.name)
-        {
+        let name = self.replace_name(source, context);
+        let mut substitution = name
+            .value
+            .and_then(|name| Self::resolve_custom_property(&name, context))
+            .ok_or(())
+            .or_else(|_| {
+                context.substitute_declaration_value(self.fallback.as_ref().ok_or(())?, source)
+            })?;
+        substitution.attr_tainted |= name.attr_tainted;
+        Ok(substitution)
+    }
+
+    fn resolve_custom_property<'a>(
+        name: &Name,
+        context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
+    ) -> Option<Substitution<'a>> {
+        let registration = context.stylist.get_custom_property_registration(name);
+        match context.substitution_functions.get_var(registration, name) {
             None => None,
             // If the referenced value is itself still unresolved (i.e. it has references), we
             // are substituting against a partially-resolved map -- this happens while applying
@@ -62,12 +73,12 @@ impl VarFunction {
             // may not have gotten to this variable yet).
             Some(v) => match v.as_universal() {
                 Some(u) if u.has_references() => {
-                    if context.seen.contains(&&self.name) {
+                    if context.seen.contains(name) {
                         // Cycle: the primary is guaranteed-invalid, so fall through to the
                         // fallback (if any), like any other invalid primary.
                         None
                     } else {
-                        context.seen.push(&self.name);
+                        context.seen.push(name.clone());
                         let result =
                             context.substitute_variable_value(u, /* attr_taint */ None);
                         context.seen.pop();
@@ -86,14 +97,35 @@ impl VarFunction {
                     v.attr_tainted,
                 )),
             },
-        };
-        match substitution {
-            Some(substitution) => Ok(substitution),
-            None => context.substitute_declaration_value(
-                self.fallback.as_ref().ok_or(())?,
-                css,
-                url_data,
-            ),
         }
     }
+
+    /// Returns the name, substituting and parsing it first if it has references.
+    pub fn replace_name<'a>(
+        &'a self,
+        source: &'a VariableValue,
+        context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
+    ) -> ParsedArgument<'a, Name> {
+        self.name
+            .substitute_and_parse(source, context, parse_custom_property_name)
+    }
+
+    /// Calls `f` for each arbitrary declaration value nested in the function.
+    pub fn for_each_unparsed_value<F>(&self, mut f: F)
+    where
+        F: FnMut(&ArbitraryDeclarationValue),
+    {
+        if let SubstitutionArgument::Unparsed(arg) = &self.name {
+            f(arg);
+        }
+        if let Some(ref fallback) = self.fallback {
+            f(fallback);
+        }
+    }
+}
+
+fn parse_custom_property_name(input: &mut Parser) -> Result<Name, ParseError> {
+    parse_name(input.expect_ident()?.as_ref())
+        .map(Atom::from)
+        .map_err(|_| ParseError::custom(StyleParseErrorKind::UnexpectedIdent))
 }

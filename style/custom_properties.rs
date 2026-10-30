@@ -21,16 +21,16 @@ use crate::stylesheets::UrlExtraData;
 use crate::stylesheets::container_rule::AttrReferenceSet;
 use crate::stylist::Stylist;
 use crate::substitution::{
-    AttrTaint, ReferenceFlags, References, SubstitutionFunction, SubstitutionFunctionKind,
-    SubstitutionFunctionReference, SubstitutionParserContext, SubstitutionReplacementContext,
-    parse_declaration_value,
+    AttrTaint, ReferenceFlags, References, SubstitutionArgument, SubstitutionFunction,
+    SubstitutionFunctionKind, SubstitutionFunctionReference, SubstitutionParserContext,
+    SubstitutionReplacementContext, parse_declaration_value,
 };
 use crate::typed_om::{
     ToTyped, TypedValue, UnparsedSegment, UnparsedValue, VariableReferenceValue,
 };
 use crate::values::computed;
 use crate::{Atom, Namespace, Prefix, derives::*};
-use cssparser::{CowRcStr, Parser, Token, TokenSerializationType};
+use cssparser::{CowRcStr, Delimiter, Parser, Token, TokenSerializationType};
 use servo_arc::Arc;
 use std::fmt::{self, Write};
 use std::ops::{Index, IndexMut};
@@ -197,8 +197,11 @@ fn reify_variable_value_range(
             (ThinVec::new(), false)
         };
 
+        let SubstitutionArgument::Parsed(name) = &var.name else {
+            return Err(());
+        };
         values.push(UnparsedSegment::VariableReference(VariableReferenceValue {
-            variable: CssString::from(format!("--{}", var.name)),
+            variable: CssString::from(format!("--{}", name)),
             fallback,
             has_fallback,
         }));
@@ -533,7 +536,7 @@ impl VariableValue {
         let start_position = input.position();
         let mut context = SubstitutionParserContext::new(start_position, namespaces);
         let (first_token_type, last_token_type) =
-            parse_declaration_value(input, &mut context, &mut references)?;
+            parse_declaration_value(input, &mut context, &mut references, Delimiter::None)?;
         let mut css = input
             .slice_from(start_position)
             .trim_ascii_start()
@@ -661,20 +664,34 @@ impl VariableValue {
 
     /// Returns the attribute references in this variable value, if any.
     pub fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
-        self.references.refs.iter().for_each(|r| {
-            if let SubstitutionFunction::Attr(attr) = &r.function {
-                // For a non-ascii-lowercase attribute, whether we match
-                // case-sensitively depends on whether the element we're
-                // matching against is an HTML element in an HTML document.
-                // So to simplify invalidation we collect both potential
-                // references here.
-                references.insert(attr.name.clone().into());
-                let lowercase = attr.name.to_ascii_lowercase();
-                if *lowercase != *attr.name {
-                    references.insert(Atom::from(lowercase).into());
+        fn collect(refs: &References, references: &mut AttrReferenceSet) {
+            for r in &refs.refs {
+                if let SubstitutionFunction::Attr(attr) = &r.function {
+                    match &attr.arg {
+                        SubstitutionArgument::Unparsed(_) => {
+                            references.is_fully_parsed = false;
+                        },
+                        SubstitutionArgument::Parsed(arg) => {
+                            // For a non-ascii-lowercase attribute, whether we match
+                            // case-sensitively depends on whether the element we're
+                            // matching against is an HTML element in an HTML document.
+                            // So to simplify invalidation we collect both potential
+                            // references here.
+                            let name = &arg.name.name;
+                            references.names.insert(name.clone().into());
+                            let lowercase = name.to_ascii_lowercase();
+                            if *lowercase != **name {
+                                references.names.insert(Atom::from(lowercase).into());
+                            }
+                        },
+                        SubstitutionArgument::Invalid => {},
+                    }
                 }
+                r.function
+                    .for_each_unparsed_value(|value| collect(&value.references, references));
             }
-        })
+        }
+        collect(&self.references, references);
     }
 }
 

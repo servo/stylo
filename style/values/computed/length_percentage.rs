@@ -375,11 +375,10 @@ impl LengthPercentage {
     /// Returns the used value.
     #[inline]
     pub fn to_used_value(&self, containing_length: Au) -> Au {
-        let length = self.to_pixel_length(containing_length);
-        if let Unpacked::Percentage(_) = self.unpack() {
-            return Au::from_f32_px_trunc(length.px());
+        if let Unpacked::Percentage(percentage) = self.unpack() {
+            return containing_length.scale_by_trunc(percentage.0);
         }
-        Au::from(length)
+        Au::from(self.to_pixel_length(containing_length))
     }
 
     /// Returns the used value as CSSPixelLength.
@@ -390,13 +389,12 @@ impl LengthPercentage {
 
     /// Convert the computed value into used value.
     #[inline]
-    pub fn maybe_to_used_value(&self, container_len: Option<Au>) -> Option<Au> {
-        self.maybe_percentage_relative_to(container_len.map(Length::from))
-            .map(if let Unpacked::Percentage(_) = self.unpack() {
-                |length: Length| Au::from_f32_px_trunc(length.px())
-            } else {
-                Au::from
-            })
+    pub fn maybe_to_used_value(&self, containing_length: Option<Au>) -> Option<Au> {
+        if let Unpacked::Percentage(percentage) = self.unpack() {
+            return Some(containing_length?.scale_by_trunc(percentage.0));
+        }
+        self.maybe_percentage_relative_to(containing_length.map(Length::from))
+            .map(Au::from)
     }
 
     /// If there are special rules for computing percentages in a value (e.g.

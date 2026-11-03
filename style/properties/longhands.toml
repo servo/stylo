@@ -343,7 +343,6 @@ struct = "effects"
 vector = { simple_bindings = true, separator = "Space", animation_type = "with_zero" }
 gecko_ffi_name = "mBackdropFilters"
 gecko_pref = "layout.css.backdrop-filter.enabled"
-servo_pref = "layout.css.backdrop-filter.enabled"
 spec = "https://drafts.fxtf.org/filter-effects-2/#propdef-backdrop-filter"
 affects = "overflow"
 

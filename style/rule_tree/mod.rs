@@ -22,7 +22,7 @@ mod unsafe_box;
 
 pub use self::core::{RuleTree, StrongRuleNode};
 pub use self::level::{CascadeLevel, CascadeOrigin, ShadowCascadeOrder};
-pub use self::source::StyleSource;
+pub use self::source::{StyleSource, StyleSourceBorrow};
 
 bitflags! {
     /// Flags that are part of the cascade priority, and that we use to track
@@ -62,15 +62,15 @@ impl RuleTree {
         guards: &StylesheetGuards,
     ) -> StrongRuleNode
     where
-        I: Iterator<Item = (StyleSource, CascadePriority)>,
+        I: Iterator<Item = (StyleSourceBorrow<'a>, CascadePriority)>,
     {
         let mut current = self.root().clone();
 
         let mut found_important = false;
 
-        let mut important_author = SmallVec::<[(StyleSource, CascadePriority); 4]>::new();
-        let mut important_user = SmallVec::<[(StyleSource, CascadePriority); 4]>::new();
-        let mut important_ua = SmallVec::<[(StyleSource, CascadePriority); 4]>::new();
+        let mut important_author = SmallVec::<[(StyleSourceBorrow, CascadePriority); 4]>::new();
+        let mut important_user = SmallVec::<[(StyleSourceBorrow, CascadePriority); 4]>::new();
+        let mut important_ua = SmallVec::<[(StyleSourceBorrow, CascadePriority); 4]>::new();
         let mut transition = None;
 
         for (source, priority) in iter {
@@ -85,13 +85,9 @@ impl RuleTree {
             if any_important {
                 found_important = true;
                 match level.origin() {
-                    CascadeOrigin::Author => {
-                        important_author.push((source.clone(), priority.important()))
-                    },
-                    CascadeOrigin::UA => important_ua.push((source.clone(), priority.important())),
-                    CascadeOrigin::User => {
-                        important_user.push((source.clone(), priority.important()))
-                    },
+                    CascadeOrigin::Author => important_author.push((source, priority.important())),
+                    CascadeOrigin::UA => important_ua.push((source, priority.important())),
+                    CascadeOrigin::User => important_user.push((source, priority.important())),
                     _ => {},
                 };
             }
@@ -189,14 +185,14 @@ impl RuleTree {
     /// return the corresponding rule node representing the last inserted one.
     pub fn insert_ordered_rules<'a, I>(&self, iter: I) -> StrongRuleNode
     where
-        I: Iterator<Item = (StyleSource, CascadePriority)>,
+        I: Iterator<Item = (StyleSourceBorrow<'a>, CascadePriority)>,
     {
         self.insert_ordered_rules_from(self.root().clone(), iter)
     }
 
     fn insert_ordered_rules_from<'a, I>(&self, from: StrongRuleNode, iter: I) -> StrongRuleNode
     where
-        I: Iterator<Item = (StyleSource, CascadePriority)>,
+        I: Iterator<Item = (StyleSourceBorrow<'a>, CascadePriority)>,
     {
         let mut current = from;
         for (source, priority) in iter {
@@ -275,27 +271,23 @@ impl RuleTree {
         // These optimizations are likely to be important, because the levels where replacements
         // apply (style and animations) tend to trigger pretty bad styling cases already.
         if let Some(pdb) = pdb {
+            let source = StyleSourceBorrow::from_declarations(pdb);
             if level.is_important() {
                 if pdb.read_with(level.guard(guards)).any_important() {
-                    current = current.ensure_child(
-                        self.root(),
-                        StyleSource::from_declarations(pdb.clone_arc()),
-                        cascade_priority,
-                    );
+                    current = current.ensure_child(self.root(), source, cascade_priority);
                     *important_rules_changed = true;
                 }
             } else if pdb.read_with(level.guard(guards)).any_normal() {
-                current = current.ensure_child(
-                    self.root(),
-                    StyleSource::from_declarations(pdb.clone_arc()),
-                    cascade_priority,
-                );
+                current = current.ensure_child(self.root(), source, cascade_priority);
             }
         }
 
         // Now the rule is in the relevant place, push the children as
         // necessary.
-        let rule = self.insert_ordered_rules_from(current, children.drain(..).rev());
+        let rule = self.insert_ordered_rules_from(
+            current,
+            children.iter().rev().map(|(s, p)| (s.borrow(), *p)),
+        );
         Some(rule)
     }
 
@@ -340,9 +332,10 @@ impl RuleTree {
             last = node;
         }
 
-        let rule = self
-            .insert_ordered_rules_from(last.parent().unwrap().clone(), children.drain(..).rev());
-        rule
+        self.insert_ordered_rules_from(
+            last.parent().unwrap().clone(),
+            children.iter().rev().map(|(s, p)| (s.borrow(), *p)),
+        )
     }
 }
 

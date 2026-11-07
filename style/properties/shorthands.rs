@@ -2972,8 +2972,13 @@ pub mod font_synthesis {
             if self.font_synthesis_weight == &FontSynthesis::Auto {
                 writer.raw_item("weight")?;
             }
-            if self.font_synthesis_style != &FontSynthesisStyle::None {
-                if self.font_synthesis_style == &FontSynthesisStyle::Auto {
+            #[cfg(feature = "gecko")]
+            let style = Some(self.font_synthesis_style);
+            #[cfg(feature = "servo")]
+            let style = self.font_synthesis_style;
+
+            if style != Some(&FontSynthesisStyle::None) {
+                if style == Some(&FontSynthesisStyle::Auto) {
                     writer.raw_item("style")?;
                 } else {
                     writer.raw_item("oblique-only")?;

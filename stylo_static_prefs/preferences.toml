@@ -2,6 +2,7 @@
 "dom.viewTransitions.cross-document.enabled" = false
 "gfx.font_rendering.opentype_svg.enabled" = false
 "layout.css.alpha-color-function.enabled" = true
+"layout.css.always_underline_links" = false
 "layout.css.anchor-positioning.enabled" = false
 "layout.css.appearance-base.enabled" = false
 "layout.css.appearance.enabled" = false

@@ -11,6 +11,7 @@
 -moz-gtk-menu-radius
 -moz-mac-titlebar-height
 -moz-overlay-scrollbar-fade-duration
+-moz-submit-string
 DOMContentLoaded
 a
 abort

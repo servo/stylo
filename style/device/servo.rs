@@ -6,7 +6,7 @@
 
 use crate::color::AbsoluteColor;
 use crate::context::QuirksMode;
-use crate::custom_properties::CssEnvironment;
+use crate::substitution::env::CssEnvironment;
 use crate::font_metrics::FontMetrics;
 use crate::logical_geometry::WritingMode;
 use crate::media_queries::MediaType;

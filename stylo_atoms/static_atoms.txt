@@ -137,6 +137,8 @@ pointer
 popstate
 postershown
 prefers-color-scheme
+overflow-block
+overflow-inline
 print
 progress
 radio

@@ -9,6 +9,7 @@ use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatur
 use crate::queries::values::{Orientation, PrefersColorScheme};
 use crate::values::computed::{CSSPixelLength, Context, Ratio, Resolution};
 use std::fmt::Debug;
+use crate::media_queries::MediaType;
 
 /// https://drafts.csswg.org/mediaqueries-4/#width
 fn eval_width(context: &Context) -> CSSPixelLength {
@@ -159,8 +160,52 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
     Ratio::new(size.width.0 as f32, size.height.0 as f32)
 }
 
+#[derive(FromPrimitive, Parse, ToCss)]
+enum OverflowBlock {
+    None,
+    Scroll,
+    Paged,
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#mf-overflow-block
+fn eval_overflow_block(context: &Context, query_value: Option<OverflowBlock>) -> bool {
+    // Validate not using overflow-block media feature with the print media type.
+    let scrolling = context.device().media_type() != MediaType::print();
+    let query_value = match query_value {
+        Some(v) => v,
+        None => return true,
+    };
+
+    match query_value {
+        OverflowBlock::None => false,
+        OverflowBlock::Scroll => scrolling,
+        OverflowBlock::Paged => !scrolling,
+    }
+}
+
+#[derive(FromPrimitive, Parse, ToCss)]
+enum OverflowInline {
+    None,
+    Scroll,
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#mf-overflow-inline
+fn eval_overflow_inline(context: &Context, query_value: Option<OverflowInline>) -> bool {
+    // Validate not using overflow-inline media feature with the print media type.
+    let scrolling = context.device().media_type() != MediaType::print();
+    let query_value = match query_value {
+        Some(v) => v,
+        None => return scrolling,
+    };
+
+    match query_value {
+        OverflowInline::None => !scrolling,
+        OverflowInline::Scroll => scrolling,
+    }
+}
+
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 17] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -249,6 +294,18 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
         atom!("prefers-color-scheme"),
         AllowsRanges::No,
         keyword_evaluator!(eval_prefers_color_scheme, PrefersColorScheme),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("overflow-block"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_overflow_block, OverflowBlock),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("overflow-inline"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_overflow_inline, OverflowInline),
         FeatureFlags::empty(),
     ),
 ];

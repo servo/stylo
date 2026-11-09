@@ -80,6 +80,7 @@
 "layout.css.text-underline-position.enabled" = false
 "layout.css.text-wrap-style.balance.enabled" = false
 "layout.css.text-wrap-style.pretty.enabled" = false
+"layout.css.transitions-override-ua" = false
 "layout.css.tree-counting-functions.enabled" = false
 "layout.css.view-transitions.enabled" = false
 "layout.css.webkit-fill-available.all-size-properties.enabled" = true

@@ -56,6 +56,7 @@ dark
 datachannel
 date
 datetime-local
+device-aspect-ratio
 device-height
 device-pixel-ratio
 device-width

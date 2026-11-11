@@ -13,8 +13,9 @@ use crate::computed_values::transform_style::T as TransformStyle;
 use crate::dom::TElement;
 use crate::matching::{StyleChange, StyleDifference};
 use crate::properties::{
-    ComputedValues, restyle_damage_rebuild_box, restyle_damage_rebuild_stacking_context,
-    restyle_damage_recalculate_overflow, restyle_damage_repaint, style_structs,
+    ComputedValues, all_inherited_style_structs_equal, restyle_damage_rebuild_box,
+    restyle_damage_rebuild_stacking_context, restyle_damage_recalculate_overflow,
+    restyle_damage_repaint, style_structs,
 };
 use crate::values::computed::Perspective;
 use crate::values::computed::basic_shape::ClipPath;
@@ -72,10 +73,7 @@ impl ServoRestyleDamage {
         }
 
         let mut any_style_changed = !damage.is_empty();
-        // FIXME(emilio): Differentiate between reset and inherited
-        // properties here, and set `reset_only` appropriately so the
-        // optimization to skip the cascade in those cases applies.
-        let mut reset_only = !any_style_changed;
+        let mut reset_only = all_inherited_style_structs_equal(old, new);
 
         let old_custom_props = old.custom_properties();
         let new_custom_props = new.custom_properties();

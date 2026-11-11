@@ -53,6 +53,13 @@ fn eval_scan(_: &Context, _: Option<Scan>) -> bool {
     false
 }
 
+/// https://drafts.csswg.org/mediaqueries-4/#grid
+fn eval_grid(_: &Context) -> bool {
+    // Servo doesn't support grid devices (e.g., ttys), so the 'grid' feature
+    // is always 0.
+    false
+}
+
 /// https://drafts.csswg.org/mediaqueries-4/#resolution
 fn eval_resolution(context: &Context) -> Resolution {
     Resolution::from_dppx(context.device().device_pixel_ratio().0)
@@ -160,7 +167,7 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 16] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -225,6 +232,12 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
         atom!("scan"),
         AllowsRanges::No,
         keyword_evaluator!(eval_scan, Scan),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("grid"),
+        AllowsRanges::No,
+        Evaluator::BoolInteger(eval_grid),
         FeatureFlags::empty(),
     ),
     feature!(

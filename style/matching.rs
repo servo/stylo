@@ -628,10 +628,12 @@ trait PrivateMatchMethods: TElement {
         let style = match new_resolved_styles.pseudos.get(&pseudo_element) {
             Some(style) => Arc::clone(style),
             None => {
-                context
-                    .shared
-                    .animations
-                    .cancel_all_animations_for_key(&key);
+                if self.may_have_animations() {
+                    context
+                        .shared
+                        .animations
+                        .cancel_all_animations_for_key(&key);
+                }
                 return;
             },
         };
@@ -644,6 +646,9 @@ trait PrivateMatchMethods: TElement {
             Some(pseudo_element.clone()),
         );
 
+        if !self.may_have_animations() {
+            return;
+        }
         let declarations = context.shared.animations.get_all_declarations(
             &key,
             context.shared.current_time_for_animations,
@@ -721,6 +726,11 @@ trait PrivateMatchMethods: TElement {
             new_values,
             pseudo_element,
         );
+
+        if !needs_animations_update && !might_need_transitions_update && !self.may_have_animations()
+        {
+            return false;
+        }
 
         let mut after_change_style = None;
         if might_need_transitions_update {

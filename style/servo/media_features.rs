@@ -54,10 +54,11 @@ fn eval_scan(_: &Context, _: Option<Scan>) -> bool {
 }
 
 /// https://drafts.csswg.org/mediaqueries-4/#grid
-fn eval_grid(_: &Context) -> bool {
-    // Servo doesn't support grid devices (e.g., ttys), so the 'grid' feature
-    // is always 0.
-    false
+fn eval_grid(context: &Context) -> bool {
+    context
+        .device()
+        .media_features()
+        .contains(MediaFeatures::GRID)
 }
 
 /// https://drafts.csswg.org/mediaqueries-4/#resolution
@@ -87,6 +88,21 @@ bitflags! {
         const FINE = 0b010;
         /// The input mechanism can conveniently hover over elements.
         const HOVER = 0b100;
+    }
+}
+
+bitflags! {
+    /// Optional capabilities of the output device that affect media queries.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub struct MediaFeatures: u8 {
+        /// The output device is grid-based, such as a TTY.
+        const GRID = 1 << 0;
+    }
+}
+
+impl Default for MediaFeatures {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 

@@ -7,8 +7,6 @@
 use crate::Zero;
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-#[cfg(feature = "servo")]
-use crate::values::Impossible;
 use crate::values::computed::Angle as ComputedAngle;
 use crate::values::computed::CSSPixelLength as ComputedCSSPixelLength;
 use crate::values::computed::Filter as ComputedFilter;
@@ -28,7 +26,6 @@ use crate::values::generics::effects::SimpleShadow as GenericSimpleShadow;
 use crate::values::generics::{NonNegative, ZeroToOne};
 use crate::values::specified::color::Color;
 use crate::values::specified::length::{Length, NonNegativeLength};
-#[cfg(feature = "gecko")]
 use crate::values::specified::url::SpecifiedUrl;
 use crate::values::specified::{Angle, NonNegativeNumberOrPercentage, Number, NumberOrPercentage};
 use cssparser::{Parser, match_ignore_ascii_case};
@@ -39,12 +36,7 @@ pub type BoxShadow =
     GenericBoxShadow<Option<Color>, Length, Option<NonNegativeLength>, Option<Length>>;
 
 /// A specified value for a single `filter`.
-#[cfg(feature = "gecko")]
 pub type SpecifiedFilter = GenericFilter<Angle, FilterFactor, Length, SimpleShadow, SpecifiedUrl>;
-
-/// A specified value for a single `filter`.
-#[cfg(feature = "servo")]
-pub type SpecifiedFilter = GenericFilter<Angle, FilterFactor, Length, SimpleShadow, Impossible>;
 
 pub use self::SpecifiedFilter as Filter;
 
@@ -285,11 +277,14 @@ impl Filter {
     }
 }
 
+fn svg_filter_url_enabled(_: &ParserContext) -> bool {
+    crate::pref!("layout.css.filter-urls.enabled", gecko = true)
+}
+
 impl Parse for Filter {
     #[inline]
     fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
-        #[cfg(feature = "gecko")]
-        {
+        if svg_filter_url_enabled(context) {
             if let Ok(url) = input.try_parse(|i| SpecifiedUrl::parse(context, i)) {
                 return Ok(GenericFilter::Url(url));
             }

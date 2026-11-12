@@ -2820,6 +2820,15 @@ pub(crate) fn restyle_damage_${effect_name} (old: &ComputedValues, new: &Compute
     false
 }
 % endfor
+
+pub(crate) fn all_inherited_style_structs_equal(old: &ComputedValues, new: &ComputedValues) -> bool {
+    % for style_struct in data.active_style_structs():
+        % if style_struct.inherited:
+        old.${style_struct.ident} == new.${style_struct.ident} &&
+        % endif
+    % endfor
+    true
+}
 % endif
 
 ## Descriptor types for @-rules like @font-face and @counter-style.

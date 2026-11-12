@@ -159,8 +159,14 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
     Ratio::new(size.width.0 as f32, size.height.0 as f32)
 }
 
+/// <https://drafts.csswg.org/mediaqueries-4/#device-aspect-ratio>
+fn eval_device_aspect_ratio(context: &Context) -> Ratio {
+    let size = context.device().device_size();
+    Ratio::new(size.width, size.height)
+}
+
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 16] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -219,6 +225,12 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
         atom!("device-height"),
         AllowsRanges::Yes,
         Evaluator::Length(eval_device_height),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("device-aspect-ratio"),
+        AllowsRanges::Yes,
+        Evaluator::NumberRatio(eval_device_aspect_ratio),
         FeatureFlags::empty(),
     ),
     feature!(

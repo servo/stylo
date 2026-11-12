@@ -6,14 +6,14 @@
 
 use crate::color::AbsoluteColor;
 use crate::context::QuirksMode;
-use crate::substitution::env::CssEnvironment;
 use crate::font_metrics::FontMetrics;
 use crate::logical_geometry::WritingMode;
 use crate::media_queries::MediaType;
 use crate::properties::ComputedValues;
 use crate::properties::style_structs::Font;
 use crate::queries::values::PrefersColorScheme;
-use crate::servo::media_features::PointerCapabilities;
+use crate::servo::media_features::{MediaFeatures, PointerCapabilities};
+use crate::substitution::env::CssEnvironment;
 use crate::values::KeyframesName;
 use crate::values::computed::font::GenericFontFamily;
 use crate::values::computed::{
@@ -86,6 +86,9 @@ pub struct MediaData {
     /// The union of the capabilities of all pointer inputs
     #[ignore_malloc_size_of = "Pure stack type"]
     pub all_pointer_capabilities: PointerCapabilities,
+    /// Optional capabilities of the output device that affect media queries.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    pub features: MediaFeatures,
 }
 
 impl Device {
@@ -359,6 +362,20 @@ impl Device {
     /// Returns the pointer capabilities of this [`Device`].
     pub fn all_pointer_capabilities(&self) -> PointerCapabilities {
         self.extra.media_data.all_pointer_capabilities
+    }
+
+    /// Set the [`MediaFeatures`] on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_media_features(&mut self, features: MediaFeatures) {
+        self.extra.media_data.features = features;
+    }
+
+    /// Returns the optional media features of this [`Device`].
+    pub fn media_features(&self) -> MediaFeatures {
+        self.extra.media_data.features
     }
 
     pub(crate) fn is_dark_color_scheme(&self, color_scheme_flags: ColorSchemeFlags) -> bool {

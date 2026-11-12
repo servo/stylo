@@ -53,6 +53,14 @@ fn eval_scan(_: &Context, _: Option<Scan>) -> bool {
     false
 }
 
+/// https://drafts.csswg.org/mediaqueries-4/#grid
+fn eval_grid(context: &Context) -> bool {
+    context
+        .device()
+        .media_features()
+        .contains(MediaFeatures::GRID)
+}
+
 /// https://drafts.csswg.org/mediaqueries-4/#resolution
 fn eval_resolution(context: &Context) -> Resolution {
     Resolution::from_dppx(context.device().device_pixel_ratio().0)
@@ -80,6 +88,21 @@ bitflags! {
         const FINE = 0b010;
         /// The input mechanism can conveniently hover over elements.
         const HOVER = 0b100;
+    }
+}
+
+bitflags! {
+    /// Optional capabilities of the output device that affect media queries.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub struct MediaFeatures: u8 {
+        /// The output device is grid-based, such as a TTY.
+        const GRID = 1 << 0;
+    }
+}
+
+impl Default for MediaFeatures {
+    fn default() -> Self {
+        Self::empty()
     }
 }
 
@@ -160,7 +183,7 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 16] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -225,6 +248,12 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 15] = [
         atom!("scan"),
         AllowsRanges::No,
         keyword_evaluator!(eval_scan, Scan),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("grid"),
+        AllowsRanges::No,
+        Evaluator::BoolInteger(eval_grid),
         FeatureFlags::empty(),
     ),
     feature!(

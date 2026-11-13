@@ -31,6 +31,7 @@
 "layout.css.font-palette.enabled" = false
 "layout.css.font-size-adjust.enabled" = false
 "layout.css.font-synthesis.enabled" = false
+"layout.css.font-synthesis-style.enabled" = false
 "layout.css.font-tech.enabled" = false
 "layout.css.font-variant-caps.all-values.enabled" = false
 "layout.css.font-variant-emoji.enabled" = false

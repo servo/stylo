@@ -32,8 +32,9 @@ use malloc_size_of_derive::MallocSizeOf;
 use mime::Mime;
 use parking_lot::RwLock;
 use servo_arc::Arc;
+use siphasher::sip::SipHasher13;
 use std::fmt::Debug;
-use std::hash::{DefaultHasher, Hasher};
+use std::hash::Hasher;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use style_traits::{CSSPixel, DevicePixel};
 
@@ -61,6 +62,8 @@ pub(super) struct ExtraDeviceData {
     /// An implementation of a trait which implements support for querying font metrics.
     #[ignore_malloc_size_of = "Owned by embedder"]
     font_metrics_provider: Box<dyn FontMetricsProvider>,
+    /// Document-scoped key for hashing the inputs of CSS `random()` functions.
+    document_random_hasher_key: (u64, u64),
 }
 
 #[derive(Debug, MallocSizeOf, Clone, PartialEq)]
@@ -94,6 +97,7 @@ impl Device {
         default_values: Arc<ComputedValues>,
         font_metrics_provider: Box<dyn FontMetricsProvider>,
         submit_string: Box<str>,
+        document_random_hasher_key: (u64, u64),
         media_data: MediaData,
     ) -> Device {
         let root_style = RwLock::new(Arc::clone(&default_values));
@@ -118,6 +122,7 @@ impl Device {
             extra: ExtraDeviceData {
                 media_data,
                 font_metrics_provider,
+                document_random_hasher_key,
             },
         }
     }
@@ -149,8 +154,8 @@ impl Device {
     /// base values of `random()` functions between document instances.
     #[inline]
     pub fn document_random_hasher(&self) -> impl Hasher {
-        // TODO: Implement a document-specific hasher (like Gecko in Bug 2081781).
-        DefaultHasher::new()
+        let (k0, k1) = self.extra.document_random_hasher_key;
+        SipHasher13::new_with_keys(k0, k1)
     }
 
     /// Gets the base size given a generic font family.

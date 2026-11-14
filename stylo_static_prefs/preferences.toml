@@ -54,7 +54,7 @@
 "layout.css.overscroll-behavior.enabled" = false
 "layout.css.progress-function.enabled" = true
 "layout.css.properties-and-values.enabled" = true
-"layout.css.random.enabled" = false
+"layout.css.random.enabled" = true
 "layout.css.revert-rule.enabled" = true
 "layout.css.ruby.enabled" = false
 "layout.css.scroll-behavior.enabled" = false

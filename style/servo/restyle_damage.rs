@@ -7,6 +7,7 @@
 
 use bitflags::Flags;
 
+use crate::computed_values::box_decoration_break::T as BoxDecorationBreak;
 use crate::computed_values::isolation::T as Isolation;
 use crate::computed_values::mix_blend_mode::T as MixBlendMode;
 use crate::computed_values::transform_style::T as TransformStyle;
@@ -17,9 +18,12 @@ use crate::properties::{
     restyle_damage_rebuild_stacking_context, restyle_damage_recalculate_overflow,
     restyle_damage_repaint, style_structs,
 };
+use crate::values::computed::BorderStyle;
 use crate::values::computed::Perspective;
 use crate::values::computed::basic_shape::ClipPath;
+use crate::values::computed::image::Image;
 use crate::values::generics::transform::{GenericRotate, GenericScale, GenericTranslate};
+use crate::Zero;
 use std::fmt;
 
 bitflags! {
@@ -70,6 +74,12 @@ impl ServoRestyleDamage {
         let mut damage = compute_damage(old, new);
         if damage.contains(ServoRestyleDamage::RELAYOUT) {
             damage |= E::compute_layout_damage(old, new);
+        } else if needed_fragmentation_info_for_correct_break_rendering(old) != needed_fragmentation_info_for_correct_break_rendering(new) {
+            // TODO: Checking here whether the element is an inline element or within a
+            //       fragmentation context (multicol ancestor or paged media) might allow us to
+            //       avoid some more layout work. Although this heuristic should generally stay
+            //       relatively constant for elements, so it might not be worth it.
+            damage |= ServoRestyleDamage::RELAYOUT;
         }
 
         let mut any_style_changed = !damage.is_empty();
@@ -198,6 +208,125 @@ impl ComputedValues {
             || self.get_svg().clip_path != ClipPath::None
             || self.get_box().isolation == Isolation::Isolate
     }
+}
+
+#[allow(missing_docs)]
+#[derive(PartialEq)]
+pub enum NeededFragmentationInfo {
+    /// No info about how the box fragmented is needed
+    None,
+    /// Only info about which sides are open is needed
+    Sides,
+    /// Info about open sides and the original size of the box is needed
+    SidesAndSize,
+}
+
+/// This is for determining whether or not certain computed values make it necessary to store extra
+/// fragmentation-related data for the fragments of a box in order to facilitate a correct rendering
+/// of those fragments.
+/// NOTE: This really doesn't feel like it should live in stylo, but my attempts to move it out of
+///       here have so far not been successful.
+pub fn needed_fragmentation_info_for_correct_break_rendering(computed: &ComputedValues) -> NeededFragmentationInfo {
+    // When a box is broken into multiple fragments and `box-decoration-break` is set to `slice`
+    // (the default), then we need to remember the box's 'unfragmented' size. That is, the size
+    // that the box as a whole would have if all the fragments were put back together by
+    // placing them end-to-end. This is necessary to correctly render things like backgrounds
+    // and border-radii per fragment, which are conceptually sliced into pieces.
+    if computed.get_border().box_decoration_break != BoxDecorationBreak::Slice {
+        return NeededFragmentationInfo::None;
+    }
+
+    // We can however avoid storing all or some of that data in most situations. In particular,
+    // storing all of it should only be necessary when there is:
+    // (Note that the descriptions in this list are more specific than their implementation at
+    // times. The point is to keep the actual checks simple, while still providing a detailed
+    // description of the case that is conceptually being checked for.)
+
+    // - backgrounds that change in the fragmentation direction and cross fragments
+    if !computed
+        .get_background()
+        .background_image
+        .0
+        .iter()
+        .all(|image| *image == Image::None)
+    {
+        return NeededFragmentationInfo::SidesAndSize;
+    }
+
+    // - border-radii that are larger than the end fragments
+    if !computed.get_border().border_top_left_radius.is_zero() ||
+        !computed.get_border().border_top_right_radius.is_zero() ||
+        !computed.get_border().border_bottom_left_radius.is_zero() ||
+        !computed.get_border().border_bottom_right_radius.is_zero()
+    {
+        return NeededFragmentationInfo::SidesAndSize;
+    }
+
+    // - dashed or dotted borders in the non-fragmentation direction (that could be sliced)
+    //   (or any side in the case of rounded corners, but those are already checked)
+    if matches!(
+        computed.get_border().border_top_style,
+        BorderStyle::Dashed | BorderStyle::Dotted
+    ) || matches!(
+        computed.get_border().border_bottom_style,
+        BorderStyle::Dashed | BorderStyle::Dotted
+    ) || matches!(
+        computed.get_border().border_left_style,
+        BorderStyle::Dashed | BorderStyle::Dotted
+    ) || matches!(
+        computed.get_border().border_right_style,
+        BorderStyle::Dashed | BorderStyle::Dotted
+    ) {
+        return NeededFragmentationInfo::SidesAndSize;
+    }
+
+    // - image borders in the non-fragmentation direction
+    //   (i.e. those that could be sliced due to fragmentation)
+    if computed.get_border().border_image_source != Image::None {
+        return NeededFragmentationInfo::SidesAndSize;
+    }
+
+    // - any `box-shadow`
+    if !computed.get_effects().box_shadow.0.is_empty() {
+        return NeededFragmentationInfo::SidesAndSize;
+    }
+
+    // - some values of `clip-path`
+    if computed.get_svg().clip_path != ClipPath::None {
+        return NeededFragmentationInfo::SidesAndSize;
+    }
+
+    // TODO: - some values of `mask`, which servo doesn't have yet.
+
+    // TODO: Currently, servo only fragments inline boxes at line breaks. Once we implement block
+    //       fragmentation in paginated or multicol flows, this might also need to check for these
+    //       other properties, which don't apply to inline elements:
+    //       - any clipping values of `overflow`
+    //       - the `clip` property
+    //       Do check in with the CSSWG on these, as the specs might need clarification.
+
+    // In some other situations, we can get away with storing only what sides of the box are being
+    // cut open, as the amount that the fragment extends beyond those sides doesn't matter. This is
+    // for boxes that have:
+
+    // - any borders in the fragmentation direction
+    if !matches!(
+        computed.get_border().border_top_style,
+        BorderStyle::None | BorderStyle::Hidden
+    ) || !matches!(
+        computed.get_border().border_bottom_style,
+        BorderStyle::None | BorderStyle::Hidden
+    ) || !matches!(
+        computed.get_border().border_left_style,
+        BorderStyle::None | BorderStyle::Hidden
+    ) || !matches!(
+        computed.get_border().border_right_style,
+        BorderStyle::None | BorderStyle::Hidden
+    ) {
+        return NeededFragmentationInfo::Sides;
+    }
+
+    NeededFragmentationInfo::None
 }
 
 impl style_structs::Box {

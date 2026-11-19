@@ -45,6 +45,7 @@
 "layout.css.margin-rules.enabled" = false
 "layout.css.marker.restricted" = true
 "layout.css.masking.enabled" = false
+"layout.css.math-display.enabled" = false
 "layout.css.math-properties.enabled" = false
 "layout.css.motion-path-url.enabled" = false
 "layout.css.motion-path.enabled" = false

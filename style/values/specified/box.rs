@@ -126,6 +126,13 @@ fn is_display_grid_lanes_enabled() -> bool {
     static_prefs::pref!("layout.css.display-grid-lanes.enabled")
 }
 
+#[inline]
+fn is_display_math_enabled() -> bool {
+    // This pref currently only exists in Servo; Gecko doesn't implement
+    // `display: math` yet.
+    crate::pref!("layout.css.math-display.enabled", gecko = false)
+}
+
 /// Defines an element’s display type, which consists of
 /// the two basic qualities of how an element generates boxes
 /// <https://drafts.csswg.org/css-display/#propdef-display>
@@ -173,6 +180,8 @@ pub enum DisplayInside {
     RubyTextContainer,
     #[cfg(feature = "gecko")]
     WebkitBox,
+    /// A MathML math container.
+    Math,
 }
 
 impl DisplayInside {
@@ -192,6 +201,7 @@ impl DisplayInside {
         match self {
             #[cfg(feature = "gecko")]
             DisplayInside::Ruby => DisplayOutside::Inline,
+            DisplayInside::Math => DisplayOutside::Inline,
             _ => DisplayOutside::Block,
         }
     }
@@ -332,7 +342,7 @@ impl Display {
 
     /// Make a raw display value from <display-outside> and <display-inside> values.
     #[inline]
-    const fn new(outside: DisplayOutside, inside: DisplayInside) -> Self {
+    pub(crate) const fn new(outside: DisplayOutside, inside: DisplayInside) -> Self {
         Self((outside as u16) << Self::OUTSIDE_SHIFT | inside as u16)
     }
 
@@ -545,6 +555,7 @@ impl DisplayKeyword {
             "table" => Inside(DisplayInside::Table),
             "grid" => Inside(DisplayInside::Grid),
             "grid-lanes" if is_display_grid_lanes_enabled() => Inside(DisplayInside::GridLanes),
+            "math" if is_display_math_enabled() => Inside(DisplayInside::Math),
             #[cfg(feature = "gecko")]
             "ruby" => Inside(DisplayInside::Ruby),
         })
@@ -571,6 +582,7 @@ impl ToCss for Display {
                 },
                 (DisplayOutside::Inline, DisplayInside::Flex) => dest.write_str("inline-flex"),
                 (DisplayOutside::Inline, DisplayInside::Table) => dest.write_str("inline-table"),
+                (DisplayOutside::Block, DisplayInside::Math) => dest.write_str("block math"),
                 #[cfg(feature = "gecko")]
                 (DisplayOutside::Block, DisplayInside::Ruby) => dest.write_str("block ruby"),
                 (_, inside) => {
@@ -704,6 +716,9 @@ impl SpecifiedValueInfo for Display {
             "-webkit-box",
             "-webkit-inline-box",
         ]);
+        if is_display_math_enabled() {
+            f(&["math", "inline math", "block math"]);
+        }
     }
 }
 

@@ -345,7 +345,7 @@ sub_properties = ["position-try-order", "position-try-fallbacks"]
 spec = "https://drafts.csswg.org/css-anchor-position-1/#position-try-prop"
 
 [marker]
-engine = "gecko"
+servo_pref = "layout.css.svg-properties.enabled"
 sub_properties = ["marker-start", "marker-end", "marker-mid"]
 spec = "https://svgwg.org/svg2-draft/painting.html#MarkerShorthand"
 

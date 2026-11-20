@@ -251,6 +251,10 @@ pub enum MozTheme {
     NonNative,
 }
 
+fn svg_pointer_events_enabled(_: &ParserContext) -> bool {
+    crate::pref!("layout.css.svg-properties.enabled", gecko = true)
+}
+
 /// The pointer-events property
 /// https://svgwg.org/svg2-draft/interact.html#PointerEventsProperty
 #[allow(missing_docs)]
@@ -274,21 +278,21 @@ pub enum MozTheme {
 pub enum PointerEvents {
     Auto,
     None,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "svg_pointer_events_enabled")]
     Visiblepainted,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "svg_pointer_events_enabled")]
     Visiblefill,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "svg_pointer_events_enabled")]
     Visiblestroke,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "svg_pointer_events_enabled")]
     Visible,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "svg_pointer_events_enabled")]
     Painted,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "svg_pointer_events_enabled")]
     Fill,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "svg_pointer_events_enabled")]
     Stroke,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "svg_pointer_events_enabled")]
     All,
 }
 

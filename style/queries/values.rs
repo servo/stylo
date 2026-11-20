@@ -44,3 +44,44 @@ pub enum PrefersColorScheme {
     Light,
     Dark,
 }
+
+/// Values for the prefers-reduced-motion media feature.
+/// https://drafts.csswg.org/mediaqueries-5/#prefers-reduced-motion
+#[derive(Clone, Copy, Debug, FromPrimitive, Parse, PartialEq, ToCss)]
+#[repr(u8)]
+pub enum PrefersReducedMotion {
+    /// Indicates that the user has made no preference known to the system
+    NoPreference,
+    /// Indicates that user has notified the system that they prefer
+    /// an interface that removes or replaces the types of motion-based animation
+    /// that either trigger discomfort for those with vestibular motion sensitivity,
+    /// or distraction for those with attention deficits.
+    Reduce,
+}
+
+/// Values for the prefers-reduced-transparency media feature.
+/// https://drafts.csswg.org/mediaqueries-5/#prefers-reduced-transparency
+#[derive(Clone, Copy, Debug, FromPrimitive, Parse, PartialEq, ToCss)]
+#[repr(u8)]
+pub enum PrefersReducedTransparency {
+    /// Indicates that the user has made no preference known to the system
+    NoPreference,
+    /// Indicates that user has notified the system that they prefer
+    /// an interface that minimizes the amount of transparent or translucent layer effects.
+    Reduce,
+}
+
+/// Possible values for prefers-contrast media query.
+/// https://drafts.csswg.org/mediaqueries-5/#prefers-contrast
+#[derive(Clone, Copy, Debug, FromPrimitive, Parse, PartialEq, ToCss)]
+#[repr(u8)]
+pub enum PrefersContrast {
+    /// More contrast is preferred.
+    More,
+    /// Low contrast is preferred.
+    Less,
+    /// Custom (not more, not less).
+    Custom,
+    /// The default value if neither high or low contrast is enabled.
+    NoPreference,
+}

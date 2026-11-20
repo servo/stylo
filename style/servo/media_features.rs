@@ -6,7 +6,10 @@
 
 use crate::derives::*;
 use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
-use crate::queries::values::{Orientation, PrefersColorScheme};
+use crate::queries::values::{
+    Orientation, PrefersColorScheme, PrefersContrast, PrefersReducedMotion,
+    PrefersReducedTransparency,
+};
 use crate::values::computed::{CSSPixelLength, Context, Ratio, Resolution};
 use std::fmt::Debug;
 
@@ -73,6 +76,36 @@ fn eval_prefers_color_scheme(context: &Context, query_value: Option<PrefersColor
     match query_value {
         Some(v) => context.device().color_scheme() == v,
         None => true,
+    }
+}
+
+fn eval_prefers_contrast(context: &Context, query_value: Option<PrefersContrast>) -> bool {
+    let contrast = context.device().contrast();
+    match query_value {
+        Some(v) => contrast == v,
+        None => contrast != PrefersContrast::NoPreference,
+    }
+}
+
+fn eval_prefers_reduced_motion(
+    context: &Context,
+    query_value: Option<PrefersReducedMotion>,
+) -> bool {
+    let reduced_motion = context.device().reduced_motion();
+    match query_value {
+        Some(v) => reduced_motion == v,
+        None => reduced_motion != PrefersReducedMotion::NoPreference,
+    }
+}
+
+fn eval_prefers_reduced_transparency(
+    context: &Context,
+    query_value: Option<PrefersReducedTransparency>,
+) -> bool {
+    let reduced_transparency = context.device().reduced_transparency();
+    match query_value {
+        Some(v) => reduced_transparency == v,
+        None => reduced_transparency != PrefersReducedTransparency::NoPreference,
     }
 }
 
@@ -166,7 +199,7 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
 }
 
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 16] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 19] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -261,6 +294,27 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 16] = [
         atom!("prefers-color-scheme"),
         AllowsRanges::No,
         keyword_evaluator!(eval_prefers_color_scheme, PrefersColorScheme),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-contrast"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_prefers_contrast, PrefersContrast),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-reduced-motion"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_prefers_reduced_motion, PrefersReducedMotion),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("prefers-reduced-transparency"),
+        AllowsRanges::No,
+        keyword_evaluator!(
+            eval_prefers_reduced_transparency,
+            PrefersReducedTransparency
+        ),
         FeatureFlags::empty(),
     ),
 ];

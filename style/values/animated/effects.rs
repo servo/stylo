@@ -4,11 +4,8 @@
 
 //! Animated types for CSS values related to effects.
 
-#[cfg(not(feature = "gecko"))]
-use crate::values::Impossible;
 use crate::values::animated::color::Color;
 use crate::values::computed::length::Length;
-#[cfg(feature = "gecko")]
 use crate::values::computed::url::ComputedUrl;
 use crate::values::computed::{Angle, NonNegativeLength, Number};
 use crate::values::generics::effects::Filter as GenericFilter;
@@ -18,9 +15,4 @@ use crate::values::generics::effects::SimpleShadow as GenericSimpleShadow;
 pub type AnimatedSimpleShadow = GenericSimpleShadow<Color, Length, NonNegativeLength>;
 
 /// An animated value for a single `filter`.
-#[cfg(feature = "gecko")]
 pub type AnimatedFilter = GenericFilter<Angle, Number, Length, AnimatedSimpleShadow, ComputedUrl>;
-
-/// An animated value for a single `filter`.
-#[cfg(not(feature = "gecko"))]
-pub type AnimatedFilter = GenericFilter<Angle, Number, Length, AnimatedSimpleShadow, Impossible>;

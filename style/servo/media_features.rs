@@ -208,7 +208,13 @@ enum OverflowBlock {
 
 /// https://drafts.csswg.org/mediaqueries-4/#mf-overflow-block
 fn eval_overflow_block(context: &Context, query_value: Option<OverflowBlock>) -> bool {
-    // Validate not using overflow-block media feature with the print media type.
+    // For the time being, assume that printing (including previews)
+    // is the only time when we paginate, and we are otherwise always
+    // scrolling. This is true at the moment in Firefox, but may need
+    // updating in the future (e.g., ebook readers built with Stylo, a
+    // billboard mode that doesn't support overflow at all).
+    //
+    // If this ever changes, don't forget to change eval_overflow_inline too.
     let scrolling = context.device().media_type() != MediaType::print();
     let query_value = match query_value {
         Some(v) => v,
@@ -230,7 +236,7 @@ enum OverflowInline {
 
 /// https://drafts.csswg.org/mediaqueries-4/#mf-overflow-inline
 fn eval_overflow_inline(context: &Context, query_value: Option<OverflowInline>) -> bool {
-    // Validate not using overflow-inline media feature with the print media type.
+    // See the note in eval_overflow_block.
     let scrolling = context.device().media_type() != MediaType::print();
     let query_value = match query_value {
         Some(v) => v,

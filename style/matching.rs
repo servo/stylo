@@ -710,6 +710,7 @@ trait PrivateMatchMethods: TElement {
         pseudo_element: Option<PseudoElement>,
     ) -> bool {
         use crate::animation::{AnimationSetKey, AnimationState};
+        use crate::properties::longhands::animation_fill_mode::computed_value::single_value::T as AnimationFillMode;
 
         // We need to call this before accessing the `ElementAnimationSet` from the
         // map because this call will do a RwLock::read().
@@ -778,9 +779,16 @@ trait PrivateMatchMethods: TElement {
             .transitions
             .retain(|transition| transition.state != AnimationState::Finished);
 
-        animation_set
-            .animations
-            .retain(|animation| animation.state != AnimationState::Finished);
+        // Finished animations still need to be kept around if they are filling
+        // forwards, since their end values keep applying to the element
+        // (animation-fill-mode: forwards / both). Otherwise they can be dropped.
+        animation_set.animations.retain(|animation| {
+            animation.state != AnimationState::Finished ||
+            matches!(
+                animation.fill_mode,
+                AnimationFillMode::Forwards | AnimationFillMode::Both
+            )
+        });
 
         // If the ElementAnimationSet is empty, and don't store it in order to
         // save memory and to avoid extra processing later.

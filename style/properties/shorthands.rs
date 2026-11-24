@@ -576,7 +576,7 @@ pub mod vertical_align {
             parsed += 1;
 
             try_parse_one!(input, baseline_source, BaselineSource::parse_non_auto);
-            try_parse_one!(input, alignment_baseline, AlignmentBaseline::parse);
+            try_parse_one!(context, input, alignment_baseline, AlignmentBaseline::parse);
             try_parse_one!(context, input, baseline_shift, BaselineShift::parse);
 
             parsed -= 1;

@@ -728,6 +728,12 @@ impl Parse for BaselineShift {
     }
 }
 
+/// Whether to enable the modern `<baseline-metric>` values which didn't exist in the
+/// CSS2 grammar of the `vertical-align` property.
+fn modern_baseline_metrics_enabled(_: &ParserContext) -> bool {
+    crate::pref!("layout.css.baseline-metric.modern.enabled", gecko = true)
+}
+
 /// A specified value for the `dominant-baseline` property.
 /// https://drafts.csswg.org/css-inline-3/#dominant-baseline
 #[derive(
@@ -757,18 +763,23 @@ pub enum DominantBaseline {
     #[parse(aliases = "text-after-edge")]
     TextBottom,
     /// Use the alphabetic baseline.
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Alphabetic,
     /// Use the ideographic-under baseline.
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Ideographic,
     /// In general, use the x-middle baselines; except under text-orientation: upright
     /// (where the alphabetic and x-height baselines are essentially meaningless) use
     /// the central baseline instead.
     Middle,
     /// Use the central baseline.
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Central,
     /// Use the math baseline.
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Mathematical,
     /// Use the hanging baseline.
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Hanging,
     /// Use the text-over baseline.
     #[parse(aliases = "text-before-edge")]
@@ -801,23 +812,23 @@ pub enum AlignmentBaseline {
     /// Use the text-under baseline.
     TextBottom,
     /// Use the alphabetic baseline.
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Alphabetic,
     /// Use the ideographic-under baseline.
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Ideographic,
     /// In general, use the x-middle baselines; except under text-orientation: upright
     /// (where the alphabetic and x-height baselines are essentially meaningless) use
     /// the central baseline instead.
     Middle,
     /// Use the central baseline.
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Central,
     /// Use the math baseline.
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Mathematical,
     /// Use the hanging baseline.
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "modern_baseline_metrics_enabled")]
     Hanging,
     /// Use the text-over baseline.
     TextTop,

@@ -423,19 +423,7 @@ impl Device {
     }
 
     pub(crate) fn is_dark_color_scheme(&self, color_scheme_flags: ColorSchemeFlags) -> bool {
-        // Inspired by
-        // https://searchfox.org/firefox-main/rev/0a7f146ccac85b8f413264042dcd764028d419ec/widget/nsXPLookAndFeel.cpp#1296
-        let supports_dark_mode = color_scheme_flags.contains(ColorSchemeFlags::DARK);
-        let supports_light_mode = color_scheme_flags.contains(ColorSchemeFlags::LIGHT);
-
-        // If only one is supported, then use dark mode if it was the supported one.
-        if supports_dark_mode != supports_light_mode {
-            return supports_dark_mode;
-        }
-
-        // If either both or none are supported, then use the preferred color scheme
-        // to determine whether the user wants dark mode.
-        return self.color_scheme() == PrefersColorScheme::Dark;
+        used_color_scheme_is_dark(color_scheme_flags, self.color_scheme())
     }
 
     pub(crate) fn system_color(
@@ -592,5 +580,65 @@ impl Device {
     #[inline]
     pub fn link_parameters(&self) -> Option<&LinkParameters> {
         None
+    }
+}
+
+/// Whether the used color scheme for `color_scheme_flags`, the computed
+/// `color-scheme` of an element, is dark when the user prefers
+/// `prefers_color_scheme`.
+///
+/// Inspired by
+/// https://searchfox.org/firefox-main/rev/0a7f146ccac85b8f413264042dcd764028d419ec/widget/nsXPLookAndFeel.cpp#1296
+fn used_color_scheme_is_dark(
+    color_scheme_flags: ColorSchemeFlags,
+    prefers_color_scheme: PrefersColorScheme,
+) -> bool {
+    let supports_dark_mode = color_scheme_flags.contains(ColorSchemeFlags::DARK);
+    let supports_light_mode = color_scheme_flags.contains(ColorSchemeFlags::LIGHT);
+
+    // If only one is supported, then use dark mode if it was the supported one.
+    if supports_dark_mode != supports_light_mode {
+        return supports_dark_mode;
+    }
+
+    // If none is supported (`color-scheme: normal`), the element is not aware of
+    // color schemes, and it is rendered in the light one whatever the user
+    // prefers, as in Gecko and Blink.
+    if !supports_dark_mode {
+        return false;
+    }
+
+    // If both are supported, then use the preferred color scheme to determine
+    // whether the user wants dark mode.
+    prefers_color_scheme == PrefersColorScheme::Dark
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn used_color_scheme() {
+        let none = ColorSchemeFlags::empty();
+        let light = ColorSchemeFlags::LIGHT;
+        let dark = ColorSchemeFlags::DARK;
+        let only = ColorSchemeFlags::ONLY;
+        for prefers in [PrefersColorScheme::Light, PrefersColorScheme::Dark] {
+            let prefers_dark = prefers == PrefersColorScheme::Dark;
+            for (flags, expected) in [
+                (none, false),
+                (light, false),
+                (light | only, false),
+                (dark, true),
+                (dark | only, true),
+                (light | dark, prefers_dark),
+            ] {
+                assert_eq!(
+                    used_color_scheme_is_dark(flags, prefers),
+                    expected,
+                    "{flags:?} when the user prefers dark: {prefers_dark}"
+                );
+            }
+        }
     }
 }

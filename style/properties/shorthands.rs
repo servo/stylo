@@ -2867,16 +2867,11 @@ pub mod font_synthesis {
             if self.font_synthesis_weight == &FontSynthesis::Auto {
                 writer.raw_item("weight")?;
             }
-            #[cfg(feature = "gecko")]
-            let style = Some(self.font_synthesis_style);
-            #[cfg(feature = "servo")]
-            let style = self.font_synthesis_style;
-            if style != Some(&FontSynthesisStyle::None) {
-                if style == Some(&FontSynthesisStyle::Auto) {
-                    writer.raw_item("style")?;
-                } else {
-                    writer.raw_item("oblique-only")?;
-                }
+            if self.font_synthesis_style_has_initial_specified_value() {
+                writer.raw_item("style")?;
+            } else if self.font_synthesis_style_if_non_initial()
+                == Some(&FontSynthesisStyle::ObliqueOnly) {
+                writer.raw_item("oblique-only")?;
             }
             if self.font_synthesis_small_caps == &FontSynthesis::Auto {
                 writer.raw_item("small-caps")?;

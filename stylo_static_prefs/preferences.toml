@@ -10,6 +10,7 @@
 "layout.css.backdrop-filter.enabled" = false
 "layout.css.background-clip.border-area.enabled" = false
 "layout.css.background-clip.text.enabled" = false
+"layout.css.baseline-metric.modern.enabled" = false
 "layout.css.basic-shape-shape.enabled" = false
 "layout.css.calc-typed-arithmetic.enabled" = true
 "layout.css.color-mix-multi-color.enabled" = true
@@ -23,7 +24,6 @@
 "layout.css.custom-media.enabled" = false
 "layout.css.display-animations.enabled" = false
 "layout.css.display-grid-lanes.enabled" = false
-"layout.css.dominant-baseline.enabled" = false
 "layout.css.ellipse-corners.enabled" = false
 "layout.css.filter-urls.enabled" = false
 "layout.css.first-line.enabled" = false

@@ -91,14 +91,7 @@ type LengthPercentageItemList = crate::OwnedSlice<generic::GradientItem<Color, L
 impl Color {
     fn has_modern_syntax(&self) -> bool {
         match self {
-            Self::Absolute(absolute) => {
-                let color = &absolute.color;
-                !color.is_legacy_syntax()
-                    || color.c0().is_none()
-                    || color.c1().is_none()
-                    || color.c2().is_none()
-                    || color.flags.contains(crate::color::ColorFlags::ALPHA_IS_NONE)
-            },
+            Self::Absolute(absolute) => !absolute.color.is_legacy_syntax(),
             Self::ColorMix(mix) => {
                 if mix.flags.contains(ColorMixFlags::RESULT_IN_MODERN_SYNTAX) {
                     true

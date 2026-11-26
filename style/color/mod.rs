@@ -496,6 +496,10 @@ impl AbsoluteColor {
     /// Returns true if this color is in the legacy color syntax.
     #[inline]
     pub fn is_legacy_syntax(&self) -> bool {
+        // Missing components are only allowed in modern syntax.
+        if self.flags.intersects(ColorFlags::NONE_FLAGS) {
+            return false;
+        }
         // rgb(), rgba(), hsl(), hsla(), hwb(), hwba()
         match self.color_space {
             ColorSpace::Srgb => self.flags.contains(ColorFlags::IS_LEGACY_SRGB),

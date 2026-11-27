@@ -181,7 +181,7 @@ pub mod gecko;
 #[allow(unsafe_code)]
 pub mod servo;
 #[cfg(feature = "servo")]
-pub use servo::{animation, attr};
+pub use servo::{animation, attr, restyle_damage};
 
 macro_rules! reexport_computed_values {
     ( $( { $name: ident } )+ ) => {

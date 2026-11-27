@@ -126,6 +126,16 @@ fn is_display_grid_lanes_enabled() -> bool {
     static_prefs::pref!("layout.css.display-grid-lanes.enabled")
 }
 
+#[inline]
+fn is_display_ruby_enabled() -> bool {
+    crate::pref!("layout.css.display-ruby.enabled", gecko = true)
+}
+
+#[inline]
+fn is_display_webkit_box_enabled() -> bool {
+    crate::pref!("layout.css.display-webkit-box.enabled", gecko = true)
+}
+
 /// Defines an element’s display type, which consists of
 /// the two basic qualities of how an element generates boxes
 /// <https://drafts.csswg.org/css-display/#propdef-display>
@@ -138,7 +148,6 @@ pub enum DisplayOutside {
     Block,
     TableCaption,
     InternalTable,
-    #[cfg(feature = "gecko")]
     InternalRuby,
 }
 
@@ -161,17 +170,11 @@ pub enum DisplayInside {
     TableFooterGroup,
     TableRow,
     TableCell,
-    #[cfg(feature = "gecko")]
     Ruby,
-    #[cfg(feature = "gecko")]
     RubyBase,
-    #[cfg(feature = "gecko")]
     RubyBaseContainer,
-    #[cfg(feature = "gecko")]
     RubyText,
-    #[cfg(feature = "gecko")]
     RubyTextContainer,
-    #[cfg(feature = "gecko")]
     WebkitBox,
 }
 
@@ -179,7 +182,6 @@ impl DisplayInside {
     fn is_valid_for_list_item(self) -> bool {
         match self {
             DisplayInside::Flow => true,
-            #[cfg(feature = "gecko")]
             DisplayInside::FlowRoot => true,
             _ => false,
         }
@@ -190,7 +192,6 @@ impl DisplayInside {
     ///     — except for ruby, which defaults to inline.
     fn default_display_outside(self) -> DisplayOutside {
         match self {
-            #[cfg(feature = "gecko")]
             DisplayInside::Ruby => DisplayOutside::Inline,
             _ => DisplayOutside::Block,
         }
@@ -239,7 +240,6 @@ impl Display {
     );
     pub const Block: Self =
         Self(((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Flow as u16);
-    #[cfg(feature = "gecko")]
     pub const FlowRoot: Self = Self(
         ((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::FlowRoot as u16,
     );
@@ -265,14 +265,11 @@ impl Display {
     pub const TableCaption: Self = Self(
         ((DisplayOutside::TableCaption as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Flow as u16,
     );
-    #[cfg(feature = "gecko")]
     pub const Ruby: Self =
         Self(((DisplayOutside::Inline as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::Ruby as u16);
-    #[cfg(feature = "gecko")]
     pub const WebkitBox: Self = Self(
         ((DisplayOutside::Block as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::WebkitBox as u16,
     );
-    #[cfg(feature = "gecko")]
     pub const WebkitInlineBox: Self = Self(
         ((DisplayOutside::Inline as u16) << Self::OUTSIDE_SHIFT) | DisplayInside::WebkitBox as u16,
     );
@@ -309,22 +306,18 @@ impl Display {
     );
 
     /// Internal ruby boxes.
-    #[cfg(feature = "gecko")]
     pub const RubyBase: Self = Self(
         ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT)
             | DisplayInside::RubyBase as u16,
     );
-    #[cfg(feature = "gecko")]
     pub const RubyBaseContainer: Self = Self(
         ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT)
             | DisplayInside::RubyBaseContainer as u16,
     );
-    #[cfg(feature = "gecko")]
     pub const RubyText: Self = Self(
         ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT)
             | DisplayInside::RubyText as u16,
     );
-    #[cfg(feature = "gecko")]
     pub const RubyTextContainer: Self = Self(
         ((DisplayOutside::InternalRuby as u16) << Self::OUTSIDE_SHIFT)
             | DisplayInside::RubyTextContainer as u16,
@@ -379,7 +372,6 @@ impl Display {
     /// Returns whether this `display` value is a ruby level container.
     pub fn is_ruby_level_container(&self) -> bool {
         match *self {
-            #[cfg(feature = "gecko")]
             Display::RubyBaseContainer | Display::RubyTextContainer => true,
             _ => false,
         }
@@ -388,7 +380,6 @@ impl Display {
     /// Returns whether this `display` value is one of the types for ruby.
     pub fn is_ruby_type(&self) -> bool {
         match self.inside() {
-            #[cfg(feature = "gecko")]
             DisplayInside::Ruby
             | DisplayInside::RubyBase
             | DisplayInside::RubyText
@@ -426,7 +417,6 @@ impl Display {
             return true;
         }
         match *self {
-            #[cfg(feature = "gecko")]
             Display::Contents | Display::Ruby | Display::RubyBaseContainer => true,
             _ => false,
         }
@@ -458,7 +448,6 @@ impl Display {
 
     /// Convert this display into an equivalent inline-outside display.
     /// https://drafts.csswg.org/css-display/#inlinify
-    #[cfg(feature = "gecko")]
     pub fn inlinify(&self) -> Self {
         match self.outside() {
             DisplayOutside::Block => {
@@ -517,18 +506,12 @@ impl DisplayKeyword {
             "table-column-group" => Full(Display::TableColumnGroup),
             "table-row" => Full(Display::TableRow),
             "table-cell" => Full(Display::TableCell),
-            #[cfg(feature = "gecko")]
-            "ruby-base" => Full(Display::RubyBase),
-            #[cfg(feature = "gecko")]
-            "ruby-base-container" => Full(Display::RubyBaseContainer),
-            #[cfg(feature = "gecko")]
-            "ruby-text" => Full(Display::RubyText),
-            #[cfg(feature = "gecko")]
-            "ruby-text-container" => Full(Display::RubyTextContainer),
-            #[cfg(feature = "gecko")]
-            "-webkit-box" => Full(Display::WebkitBox),
-            #[cfg(feature = "gecko")]
-            "-webkit-inline-box" => Full(Display::WebkitInlineBox),
+            "ruby-base" if is_display_ruby_enabled() => Full(Display::RubyBase),
+            "ruby-base-container" if is_display_ruby_enabled() => Full(Display::RubyBaseContainer),
+            "ruby-text" if is_display_ruby_enabled() => Full(Display::RubyText),
+            "ruby-text-container" if is_display_ruby_enabled() => Full(Display::RubyTextContainer),
+            "-webkit-box" if is_display_webkit_box_enabled() => Full(Display::WebkitBox),
+            "-webkit-inline-box" if is_display_webkit_box_enabled() => Full(Display::WebkitInlineBox),
 
             /// <display-outside> = block | inline | run-in
             /// https://drafts.csswg.org/css-display/#typedef-display-outside
@@ -545,8 +528,7 @@ impl DisplayKeyword {
             "table" => Inside(DisplayInside::Table),
             "grid" => Inside(DisplayInside::Grid),
             "grid-lanes" if is_display_grid_lanes_enabled() => Inside(DisplayInside::GridLanes),
-            #[cfg(feature = "gecko")]
-            "ruby" => Inside(DisplayInside::Ruby),
+            "ruby" if is_display_ruby_enabled() => Inside(DisplayInside::Ruby),
         })
     }
 }
@@ -561,7 +543,6 @@ impl ToCss for Display {
         match *self {
             Display::Block | Display::Inline => outside.to_css(dest),
             Display::InlineBlock => dest.write_str("inline-block"),
-            #[cfg(feature = "gecko")]
             Display::WebkitInlineBox => dest.write_str("-webkit-inline-box"),
             Display::TableCaption => dest.write_str("table-caption"),
             _ => match (outside, inside) {
@@ -571,7 +552,6 @@ impl ToCss for Display {
                 },
                 (DisplayOutside::Inline, DisplayInside::Flex) => dest.write_str("inline-flex"),
                 (DisplayOutside::Inline, DisplayInside::Table) => dest.write_str("inline-table"),
-                #[cfg(feature = "gecko")]
                 (DisplayOutside::Block, DisplayInside::Ruby) => dest.write_str("block ruby"),
                 (_, inside) => {
                     if self.is_list_item() {
@@ -604,7 +584,6 @@ impl ToTyped for Display {
         let outside = self.outside();
         let inside = self.inside();
 
-        #[cfg(feature = "gecko")]
         if outside == DisplayOutside::Block && inside == DisplayInside::Ruby {
             return Err(());
         }

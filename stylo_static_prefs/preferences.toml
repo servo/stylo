@@ -24,6 +24,8 @@
 "layout.css.custom-media.enabled" = false
 "layout.css.display-animations.enabled" = false
 "layout.css.display-grid-lanes.enabled" = false
+"layout.css.display-ruby.enabled" = false
+"layout.css.display-webkit-box.enabled" = false
 "layout.css.ellipse-corners.enabled" = false
 "layout.css.filter-urls.enabled" = false
 "layout.css.first-line.enabled" = false

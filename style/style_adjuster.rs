@@ -23,6 +23,7 @@ use crate::values::computed::position::{
     PositionTryFallbacksTryTactic, PositionTryFallbacksTryTacticKeyword, TryTacticAdjustment,
 };
 use crate::values::specified::align::AlignFlags;
+use crate::values::specified::box_::DisplayInside;
 
 /// A struct that implements all the adjustment methods.
 ///
@@ -162,7 +163,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     #[cfg(feature = "gecko")]
     fn adjust_for_webkit_line_clamp(&mut self) {
         use crate::properties::longhands::_moz_box_orient::computed_value::T as BoxOrient;
-        use crate::values::specified::box_::{DisplayInside, DisplayOutside};
+        use crate::values::specified::box_::DisplayOutside;
         let box_style = self.style.get_box();
         let line_clamp = box_style.get_line_clamp();
         if line_clamp.is_none() {
@@ -208,6 +209,43 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         }
 
         element.is_some_and(|e| e.skip_item_display_fixup())
+    }
+
+    /// Implement the `display` value adjustments from MathML Core.
+    /// <https://w3c.github.io/mathml-core/#new-display-math-value>
+    ///
+    /// MathML elements keep the `math` inner display type, except for `<mtable>`,
+    /// `<mtr>` and `<mtd>` which compute to table display types. On non-MathML
+    /// elements and pseudo-elements `math` computes to `flow`.
+    fn adjust_for_mathml_display<E>(&mut self, element: Option<E>)
+    where
+        E: TElement,
+    {
+        let display = *self.style.get_box().get_display();
+        if display.inside() != DisplayInside::Math {
+            return;
+        }
+
+        // `math` computes to `flow` on non-MathML elements and pseudo-elements.
+        let mathml_element = if self.style.pseudo.is_none() {
+            element.filter(|element| element.is_mathml_element())
+        } else {
+            None
+        };
+        let Some(element) = mathml_element else {
+            self.style
+                .mutate_box()
+                .set_display(Display::new(display.outside(), DisplayInside::Flow));
+            return;
+        };
+
+        let display = match &**element.local_name() {
+            "mtable" => Display::new(display.outside(), DisplayInside::Table),
+            "mtr" => Display::TableRow,
+            "mtd" => Display::TableCell,
+            _ => return,
+        };
+        self.style.mutate_box().set_display(display);
     }
 
     /// Apply the blockification rules based on the table in CSS 2.2 section 9.7.
@@ -1087,6 +1125,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         self.adjust_for_writing_mode(layout_parent_style);
         #[cfg(feature = "gecko")]
         self.adjust_for_ruby(element);
+        self.adjust_for_mathml_display(element);
         self.adjust_for_appearance(element);
         #[cfg(feature = "gecko")]
         self.adjust_for_marker_pseudo(author_or_user_specified_properties);

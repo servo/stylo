@@ -24,6 +24,7 @@
 "layout.css.custom-media.enabled" = false
 "layout.css.display-animations.enabled" = false
 "layout.css.display-grid-lanes.enabled" = false
+"layout.css.display-math.enabled" = false
 "layout.css.display-ruby.enabled" = false
 "layout.css.display-webkit-box.enabled" = false
 "layout.css.ellipse-corners.enabled" = false

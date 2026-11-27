@@ -2867,11 +2867,12 @@ pub mod font_synthesis {
             if self.font_synthesis_weight == &FontSynthesis::Auto {
                 writer.raw_item("weight")?;
             }
-            if self.font_synthesis_style_has_initial_specified_value() {
+            if let Some(style) = self.font_synthesis_style_if_non_initial() {
+                if style != &FontSynthesisStyle::None {
+                    writer.raw_item("oblique-only")?;
+                }
+            } else {
                 writer.raw_item("style")?;
-            } else if self.font_synthesis_style_if_non_initial()
-                == Some(&FontSynthesisStyle::ObliqueOnly) {
-                writer.raw_item("oblique-only")?;
             }
             if self.font_synthesis_small_caps == &FontSynthesis::Auto {
                 writer.raw_item("small-caps")?;

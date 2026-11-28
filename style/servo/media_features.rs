@@ -12,6 +12,7 @@ use crate::queries::values::{
 };
 use crate::values::computed::{CSSPixelLength, Context, Ratio, Resolution};
 use std::fmt::Debug;
+use crate::media_queries::MediaType;
 
 /// https://drafts.csswg.org/mediaqueries-4/#width
 fn eval_width(context: &Context) -> CSSPixelLength {
@@ -198,8 +199,58 @@ fn eval_aspect_ratio(context: &Context) -> Ratio {
     Ratio::new(size.width.0 as f32, size.height.0 as f32)
 }
 
+#[derive(FromPrimitive, Parse, ToCss)]
+enum OverflowBlock {
+    None,
+    Scroll,
+    Paged,
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#mf-overflow-block
+fn eval_overflow_block(context: &Context, query_value: Option<OverflowBlock>) -> bool {
+    // For the time being, assume that printing (including previews)
+    // is the only time when we paginate, and we are otherwise always
+    // scrolling. This is true at the moment in Firefox, but may need
+    // updating in the future (e.g., ebook readers built with Stylo, a
+    // billboard mode that doesn't support overflow at all).
+    //
+    // If this ever changes, don't forget to change eval_overflow_inline too.
+    let scrolling = context.device().media_type() != MediaType::print();
+    let query_value = match query_value {
+        Some(v) => v,
+        None => return true,
+    };
+
+    match query_value {
+        OverflowBlock::None => false,
+        OverflowBlock::Scroll => scrolling,
+        OverflowBlock::Paged => !scrolling,
+    }
+}
+
+#[derive(FromPrimitive, Parse, ToCss)]
+enum OverflowInline {
+    None,
+    Scroll,
+}
+
+/// https://drafts.csswg.org/mediaqueries-4/#mf-overflow-inline
+fn eval_overflow_inline(context: &Context, query_value: Option<OverflowInline>) -> bool {
+    // See the note in eval_overflow_block.
+    let scrolling = context.device().media_type() != MediaType::print();
+    let query_value = match query_value {
+        Some(v) => v,
+        None => return scrolling,
+    };
+
+    match query_value {
+        OverflowInline::None => !scrolling,
+        OverflowInline::Scroll => scrolling,
+    }
+}
+
 /// A list with all the media features that Servo supports.
-pub static MEDIA_FEATURES: [QueryFeatureDescription; 19] = [
+pub static MEDIA_FEATURES: [QueryFeatureDescription; 21] = [
     feature!(
         atom!("width"),
         AllowsRanges::Yes,
@@ -315,6 +366,18 @@ pub static MEDIA_FEATURES: [QueryFeatureDescription; 19] = [
             eval_prefers_reduced_transparency,
             PrefersReducedTransparency
         ),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("overflow-block"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_overflow_block, OverflowBlock),
+        FeatureFlags::empty(),
+    ),
+    feature!(
+        atom!("overflow-inline"),
+        AllowsRanges::No,
+        keyword_evaluator!(eval_overflow_inline, OverflowInline),
         FeatureFlags::empty(),
     ),
 ];

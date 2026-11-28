@@ -129,6 +129,8 @@ onchange
 open
 orientation
 outside
+overflow-block
+overflow-inline
 pagehide
 pageshow
 password
